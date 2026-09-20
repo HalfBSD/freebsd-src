@@ -204,10 +204,6 @@ TEKENDIR=	${INCLUDEDIR}/teken
 NVPAIR=		nvpair.h
 NVPAIRDIR=	${INCLUDEDIR}/sys
 
-.PATH: ${SRCTOP}/sys/dev/mlx5
-MLX5=		mlx5io.h
-MLX5DIR=	${INCLUDEDIR}/dev/mlx5
-
 .PATH: ${SRCTOP}/sys/dev/wg
 WG=		if_wg.h
 WGDIR=		${INCLUDEDIR}/dev/wg
@@ -430,10 +426,6 @@ symlinks: .PHONY .META
 	${INSTALL_SYMLINK} ${TAG_ARGS:D${TAG_ARGS},dev} \
 	    ../../../sys/contrib/openzfs/include/sys/nvpair.h \
 	    ${SDESTDIR}${INCLUDEDIR}/sys
-.endif
-.if ${MK_MLX5TOOL} != "no"
-	${INSTALL_SYMLINK} ${TAG_ARGS:D${TAG_ARGS},dev} ../../../../sys/dev/mlx5/mlx5io.h \
-	    ${SDESTDIR}${INCLUDEDIR}/dev/mlx5
 .endif
 
 .include <bsd.prog.mk>

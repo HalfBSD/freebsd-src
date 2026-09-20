@@ -255,8 +255,6 @@ SUBDIR=	\
 	${_mlx4} \
 	${_mlx4ib} \
 	${_mlx4en} \
-	${_mlx5} \
-	${_mlx5en} \
 	${_mlx5ib} \
 	mmc \
 	mmcsd \
@@ -548,11 +546,9 @@ _rdma=		rdma
     ${MACHINE_CPUARCH} == "i386" || ${MACHINE_ARCH:Mpowerpc64*} != ""
 _ipmi=		ipmi
 _mlx4=		mlx4
-_mlx5=		mlx5
 .if (${MK_INET_SUPPORT} != "no" && ${MK_INET6_SUPPORT} != "no") || \
 	defined(ALL_MODULES)
 _mlx4en=	mlx4en
-_mlx5en=	mlx5en
 .endif
 .if ${MK_OFED} != "no" || defined(ALL_MODULES)
 _mlx4ib=	mlx4ib

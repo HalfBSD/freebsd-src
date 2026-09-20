@@ -296,7 +296,7 @@ extract_tree()
 		fi
 	else
 		if ! build_tree $1; then
-			echo "Failed to build new tree."
+			echo "Failed to build new tree. See $LOGFILE for details."
 			remove_tree $1
 			exit 1
 		fi
@@ -1336,7 +1336,7 @@ build_cmd()
 		exit 1
 	fi
 	if ! build_tree $dir; then
-		echo "Failed to build tree."
+		echo "Failed to build tree. See $LOGFILE for more details"
 		remove_tree $dir
 		exit 1
 	fi

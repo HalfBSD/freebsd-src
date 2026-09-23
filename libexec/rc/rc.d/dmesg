@@ -12,7 +12,7 @@
 name="dmesg"
 desc="Save kernel boot messages to disk"
 rcvar="dmesg_enable"
-dmesg_file="/var/run/dmesg.boot"
+: ${dmesg_file:="/var/run/dmesg.boot"}
 start_cmd="do_dmesg"
 stop_cmd=":"
 

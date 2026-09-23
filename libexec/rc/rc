@@ -148,4 +148,26 @@ fi
 
 echo ''
 date
+
+# Report how long it took to reach the end of multi-user startup.  Use
+# kern.boottime rather than a timestamp captured by this script so the time
+# spent starting the kernel and userland is included as well.
+_boot_time=`/sbin/sysctl -n kern.boottime 2> /dev/null`
+_boot_time=${_boot_time#* sec = }
+_boot_time=${_boot_time%%,*}
+case $_boot_time in
+[0-9]*)
+	_boot_elapsed=$((`date +%s` - $_boot_time))
+	_boot_message="Boot time: ${_boot_elapsed} seconds"
+	echo "${_boot_message}"
+
+	# Refresh dmesg.boot now that startup is complete and include the timing
+	# line so the saved boot log has the same useful endpoint as the console.
+	if checkyesno dmesg_enable; then
+		/etc/rc.d/dmesg quietstart
+		( umask "${dmesg_umask}"; echo "${_boot_message}" >> \
+		    "${dmesg_file}" )
+	fi
+	;;
+esac
 exit 0

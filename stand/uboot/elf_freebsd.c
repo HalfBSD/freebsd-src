@@ -42,21 +42,7 @@ int
 __elfN(uboot_load)(char *filename, uint64_t dest,
     struct preloaded_file **result)
 {
-	int r;
-
-	r = __elfN(loadfile)(filename, dest, result);
-	if (r != 0)
-		return (r);
-
-#if defined(__powerpc__)
-	/*
-	 * No need to sync the icache for modules: this will
-	 * be done by the kernel after relocation.
-	 */
-	if (!strcmp((*result)->f_type, md_kerntype))
-		__syncicache((void *) (*result)->f_addr, (*result)->f_size);
-#endif
-	return (0);
+	return (__elfN(loadfile)(filename, dest, result));
 }
 
 int

@@ -199,29 +199,6 @@ INLINE_LIMIT?=	8000
 .endif
 
 #
-# For PowerPC we tell gcc to use floating point emulation.  This avoids using
-# floating point registers for integer operations which it has a tendency to do.
-# Also explicitly disable Altivec instructions inside the kernel.
-#
-.if ${MACHINE_CPUARCH} == "powerpc"
-CFLAGS+=	-mno-altivec -msoft-float
-INLINE_LIMIT?=	15000
-.endif
-
-.if ${MACHINE_ARCH} == "powerpcspe"
-CFLAGS.gcc+=	-mno-spe
-.endif
-
-#
-# Use dot symbols (or, better, the V2 ELF ABI) on powerpc64 to make
-# DDB happy. ELFv2, if available, has some other efficiency benefits.
-#
-.if ${MACHINE_ARCH:Mpowerpc64*} != "" && \
-    ${COMPILER_TYPE} == "clang" && ${COMPILER_VERSION} < 160000
-CFLAGS+=	-mabi=elfv2
-.endif
-
-#
 # GCC 3.0 and above like to do certain optimizations based on the
 # assumption that the program is linked against libc.  Stop this.
 #
@@ -409,9 +386,5 @@ LD_EMULATION_amd64=elf_x86_64_fbsd
 LD_EMULATION_arm=armelf_fbsd
 LD_EMULATION_armv7=armelf_fbsd
 LD_EMULATION_i386=elf_i386_fbsd
-LD_EMULATION_powerpc= elf32ppc_fbsd
-LD_EMULATION_powerpcspe= elf32ppc_fbsd
-LD_EMULATION_powerpc64= elf64ppc_fbsd
-LD_EMULATION_powerpc64le= elf64lppc_fbsd
 LD_EMULATION_riscv64= elf64lriscv
 LD_EMULATION=${LD_EMULATION_${MACHINE_ARCH}}

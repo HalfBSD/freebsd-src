@@ -170,7 +170,7 @@ CFLAGS+=	-fno-omit-frame-pointer -mno-omit-leaf-frame-pointer
 .endif
 
 .if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "riscv" || \
-    ${MACHINE_CPUARCH} == "powerpc" || ${MACHINE_CPUARCH} == "i386"
+    ${MACHINE_CPUARCH} == "i386"
 CFLAGS+=	-fPIC
 .endif
 
@@ -187,14 +187,6 @@ LDFLAGS+=	--no-relax
 CFLAGS.clang+=	-mno-movt
 CFLAGS.clang+=	-mfpu=none
 CFLAGS+=	-funwind-tables
-.endif
-
-.if ${MACHINE_CPUARCH} == powerpc
-CFLAGS+=	-mlongcall -fno-omit-frame-pointer
-.if ${LINKER_TYPE} == "lld"
-# TOC optimization in LLD (9.0) currently breaks kernel modules, so disable it
-LDFLAGS+=	--no-toc-optimize
-.endif
 .endif
 
 .if defined(DEBUG) || defined(DEBUG_FLAGS)

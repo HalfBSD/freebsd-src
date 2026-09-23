@@ -45,8 +45,7 @@ CFLAGS+= -D__x86_64 -DHAVE_SSE2 -DHAVE_SSSE3 -DHAVE_SSE4_1 -DHAVE_SSE4_2 \
 	-DHAVE_VAES -DHAVE_VPCLMULQDQ
 .endif
 
-.if ${MACHINE_ARCH} == "i386" || ${MACHINE_ARCH} == "powerpc" || \
-	${MACHINE_ARCH} == "powerpcspe" || ${MACHINE_ARCH} == "arm"
+.if ${MACHINE_ARCH} == "i386" || ${MACHINE_ARCH} == "arm"
 CFLAGS+= -DBITS_PER_LONG=32
 .else
 CFLAGS+= -DBITS_PER_LONG=64
@@ -72,11 +71,6 @@ SRCS+=	b3_aarch64_sse2.S \
 	b3_aarch64_sse41.S
 .endif
 
-.if ${MACHINE_ARCH} == "powerpc64le"
-#icp/asm-ppc64/blake3
-SRCS+=	b3_ppc64le_sse2.S \
-	b3_ppc64le_sse41.S
-.endif
 
 .if ${MACHINE_ARCH} == "amd64" || ${MACHINE_ARCH} == "i386"
 #icp/asm-x86_64/blake3
@@ -106,13 +100,6 @@ OBJS+=	zfs-sha256-armv8.o \
 	zfs-sha512-armv8.o
 .endif
 
-.if ${MACHINE_ARCH} == "powerpc64" || ${MACHINE_ARCH} == "powerpc64le"
-#icp/asm-ppc64/sha2
-SRCS+=	sha256-p8.S \
-	sha512-p8.S \
-	sha256-ppc.S \
-	sha512-ppc.S
-.endif
 
 .if ${MACHINE_ARCH} == "amd64" || ${MACHINE_ARCH} == "i386"
 #icp/asm-x86_64/sha2
@@ -175,8 +162,7 @@ SRCS+=	acl_common.c \
 	spl_zone.c
 
 
-.if ${MACHINE_ARCH} == "i386" || ${MACHINE_ARCH} == "powerpc" || \
-	${MACHINE_ARCH} == "powerpcspe" || ${MACHINE_ARCH} == "arm"
+.if ${MACHINE_ARCH} == "i386" || ${MACHINE_ARCH} == "arm"
 SRCS+= spl_atomic.c
 .endif
 

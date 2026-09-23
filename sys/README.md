@@ -50,7 +50,6 @@ Source Roadmap:
 | netipsec | IPsec protocol implementation - `ipsec(4)` |
 | netpfil | IPFW packet filtering and dummynet traffic shaping |
 | opencrypto | OpenCrypto framework - `crypto(7)` |
-| powerpc | PowerPC/POWER (32 and 64-bit) architecture support |
 | riscv | 64-bit RISC-V architecture support |
 | security | security facilities - `audit(4)` and `mac(4)` |
 | sys | kernel headers |

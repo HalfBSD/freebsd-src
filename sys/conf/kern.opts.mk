@@ -78,8 +78,8 @@ BROKEN_OPTIONS+= OFED
 BROKEN_OPTIONS+= KERNEL_RETPOLINE
 .endif
 
-# EFI doesn't exist on powerpc and is broken on i386
-.if ${MACHINE:Mpowerpc} || ${MACHINE} == "i386"
+# EFI is broken on i386
+.if ${MACHINE} == "i386"
 BROKEN_OPTIONS+=EFI
 .endif
 

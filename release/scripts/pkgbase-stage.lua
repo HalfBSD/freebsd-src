@@ -23,11 +23,7 @@ local function select_packages(pkg, media, all_libcompats)
 	-- Note: if you update this list, you must also update the list in
 	-- usr.sbin/bsdinstall/scripts/pkgbase.in.
 	local kernel_packages = {
-		-- Most architectures use this
 		["FreeBSD-kernel-generic"] = true,
-		-- PowerPC uses either of these, depending on platform
-		["FreeBSD-kernel-generic64"] = true,
-		["FreeBSD-kernel-generic64le"] = true,
 	}
 
 	local components = {}

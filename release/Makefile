@@ -37,7 +37,9 @@
 #  WITH_COMPRESSED_VMIMAGES: if set, compress virtual machine disk images
 #  		with xz(1) (extremely time consuming)
 #  WITH_CLOUDWARE: if set, build cloud hosting disk images with the release
-#  TARGET/TARGET_ARCH: architecture of built release
+#  TARGET/TARGET_ARCH: architecture of built release.  Release media are
+#            produced for amd64/amd64, arm/armv7, arm64/aarch64, and
+#            i386/i386.  PowerPC targets are no longer produced.
 #
 
 WORLDDIR?=	${.CURDIR:H}

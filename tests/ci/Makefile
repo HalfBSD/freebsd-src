@@ -290,8 +290,6 @@ ci-checktarget: .PHONY
 .if ${TARGET_ARCH} != "aarch64" && \
 	${TARGET_ARCH} != "amd64" && \
 	${TARGET_ARCH} != "armv7" && \
-	${TARGET_ARCH} != "powerpc64" && \
-	${TARGET_ARCH} != "powerpc64le" && \
 	${TARGET_ARCH} != "riscv64"
 	@false
 .ERROR:

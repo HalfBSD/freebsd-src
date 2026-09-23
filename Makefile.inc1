@@ -147,11 +147,7 @@ TARGET_TRIPLE?=	${TARGET_ARCH:S/amd64/x86_64/}-${TARGET_TRIPLE_ABI}-freebsd${OS_
 KNOWN_ARCHES?=	aarch64/arm64 \
 		amd64 \
 		armv7/arm \
-		i386 \
-		powerpc \
-		powerpc64/powerpc \
-		powerpc64le/powerpc \
-		powerpcspe/powerpc
+		i386
 
 .if ${TARGET} == ${TARGET_ARCH}
 _t=		${TARGET}

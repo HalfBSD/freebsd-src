@@ -533,12 +533,6 @@ packages update-packages: .PHONY
 #
 .if make(universe) || make(universe_kernels) || make(tinderbox) || \
     make(targets) || make(universe-toolchain)
-#
-# Don't build rarely used, semi-supported architectures unless requested.
-#
-.if defined(EXTRA_TARGETS)
-EXTRA_ARCHES_powerpc=	powerpc powerpcspe
-.endif
 TARGETS?= ${TARGET_MACHINE_LIST}
 _UNIVERSE_TARGETS=	${TARGETS}
 .for target in ${TARGETS}
@@ -552,7 +546,6 @@ TOOLCHAINS_amd64=	amd64-${_GCC_VERSION}
 TOOLCHAINS_arm=		armv7-${_GCC_VERSION}
 TOOLCHAINS_arm64=	aarch64-${_GCC_VERSION}
 TOOLCHAINS_i386=	i386-${_GCC_VERSION}
-TOOLCHAINS_powerpc=	powerpc64-${_GCC_VERSION}
 .endif
 
 # If a target is using an external toolchain, set MAKE_PARAMS to enable use

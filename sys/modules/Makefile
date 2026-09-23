@@ -543,7 +543,7 @@ _rdma=		rdma
 .endif
 
 .if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "amd64" || \
-    ${MACHINE_CPUARCH} == "i386" || ${MACHINE_ARCH:Mpowerpc64*} != ""
+    ${MACHINE_CPUARCH} == "i386"
 _ipmi=		ipmi
 _mlx4=		mlx4
 .if (${MK_INET_SUPPORT} != "no" && ${MK_INET6_SUPPORT} != "no") || \
@@ -566,8 +566,7 @@ _vmware=	vmware
 .endif
 
 .if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "amd64" || \
-    ${MACHINE_CPUARCH} == "i386" || ${MACHINE_ARCH} == "armv7" || \
-	${MACHINE_ARCH:Mpowerpc64*} != ""
+    ${MACHINE_CPUARCH} == "i386" || ${MACHINE_ARCH} == "armv7"
 _ossl=		ossl
 .endif
 
@@ -617,7 +616,6 @@ _rtwnfw=	rtwnfw
 .endif
 
 .if ${MK_SOURCELESS_UCODE} != "no" && ${MACHINE_CPUARCH} != "arm" && \
-	${MACHINE_ARCH} != "powerpc" && ${MACHINE_ARCH} != "powerpcspe" && \
 	${MACHINE_CPUARCH} != "riscv"
 _cxgbe=		cxgbe
 .endif
@@ -632,8 +630,7 @@ _mpi3mr=mpi3mr
 _genet=		genet
 .endif
 
-.if ${MACHINE_CPUARCH} == "amd64" || ${MACHINE_CPUARCH} == "aarch64" || \
-	${MACHINE_ARCH:Mpowerpc64*}
+.if ${MACHINE_CPUARCH} == "amd64" || ${MACHINE_CPUARCH} == "aarch64"
 _ice=		ice
 .if ${MK_SOURCELESS_UCODE} != "no"
 _ice_ddp=	ice_ddp
@@ -655,10 +652,8 @@ _sdhci_fdt=	sdhci_fdt
 .endif
 
 # These rely on 64bit atomics
-.if ${MACHINE_ARCH} != "powerpc" && ${MACHINE_ARCH} != "powerpcspe"
 _mps=		mps
 _mpr=		mpr
-.endif
 
 .if ${MK_TESTS} != "no" || defined(ALL_MODULES)
 SUBDIR+=	ktest
@@ -868,27 +863,8 @@ _cfi=		cfi
 _cpsw=		cpsw
 .endif
 
-.if ${MACHINE_CPUARCH} == "powerpc"
-_aacraid=	aacraid
-_agp=		agp
-_an=		an
-_cardbus=	cardbus
-_cbb=		cbb
-_cfi=		cfi
-_cpufreq=	cpufreq
-_exca=		exca
-_ffec=		ffec
-.endif
 
-.if ${MACHINE_ARCH:Mpowerpc64*} != ""
-_ixl=		ixl
-_nvram=		opal_nvram
-.endif
 
-.if ${MACHINE_CPUARCH} == "powerpc" && ${MACHINE_ARCH} != "powerpcspe"
-# Don't build powermac_nvram for powerpcspe, it's never supported.
-_nvram+=	powermac_nvram
-.endif
 
 .if ${MACHINE_CPUARCH} == "arm" || ${MACHINE_CPUARCH} == "aarch64"
 _bcm283x_clkman=  bcm283x_clkman

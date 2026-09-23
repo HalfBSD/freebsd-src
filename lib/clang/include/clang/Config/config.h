@@ -72,6 +72,9 @@
 /* enable x86 relax relocations by default */
 #define ENABLE_X86_RELAX_RELOCATIONS 1
 
+/* Enable IEEE binary128 as default long double format on PowerPC Linux. */
+#define PPC_LINUX_DEFAULT_IEEELONGDOUBLE 0
+
 /* Enable each functionality of modules */
 /* #undef CLANG_ENABLE_ARCMT */
 /* #undef CLANG_ENABLE_OBJC_REWRITER */

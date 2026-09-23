@@ -55,9 +55,6 @@ SNDPACKAGE=		sound
 DEVD+=	uath.conf ulpt.conf
 .endif
 
-.if ${MACHINE_ARCH} == "powerpc"
-DEVD+=	apple.conf
-.endif
 
 .if ${MK_ZFS} != "no"
 DEVD+=	zfs.conf

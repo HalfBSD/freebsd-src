@@ -33,8 +33,5 @@ CFLAGS+=	-I${SQLITE} \
 		-D_REENTRANT=1 \
 		-DSQLITE_THREADSAFE=1
 
-.if ${MACHINE_ARCH} == "powerpc64le"
-CFLAGS+=	-DSQLITE_BYTEORDER=1234
-.endif
 
 .include <bsd.lib.mk>

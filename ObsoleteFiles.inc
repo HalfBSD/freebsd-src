@@ -51,6 +51,9 @@
 #   xargs -n1 | sort | uniq -d;
 # done
 
+# 20260923: retire PowerPC architecture support
+OLD_FILES+=usr/sbin/nvram
+
 # 20260923: Remove wall and write
 OLD_FILES+=usr/bin/wall
 OLD_FILES+=usr/bin/write

@@ -35,22 +35,6 @@ ASM_SOURCES_AS = \
         asm-aarch64/blake3/b3_aarch64_sse41.S \
         asm-aarch64/sha2/sha256-armv8.S \
         asm-aarch64/sha2/sha512-armv8.S
-.elif ${MACHINE_ARCH} == "powerpc64"
-ASM_SOURCES_C =
-ASM_SOURCES_AS = \
-        asm-ppc64/sha2/sha256-ppc.S \
-        asm-ppc64/sha2/sha512-ppc.S \
-        asm-ppc64/sha2/sha256-p8.S \
-        asm-ppc64/sha2/sha512-p8.S
-.elif ${MACHINE_ARCH} == "powerpc64le"
-ASM_SOURCES_C =
-ASM_SOURCES_AS = \
-        asm-ppc64/blake3/b3_ppc64le_sse2.S \
-        asm-ppc64/blake3/b3_ppc64le_sse41.S \
-        asm-ppc64/sha2/sha256-ppc.S \
-        asm-ppc64/sha2/sha512-ppc.S \
-        asm-ppc64/sha2/sha256-p8.S \
-        asm-ppc64/sha2/sha512-p8.S
 .else
 ASM_SOURCES_C =
 ASM_SOURCES_AS =

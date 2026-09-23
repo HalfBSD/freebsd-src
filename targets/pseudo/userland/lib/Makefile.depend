@@ -196,8 +196,7 @@ DIRDEPS+= \
 
 .endif
 
-.if ${DEP_MACHINE_CPUARCH} == "amd64" || ${DEP_MACHINE_CPUARCH} == "i386" || \
-    ${DEP_MACHINE_CPUARCH} == "powerpc"
+.if ${DEP_MACHINE_CPUARCH} == "amd64" || ${DEP_MACHINE_CPUARCH} == "i386"
 DIRDEPS+= stand/libsa32
 .endif
 

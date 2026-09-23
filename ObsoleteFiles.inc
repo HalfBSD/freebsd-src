@@ -51,6 +51,10 @@
 #   xargs -n1 | sort | uniq -d;
 # done
 
+# 20260923: Remove chio and domainname
+OLD_FILES+=bin/chio
+OLD_FILES+=bin/domainname
+
 # 20260919: Remove libibnetdisc and its consumers
 # 20260919: Remove InfiniBand diagnostic programs
 OLD_FILES+=usr/bin/dump_fts

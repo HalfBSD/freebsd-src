@@ -2,14 +2,12 @@
 
 SUBDIR= cat \
 	chflags \
-	chio \
 	chmod \
 	cp \
 	cpuset \
 	date \
 	dd \
 	df \
-	domainname \
 	echo \
 	ed \
 	expr \

@@ -369,7 +369,7 @@ ATF_TC_BODY(fegsetenv, tc)
 		ATF_CHECK_EQ(0, fesetenv(&env2));
 
 		/* 
-		 * Some platforms like powerpc may set extra exception bits. Since
+		 * Some platforms may set extra exception bits. Since
 		 * only standard exceptions are tested, mask against ALL_STD_EXCEPT 
 		 */
 		ATF_CHECK_EQ(excepts, (fetestexcept(FE_ALL_EXCEPT) & ALL_STD_EXCEPT));

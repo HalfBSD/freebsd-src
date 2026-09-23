@@ -138,21 +138,14 @@ libc_free_aligned(void *ptr)
 #ifdef TLS_VARIANT_I
 
 /*
- * There are two versions of variant I of TLS
+ * ARM and aarch64 use variant I as described in [1] and [2], where TP points
+ * to the start of the TCB followed by the aligned TLS segment.  Both TCB and
+ * TLS must be aligned to the alignment of the TLS section.  The TCB[0] points
+ * to the DTV vector and DTV values are real addresses (without bias).
  *
- * - ARM and aarch64 uses original variant I as is described in [1] and [2],
- *   where TP points to start of TCB followed by aligned TLS segment.
- *   Both TCB and TLS must be aligned to alignment of TLS section. The TCB[0]
- *   points to DTV vector and DTV values are real addresses (without bias).
- *   Note: for Local Exec TLS Model, the offsets from TP (TCB in this case) to
- *   TLS variables are computed by linker, so we cannot overalign TLS section.
- *
- * - PowerPC and RISC-V use modified version of variant I, described in [3]
- *   where TP points (with bias) to TLS and TCB immediately precedes TLS without
- *   any alignment gap[4]. Only TLS should be aligned.  The TCB[0] points to DTV
- *   vector and DTV values are biased by constant value (TLS_DTV_OFFSET) from
- *   real addresses. However, like RTLD, we don't actually bias the DTV values,
- *   instead we compensate in __tls_get_addr for ti_offset's bias.
+ * Note: for the Local Exec TLS Model, the offsets from TP (the TCB in this
+ * case) to TLS variables are computed by the linker, so we cannot overalign
+ * the TLS section.
  *
  * [1] Ulrich Drepper: ELF Handling for Thread-Local Storage
  *     www.akkadia.org/drepper/tls.pdf
@@ -160,14 +153,6 @@ libc_free_aligned(void *ptr)
  * [2] ARM IHI 0045E: Addenda to, and Errata in, the ABI for the ARM(r)
  *     Architecture
  *   infocenter.arm.com/help/topic/com.arm.doc.ihi0045e/IHI0045E_ABI_addenda.pdf
- *
- * [3] OpenPOWER: Power Architecture 64-Bit ELF V2 ABI Specification
- *     https://members.openpowerfoundation.org/document/dl/576
- *
- * [4] Its unclear if "without any alignment gap" is hard ABI requirement,
- *     but we must follow this rule due to suboptimal _tcb_set()
- *     (aka <ARCH>_SET_TP) implementation. This function doesn't expect TP but
- *     TCB as argument.
  */
 
 /*
@@ -180,11 +165,7 @@ get_tls_block_ptr(void *tcb, size_t tcbsize)
 
 	/* Compute fragments sizes. */
 	extra_size = tcbsize - TLS_TCB_SIZE;
-#if defined(__aarch64__) || defined(__arm__)
-	post_size =  roundup2(TLS_TCB_SIZE, libc_tls_init_align) - TLS_TCB_SIZE;
-#else
-	post_size = 0;
-#endif
+	post_size = roundup2(TLS_TCB_SIZE, libc_tls_init_align) - TLS_TCB_SIZE;
 	tls_block_size = tcbsize + post_size;
 	pre_size = roundup2(tls_block_size, libc_tls_init_align) -
 	    tls_block_size;

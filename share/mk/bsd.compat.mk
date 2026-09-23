@@ -39,22 +39,6 @@ LIB32WMAKEENV=	MACHINE_CPU="i686 mmx sse sse2"
 LIB32WMAKEFLAGS=	\
 		LD="${XLD} -m elf_i386_fbsd"
 
-.elif ${COMPAT_ARCH} == "powerpc64"
-HAS_COMPAT+=	32
-.if empty(LIB32CPUTYPE)
-LIB32CPUFLAGS=	-mcpu=powerpc
-.else
-LIB32CPUFLAGS=	-mcpu=${LIB32CPUTYPE}
-.endif
-
-LIB32CPUFLAGS.gcc+=	-m32
-LIB32CPUFLAGS.clang+=	-target powerpc-unknown-freebsd${OS_REVISION}
-
-LIB32_MACHINE=	powerpc
-LIB32_MACHINE_ARCH=	powerpc
-LIB32WMAKEFLAGS=	\
-		LD="${XLD} -m elf32ppc_fbsd"
-
 .elif ${COMPAT_ARCH} == "aarch64"
 HAS_COMPAT+=	32
 .if empty(LIB32CPUTYPE)

@@ -96,9 +96,7 @@ ofwd_strategy(void *devdata, int flag __unused, daddr_t dblk, size_t size,
 
 	if (dp != kdp) {
 		if (kdp != NULL) {
-#if !defined(__powerpc__)
 			OF_close(kdp->d_handle);
-#endif
 			kdp = NULL;
 		}
 		if ((dp->d_handle = OF_open(dp->d_path)) == -1)
@@ -149,9 +147,7 @@ ofwd_close(struct open_file *f)
 	struct ofw_devdesc *dev = f->f_devdata;
 
 	if (dev == kdp) {
-#if !defined(__powerpc__)
 		OF_close(dev->d_handle);
-#endif
 		kdp = NULL;
 	}
 	return (0);

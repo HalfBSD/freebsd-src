@@ -75,10 +75,6 @@ SRCS+=	bswapdi2.c bswapsi2.c clzdi2.c ctzdi2.c
 SRCS+= hypervisor.c
 .endif
 
-.if ${MACHINE_CPUARCH} == "powerpc"
-SRCS+=	syncicache.c
-.endif
-
 # uuid functions from libc
 .PATH: ${LIBCSRC}/uuid
 SRCS+= uuid_create_nil.c uuid_equal.c uuid_from_string.c uuid_is_nil.c uuid_to_string.c

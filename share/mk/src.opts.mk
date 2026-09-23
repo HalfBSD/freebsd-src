@@ -291,12 +291,12 @@ BROKEN_OPTIONS+=BEARSSL		# bearssl brings in secure efi stuff xxx
 .if ${__T:Mpowerpc*} == ""
 BROKEN_OPTIONS+=LOADER_OFW
 .endif
-# KBOOT is only for powerpc64 (powerpc64le broken) amd64 and aarch64
-.if ${__T} != "powerpc64" && ${__T} != "amd64" && ${__T} != "aarch64"
+# KBOOT is only for amd64 and aarch64
+.if ${__T} != "amd64" && ${__T} != "aarch64"
 BROKEN_OPTIONS+=LOADER_KBOOT
 .endif
-# UBOOT is only for arm, and big-endian powerpc
-.if (${__T:Marm*} == "" && ${__T:Mpowerpc*} == "") || ${__T} == "powerpc64le"
+# UBOOT is only for arm
+.if ${__T:Marm*} == ""
 BROKEN_OPTIONS+=LOADER_UBOOT
 .endif
 # The 32-bit UEFI loader is only for amd64

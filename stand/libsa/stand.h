@@ -84,9 +84,8 @@
 
 /*
  * LUA needs sig_atomic_t. This is defined to be long or int on all our
- * platforms. On all but powerpc, these are all the same thing as long. 64-bit
- * powerpc defines this as int, but long can also be accessed atomically. It's
- * also OK because we don't have signal handlers in the boot loader.
+ * platforms, and long is suitable because we don't have signal handlers in
+ * the boot loader.
  */
 typedef long sig_atomic_t;
 

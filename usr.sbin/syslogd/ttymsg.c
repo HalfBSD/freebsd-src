@@ -46,8 +46,8 @@
 #include "ttymsg.h"
 
 /*
- * Display the contents of a uio structure on a terminal.  Used by wall(1)
- * and syslogd(8).  Forks and finishes in child if write would block,
+ * Display the contents of a uio structure on a terminal.  Used by syslogd(8).
+ * Forks and finishes in child if write would block,
  * waiting up to tmout seconds.  Returns pointer to error string on unexpected
  * error; string is not newline-terminated.  Various "normal" errors are
  * ignored (exclusive-use, lack of permission, etc.).
@@ -65,7 +65,7 @@ ttymsg(struct iovec *iov, int iovcnt, const char *line, int tmout)
 
 	forked = 0;
 	if (iovcnt > (int)(sizeof(localiov) / sizeof(localiov[0])))
-		return ("too many iov's (change code in wall/ttymsg.c)");
+		return ("too many iov's (change code in ttymsg.c)");
 
 	strlcat(device, line, sizeof(device));
 	p = device + sizeof(_PATH_DEV) - 1;

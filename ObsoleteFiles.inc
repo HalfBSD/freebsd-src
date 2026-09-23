@@ -51,6 +51,10 @@
 #   xargs -n1 | sort | uniq -d;
 # done
 
+# 20260923: Remove wall and write
+OLD_FILES+=usr/bin/wall
+OLD_FILES+=usr/bin/write
+
 # 20260923: Remove chio and domainname
 OLD_FILES+=bin/chio
 OLD_FILES+=bin/domainname

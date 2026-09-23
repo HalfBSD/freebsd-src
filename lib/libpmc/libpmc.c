@@ -70,11 +70,6 @@ static int dmc620_pmu_allocate_pmc(enum pmc_event _pe, char *_ctrspec,
 static int soft_allocate_pmc(enum pmc_event _pe, char *_ctrspec,
     struct pmc_op_pmcallocate *_pmc_config);
 
-#if defined(__powerpc__)
-static int powerpc_allocate_pmc(enum pmc_event _pe, char* ctrspec,
-			     struct pmc_op_pmcallocate *_pmc_config);
-#endif /* __powerpc__ */
-
 #define PMC_CALL(op, params)	syscall(pmc_syscall, (op), (params))
 
 /*
@@ -137,9 +132,6 @@ PMC_CLASSDEP_TABLE(armv8, ARMV8);
 PMC_CLASSDEP_TABLE(cmn600_pmu, CMN600_PMU);
 PMC_CLASSDEP_TABLE(dmc620_pmu_cd2, DMC620_PMU_CD2);
 PMC_CLASSDEP_TABLE(dmc620_pmu_c, DMC620_PMU_C);
-PMC_CLASSDEP_TABLE(ppc7450, PPC7450);
-PMC_CLASSDEP_TABLE(ppc970, PPC970);
-PMC_CLASSDEP_TABLE(e500, E500);
 
 static struct pmc_event_descr soft_event_table[PMC_EV_DYN_COUNT];
 
@@ -216,11 +208,6 @@ PMC_CLASS_TABLE_DESC(cortex_a76, ARMV8, cortex_a76, arm64);
 PMC_CLASS_TABLE_DESC(cmn600_pmu, CMN600_PMU, cmn600_pmu, cmn600_pmu);
 PMC_CLASS_TABLE_DESC(dmc620_pmu_cd2, DMC620_PMU_CD2, dmc620_pmu_cd2, dmc620_pmu);
 PMC_CLASS_TABLE_DESC(dmc620_pmu_c, DMC620_PMU_C, dmc620_pmu_c, dmc620_pmu);
-#endif
-#if defined(__powerpc__)
-PMC_CLASS_TABLE_DESC(ppc7450, PPC7450, ppc7450, powerpc);
-PMC_CLASS_TABLE_DESC(ppc970, PPC970, ppc970, powerpc);
-PMC_CLASS_TABLE_DESC(e500, E500, e500, powerpc);
 #endif
 
 static struct pmc_class_descr soft_class_table_descr =
@@ -929,56 +916,6 @@ dmc620_pmu_allocate_pmc(enum pmc_event pe, char *ctrspec,
 }
 #endif
 
-#if defined(__powerpc__)
-
-static struct pmc_event_alias ppc7450_aliases[] = {
-	EV_ALIAS("instructions",	"INSTR_COMPLETED"),
-	EV_ALIAS("branches",		"BRANCHES_COMPLETED"),
-	EV_ALIAS("branch-mispredicts",	"MISPREDICTED_BRANCHES"),
-	EV_ALIAS(NULL, NULL)
-};
-
-static struct pmc_event_alias ppc970_aliases[] = {
-	EV_ALIAS("instructions", "INSTR_COMPLETED"),
-	EV_ALIAS("cycles",       "CYCLES"),
-	EV_ALIAS(NULL, NULL)
-};
-
-static struct pmc_event_alias e500_aliases[] = {
-	EV_ALIAS("instructions", "INSTR_COMPLETED"),
-	EV_ALIAS("cycles",       "CYCLES"),
-	EV_ALIAS(NULL, NULL)
-};
-
-#define	POWERPC_KW_OS		"os"
-#define	POWERPC_KW_USR		"usr"
-#define	POWERPC_KW_ANYTHREAD	"anythread"
-
-static int
-powerpc_allocate_pmc(enum pmc_event pe, char *ctrspec __unused,
-		     struct pmc_op_pmcallocate *pmc_config __unused)
-{
-	char *p;
-
-	(void) pe;
-
-	pmc_config->pm_caps |= (PMC_CAP_READ | PMC_CAP_WRITE);
-	
-	while ((p = strsep(&ctrspec, ",")) != NULL) {
-		if (KWMATCH(p, POWERPC_KW_OS))
-			pmc_config->pm_caps |= PMC_CAP_SYSTEM;
-		else if (KWMATCH(p, POWERPC_KW_USR))
-			pmc_config->pm_caps |= PMC_CAP_USER;
-		else if (KWMATCH(p, POWERPC_KW_ANYTHREAD))
-			pmc_config->pm_caps |= (PMC_CAP_USER | PMC_CAP_SYSTEM);
-		else
-			return (-1);
-	}
-
-	return (0);
-}
-
-#endif /* __powerpc__ */
 
 
 /*
@@ -1310,18 +1247,6 @@ pmc_event_names_of_class(enum pmc_class cl, const char ***eventnames,
 		ev = dmc620_pmu_c_event_table;
 		count = PMC_EVENT_TABLE_SIZE(dmc620_pmu_c);
 		break;
-	case PMC_CLASS_PPC7450:
-		ev = ppc7450_event_table;
-		count = PMC_EVENT_TABLE_SIZE(ppc7450);
-		break;
-	case PMC_CLASS_PPC970:
-		ev = ppc970_event_table;
-		count = PMC_EVENT_TABLE_SIZE(ppc970);
-		break;
-	case PMC_CLASS_E500:
-		ev = e500_event_table;
-		count = PMC_EVENT_TABLE_SIZE(e500);
-		break;
 	case PMC_CLASS_SOFT:
 		ev = soft_event_table;
 		count = soft_event_info.pm_nevent;
@@ -1530,19 +1455,6 @@ pmc_init(void)
 			break;
 #endif
 
-#if defined(__powerpc__)
-		case PMC_CLASS_PPC7450:
-			pmc_class_table[n++] = &ppc7450_class_table_descr;
-			break;
-
-		case PMC_CLASS_PPC970:
-			pmc_class_table[n++] = &ppc970_class_table_descr;
-			break;
-
-		case PMC_CLASS_E500:
-			pmc_class_table[n++] = &e500_class_table_descr;
-			break;
-#endif
 
 		default:
 #if defined(DEBUG)
@@ -1584,24 +1496,13 @@ pmc_init(void)
 		PMC_MDEP_INIT(cortex_a76);
 		break;
 #endif
-#if defined(__powerpc__)
-	case PMC_CPU_PPC_7450:
-		PMC_MDEP_INIT(ppc7450);
-		break;
-	case PMC_CPU_PPC_970:
-		PMC_MDEP_INIT(ppc970);
-		break;
-	case PMC_CPU_PPC_E500:
-		PMC_MDEP_INIT(e500);
-		break;
-#endif
 	default:
 		/*
 		 * Some kind of CPU this version of the library knows nothing
 		 * about.  This shouldn't happen since the abi version check
 		 * should have caught this.
 		 */
-#if defined(__amd64__) || defined(__i386__) || defined(__powerpc64__)
+#if defined(__amd64__) || defined(__i386__)
 		break;
 #endif
 		errno = ENXIO;
@@ -1722,15 +1623,6 @@ _pmc_name_of_event(enum pmc_event pe, enum pmc_cputype cpu)
 		ev = dmc620_pmu_c_event_table;
 		evfence = dmc620_pmu_c_event_table +
 		    PMC_EVENT_TABLE_SIZE(dmc620_pmu_c);
-	} else if (pe >= PMC_EV_PPC7450_FIRST && pe <= PMC_EV_PPC7450_LAST) {
-		ev = ppc7450_event_table;
-		evfence = ppc7450_event_table + PMC_EVENT_TABLE_SIZE(ppc7450);
-	} else if (pe >= PMC_EV_PPC970_FIRST && pe <= PMC_EV_PPC970_LAST) {
-		ev = ppc970_event_table;
-		evfence = ppc970_event_table + PMC_EVENT_TABLE_SIZE(ppc970);
-	} else if (pe >= PMC_EV_E500_FIRST && pe <= PMC_EV_E500_LAST) {
-		ev = e500_event_table;
-		evfence = e500_event_table + PMC_EVENT_TABLE_SIZE(e500);
 	} else if (pe == PMC_EV_TSC_TSC) {
 		ev = tsc_event_table;
 		evfence = tsc_event_table + PMC_EVENT_TABLE_SIZE(tsc);

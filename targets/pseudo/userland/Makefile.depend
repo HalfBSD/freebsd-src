@@ -6,13 +6,11 @@ DIRDEPS=
 DIRDEPS+= \
 	bin/cat \
 	bin/chflags \
-	bin/chio \
 	bin/chmod \
 	bin/cp \
 	bin/date \
 	bin/dd \
 	bin/df \
-	bin/domainname \
 	bin/echo \
 	bin/ed \
 	bin/expr \

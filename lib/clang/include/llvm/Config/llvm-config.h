@@ -115,13 +115,6 @@
 /* Define if the NVPTX target is built in */
 #define LLVM_HAS_NVPTX_TARGET 0
 
-/* Define if the PowerPC target is built in */
-#ifdef LLVM_TARGET_ENABLE_POWERPC
-#define LLVM_HAS_POWERPC_TARGET 1
-#else
-#define LLVM_HAS_POWERPC_TARGET 0
-#endif
-
 /* Define if the RISCV target is built in */
 #ifdef LLVM_TARGET_ENABLE_RISCV
 #define LLVM_HAS_RISCV_TARGET 1

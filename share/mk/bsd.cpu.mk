@@ -13,12 +13,6 @@ MACHINE_CPU = amd64 sse2 sse mmx
 MACHINE_CPU = arm
 . elif ${MACHINE_CPUARCH} == "i386"
 MACHINE_CPU = i486
-. elif ${MACHINE_ARCH} == "powerpc"
-MACHINE_CPU = aim
-. elif ${MACHINE_ARCH} == "powerpc64"
-MACHINE_CPU = aim altivec
-. elif ${MACHINE_ARCH} == "powerpc64le"
-MACHINE_CPU = aim altivec vsx vsx2
 . elif ${MACHINE_CPUARCH} == "riscv"
 MACHINE_CPU = riscv
 . endif
@@ -81,7 +75,6 @@ CPUTYPE = pentium
 # after /etc/make.conf so it can react to the local value of CPUTYPE
 # defined therein.  Consult:
 #	http://gcc.gnu.org/onlinedocs/gcc/ARM-Options.html
-#	http://gcc.gnu.org/onlinedocs/gcc/RS-6000-and-PowerPC-Options.html
 #	http://gcc.gnu.org/onlinedocs/gcc/SPARC-Options.html
 #	http://gcc.gnu.org/onlinedocs/gcc/i386-and-x86_002d64-Options.html
 
@@ -115,14 +108,6 @@ _CPUCFLAGS = -march=${CPUTYPE}
 #       exynos-m1
 _CPUCFLAGS = -mcpu=${CPUTYPE}
 . endif
-. elif ${MACHINE_ARCH} == "powerpc"
-.  if ${CPUTYPE} == "e500"
-_CPUCFLAGS = -Wa,-me500 -msoft-float
-.  else
-_CPUCFLAGS = -mcpu=${CPUTYPE}
-.  endif
-. elif ${MACHINE_ARCH:Mpowerpc64*} != ""
-_CPUCFLAGS = -mcpu=${CPUTYPE}
 . elif ${MACHINE_CPUARCH} == "aarch64"
 .  if ${CPUTYPE:Marmv*} != ""
 # Use -march when the CPU type is an architecture value, e.g. armv8.1-a
@@ -276,26 +261,6 @@ MACHINE_CPU = ssse3 sse3
 MACHINE_CPU = sse3
 .  endif
 MACHINE_CPU += amd64 sse2 sse mmx
-########## powerpc
-. elif ${MACHINE_ARCH} == "powerpc64"
-.  if ${CPUTYPE} == "e5500"
-MACHINE_CPU = booke
-.  elif ${CPUTYPE} == "power7"
-MACHINE_CPU = altivec vsx
-.  elif ${CPUTYPE} == "power8"
-MACHINE_CPU = altivec vsx vsx2
-.  elif ${CPUTYPE} == "power9" || ${CPUTYPE} == "power10" || \
-    ${CPUTYPE} == "power11"
-MACHINE_CPU = altivec vsx vsx2 vsx3
-.  else
-MACHINE_CPU = aim altivec
-.  endif
-. elif ${MACHINE_ARCH} == "powerpc64le"
-MACHINE_CPU = aim altivec vsx vsx2
-.  if ${CPUTYPE} == "power9" || ${CPUTYPE} == "power10" || \
-    ${CPUTYPE} == "power11"
-MACHINE_CPU += vsx3
-.  endif
 ########## riscv
 . elif ${MACHINE_CPUARCH} == "riscv"
 MACHINE_CPU = riscv
@@ -321,15 +286,6 @@ MACHINE_CPU += armv7
 # it was a transition tool from FreeBSD 10 to 11 and is a bit of an odd duck.
 CFLAGS += -mfloat-abi=softfp
 . endif
-.endif
-
-.if ${MACHINE_ARCH} == "powerpc" || ${MACHINE_ARCH} == "powerpcspe"
-LDFLAGS.bfd+= -Wl,--secure-plt
-.endif
-
-.if ${MACHINE_ARCH} == "powerpcspe"
-CFLAGS += -mcpu=8548 -mspe
-CFLAGS.gcc+= -mabi=spe -mfloat-gprs=double -Wa,-me500
 .endif
 
 .if ${MACHINE_CPUARCH} == "riscv"
@@ -379,8 +335,7 @@ CXXFLAGS += ${CXXFLAGS.${MACHINE_ARCH}}
 # Pointer type:			ptr32, ptr64
 # Size of time_t:		time32, time64
 #
-.if (${MACHINE} == "arm" && (defined(CPUTYPE) && ${CPUTYPE:M*soft*})) || \
-    (${MACHINE_ARCH} == "powerpc" && (defined(CPUTYPE) && ${CPUTYPE} == "e500"))
+.if ${MACHINE} == "arm" && (defined(CPUTYPE) && ${CPUTYPE:M*soft*})
 MACHINE_ABI+=	soft-float
 .else
 MACHINE_ABI+=	hard-float
@@ -404,8 +359,4 @@ MACHINE_ABI+=  time32
 .else
 MACHINE_ABI+=  time64
 .endif
-.if ${MACHINE_ARCH:Mpowerpc*} && !${MACHINE_ARCH:M*le}
-MACHINE_ABI+=	big-endian
-.else
 MACHINE_ABI+=	little-endian
-.endif

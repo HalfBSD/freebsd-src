@@ -267,9 +267,6 @@ LSUBDIRS+=	dev/vmm
 .endif
 .endif
 
-.if ${MACHINE_CPUARCH} == "powerpc" && ${MACHINE_ARCH} != "powerpcspe"
-_dev_powermac_nvram=	dev/powermac_nvram
-.endif
 
 # Define SHARED to indicate whether you want symbolic links to the system
 # source (``symlinks''), or a separate copy (``copies'').  ``symlinks'' is

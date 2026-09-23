@@ -156,14 +156,12 @@ SUBDIR=	alias \
 	vis \
 	vmstat \
 	w \
-	wall \
 	wc \
 	wg \
 	what \
 	whereis \
 	which \
 	whois \
-	write \
 	xargs \
 	xinstall \
 	xo \

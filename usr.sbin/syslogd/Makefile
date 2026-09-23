@@ -1,7 +1,5 @@
 .include <src.opts.mk>
 
-.PATH: ${SRCTOP}/usr.bin/wall
-
 PACKAGE=	syslogd
 
 CONFGROUPS=	CONFS SYSLOGD_D
@@ -28,8 +26,6 @@ CFLAGS+= -DINET6
 
 SYSLOGD_D=
 SYSLOGD_DDIR=	/etc/syslog.d
-
-CFLAGS+= -I${SRCTOP}/usr.bin/wall
 
 HAS_TESTS=
 SUBDIR.${MK_TESTS}+= tests

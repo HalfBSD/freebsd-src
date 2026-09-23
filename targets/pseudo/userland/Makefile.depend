@@ -331,14 +331,12 @@ DIRDEPS+= \
 	usr.bin/vmstat \
 	usr.bin/vtfontcvt \
 	usr.bin/w \
-	usr.bin/wall \
 	usr.bin/wc \
 	usr.bin/what \
 	usr.bin/whereis \
 	usr.bin/which \
 	usr.bin/who \
 	usr.bin/whois \
-	usr.bin/write \
 	usr.bin/xargs \
 	usr.bin/xinstall \
 	usr.bin/xo \

@@ -12,17 +12,8 @@ scriptdir=$(dirname $(realpath $0))
 export PATH="/bin:/usr/bin:/sbin:/usr/sbin:/usr/local/bin:/usr/local/sbin"
 trap "cleanup" INT QUIT TRAP ABRT TERM
 
-# Platform-specific large-scale setup
-# Most platforms use GPT, so put that as default, then special cases
 PARTSCHEME=gpt
 ROOTLABEL="gpt"
-case "${TARGET}:${TARGET_ARCH}" in
-	powerpc:powerpc*)
-		PARTSCHEME=mbr
-		ROOTLABEL="ufs"
-		NOSWAP=yes # Can't label swap partition with MBR, so no swap
-	;;
-esac
 
 err() {
 	printf "${@}\n"
@@ -77,7 +68,7 @@ vm_base_packages_list() {
 	echo FreeBSD-set-kernels
 	[ -z "${WITHOUT_KERNEL_SYMBOLS}" ] && echo FreeBSD-set-kernels-dbg
 	case ${TARGET_ARCH} in
-	amd64 | aarch64 | powerpc64)
+	amd64 | aarch64)
 		echo FreeBSD-set-lib32
 		[ -z "${WITHOUT_DEBUG_FILES}" ] && echo FreeBSD-set-lib32-dbg
 	esac
@@ -418,16 +409,6 @@ vm_create_disk() {
 			BOOTPARTS=
 			ROOTFSPART="-p ${FSPARTTYPE}/rootfs:=${VMBASE}"
 			MAKEFSARGS="$MAKEFSARGS -B little"
-			;;
-		powerpc:powerpc*)
-			ESP=no
-			BOOTPARTS="-p prepboot:=${BOOTFILES}/powerpc/boot1.chrp/boot1.elf -a 1"
-			ROOTFSPART="-p freebsd:=${VMBASE}"
-			if [ ${TARGET_ARCH} = powerpc64le ]; then
-				MAKEFSARGS="$MAKEFSARGS -B little"
-			else
-				MAKEFSARGS="$MAKEFSARGS -B big"
-			fi
 			;;
 		*)
 			echo "vmimage.subr: unsupported target '${TARGET}:${TARGET_ARCH}'" >&2

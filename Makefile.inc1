@@ -172,12 +172,6 @@ LIBCOMPAT_INCLUDE_DIRS+= arm
 .if ${TARGET} == "arm"
 _GCC_BROKEN="https://reviews.freebsd.org/D36754"
 .endif
-.if ${TARGET_ARCH} == "powerpc"
-_GCC_BROKEN=Missing atomic builtins in libc++.
-.endif
-.if ${TARGET_ARCH:Mpowerpc64*}
-_GCC_BROKEN=libsys.so.7.full has a LOAD segment with RWX permissions.
-.endif
 .if defined(_GCC_BROKEN)
 .warning Target ${TARGET} is broken with GCC: ${_GCC_BROKEN}
 .if defined(TRY_GCC_BROKEN)
@@ -1653,9 +1647,6 @@ NO_KERNELOBJ=		t
 KERNCONF=${KERNFAST}
 .endif
 .endif
-GENERIC_KERNCONF_SUFX_powerpc64=	64
-GENERIC_KERNCONF_SUFX_powerpc64le=	64LE
-GENERIC_KERNCONF_powerpcspe=	MPC85XXSPE
 GENERIC_KERNCONF?=	${GENERIC_KERNCONF_${TARGET_ARCH}:UGENERIC${GENERIC_KERNCONF_SUFX_${TARGET_ARCH}}}
 INSTKERNNAME?=	kernel
 
@@ -2544,7 +2535,6 @@ _bootstrap_tools_links+=m4 lex
 # r334881 added libdwarf constants used by ctfconvert.
 # r338478 fixed a crash in objcopy for mips64el objects
 # r339083 libelf: correct mips64el test to use ELF header
-# r348347 Add missing powerpc64 relocation support to libdwarf
 .if ${BOOTSTRAPPING} < 1300030
 _elftoolchain_libs= lib/libelf lib/libdwarf lib/libzstd
 ${_bt}-lib/libelf: ${_bt_m4_depend}

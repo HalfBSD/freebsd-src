@@ -100,10 +100,9 @@ LIBC_SRCTOP=${SRCTOP}/lib/libc
 
 # Pick the current architecture directory for libc. In general, this is named
 # MACHINE_CPUARCH, but some ABIs are different enough to require their own libc,
-# so allow a directory named MACHINE_ARCH to override this (though treat
-# powerpc64le and powerpc64 the same).
+# so allow a directory named MACHINE_ARCH to override this.
 # Note: This is copied from libc/Makefile
-M=${MACHINE_ARCH:S/powerpc64le/powerpc64/}
+M=${MACHINE_ARCH}
 .if exists(${LIBC_SRCTOP}/${M})
 LIBC_ARCH=${M}
 .else

@@ -16,7 +16,6 @@
 
 #include "Plugins/Process/Utility/RegisterContextFreeBSD_i386.h"
 #include "Plugins/Process/Utility/RegisterContextFreeBSD_mips64.h"
-#include "Plugins/Process/Utility/RegisterContextFreeBSD_powerpc.h"
 #include "Plugins/Process/Utility/RegisterContextFreeBSD_x86_64.h"
 #include "Plugins/Process/Utility/RegisterContextLinux_i386.h"
 #ifdef LLDB_ENABLE_ALL
@@ -35,7 +34,6 @@
 #include "RegisterContextPOSIXCore_arm.h"
 #include "RegisterContextPOSIXCore_arm64.h"
 #include "RegisterContextPOSIXCore_mips64.h"
-#include "RegisterContextPOSIXCore_powerpc.h"
 #include "RegisterContextPOSIXCore_ppc64le.h"
 #include "RegisterContextPOSIXCore_riscv64.h"
 #ifdef LLDB_ENABLE_ALL
@@ -91,12 +89,6 @@ ThreadElfCore::CreateRegisterContextForFrame(StackFrame *frame) {
       switch (arch.GetMachine()) {
       case llvm::Triple::aarch64:
       case llvm::Triple::arm:
-        break;
-      case llvm::Triple::ppc:
-        reg_interface = new RegisterContextFreeBSD_powerpc32(arch);
-        break;
-      case llvm::Triple::ppc64:
-        reg_interface = new RegisterContextFreeBSD_powerpc64(arch);
         break;
       case llvm::Triple::mips64:
         reg_interface = new RegisterContextFreeBSD_mips64(arch);
@@ -204,11 +196,6 @@ ThreadElfCore::CreateRegisterContextForFrame(StackFrame *frame) {
     case llvm::Triple::mips64:
     case llvm::Triple::mips64el:
       m_thread_reg_ctx_sp = std::make_shared<RegisterContextCorePOSIX_mips64>(
-          *this, reg_interface, m_gpregset_data, m_notes);
-      break;
-    case llvm::Triple::ppc:
-    case llvm::Triple::ppc64:
-      m_thread_reg_ctx_sp = std::make_shared<RegisterContextCorePOSIX_powerpc>(
           *this, reg_interface, m_gpregset_data, m_notes);
       break;
     case llvm::Triple::ppc64le:

@@ -1,4 +1,4 @@
-CAT=	dutch english french german polish spanish swedish
+CAT=	english french german spanish swedish
 FILES=	../cl/*.c ../common/*.c ../ex/*.c ../vi/*.c
 
 all: dump ${CAT}
@@ -28,8 +28,8 @@ ${CAT}: english.base
 		grep 'NOT LEGAL' $@;					\
 	fi
 
-CHK=	dutch.check english.check french.check german.check \
-	polish.check spanish.check swedish.check
+CHK=	english.check french.check german.check \
+	spanish.check swedish.check
 check: ${CHK}
 ${CHK}: ${CAT}
 	@echo "... $@";							\

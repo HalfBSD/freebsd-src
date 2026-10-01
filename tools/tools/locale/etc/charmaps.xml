@@ -87,36 +87,10 @@
 		countries="HU" />
 	<language name="hy"
 		countries="AM" />
-	<language name="is"
-		countries="IS" />
-	<language name="it"
-		countries="CH IT" />
 	<language name="ja"
 		countries="JP" />
-	<language name="kk"
-		countries="KZ" />  <!-- PT154 not available, UTF-8 -->
 	<language name="ko"
 		countries="KR" />
-	<language name="lt"
-		countries="LT" />
-	<language name="lv"
-		countries="LV" />
-	<language name="mn"
-		countries="MN" />
-	<language name="nb"
-		countries="NO" />
-	<language name="nl"
-		countries="BE NL" />
-	<language name="nn"
-		countries="NO" />
-	<language name="pl"
-		countries="PL" />
-	<language name="pt"
-		countries="PT" />
-	<language name="pt"
-		countries="BR" />
-	<language name="ro"
-		countries="RO" />
 </languages>
 
 <translations>

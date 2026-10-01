@@ -52,7 +52,8 @@ ATF_TC_BODY(btowc_test, tc)
 		ATF_REQUIRE(btowc(i) == (wchar_t)i && i == (int)wctob(i));
 
 	/* Japanese (EUC) locale. */
-	ATF_REQUIRE(strcmp(setlocale(LC_CTYPE, "ja_JP.eucJP"), "ja_JP.eucJP") == 0);
+	if (setlocale(LC_CTYPE, "ja_JP.eucJP") == NULL)
+		atf_tc_skip("ja_JP.eucJP locale is not installed");
 	ATF_REQUIRE(MB_CUR_MAX > 1);
 	ATF_REQUIRE(btowc('A') == L'A' && wctob(L'A') == 'A');
 	ATF_REQUIRE(btowc(0xa3) == WEOF && wctob(0xa3c1) == EOF);

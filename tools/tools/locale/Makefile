@@ -108,9 +108,7 @@ BASE_LOCALES_OF_INTEREST?= \
 	en_GB en_HK en_IE en_NZ en_PH en_SG en_US en_ZA \
 	es_AR es_CR es_ES es_MX et_EE eu_ES fa_AF fa_IR fi_FI fr_BE \
 	fr_CA fr_CH fr_FR ga_IE he_IL hi_IN hr_HR hu_HU hy_AM \
-	is_IS it_CH it_IT ja_JP ko_KR lt_LT lv_LV \
-	nb_NO nl_BE nl_NL nn_NO pl_PL pt_BR pt_PT ro_RO \
-	kk_KZ mn_MN \
+	ja_JP ko_KR \
 	bn_IN gu_IN or_IN ta_IN te_IN kn_IN ml_IN si_LK \
 	th_TH lo_LA bo_IN my_MM pa_Guru_IN ka_GE chr_US \
 	km_KH shi_Tfng_MA ii_CN vai_Vaii_LR vi_VN

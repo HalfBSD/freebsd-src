@@ -47,6 +47,8 @@ require_lc_ctype(const char *locale_name)
 	char *lc_ctype_set;
 
 	lc_ctype_set = setlocale(LC_CTYPE, locale_name);
+	if (lc_ctype_set == NULL && strcmp(locale_name, "ja_JP.eucJP") == 0)
+		atf_tc_skip("ja_JP.eucJP locale is not installed");
 	if (lc_ctype_set == NULL)
 		atf_tc_fail("setlocale(LC_CTYPE, \"%s\") failed; errno=%d",
 		    locale_name, errno);

@@ -6,7 +6,7 @@ PACKAGE=vi
 V=	${.CURDIR}/../../../contrib/nvi
 
 FILESGROUPS+=VICAT
-CAT=	dutch english french german polish spanish swedish
+CAT=	english french german spanish swedish
 VICAT=		${CAT}
 VICATDIR=	${FILESDIR}
 VICATPACKAGE=	${PACKAGE}
@@ -22,12 +22,11 @@ WARNS=		3
 
 # Helper since iconv is non trivial to make a build tool
 utf8convert:
-.for c in dutch french german spanish swedish
+.for c in french german spanish swedish
 	iconv -f ISO8859-1 -t UTF-8 $V/catalog/$c.base > $c.UTF-8.base
 .endfor
-	iconv -f ISO8859-2 -t UTF-8 $V/catalog/polish.base > polish.UTF-8.base
 	
-.for c in dutch french german polish spanish swedish
+.for c in french german spanish swedish
 CAT+=	$c.UTF-8
 .endfor
 
@@ -58,8 +57,8 @@ ${c}:	${c}.base
 	fi
 .endfor
 
-CHK=	dutch.check english.check french.check german.check \
-	polish.check spanish.check swedish.check
+CHK=	english.check french.check german.check \
+	spanish.check swedish.check
 check: ${CHK}
 .for c in ${CAT}
 ${c}.check: ${c}.base
@@ -106,21 +105,14 @@ dump: ${BUILD_TOOLS_META}
 CLEANFILES+= dump ${CAT} english.base *.check __ck1 __ck2
 
 CATALOGS= ${CAT}
-NLLINKS= nl_NL
 ENLINKS= en_AU en_CA en_GB en_NZ en_US
 FRLINKS= fr_BE fr_CA fr_CH fr_FR
 DELINKS= de_AT de_CH de_DE
 ESLINKS= es_ES
-PLLINKS= pl_PL
 
 FILES=	${CATALOGS}
 FILESDIR= ${SHAREDIR}/vi/catalog
 SYMLINKS=
-.for l in ${NLLINKS}
-SYMLINKS+= dutch ${FILESDIR}/$l.ISO8859-1
-SYMLINKS+= dutch ${FILESDIR}/$l.ISO8859-15
-SYMLINKS+= dutch.UTF-8 ${FILESDIR}/$l.UTF-8
-.endfor
 .for l in ${ENLINKS}
 SYMLINKS+= english ${FILESDIR}/$l.ISO8859-1
 SYMLINKS+= english ${FILESDIR}/$l.ISO8859-15
@@ -143,10 +135,6 @@ SYMLINKS+= german.UTF-8 ${FILESDIR}/$l.UTF-8
 SYMLINKS+= spanish ${FILESDIR}/$l.ISO8859-1
 SYMLINKS+= spanish ${FILESDIR}/$l.ISO8859-15
 SYMLINKS+= spanish.UTF-8 ${FILESDIR}/$l.UTF-8
-.endfor
-.for l in ${PLLINKS}
-SYMLINKS+= polish ${FILESDIR}/$l.ISO8859-2
-SYMLINKS+= polish.UTF-8 ${FILESDIR}/$l.UTF-8
 .endfor
 
 .include <bsd.prog.mk>

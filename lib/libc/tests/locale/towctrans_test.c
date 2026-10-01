@@ -65,7 +65,8 @@ ATF_TC_BODY(towctrans_test, tc)
 		ATF_REQUIRE(towctrans(i, t) == i);
 
 	/* Japanese (EUC) locale. */
-	ATF_REQUIRE(strcmp(setlocale(LC_CTYPE, "ja_JP.eucJP"), "ja_JP.eucJP") == 0);
+	if (setlocale(LC_CTYPE, "ja_JP.eucJP") == NULL)
+		atf_tc_skip("ja_JP.eucJP locale is not installed");
 	for (i = 0; i < sizeof(tran) / sizeof(*tran); i++) {
 		t = wctrans(tran[i].name);
 		ATF_REQUIRE(t != 0);

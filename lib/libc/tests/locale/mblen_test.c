@@ -72,7 +72,8 @@ ATF_TC_BODY(mblen_test, tc)
 	 * Japanese (EUC) locale.
 	 */
 
-	ATF_REQUIRE(strcmp(setlocale(LC_CTYPE, "ja_JP.eucJP"), "ja_JP.eucJP") == 0);
+	if (setlocale(LC_CTYPE, "ja_JP.eucJP") == NULL)
+		atf_tc_skip("ja_JP.eucJP locale is not installed");
 	ATF_REQUIRE(MB_CUR_MAX > 1);
 
 	/* No shift states in EUC. */

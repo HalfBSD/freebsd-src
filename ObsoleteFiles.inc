@@ -51,6 +51,10 @@
 #   xargs -n1 | sort | uniq -d;
 # done
 
+# 20261001: Remove rarpd
+OLD_FILES+=etc/rc.d/rarpd
+OLD_FILES+=usr/sbin/rarpd
+
 # 20260923: retire PowerPC architecture support
 OLD_FILES+=usr/sbin/nvram
 

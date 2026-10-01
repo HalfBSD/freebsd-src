@@ -55,7 +55,6 @@ SUBDIR=	adduser \
 	pwd_mkdb \
 	pwm \
 	quot \
-	rarpd \
 	rmt \
 	rpcbind \
 	rtprio \

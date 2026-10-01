@@ -55,6 +55,10 @@
 OLD_FILES+=etc/devd/syscons.conf
 OLD_FILES+=etc/rc.d/syscons
 
+# 20261001: Remove msconvd
+OLD_FILES+=etc/rc.d/msconvd
+OLD_FILES+=usr/sbin/msconvd
+
 # 20261001: Remove rarpd
 OLD_FILES+=etc/rc.d/rarpd
 OLD_FILES+=usr/sbin/rarpd

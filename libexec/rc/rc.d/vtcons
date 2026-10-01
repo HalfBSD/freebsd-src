@@ -26,18 +26,18 @@
 #
 #
 
-# PROVIDE: syscons
+# PROVIDE: vtcons
 # REQUIRE: LOGIN
 # KEYWORD: nojail
 
 . /etc/rc.subr
 
-name="syscons"
+name="vtcons"
 desc="Configure the system console"
 extra_commands="setkeyboard"
-setkeyboard_cmd="syscons_setkeyboard"
-start_precmd="syscons_precmd"
-start_cmd="syscons_start"
+setkeyboard_cmd="vtcons_setkeyboard"
+start_precmd="vtcons_precmd"
+start_cmd="vtcons_start"
 stop_cmd=":"
 
 # stdin must be redirected because it might be for a serial console
@@ -177,7 +177,7 @@ part of the system sources and located in /usr/src/tools/tools/vt/keymaps/"
 }
 
 # helper
-syscons_configure_keyboard()
+vtcons_configure_keyboard()
 {
 	# keymap
 	#
@@ -240,7 +240,7 @@ syscons_configure_keyboard()
 	fi
 }
 
-syscons_setkeyboard()
+vtcons_setkeyboard()
 {
 	kbd=$1
 
@@ -255,7 +255,7 @@ syscons_setkeyboard()
 	fi
 
 	_sc_config="keyboard"
-	syscons_configure_keyboard
+	vtcons_configure_keyboard
 
 	# Terminate keyboard configuration line and reset global variables.
 	#
@@ -266,7 +266,7 @@ syscons_setkeyboard()
 	fi
 }
 
-syscons_precmd()
+vtcons_precmd()
 {
 	if [ ! -c $kbddev ]
 	then
@@ -275,7 +275,7 @@ syscons_precmd()
 	return 0
 }
 
-syscons_bios_start()
+vtcons_bios_start()
 {
 	# cursor type
 	#
@@ -301,18 +301,18 @@ syscons_bios_start()
 
 }
 
-syscons_start()
+vtcons_start()
 {
 	# keyboard
 	#
 	if [ -n "${keyboard}" ]; then
-		syscons_setkeyboard ${keyboard}
+		vtcons_setkeyboard ${keyboard}
 	fi
 
-	syscons_configure_keyboard
+	vtcons_configure_keyboard
 
 	if [ "${_sc_bootmethod}" = "bios" ]; then
-		syscons_bios_start
+		vtcons_bios_start
 	fi
 
 	# font 8x16
@@ -368,10 +368,13 @@ syscons_start()
 	fi
 }
 
+# Load the old service namespace first so existing rc.conf.d/syscons files
+# continue to work.  Settings in rc.conf.d/vtcons take precedence.
+load_rc_config syscons
 load_rc_config $name
 
 # doesn't make sense to run in a svcj: config setting
-syscons_svcj="NO"
+vtcons_svcj="NO"
 
 run_rc_command $*
 

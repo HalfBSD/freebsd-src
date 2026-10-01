@@ -51,6 +51,10 @@
 #   xargs -n1 | sort | uniq -d;
 # done
 
+# 20261001: Rename the syscons service to vtcons
+OLD_FILES+=etc/devd/syscons.conf
+OLD_FILES+=etc/rc.d/syscons
+
 # 20261001: Remove rarpd
 OLD_FILES+=etc/rc.d/rarpd
 OLD_FILES+=usr/sbin/rarpd

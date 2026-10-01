@@ -16,13 +16,6 @@ CLDR_VERSION=	"48"
 	-V ${CLDR_VERSION} \
 	-f ${MAPLOC}/map.${.TARGET:T:R:E:C/@.*//} ${.OBJDIR}/${.IMPSRC:T:R}
 
-LOCALES+=	af_ZA.UTF-8
-LOCALES+=	am_ET.UTF-8
-LOCALES+=	ar_SA.UTF-8
-LOCALES+=	be_BY.UTF-8
-LOCALES+=	ca_AD.UTF-8
-LOCALES+=	cs_CZ.UTF-8
-LOCALES+=	da_DK.UTF-8
 LOCALES+=	el_GR.UTF-8
 LOCALES+=	en_US.UTF-8
 LOCALES+=	es_MX.UTF-8
@@ -60,16 +53,7 @@ LOCALES_MAPPED+=	sr_RS.UTF-8@latin hr_HR.UTF-8
 
 
 
-SAME+=		ar_SA.UTF-8 ar_QA.UTF-8
-SAME+=		ar_SA.UTF-8 ar_MA.UTF-8
-SAME+=		ar_SA.UTF-8 ar_JO.UTF-8
-SAME+=		ar_SA.UTF-8 ar_EG.UTF-8
-SAME+=		ar_SA.UTF-8 ar_AE.UTF-8
 SAME+=		ru_RU.UTF-8 mn_MN.UTF-8
-SAME+=		ru_RU.UTF-8 bg_BG.UTF-8
-SAME+=		ca_AD.UTF-8 ca_IT.UTF-8
-SAME+=		ca_AD.UTF-8 ca_FR.UTF-8
-SAME+=		ca_AD.UTF-8 ca_ES.UTF-8
 SAME+=		en_US.UTF-8 pt_PT.UTF-8
 SAME+=		en_US.UTF-8 pt_BR.UTF-8
 SAME+=		en_US.UTF-8 nl_NL.UTF-8
@@ -92,7 +76,6 @@ SAME+=		en_US.UTF-8 en_CA.UTF-8
 SAME+=		en_US.UTF-8 en_AU.UTF-8
 SAME+=		en_US.UTF-8 de_DE.UTF-8
 SAME+=		en_US.UTF-8 de_CH.UTF-8
-SAME+=		en_US.UTF-8 de_AT.UTF-8
 SAME+=		es_MX.UTF-8 es_ES.UTF-8
 SAME+=		es_MX.UTF-8 es_CR.UTF-8
 SAME+=		es_MX.UTF-8 es_AR.UTF-8

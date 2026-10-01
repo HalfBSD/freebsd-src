@@ -20,27 +20,9 @@ LOCALES+=	be_BY.UTF-8
 LOCALES+=	cs_CZ.UTF-8
 LOCALES+=	da_DK.UTF-8
 LOCALES+=	de_AT.UTF-8
-LOCALES+=	en_AU.UTF-8
-LOCALES+=	en_CA.UTF-8
-LOCALES+=	en_GB.UTF-8
-LOCALES+=	en_NZ.UTF-8
-LOCALES+=	en_PH.UTF-8
-LOCALES+=	en_SG.UTF-8
 LOCALES+=	en_US.UTF-8
-LOCALES+=	en_ZA.UTF-8
-LOCALES+=	es_AR.UTF-8
-LOCALES+=	es_CR.UTF-8
 LOCALES+=	es_MX.UTF-8
-LOCALES+=	fa_AF.UTF-8
-LOCALES+=	fa_IR.UTF-8
-LOCALES+=	fr_CA.UTF-8
-LOCALES+=	fr_CH.UTF-8
 LOCALES+=	fr_FR.UTF-8
-LOCALES+=	ga_IE.UTF-8
-LOCALES+=	he_IL.UTF-8
-LOCALES+=	hi_IN.UTF-8
-LOCALES+=	hu_HU.UTF-8
-LOCALES+=	hy_AM.UTF-8
 LOCALES+=	is_IS.UTF-8
 LOCALES+=	it_CH.UTF-8
 LOCALES+=	it_IT.UTF-8
@@ -67,27 +49,15 @@ LOCALES+=	zh_TW.UTF-8
 
 
 
-SAME+=		en_ZA.UTF-8 af_ZA.UTF-8
 SAME+=		sk_SK.UTF-8 pt_PT.UTF-8
 SAME+=		sk_SK.UTF-8 lv_LV.UTF-8
 SAME+=		sk_SK.UTF-8 bg_BG.UTF-8
-SAME+=		it_IT.UTF-8 es_ES.UTF-8
-SAME+=		it_IT.UTF-8 el_GR.UTF-8
-SAME+=		it_IT.UTF-8 de_DE.UTF-8
 SAME+=		it_IT.UTF-8 ca_IT.UTF-8
 SAME+=		it_IT.UTF-8 ca_FR.UTF-8
 SAME+=		it_IT.UTF-8 ca_ES.UTF-8
 SAME+=		it_IT.UTF-8 ca_AD.UTF-8
-SAME+=		it_CH.UTF-8 de_CH.UTF-8
-SAME+=		zh_HK.UTF-8 en_HK.UTF-8
-SAME+=		ga_IE.UTF-8 en_IE.UTF-8
 SAME+=		sv_FI.UTF-8 se_FI.UTF-8
 SAME+=		sv_FI.UTF-8 lt_LT.UTF-8
-SAME+=		sv_FI.UTF-8 fi_FI.UTF-8
-SAME+=		sv_FI.UTF-8 et_EE.UTF-8
-SAME+=		sl_SI.UTF-8 hr_HR.UTF-8
-SAME+=		sl_SI.UTF-8 eu_ES.UTF-8
-SAME+=		fr_FR.UTF-8 fr_BE.UTF-8
 SAME+=		se_NO.UTF-8 nn_NO.UTF-8
 SAME+=		se_NO.UTF-8 nb_NO.UTF-8
 SAME+=		nl_NL.UTF-8 nl_BE.UTF-8
@@ -108,5 +78,7 @@ SYMLINKS+=	../$f/${FILESNAME} \
 FILESDIR_${f}.out= ${LOCALEDIR}/${f}
 FILESDIR_${f}.outPACKAGE= locales
 .endfor
+
+SAME+=		en_ZA.UTF-8 af_ZA.UTF-8
 
 .include <bsd.prog.mk>

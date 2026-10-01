@@ -117,35 +117,6 @@
 		countries="BR" />
 	<language name="ro"
 		countries="RO" />
-	<language name="ru"
-		countries="RU" />
-	<language name="se"
-		countries="NO FI" />
-	<language name="sk"
-		countries="SK" />
-	<language name="sl"
-		countries="SI" />
-	<language name="sr"
-		family="Latn"
-		countries="RS" />
-	<language name="sr"
-		family="Cyrl"
-		countries="RS" />
-	<language name="sv"
-		countries="SE FI" />
-	<language name="tr"
-		countries="TR" />
-	<language name="uk"
-		countries="UA" />
-	<language name="zh"
-		family="Hans"
-		countries="CN" />
-	<language name="zh"
-		family="Hant"
-		countries="HK" />
-	<language name="zh"
-		family="Hant"
-		countries="TW" />
 </languages>
 
 <translations>

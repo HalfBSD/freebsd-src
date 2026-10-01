@@ -36,7 +36,8 @@ ATF_TC_BODY(iso_8859_5, tc)
 	char s1[8];
 	const char s2[] = { 0xa1, 0 };
 
-	setlocale(LC_ALL, "ru_RU.ISO8859-5");
+	if (setlocale(LC_ALL, "ru_RU.ISO8859-5") == NULL)
+		atf_tc_skip("ru_RU.ISO8859-5 locale is not installed");
 	strxfrm(s1, s2, 0x8);
 }
 

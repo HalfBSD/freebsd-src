@@ -69,7 +69,7 @@ AWKCMD="/## PLACEHOLDER/ { \
 	  while ( getline line < \"${TEMP4}\" ) {print line} } \
 	!/## / { print \$0 }"
 
-if ! find "$old" -name "*_*_*.*.src" -type f -print -quit | grep -q .; then
+if ! find "$old" -name "*.src" -type f -print -quit | grep -q .; then
 	exit
 fi
 

@@ -37,16 +37,7 @@ LOCALES+=	nn_NO.UTF-8
 LOCALES+=	pl_PL.UTF-8
 LOCALES+=	pt_PT.UTF-8
 LOCALES+=	ro_RO.UTF-8
-LOCALES+=	ru_RU.UTF-8
-LOCALES+=	se_NO.UTF-8
-LOCALES+=	sk_SK.UTF-8
-LOCALES+=	sr_RS.UTF-8
-LOCALES+=	sr_RS.UTF-8@latin
-LOCALES+=	sv_SE.UTF-8
-LOCALES+=	tr_TR.UTF-8
-LOCALES+=	uk_UA.UTF-8
-LOCALES+=	zh_CN.UTF-8
-LOCALES+=	zh_TW.UTF-8
+LOCALES+=	hr_HR.UTF-8
 
 
 
@@ -54,7 +45,6 @@ SAME+=		nl_NL.UTF-8 nl_BE.UTF-8
 SAME+=		es_MX.UTF-8 es_ES.UTF-8
 SAME+=		es_MX.UTF-8 es_CR.UTF-8
 SAME+=		es_MX.UTF-8 es_AR.UTF-8
-SAME+=		sv_SE.UTF-8 sv_FI.UTF-8
 SAME+=		de_DE.UTF-8 de_CH.UTF-8
 SAME+=		en_US.UTF-8 en_ZA.UTF-8
 SAME+=		en_US.UTF-8 en_SG.UTF-8
@@ -69,12 +59,8 @@ SAME+=		fa_IR.UTF-8 fa_AF.UTF-8
 SAME+=		fr_FR.UTF-8 fr_CH.UTF-8
 SAME+=		fr_FR.UTF-8 fr_CA.UTF-8
 SAME+=		fr_FR.UTF-8 fr_BE.UTF-8
-SAME+=		sr_RS.UTF-8@latin sl_SI.UTF-8
-SAME+=		sr_RS.UTF-8@latin hr_HR.UTF-8
 SAME+=		it_IT.UTF-8 it_CH.UTF-8
 SAME+=		pt_PT.UTF-8 pt_BR.UTF-8
-SAME+=		se_NO.UTF-8 se_FI.UTF-8
-SAME+=		zh_TW.UTF-8 zh_HK.UTF-8
 
 FILES=		${LOCALES:S/$/.out/}
 CLEANFILES=	${FILES}

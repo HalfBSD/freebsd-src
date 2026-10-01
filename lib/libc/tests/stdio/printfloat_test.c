@@ -179,7 +179,7 @@ ATF_TC_BODY(thousands_separator_and_other_locale_tests, tc)
 	testfmt(" 9,000", "%'6.0f", 9000.0);
 	testfmt("9,000.0", "%'.1f", 9000.0);
 
-	ATF_REQUIRE(setlocale(LC_NUMERIC, "ru_RU.ISO8859-5")); /* decimalpoint==, */
+	ATF_REQUIRE(setlocale(LC_NUMERIC, "pt_PT.ISO8859-15")); /* decimalpoint==, */
 	testfmt("3,1415", "%g", 3.1415);
 
 	/* thousands=. decimalpoint=, grouping=3;3 */

@@ -49,8 +49,8 @@ ATF_TC_BODY(russian_collation, tc)
 	wchar_t c[] = L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzЁАБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюяё";
 	wchar_t res[] = L"aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZаАбБвВгГдДеЕёЁжЖзЗиИйЙкКлЛмМнНоОпПрРсСтТуУфФхХцЦчЧшШщЩъЪыЫьЬэЭюЮяЯ";
 
-	ATF_CHECK_MSG(setlocale(LC_ALL, "ru_RU.UTF-8") != NULL,
-	    "Fail to set locale to \"ru_RU.UTF-8\"");
+	ATF_CHECK_MSG(setlocale(LC_ALL, "mn_MN.UTF-8") != NULL,
+	    "Fail to set locale to \"mn_MN.UTF-8\"");
 	qsort(c, wcslen(c), sizeof(wchar_t), cmp);
 	ATF_CHECK_MSG(wcscmp(c, res) == 0,
 	    "Bad collation, expected: '%ls' got '%ls'", res, c);

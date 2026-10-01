@@ -6,8 +6,7 @@ PACKAGE=vi
 V=	${.CURDIR}/../../../contrib/nvi
 
 FILESGROUPS+=VICAT
-CAT=	dutch english french german polish ru_RU.KOI8-R spanish swedish \
-	uk_UA.KOI8-U zh_CN.GB2312 tr_TR.ISO8859-9 tr_TR.UTF-8
+CAT=	dutch english french german polish spanish swedish
 VICAT=		${CAT}
 VICATDIR=	${FILESDIR}
 VICATPACKAGE=	${PACKAGE}
@@ -27,11 +26,8 @@ utf8convert:
 	iconv -f ISO8859-1 -t UTF-8 $V/catalog/$c.base > $c.UTF-8.base
 .endfor
 	iconv -f ISO8859-2 -t UTF-8 $V/catalog/polish.base > polish.UTF-8.base
-	iconv -f GB2312 -t UTF-8 $V/catalog/zh_CN.GB2312.base > zh_CN.UTF-8.base
-	iconv -f KOI8-R -t UTF-8 $V/catalog/ru_RU.KOI8-R.base > ru_RU.UTF-8.base
-	iconv -f KOI8-U -t UTF-8 $V/catalog/uk_UA.KOI8-U.base > uk_UA.UTF-8.base
 	
-.for c in dutch french german polish spanish swedish zh_CN ru_RU uk_UA
+.for c in dutch french german polish spanish swedish
 CAT+=	$c.UTF-8
 .endfor
 
@@ -63,8 +59,7 @@ ${c}:	${c}.base
 .endfor
 
 CHK=	dutch.check english.check french.check german.check \
-	polish.check ru_RU.KOI8-R.check spanish.check swedish.check \
-	uk_UA.KOI8-U.check zh_CN.GB2312.check
+	polish.check spanish.check swedish.check
 check: ${CHK}
 .for c in ${CAT}
 ${c}.check: ${c}.base
@@ -116,7 +111,6 @@ ENLINKS= en_AU en_CA en_GB en_NZ en_US
 FRLINKS= fr_BE fr_CA fr_CH fr_FR
 DELINKS= de_AT de_CH de_DE
 ESLINKS= es_ES
-SVLINKS= sv_SE
 PLLINKS= pl_PL
 
 FILES=	${CATALOGS}
@@ -150,17 +144,9 @@ SYMLINKS+= spanish ${FILESDIR}/$l.ISO8859-1
 SYMLINKS+= spanish ${FILESDIR}/$l.ISO8859-15
 SYMLINKS+= spanish.UTF-8 ${FILESDIR}/$l.UTF-8
 .endfor
-.for l in ${SVLINKS}
-SYMLINKS+= swedish ${FILESDIR}/$l.ISO8859-1
-SYMLINKS+= swedish ${FILESDIR}/$l.ISO8859-15
-SYMLINKS+= swedish.UTF-8 ${FILESDIR}/$l.UTF-8
-.endfor
 .for l in ${PLLINKS}
 SYMLINKS+= polish ${FILESDIR}/$l.ISO8859-2
 SYMLINKS+= polish.UTF-8 ${FILESDIR}/$l.UTF-8
 .endfor
-SYMLINKS+= zh_CN.GB2312 ${FILESDIR}/zh_CN.GB18030
-SYMLINKS+= zh_CN.GB2312 ${FILESDIR}/zh_CN.GBK
-SYMLINKS+= zh_CN.GB2312 ${FILESDIR}/zh_CN.eucCN
 
 .include <bsd.prog.mk>

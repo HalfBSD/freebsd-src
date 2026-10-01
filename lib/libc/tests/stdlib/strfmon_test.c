@@ -23,7 +23,8 @@ ATF_TC_BODY(strfmon_locale_thousands, tc)
 	const char *ts;
 	double n;
 
-	setlocale(LC_MONETARY, "sv_SE.UTF-8");
+	if (setlocale(LC_MONETARY, "fi_FI.UTF-8") == NULL)
+		atf_tc_skip("unable to setlocale()");
 
 	lc = localeconv();
 

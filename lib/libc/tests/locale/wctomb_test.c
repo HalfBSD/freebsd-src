@@ -47,8 +47,8 @@ ATF_TC_BODY(euccs1_test, tc)
 	wchar_t wc = 0x8e000000;
 	char buf[MB_LEN_MAX];
 
-	ATF_REQUIRE(strcmp(setlocale(LC_CTYPE, "zh_CN.eucCN"),
-	    "zh_CN.eucCN") == 0);
+	if (setlocale(LC_CTYPE, "zh_CN.eucCN") == NULL)
+		atf_tc_skip("zh_CN.eucCN locale is not installed");
 
 	ATF_REQUIRE(wctomb(&buf[0], wc) == 4);
 }

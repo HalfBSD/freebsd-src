@@ -5,7 +5,7 @@ SRCS+=	amd64_tramp.S \
 	multiboot2.c \
 	exc.S
 
-.PATH:	${BOOTSRC}/i386/libi386
+.PATH:	${.CURDIR}/../loader/arch/x86
 SRCS+=	nullconsole.c \
 	comconsole.c \
 	spinconsole.c

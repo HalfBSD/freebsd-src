@@ -2907,12 +2907,6 @@ kernel-tools: .PHONY
 # we get done with the earlier stages. It is the last set of tools needed
 # to begin building the target binaries.
 #
-.if ${TARGET_ARCH} != ${MACHINE_ARCH} || ${BUILD_WITH_STRICT_TMPPATH} != 0
-.if ${TARGET_ARCH} == "amd64" || ${TARGET_ARCH} == "i386"
-_btxld=		usr.sbin/btxld
-.endif
-.endif
-
 # Rebuild ctfconvert and ctfmerge to avoid difficult-to-diagnose failures
 # resulting from missing bug fixes or ELF Toolchain updates.
 .if ${MK_CDDL} != "no"
@@ -2966,7 +2960,6 @@ cross-tools: .MAKE .PHONY
     ${_lld} \
     ${_elftctools} \
     ${_dtrace_tools} \
-    ${_btxld} \
     ${_usb_tools}
 	${_+_}@${ECHODIR} "===> ${_tool} (obj,all,install)"; \
 		cd ${.CURDIR}/${_tool}; \

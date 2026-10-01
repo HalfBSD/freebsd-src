@@ -201,25 +201,13 @@ OLD_FILES+=usr/share/examples/etc/defaults/bluetooth.device.conf
 .endif
 
 .if ${MK_BOOT} == no
-OLD_FILES+=boot/boot
-OLD_FILES+=boot/boot0
-OLD_FILES+=boot/boot0sio
-OLD_FILES+=boot/boot1
 OLD_FILES+=boot/boot1.efi
-OLD_FILES+=boot/boot2
-OLD_FILES+=boot/cdboot
 OLD_FILES+=boot/defaults/loader.conf
 OLD_FILES+=boot/device.hints
-OLD_FILES+=boot/gptboot
-OLD_FILES+=boot/gptzfsboot
-OLD_FILES+=boot/loader
 OLD_FILES+=boot/loader.efi
 OLD_FILES+=boot/loader.help
 OLD_FILES+=boot/loader.rc
-OLD_FILES+=boot/mbr
-OLD_FILES+=boot/pmbr
 OLD_FILES+=boot/userboot.so
-OLD_FILES+=boot/zfsloader
 OLD_FILES+=usr/lib/kgzldr.o
 .endif
 
@@ -5273,8 +5261,6 @@ OLD_DIRS+=usr/share/examples/hostapd
 .endif
 
 .if ${MK_ZFS} == no
-OLD_FILES+=boot/gptzfsboot
-OLD_FILES+=boot/zfsloader
 OLD_FILES+=etc/rc.d/zfs
 OLD_FILES+=etc/rc.d/zfsbe
 OLD_FILES+=etc/rc.d/zfsd
@@ -5853,4 +5839,20 @@ OLD_FILES+=usr/share/zoneinfo/UTC
 OLD_FILES+=usr/share/zoneinfo/WET
 OLD_FILES+=usr/share/zoneinfo/posixrules
 OLD_FILES+=usr/share/zoneinfo/zone.tab
+.endif
+.if ${TARGET_ARCH} == amd64 || ${TARGET_ARCH} == i386
+OLD_FILES+=boot/boot
+OLD_FILES+=boot/boot0
+OLD_FILES+=boot/boot0sio
+OLD_FILES+=boot/boot1
+OLD_FILES+=boot/boot2
+OLD_FILES+=boot/cdboot
+OLD_FILES+=boot/gptboot
+OLD_FILES+=boot/gptzfsboot
+OLD_FILES+=boot/isoboot
+OLD_FILES+=boot/loader
+OLD_FILES+=boot/mbr
+OLD_FILES+=boot/pmbr
+OLD_FILES+=boot/zfsloader
+OLD_FILES+=usr/sbin/btxld
 .endif

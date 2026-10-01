@@ -188,7 +188,7 @@ EOF
     else
 	# Copy the kernel (but not the boot loader, we'll add the one to test later)
 	# This will take care of both UFS and ZFS boots as well as geli
-	# Note: It's OK for device.hints to be missing. It's mostly for legacy platforms.
+	# It is OK for device.hints to be missing on platforms which do not use it.
 	tar -C ${dir} -xf ${CACHE}/$file \
 	    boot/device.hints \
 	    boot/kernel/kernel \
@@ -497,30 +497,6 @@ EOF
     set -x
 
 if false; then
-    # BIOS i386
-    a=i386:i386
-    m=${a%%:*}
-    ma=${a##*:}
-    ma_combo="${m}"
-    [ "${m}" != "${ma}" ] && ma_combo="${m}-${ma}"
-    dir=${TREES}/${ma_combo}/freebsd
-    dir2=${TREES}/${ma_combo}/test-stand
-    ufs=${IMAGES}/${ma_combo}/freebsd-${ma_combo}.ufs
-    img=${IMAGES}/${ma_combo}/freebsd-${ma_combo}.img
-    mkdir -p ${IMAGES}/${ma_combo}
-    mkdir -p ${dir2}/etc
-    cat > ${dir2}/etc/fstab <<EOF
-/dev/ufs/root	/		ufs	rw	1	1
-EOF
-    ${MAKEFS} -t ffs -B little -s 200m \
-	   -o label=root,version=2,bsize=32768,fsize=4096,density=16384 \
-	   ${ufs} ${dir} ${dir2}
-    ${MKIMG} -s gpt -b ${dir2}/boot/pmbr \
-	  -p freebsd-boot:=${dir2}/boot/gptboot \
-	  -p freebsd-ufs:=${ufs} \
-	  -o ${img}
-    rm -f ${src}/etc/fstab
-
     # PowerPC for 32-bit mac
     a=powerpc:powerpc
     m=${a%%:*}

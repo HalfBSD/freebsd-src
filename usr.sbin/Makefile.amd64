@@ -7,9 +7,6 @@ SUBDIR+=	bhyve
 SUBDIR+=	bhyvectl
 SUBDIR+=	bhyveload
 .endif
-.if ${MK_TOOLCHAIN} != "no"
-SUBDIR+=	btxld
-.endif
 SUBDIR+=	cpucontrol
 SUBDIR+=	lptcontrol
 SUBDIR+=	mptable

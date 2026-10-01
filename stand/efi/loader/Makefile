@@ -66,7 +66,6 @@ CFLAGS+=	-I${.CURDIR}/arch/${__arch}
 CFLAGS+=	-I${EFISRC}/include
 CFLAGS+=	-I${EFISRC}/include/${__arch}
 CFLAGS+=	-I${SYSDIR}/contrib/dev/acpica/include
-CFLAGS+=	-I${BOOTSRC}/i386/libi386
 CFLAGS+=	-DEFI
 
 .if defined(HAVE_FDT) && ${MK_FDT} != "no"

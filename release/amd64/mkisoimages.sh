@@ -46,9 +46,6 @@ else
 fi
 
 if [ "$1" = "-b" ]; then
-	# This is highly x86-centric and will be used directly below.
-	bootable="-o bootimage=i386;$BASEBITSDIR/boot/cdboot -o no-emul-boot"
-
 	# Make EFI system partition.
 	espfilename=$(mktemp /tmp/efiboot.XXXXXX)
 	# ESP file size in KB.
@@ -57,7 +54,7 @@ if [ "$1" = "-b" ]; then
 		extra_args="${BASEBITSDIR}/boot/loader_ia32.efi bootia32"
 	fi
 	make_esp_file ${espfilename} ${espsize} ${BASEBITSDIR}/boot/loader.efi bootx64 ${extra_args}
-	bootable="$bootable -o bootimage=i386;${espfilename} -o no-emul-boot -o platformid=efi"
+	bootable="-o bootimage=i386;${espfilename} -o no-emul-boot -o platformid=efi"
 
 	shift
 else
@@ -101,7 +98,7 @@ if [ "$bootable" != "" ]; then
 		fi
 	done
 
-	# Create a GPT image containing the partitions we need for hybrid boot.
+	# Create a GPT image containing the ESP for USB boot.
 	hybridfilename=$(mktemp /tmp/hybrid.img.XXXXXX)
 	if [ "$(uname -s)" = "Linux" ]; then
 		imgsize=`stat -c %s "$NAME"`
@@ -110,12 +107,10 @@ if [ "$bootable" != "" ]; then
 	fi
 	$MKIMG -s gpt \
 	    --capacity $imgsize \
-	    -b "$BASEBITSDIR/boot/pmbr" \
-	    -p freebsd-boot:="$BASEBITSDIR/boot/isoboot" \
 	    $espparam \
 	    -o $hybridfilename
 
-	# Drop the PMBR, GPT, and boot code into the System Area of the ISO.
+	# Drop the protective MBR, GPT, and ESP entry into the System Area.
 	dd if=$hybridfilename of="$NAME" bs=32k count=1 conv=notrunc
 	rm -f $hybridfilename
 fi

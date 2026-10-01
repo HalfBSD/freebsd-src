@@ -634,7 +634,6 @@ DIRDEPS.amd64= \
 	usr.sbin/bhyve \
 	usr.sbin/bhyvectl \
 	usr.sbin/bhyveload \
-	usr.sbin/btxld \
 	usr.sbin/camdd \
 	usr.sbin/cpucontrol \
 	usr.sbin/lptcontrol \
@@ -648,7 +647,6 @@ DIRDEPS.arm= \
 
 DIRDEPS.i386= \
 	sbin/nvmecontrol \
-	usr.sbin/btxld \
 	usr.sbin/cpucontrol \
 	usr.sbin/lptcontrol \
 	usr.sbin/mptable \

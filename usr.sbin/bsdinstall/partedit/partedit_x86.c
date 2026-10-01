@@ -27,29 +27,12 @@
  */
 
 #include <sys/types.h>
-#include <sys/sysctl.h>
 #include <string.h>
 
 #include "partedit.h"
 
 /* EFI partition size in bytes */
 #define	EFI_BOOTPART_SIZE	(260 * 1024 * 1024)
-
-static const char *
-x86_bootmethod(void)
-{
-	static char fw[255] = "";
-	size_t len = sizeof(fw);
-	int error;
-	
-	if (strlen(fw) == 0) {
-		error = sysctlbyname("machdep.bootmethod", fw, &len, NULL, -1);
-		if (error != 0)
-			return ("BIOS");
-	}
-
-	return (fw);
-}
 
 const char *
 default_scheme(void)
@@ -61,16 +44,7 @@ int
 is_scheme_bootable(const char *part_type)
 {
 
-	if (strcmp(part_type, "GPT") == 0)
-		return (1);
-	if (strcmp(x86_bootmethod(), "BIOS") == 0) {
-		if (strcmp(part_type, "BSD") == 0)
-			return (1);
-		if (strcmp(part_type, "MBR") == 0)
-			return (1);
-	}
-
-	return (0);
+	return (strcmp(part_type, "GPT") == 0);
 }
 
 int
@@ -80,9 +54,7 @@ is_fs_bootable(const char *part_type, const char *fs)
 	if (strcmp(fs, "freebsd-ufs") == 0)
 		return (1);
 
-	if (strcmp(fs, "freebsd-zfs") == 0 &&
-	    strcmp(part_type, "GPT") == 0 &&
-	    strcmp(x86_bootmethod(), "BIOS") == 0)
+	if (strcmp(fs, "freebsd-zfs") == 0 && strcmp(part_type, "GPT") == 0)
 		return (1);
 
 	return (0);
@@ -96,39 +68,21 @@ bootpart_size(const char *scheme)
 	if (strcmp(scheme, "GPT") != 0)
 		return (0);
 
-	if (strcmp(x86_bootmethod(), "BIOS") == 0)
-		return (512*1024);
-	else 
-		return (EFI_BOOTPART_SIZE);
-
-	return (0);
+	return (EFI_BOOTPART_SIZE);
 }
 
 const char *
 bootpart_type(const char *scheme, const char **mountpoint)
 {
 
-	if (strcmp(x86_bootmethod(), "UEFI") == 0) {
-		*mountpoint = "/boot/efi";
-		return ("efi");
-	}
-
-	return ("freebsd-boot");
+	*mountpoint = "/boot/efi";
+	return ("efi");
 }
 
 const char *
 bootcode_path(const char *part_type)
 {
-
-	if (strcmp(x86_bootmethod(), "UEFI") == 0)
-		return (NULL);
-
-	if (strcmp(part_type, "GPT") == 0)
-		return ("/boot/pmbr");
-	if (strcmp(part_type, "MBR") == 0)
-		return ("/boot/mbr");
-	if (strcmp(part_type, "BSD") == 0)
-		return ("/boot/boot");
+	(void)part_type;
 
 	return (NULL);
 }
@@ -136,14 +90,8 @@ bootcode_path(const char *part_type)
 const char *
 partcode_path(const char *part_type, const char *fs_type)
 {
+	(void)part_type;
+	(void)fs_type;
 
-	if (strcmp(part_type, "GPT") == 0 && strcmp(x86_bootmethod(), "UEFI") != 0) {
-		if (strcmp(fs_type, "zfs") == 0)
-			return ("/boot/gptzfsboot");
-		else
-			return ("/boot/gptboot");
-	}
-	
-	/* No partcode except for non-UEFI GPT */
 	return (NULL);
 }

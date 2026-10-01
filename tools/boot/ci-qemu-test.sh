@@ -5,7 +5,7 @@
 # Uses QEMU's virtual FAT filesystem to avoid the need to create a disk image.
 # While designed for CI automated testing, this script can also be run by hand
 # as a quick smoke-test as long as pkgbase packages have been built.  The
-# rootgen.sh and related scripts generate much more extensive tests for many
+# Other scripts generate much more extensive tests for many
 # combinations of boot env (ufs, zfs, geli, etc).
 #
 

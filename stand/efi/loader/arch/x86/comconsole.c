@@ -27,8 +27,6 @@
 #include <bootstrap.h>
 #include <machine/cpufunc.h>
 #include <dev/ic/ns16550.h>
-#include <dev/pci/pcireg.h>
-#include "libi386.h"
 
 #define COMC_FMT	0x3		/* 8N1 */
 #define COMC_TXWAIT	0x40000		/* transmit timeout */
@@ -211,87 +209,19 @@ comc_port_set(struct env_var *ev, int flags, const void *value)
 static uint32_t
 comc_parse_pcidev(const char *string)
 {
-#ifdef EFI
-	/* We don't support PCI in EFI yet */
+	(void)string;
+
+	/* We don't support PCI serial devices in EFI yet. */
 	return (0);
-#else
-	char *p, *p1;
-	uint8_t bus, dev, func, bar;
-	uint32_t locator;
-	int pres;
-
-	pres = strtol(string, &p, 0);
-	if (p == string || *p != ':' || pres < 0 )
-		return (0);
-	bus = pres;
-	p1 = ++p;
-
-	pres = strtol(p1, &p, 0);
-	if (p == string || *p != ':' || pres < 0 )
-		return (0);
-	dev = pres;
-	p1 = ++p;
-
-	pres = strtol(p1, &p, 0);
-	if (p == string || (*p != ':' && *p != '\0') || pres < 0 )
-		return (0);
-	func = pres;
-
-	if (*p == ':') {
-		p1 = ++p;
-		pres = strtol(p1, &p, 0);
-		if (p == string || *p != '\0' || pres <= 0 )
-			return (0);
-		bar = pres;
-	} else
-		bar = 0x10;
-
-	locator = (bar << 16) | biospci_locator(bus, dev, func);
-	return (locator);
-#endif
 }
 
 static int
 comc_pcidev_handle(uint32_t locator)
 {
-#ifdef EFI
-	/* We don't support PCI in EFI yet */
+	(void)locator;
+
+	/* We don't support PCI serial devices in EFI yet. */
 	return (CMD_ERROR);
-#else
-	char intbuf[64];
-	uint32_t port;
-
-	if (biospci_read_config(locator & 0xffff,
-	    (locator & 0xff0000) >> 16, BIOSPCI_32BITS, &port) == -1) {
-		printf("Cannot read bar at 0x%x\n", locator);
-		return (CMD_ERROR);
-	}
-
-	/* 
-	 * biospci_read_config() sets port == 0xffffffff if the pcidev
-	 * isn't found on the bus.  Check for 0xffffffff and return to not
-	 * panic in BTX.
-	 */
-	if (port == 0xffffffff) {
-		printf("Cannot find specified pcidev\n");
-		return (CMD_ERROR);
-	}
-	if (!PCI_BAR_IO(port)) {
-		printf("Memory bar at 0x%x\n", locator);
-		return (CMD_ERROR);
-	}
-        port &= PCIM_BAR_IO_BASE;
-
-	sprintf(intbuf, "%d", port);
-	unsetenv("comconsole_port");
-	env_setenv("comconsole_port", EV_VOLATILE, intbuf,
-		   comc_port_set, env_nounset);
-
-	comc_setup(comc_curspeed, port);
-	comc_locator = locator;
-
-	return (CMD_OK);
-#endif
 }
 
 static int

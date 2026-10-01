@@ -13,7 +13,7 @@ TARGET_SPEC_VARS?= MACHINE MACHINE_ARCH
 	${.MAKE.DEPENDFILE_PREFIX}
 
 # some corner cases
-BOOT_MACHINE_DIR.amd64 = stand/i386
+BOOT_MACHINE_DIR.amd64 = stand/efi
 
 .-include <site.sys.dirdeps.env.mk>
 

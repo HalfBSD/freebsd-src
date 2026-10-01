@@ -358,7 +358,7 @@ umount_loop() {
 }
 
 vm_create_disk() {
-	local BOOTFILES BOOTPARTSOFFSET FSPARTTYPE X86GPTBOOTFILE
+	local BOOTFILES BOOTPARTSOFFSET FSPARTTYPE
 
 	if [ -z "${NOSWAP}" ]; then
 		SWAPOPT="-p freebsd-swap/swapfs::${SWAPSIZE}"
@@ -375,11 +375,9 @@ vm_create_disk() {
 	case "${VMFS}" in
 	ufs)
 		FSPARTTYPE=freebsd-ufs
-		X86GPTBOOTFILE=i386/gptboot/gptboot
 		;;
 	zfs)
 		FSPARTTYPE=freebsd-zfs
-		X86GPTBOOTFILE=i386/gptzfsboot/gptzfsboot
 		;;
 	*)
 		echo "Unexpected VMFS value '${VMFS}'"
@@ -397,10 +395,9 @@ vm_create_disk() {
 	MAKEFSARGS="-s ${VMSIZE} -D"
 
 	case "${TARGET}:${TARGET_ARCH}" in
-		amd64:amd64 | i386:i386)
+		amd64:amd64)
 			ESP=yes
-			BOOTPARTS="-b ${BOOTFILES}/i386/pmbr/pmbr \
-				   -p freebsd-boot/bootfs:=${BOOTFILES}/${X86GPTBOOTFILE}${BOOTPARTSOFFSET}"
+			BOOTPARTS=
 			ROOTFSPART="-p ${FSPARTTYPE}/rootfs:=${VMBASE}"
 			MAKEFSARGS="$MAKEFSARGS -B little"
 			;;

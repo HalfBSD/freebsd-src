@@ -1602,12 +1602,10 @@ OLD_FILES+=usr/bin/host
 .if ${MK_LEGACY_CONSOLE} == no
 OLD_FILES+=etc/moused.conf
 OLD_FILES+=etc/rc.d/moused
-OLD_FILES+=etc/rc.d/msconvd
 OLD_FILES+=etc/rc.d/vtcons
 OLD_FILES+=usr/sbin/kbdcontrol
 OLD_FILES+=usr/sbin/kbdmap
 OLD_FILES+=usr/sbin/moused
-OLD_FILES+=usr/sbin/msconvd
 OLD_FILES+=usr/sbin/vidcontrol
 OLD_FILES+=usr/sbin/vidfont
 OLD_FILES+=usr/share/moused/5-generic-touchpad.quirks

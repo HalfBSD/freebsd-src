@@ -242,7 +242,6 @@ ZFS=		zfs \
 CONFGROUPS.${MK_LEGACY_CONSOLE}+=SYSCONS
 SYSCONSPACKAGE=			console-tools
 SYSCONS=	moused \
-		msconvd \
 		vtcons
 
 

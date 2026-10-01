@@ -26,8 +26,7 @@
 
 /*
  * Simple commandline interpreter, toplevel and misc.
- *
- * XXX may be obsoleted by BootFORTH or some other, better, interpreter.
+
  */
 
 #include <stand.h>

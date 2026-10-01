@@ -96,7 +96,6 @@ __DEFAULT_YES_OPTIONS = \
     FILE \
     FINGER \
     FLOPPY \
-    FORTH \
     FREEBSD_UPDATE \
     FTP \
     GAMES \

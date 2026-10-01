@@ -652,7 +652,7 @@ find_currdev(bool do_bootmgr, char *boot_info, size_t boot_info_sz)
 		return (0);
 
 	/*
-	 * Forth choice: If we can find out image boot_info, and there's
+	 * Fourth choice: If we can find out image boot_info, and there's
 	 * a follow-on boot image in that boot_info, use that. In this
 	 * case root will be the partition specified in that image and
 	 * we'll load the kernel specified by the file path. Should there

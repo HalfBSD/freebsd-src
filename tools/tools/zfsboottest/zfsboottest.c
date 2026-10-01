@@ -124,7 +124,6 @@ main(int argc, char** argv)
 			"/dev/gpt/system1",
 			"-",
 			"/boot/loader",
-			"/boot/support.4th",
 			"/boot/kernel/kernel",
 			NULL,
 		};

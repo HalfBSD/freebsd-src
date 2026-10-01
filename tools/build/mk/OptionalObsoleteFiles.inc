@@ -2066,7 +2066,6 @@ OLD_FILES+=usr/share/man/man1/fdwrite.1.gz
 OLD_FILES+=usr/share/man/man8/fdcontrol.8.gz
 .endif
 
-.if ${MK_FORTH} == no
 OLD_FILES+=boot/beastie.4th
 OLD_FILES+=boot/brand-fbsd.4th
 OLD_FILES+=boot/brand.4th
@@ -2099,10 +2098,10 @@ OLD_FILES+=usr/share/man/man8/check-password.4th.8.gz
 OLD_FILES+=usr/share/man/man8/color.4th.8.gz
 OLD_FILES+=usr/share/man/man8/delay.4th.8.gz
 OLD_FILES+=usr/share/man/man8/loader.4th.8.gz
+OLD_FILES+=usr/share/man/man8/loader_4th.8.gz
 OLD_FILES+=usr/share/man/man8/menu.4th.8.gz
 OLD_FILES+=usr/share/man/man8/menusets.4th.8.gz
 OLD_FILES+=usr/share/man/man8/version.4th.8.gz
-.endif
 
 .if ${MK_FREEBSD_UPDATE} == no
 OLD_FILES+=etc/freebsd-update.conf

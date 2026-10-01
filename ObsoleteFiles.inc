@@ -51,6 +51,19 @@
 #   xargs -n1 | sort | uniq -d;
 # done
 
+# 20261001: Remove rc scripts for removed base-system services
+OLD_FILES+=etc/rc.d/bootparams
+OLD_FILES+=etc/rc.d/lpd
+OLD_FILES+=etc/rc.d/nisdomain
+OLD_FILES+=etc/rc.d/pppoed
+OLD_FILES+=etc/rc.d/ypbind
+OLD_FILES+=etc/rc.d/ypldap
+OLD_FILES+=etc/rc.d/yppasswdd
+OLD_FILES+=etc/rc.d/ypserv
+OLD_FILES+=etc/rc.d/ypset
+OLD_FILES+=etc/rc.d/ypupdated
+OLD_FILES+=etc/rc.d/ypxfrd
+
 # 20260813: lib9p.so becomes a private library
 OLD_LIBS+=usr/lib/lib9p.so.1
 

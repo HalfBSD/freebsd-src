@@ -382,6 +382,25 @@ OLD_FILES+=etc/rc.d/motd
 # 20260919: Remove boot0cfg
 OLD_FILES+=usr/sbin/boot0cfg
 
+# 20261001: Remove legacy BIOS boot support
+OLD_FILES+=boot/boot
+OLD_FILES+=boot/boot0
+OLD_FILES+=boot/boot0sio
+OLD_FILES+=boot/boot1
+OLD_FILES+=boot/boot2
+OLD_FILES+=boot/cdboot
+OLD_FILES+=boot/gptboot
+OLD_FILES+=boot/gptzfsboot
+OLD_FILES+=boot/isoboot
+OLD_FILES+=boot/loader
+OLD_FILES+=boot/loader.help.bios
+OLD_FILES+=boot/mbr
+OLD_FILES+=boot/pmbr
+OLD_FILES+=usr/share/man/man8/cdboot.8.gz
+OLD_FILES+=usr/share/man/man8/gptboot.8.gz
+OLD_FILES+=usr/share/man/man8/gptzfsboot.8.gz
+OLD_FILES+=usr/share/man/man8/isoboot.8.gz
+
 # 20260919: Remove the rcmds command and daemon suite
 OLD_FILES+=etc/periodic/daily/140.clean-rwho
 OLD_FILES+=etc/rc.d/rwho

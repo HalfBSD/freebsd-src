@@ -12,9 +12,6 @@ TARGET_SPEC_VARS?= MACHINE MACHINE_ARCH
 	${.MAKE.DEPENDFILE_PREFIX}.${MACHINE} \
 	${.MAKE.DEPENDFILE_PREFIX}
 
-# some corner cases
-BOOT_MACHINE_DIR.amd64 = stand/i386
-
 .-include <site.sys.dirdeps.env.mk>
 
 ALL_MACHINE_LIST?= ${TARGET_MACHINE_LIST}

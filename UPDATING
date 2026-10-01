@@ -1,6 +1,11 @@
 Updating Information for users of HalfBSD.
 
 20261001:
+	The x86 BIOS boot loaders have been removed.  Systems must now boot
+	using UEFI.  Before updating, install loader.efi in an EFI System
+	Partition and confirm that the firmware is configured to use it.
+
+20261001:
 	The syscons rc service and devd configuration have been renamed to
 	vtcons to reflect that they configure the vt(4) console.  Update local
 	references from "service syscons" to "service vtcons".  New per-service

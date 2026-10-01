@@ -145,11 +145,7 @@ SRCS+=	time.c
 SRCS+=ffs_subr.c ffs_tables.c
 
 #
-# i386 has a constrained space for its /boot/loader, so compile out the
-# extensive messages diagnosing bad superblocks. i386 doesn't support UEFI
-# booting, so doing it always makes sense natively there. When we compile
-# for 32-bit on amd64, LIBSA_CPUARCH is also i386 and we use libsa32 only
-# for the BIOS /boot/loader which has the same constraints.
+# Keep the 32-bit library small for the IA32 UEFI loader.
 #
 .if ${LIBSA_CPUARCH} == "i386"
 CFLAGS.ffs_subr.c+= -DSTANDALONE_SMALL

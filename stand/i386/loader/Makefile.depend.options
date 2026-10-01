@@ -1,7 +1,0 @@
-DIRDEPS_OPTIONS = LOADER_LUA
-
-DIRDEPS.LOADER_LUA.yes += \
-	stand/liblua \
-	stand/lua \
-
-.include <dirdeps-options.mk>

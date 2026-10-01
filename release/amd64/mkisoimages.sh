@@ -46,9 +46,6 @@ else
 fi
 
 if [ "$1" = "-b" ]; then
-	# This is highly x86-centric and will be used directly below.
-	bootable="-o bootimage=i386;$BASEBITSDIR/boot/cdboot -o no-emul-boot"
-
 	# Make EFI system partition.
 	espfilename=$(mktemp /tmp/efiboot.XXXXXX)
 	# ESP file size in KB.
@@ -57,7 +54,7 @@ if [ "$1" = "-b" ]; then
 		extra_args="${BASEBITSDIR}/boot/loader_ia32.efi bootia32"
 	fi
 	make_esp_file ${espfilename} ${espsize} ${BASEBITSDIR}/boot/loader.efi bootx64 ${extra_args}
-	bootable="$bootable -o bootimage=i386;${espfilename} -o no-emul-boot -o platformid=efi"
+	bootable="-o bootimage=i386;${espfilename} -o no-emul-boot -o platformid=efi"
 
 	shift
 else
@@ -84,38 +81,9 @@ if [ -n "${METALOG}" ]; then
 fi
 $MAKEFS -D -N ${BASEBITSDIR}/etc -t cd9660 $bootable -o rockridge -o label="$LABEL" -o publisher="$publisher" "$NAME" "$MAKEFSARG" "$@"
 rm -f "$BASEBITSDIR/etc/fstab"
-rm -f ${espfilename}
+if [ -n "${espfilename}" ]; then
+	rm -f ${espfilename}
+fi
 if [ -n "${METALOG}" ]; then
 	rm ${metalogfilename}
-fi
-
-if [ "$bootable" != "" ]; then
-	# Look for the EFI System Partition image we dropped in the ISO image.
-	for entry in `$ETDUMP --format shell $NAME`; do
-		eval $entry
-		if [ "$et_platform" = "efi" ]; then
-			espstart=`expr $et_lba \* 2048`
-			espsize=`expr $et_sectors \* 512`
-			espparam="-p efi::$espsize:$espstart"
-			break
-		fi
-	done
-
-	# Create a GPT image containing the partitions we need for hybrid boot.
-	hybridfilename=$(mktemp /tmp/hybrid.img.XXXXXX)
-	if [ "$(uname -s)" = "Linux" ]; then
-		imgsize=`stat -c %s "$NAME"`
-	else
-		imgsize=`stat -f %z "$NAME"`
-	fi
-	$MKIMG -s gpt \
-	    --capacity $imgsize \
-	    -b "$BASEBITSDIR/boot/pmbr" \
-	    -p freebsd-boot:="$BASEBITSDIR/boot/isoboot" \
-	    $espparam \
-	    -o $hybridfilename
-
-	# Drop the PMBR, GPT, and boot code into the System Area of the ISO.
-	dd if=$hybridfilename of="$NAME" bs=32k count=1 conv=notrunc
-	rm -f $hybridfilename
 fi

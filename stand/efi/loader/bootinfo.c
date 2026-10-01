@@ -99,7 +99,7 @@ bi_getboothowto(char *kargs)
 			 * either a EFI specific one, or the compatible
 			 * comconsole_port if not. PCI support is needed, but
 			 * for that we'd ideally refactor the
-			 * libi386/comconsole.c code to have identical behavior.
+			 * common/comconsole.c code to have identical behavior.
 			 * We only try to set the port for cases where we saw
 			 * the Serial(x) node when parsing, otherwise
 			 * specialized hardware that has Uart nodes will have a

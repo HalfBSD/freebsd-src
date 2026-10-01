@@ -66,12 +66,9 @@ if [ -f "${BASEBITSDIR}/boot/loader_ia32.efi" ]; then
 fi
 make_esp_file ${espfilename} ${fat32min} ${BASEBITSDIR}/boot/loader.efi bootx64 ${extra_args}
 
-${MKIMG} -s mbr \
-    -b ${BASEBITSDIR}/boot/mbr \
+${MKIMG} -s gpt \
     -p efi:=${espfilename} \
-    -p freebsd:-"${MKIMG} -s bsd -b ${BASEBITSDIR}/boot/boot -p freebsd-ufs:=${2}.part" \
-    -a 2 \
+    -p freebsd-ufs:=${2}.part \
     -o ${2}
 rm ${espfilename}
 rm ${2}.part
-

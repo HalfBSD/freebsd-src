@@ -105,7 +105,7 @@ ATF_TC_BODY(wcscasecmp_greek, tc)
 	ATF_REQUIRE(setlocale(LC_CTYPE, "C") != NULL);
 
 	ATF_CHECK(wcscasecmp(L"λ", L"Λ") != 0);
-	ATF_REQUIRE(setlocale(LC_CTYPE, "el_GR.UTF-8") != NULL);
+	ATF_REQUIRE(setlocale(LC_CTYPE, "C.UTF-8") != NULL);
 	ATF_CHECK(wcscasecmp(L"λ", L"Λ") == 0);
 	ATF_CHECK(wcscasecmp(L"λ", L"Ω") < 0);
 	ATF_CHECK(wcscasecmp(L"Ω", L"λ") > 0);

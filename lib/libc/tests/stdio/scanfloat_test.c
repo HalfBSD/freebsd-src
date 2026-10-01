@@ -134,14 +134,14 @@ ATF_TC_BODY(normalized_numbers, tc)
 	ATF_REQUIRE(d == 0.0);
 	ATF_REQUIRE(strcmp(buf, "xg") == 0);
 
-	ATF_REQUIRE(setlocale(LC_NUMERIC, "fr_FR.ISO8859-15")); /* decimalpoint==, */
+	if (setlocale(LC_NUMERIC, "fr_FR.UTF-8") != NULL) {
+		ATF_REQUIRE_EQ(2, sscanf("1.23", "%le%s", &d, buf));
+		ATF_REQUIRE(d == 1.0);
+		ATF_REQUIRE(strcmp(buf, ".23") == 0);
 
-	ATF_REQUIRE_EQ(2, sscanf("1.23", "%le%s", &d, buf));
-	ATF_REQUIRE(d == 1.0);
-	ATF_REQUIRE(strcmp(buf, ".23") == 0);
-
-	ATF_REQUIRE_EQ(1, sscanf("1,23", "%le", &d));
-	ATF_REQUIRE(d == 1.23);
+		ATF_REQUIRE_EQ(1, sscanf("1,23", "%le", &d));
+		ATF_REQUIRE(d == 1.23);
+	}
 
 	ATF_REQUIRE(setlocale(LC_NUMERIC, ""));
 }

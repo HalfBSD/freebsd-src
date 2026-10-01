@@ -104,11 +104,8 @@ build-${t}: ${t}
 BASE_LOCALES_OF_INTEREST?= \
 	af_ZA am_ET ar_AE ar_EG ar_JO ar_MA ar_QA ar_SA \
 	be_BY bg_BG ca_AD ca_ES ca_FR ca_IT \
-	cs_CZ da_DK de_AT de_CH de_DE el_GR en_AU en_CA \
-	en_GB en_HK en_IE en_NZ en_PH en_SG en_US en_ZA \
-	es_AR es_CR es_ES es_MX et_EE eu_ES fa_AF fa_IR fi_FI fr_BE \
-	fr_CA fr_CH fr_FR ga_IE he_IL hi_IN hr_HR hu_HU hy_AM \
-	ja_JP ko_KR \
+	cs_CZ da_DK de_AT \
+	en_US \
 	bn_IN gu_IN or_IN ta_IN te_IN kn_IN ml_IN si_LK \
 	th_TH lo_LA bo_IN my_MM pa_Guru_IN ka_GE chr_US \
 	km_KH shi_Tfng_MA ii_CN vai_Vaii_LR vi_VN

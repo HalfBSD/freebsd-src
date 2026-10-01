@@ -105,36 +105,15 @@ dump: ${BUILD_TOOLS_META}
 CLEANFILES+= dump ${CAT} english.base *.check __ck1 __ck2
 
 CATALOGS= ${CAT}
-ENLINKS= en_AU en_CA en_GB en_NZ en_US
-FRLINKS= fr_BE fr_CA fr_CH fr_FR
-DELINKS= de_AT de_CH de_DE
-ESLINKS= es_ES
 
 FILES=	${CATALOGS}
 FILESDIR= ${SHAREDIR}/vi/catalog
 SYMLINKS=
-.for l in ${ENLINKS}
-SYMLINKS+= english ${FILESDIR}/$l.ISO8859-1
-SYMLINKS+= english ${FILESDIR}/$l.ISO8859-15
-SYMLINKS+= english ${FILESDIR}/$l.US-ASCII
-SYMLINKS+= english ${FILESDIR}/$l.UTF-8
-.endfor
+SYMLINKS+= english ${FILESDIR}/en_US.UTF-8
 SYMLINKS+= english ${FILESDIR}/POSIX
 SYMLINKS+= english ${FILESDIR}/C
-.for l in ${FRLINKS}
-SYMLINKS+= french ${FILESDIR}/$l.ISO8859-1
-SYMLINKS+= french ${FILESDIR}/$l.ISO8859-15
-SYMLINKS+= french.UTF-8 ${FILESDIR}/$l.UTF-8
-.endfor
-.for l in ${DELINKS}
-SYMLINKS+= german ${FILESDIR}/$l.ISO8859-1
-SYMLINKS+= german ${FILESDIR}/$l.ISO8859-15
-SYMLINKS+= german.UTF-8 ${FILESDIR}/$l.UTF-8
-.endfor
-.for l in ${ESLINKS}
-SYMLINKS+= spanish ${FILESDIR}/$l.ISO8859-1
-SYMLINKS+= spanish ${FILESDIR}/$l.ISO8859-15
-SYMLINKS+= spanish.UTF-8 ${FILESDIR}/$l.UTF-8
-.endfor
+SYMLINKS+= german ${FILESDIR}/de_AT.ISO8859-1
+SYMLINKS+= german ${FILESDIR}/de_AT.ISO8859-15
+SYMLINKS+= german.UTF-8 ${FILESDIR}/de_AT.UTF-8
 
 .include <bsd.prog.mk>

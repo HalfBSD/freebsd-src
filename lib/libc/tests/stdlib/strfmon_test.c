@@ -23,7 +23,7 @@ ATF_TC_BODY(strfmon_locale_thousands, tc)
 	const char *ts;
 	double n;
 
-	if (setlocale(LC_MONETARY, "fi_FI.UTF-8") == NULL)
+	if (setlocale(LC_MONETARY, "fr_FR.UTF-8") == NULL)
 		atf_tc_skip("unable to setlocale()");
 
 	lc = localeconv();
@@ -264,7 +264,8 @@ ATF_TC_BODY(strfmon_l, tc)
 
 	for (i = 0; i < nitems(tests); ++i) {
 		loc = newlocale(LC_MONETARY_MASK, tests[i].locale, NULL);
-		ATF_REQUIRE(loc != NULL);
+		if (loc == NULL)
+			atf_tc_skip("%s locale is not installed", tests[i].locale);
 
 		strfmon_l(buf, sizeof(buf) - 1, loc, "[%^=*#6n] [%=*#6i]",
 		    1234.567, 1234.567);

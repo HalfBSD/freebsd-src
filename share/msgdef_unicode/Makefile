@@ -9,43 +9,10 @@ FILESNAME=	LC_MESSAGES
 .src.out:
 	grep -v -E '^(#$$|#[ ])' < ${.IMPSRC} > ${.TARGET}
 
-LOCALES+=	de_DE.UTF-8
-LOCALES+=	el_GR.UTF-8
 LOCALES+=	en_US.UTF-8
-LOCALES+=	es_MX.UTF-8
-LOCALES+=	et_EE.UTF-8
-LOCALES+=	eu_ES.UTF-8
-LOCALES+=	fa_IR.UTF-8
-LOCALES+=	fi_FI.UTF-8
-LOCALES+=	fr_FR.UTF-8
-LOCALES+=	ga_IE.UTF-8
-LOCALES+=	he_IL.UTF-8
-LOCALES+=	hi_IN.UTF-8
-LOCALES+=	hu_HU.UTF-8
-LOCALES+=	hy_AM.UTF-8
-LOCALES+=	ja_JP.UTF-8
-LOCALES+=	ko_KR.UTF-8
-LOCALES+=	hr_HR.UTF-8
 
 
 
-SAME+=		es_MX.UTF-8 es_ES.UTF-8
-SAME+=		es_MX.UTF-8 es_CR.UTF-8
-SAME+=		es_MX.UTF-8 es_AR.UTF-8
-SAME+=		de_DE.UTF-8 de_CH.UTF-8
-SAME+=		en_US.UTF-8 en_ZA.UTF-8
-SAME+=		en_US.UTF-8 en_SG.UTF-8
-SAME+=		en_US.UTF-8 en_PH.UTF-8
-SAME+=		en_US.UTF-8 en_NZ.UTF-8
-SAME+=		en_US.UTF-8 en_IE.UTF-8
-SAME+=		en_US.UTF-8 en_HK.UTF-8
-SAME+=		en_US.UTF-8 en_GB.UTF-8
-SAME+=		en_US.UTF-8 en_CA.UTF-8
-SAME+=		en_US.UTF-8 en_AU.UTF-8
-SAME+=		fa_IR.UTF-8 fa_AF.UTF-8
-SAME+=		fr_FR.UTF-8 fr_CH.UTF-8
-SAME+=		fr_FR.UTF-8 fr_CA.UTF-8
-SAME+=		fr_FR.UTF-8 fr_BE.UTF-8
 
 FILES=		${LOCALES:S/$/.out/}
 CLEANFILES=	${FILES}

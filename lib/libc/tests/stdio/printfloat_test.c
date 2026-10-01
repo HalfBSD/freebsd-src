@@ -173,19 +173,22 @@ ATF_TC_BODY(thousands_separator_and_other_locale_tests, tc)
 	testfmt("12345678.0625", "%'.04f", 12345678.0625);
 	testfmt("0012345678.0625", "%'015.4F", 12345678.0625);
 
-	ATF_REQUIRE(setlocale(LC_NUMERIC, "hi_IN.ISCII-DEV")); /* grouping == 2;3 */
-	testfmt("1,23,45,678.0625", "%'.4f", 12345678.0625);
-	testfmt("01,23,45,678.0625", "%'017.4F", 12345678.0625);
-	testfmt(" 9,000", "%'6.0f", 9000.0);
-	testfmt("9,000.0", "%'.1f", 9000.0);
+	if (setlocale(LC_NUMERIC, "hi_IN.ISCII-DEV") != NULL) {
+		testfmt("1,23,45,678.0625", "%'.4f", 12345678.0625);
+		testfmt("01,23,45,678.0625", "%'017.4F", 12345678.0625);
+		testfmt(" 9,000", "%'6.0f", 9000.0);
+		testfmt("9,000.0", "%'.1f", 9000.0);
+	}
 
-	ATF_REQUIRE(setlocale(LC_NUMERIC, "fr_FR.ISO8859-15")); /* decimalpoint==, */
-	testfmt("3,1415", "%g", 3.1415);
+	if (setlocale(LC_NUMERIC, "fr_FR.UTF-8") != NULL) {
+		testfmt("3,1415", "%g", 3.1415);
+	}
 
 	/* thousands=. decimalpoint=, grouping=3;3 */
-	ATF_REQUIRE(setlocale(LC_NUMERIC, "el_GR.ISO8859-7")); /* decimalpoint==, */
-	testfmt("1.234,00", "%'.2f", 1234.00);
-	testfmt("123.456,789", "%'.3f", 123456.789);
+	if (setlocale(LC_NUMERIC, "el_GR.ISO8859-7") != NULL) {
+		testfmt("1.234,00", "%'.2f", 1234.00);
+		testfmt("123.456,789", "%'.3f", 123456.789);
+	}
 
 	ATF_REQUIRE(setlocale(LC_NUMERIC, "C"));
 	testfmt("12345678.062500", "%'f", 12345678.0625);

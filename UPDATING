@@ -1,0 +1,9 @@
+Updating Information for users of HalfBSD.
+
+20261001:
+	The syscons rc service and devd configuration have been renamed to
+	vtcons to reflect that they configure the vt(4) console.  Update local
+	references from "service syscons" to "service vtcons".  New per-service
+	configuration belongs in /etc/rc.conf.d/vtcons; the vtcons script
+	temporarily loads /etc/rc.conf.d/syscons first for compatibility, with
+	settings in /etc/rc.conf.d/vtcons taking precedence.

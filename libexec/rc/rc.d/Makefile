@@ -243,7 +243,7 @@ CONFGROUPS.${MK_LEGACY_CONSOLE}+=SYSCONS
 SYSCONSPACKAGE=			console-tools
 SYSCONS=	moused \
 		msconvd \
-		syscons
+		vtcons
 
 
 .if ${MK_OPENSSL} != "no" && ${MK_OPENSSL_KTLS} != "no"

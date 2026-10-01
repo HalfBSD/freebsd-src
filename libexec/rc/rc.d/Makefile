@@ -129,9 +129,6 @@ BLUETOOTH=	bluetooth \
 		sdpd \
 		ubthidhci
 
-CONFGROUPS.${MK_BOOTPARAMD}+=	BOOTPARAMD
-BOOTPARAMD=	bootparams
-
 CONFGROUPS.${MK_BSNMP}+=	BSNMP
 BSNMPPACKAGE=			bsnmp
 BSNMP=		bsnmpd
@@ -212,10 +209,6 @@ CONFGROUPS.${MK_JAIL}+=		JAIL
 JAILPACKAGE=			jail
 JAIL=		jail
 
-CONFGROUPS.${MK_LPR}+=		LP
-LPPACKAGE=			lp
-LP=		lpd
-
 CONFGROUPS+=			NEWSYSLOG
 NEWSYSLOGPACKAGE=		newsyslog
 NEWSYSLOG=	newsyslog
@@ -229,17 +222,6 @@ NFS=		lockd \
 		nfsd \
 		nfsuserd \
 		statd
-
-CONFGROUPS.${MK_NIS}+=		NIS
-NISPACKAGE=			yp
-NIS=		ypbind \
-		ypldap \
-		yppasswdd \
-		ypserv \
-		ypset \
-		ypupdated \
-		ypxfrd \
-		nisdomain
 
 CONFGROUPS.${MK_NS_CACHING}+=	NSCD
 NSCD=		nscd
@@ -272,10 +254,6 @@ POWERD=		powerd
 CONFGROUPS.${MK_PPP}+=		PPP
 PPPPACKAGE=			ppp
 PPP=		ppp
-
-CONFGROUPS+=			PPPOED
-PPPOEDPACKAGE=			ppp
-PPPOED=		pppoed
 
 CONFGROUPS+=			SYSLOGD
 SYSLOGDPACKAGE=			syslogd

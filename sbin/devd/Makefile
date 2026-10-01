@@ -29,7 +29,7 @@ POWERPROFILEPACKAGE=	acpi
 
 CONFGROUPS+=		CONSOLE
 CONSOLEDIR=		${DEVDDIR}
-CONSOLE+=		moused.conf vtcons.conf
+CONSOLE+=		vtcons.conf
 CONSOLEPACKAGE=		console-tools
 
 .if ${MK_BLUETOOTH} != "no"

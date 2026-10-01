@@ -8,7 +8,6 @@ SUBDIR=	console \
 	dot \
 	include \
 	includes \
-	mouse \
 	networking \
 	packages \
 	password \

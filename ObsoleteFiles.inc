@@ -51,6 +51,25 @@
 #   xargs -n1 | sort | uniq -d;
 # done
 
+# 20261001: Remove moused
+OLD_FILES+=etc/devd/moused.conf
+OLD_FILES+=etc/moused.conf
+OLD_FILES+=etc/rc.d/moused
+OLD_FILES+=usr/libexec/bsdconfig/110.mouse/include/messages.subr
+OLD_FILES+=usr/libexec/bsdconfig/110.mouse/INDEX
+OLD_FILES+=usr/libexec/bsdconfig/110.mouse/USAGE
+OLD_FILES+=usr/libexec/bsdconfig/110.mouse/disable
+OLD_FILES+=usr/libexec/bsdconfig/110.mouse/enable
+OLD_FILES+=usr/libexec/bsdconfig/110.mouse/flags
+OLD_FILES+=usr/libexec/bsdconfig/110.mouse/mouse
+OLD_FILES+=usr/libexec/bsdconfig/110.mouse/port
+OLD_FILES+=usr/libexec/bsdconfig/110.mouse/type
+OLD_DIRS+=usr/libexec/bsdconfig/110.mouse/include
+OLD_DIRS+=usr/libexec/bsdconfig/110.mouse
+OLD_FILES+=usr/sbin/moused
+OLD_FILES+=usr/share/moused/5-generic-touchpad.quirks
+OLD_DIRS+=usr/share/moused
+
 # 20261001: Rename the syscons service to vtcons
 OLD_FILES+=etc/devd/syscons.conf
 OLD_FILES+=etc/rc.d/syscons

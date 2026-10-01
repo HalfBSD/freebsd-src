@@ -241,8 +241,7 @@ ZFS=		zfs \
 
 CONFGROUPS.${MK_LEGACY_CONSOLE}+=SYSCONS
 SYSCONSPACKAGE=			console-tools
-SYSCONS=	moused \
-		vtcons
+SYSCONS=	vtcons
 
 
 .if ${MK_OPENSSL} != "no" && ${MK_OPENSSL_KTLS} != "no"

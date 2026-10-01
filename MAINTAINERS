@@ -96,7 +96,6 @@ share/man	ziaee	Pre-commit review please
 share/mk	imp, bapt, bdrewery, emaste, sjg	Make is hard.
 share/mk/*.test.mk	imp,bapt,bdrewery,	Pre-commit review requested.
 			emaste,ngie,sjg,#test
-stand/forth		dteske	Pre-commit review requested.
 stand/lua		kevans	Pre-commit review requested
 stand			imp	Pre-commit review strongly requested.
 stdio			des	Pre-commit review requested

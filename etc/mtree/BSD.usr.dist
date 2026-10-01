@@ -284,8 +284,6 @@
             ..
             bhyve
             ..
-            bootforth
-            ..
             bsdconfig
             ..
             csh

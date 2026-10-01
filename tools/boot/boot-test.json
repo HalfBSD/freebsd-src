@@ -7,7 +7,7 @@
     "freebsd_version": "15.1",
     "netboot_nic": "e1000",
     "netboot_subnet_base": "198.18.0.0",
-    "efi_loaders": ["loader_lua", "loader_4th", "loader_simp", "boot1"]
+    "efi_loaders": ["loader_lua", "loader_simp", "boot1"]
   },
   "arch": {
     "amd64": {

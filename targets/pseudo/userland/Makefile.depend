@@ -501,7 +501,6 @@ DIRDEPS+= \
 	usr.sbin/mixer \
 	usr.sbin/mld6query \
 	usr.sbin/mlxcontrol \
-	usr.sbin/moused \
 	usr.sbin/mpsutil \
 	usr.sbin/mptutil \
 	usr.sbin/mtest \

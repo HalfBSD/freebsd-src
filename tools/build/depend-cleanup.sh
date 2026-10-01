@@ -507,12 +507,6 @@ fi
 # 20250813  4f766afc1ca0    tcopy converted to C++
 clean_dep   usr.bin/tcopy   tcopy c
 
-# 20250904  aef807876c30    moused binary to directory
-if [ -f "$OBJTOP"/usr.sbin/moused/moused ]; then
-	echo "Removing old moused binary"
-        run rm -fv "$OBJTOP"/usr.sbin/moused/moused
-fi
-
 if [ ${MACHINE} = riscv ]; then
 	# 20251031  df21a004be23  libc: scalar strrchr() in RISC-V assembly
 	clean_dep   lib/libc strrchr c

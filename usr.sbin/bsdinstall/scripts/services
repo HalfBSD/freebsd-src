@@ -66,11 +66,6 @@ if [ -x "${BSDINSTALL_CHROOT}/etc/rc.d/powerd" ]; then
 		${powerd_enable:-off}"
 fi
 
-if [ -x "${BSDINSTALL_CHROOT}/etc/rc.d/moused" ]; then
-	DAEMON_OPTIONS="$DAEMON_OPTIONS \
-	    moused \"PS/2 mouse pointer on console\" ${moused_enable:-off}"
-fi
-
 exec 5>&1
 DAEMONS=$(eval bsddialog --backtitle \"$OSNAME Installer\" \
     --title \"System Configuration\" --no-cancel --separate-output \
@@ -87,10 +82,8 @@ if [ $retval -ne $BSDDIALOG_OK ]; then
 fi
 
 havedump=
-havemouse=
 for daemon in $DAEMONS; do
 	[ "$daemon" = "dumpdev" ] && havedump=1 continue
-	[ "$daemon" = "moused" ] && havemouse=1
 	if [ "$daemon" = "ntpd_sync_on_start" ]; then
 		rcvar=${daemon}
 	else
@@ -98,10 +91,6 @@ for daemon in $DAEMONS; do
 	fi
 	echo ${rcvar}=\"YES\" >> $BSDINSTALL_TMPETC/rc.conf.services
 done
-
-if [ ! "$havemouse" ]; then
-	echo moused_nondefault_enable=\"NO\" >> $BSDINSTALL_TMPETC/rc.conf.services
-fi
 
 echo '# Set dumpdev to "AUTO" to enable crash dumps, "NO"' \
      'to disable' >> $BSDINSTALL_TMPETC/rc.conf.services

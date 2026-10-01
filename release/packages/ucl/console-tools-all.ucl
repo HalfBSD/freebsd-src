@@ -26,8 +26,6 @@ to the system:
   of the video console.
 * kdbmap(1) and kbdcontrol(1) can change the keyboard layout and control
   certain keyboard functions from software.
-* moused(8) can be used to interface with a mouse and provide a graphical
-  mouse cursor on the video console.
 EOD
 
 annotations {

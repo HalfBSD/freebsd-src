@@ -9,10 +9,6 @@ FILESNAME=	LC_MESSAGES
 .src.out:
 	grep -v -E '^(#$$|#[ ])' < ${.IMPSRC} > ${.TARGET}
 
-LOCALES+=	am_ET.UTF-8
-LOCALES+=	ar_SA.UTF-8
-LOCALES+=	be_BY.UTF-8
-LOCALES+=	cs_CZ.UTF-8
 LOCALES+=	de_DE.UTF-8
 LOCALES+=	el_GR.UTF-8
 LOCALES+=	en_US.UTF-8
@@ -55,24 +51,11 @@ LOCALES+=	zh_TW.UTF-8
 
 
 SAME+=		nl_NL.UTF-8 nl_BE.UTF-8
-SAME+=		nl_NL.UTF-8 af_ZA.UTF-8
-SAME+=		ar_SA.UTF-8 ar_QA.UTF-8
-SAME+=		ar_SA.UTF-8 ar_MA.UTF-8
-SAME+=		ar_SA.UTF-8 ar_JO.UTF-8
-SAME+=		ar_SA.UTF-8 ar_EG.UTF-8
-SAME+=		ar_SA.UTF-8 ar_AE.UTF-8
-SAME+=		sr_RS.UTF-8 bg_BG.UTF-8
 SAME+=		es_MX.UTF-8 es_ES.UTF-8
 SAME+=		es_MX.UTF-8 es_CR.UTF-8
 SAME+=		es_MX.UTF-8 es_AR.UTF-8
-SAME+=		es_MX.UTF-8 ca_IT.UTF-8
-SAME+=		es_MX.UTF-8 ca_FR.UTF-8
-SAME+=		es_MX.UTF-8 ca_ES.UTF-8
-SAME+=		es_MX.UTF-8 ca_AD.UTF-8
 SAME+=		sv_SE.UTF-8 sv_FI.UTF-8
-SAME+=		sv_SE.UTF-8 da_DK.UTF-8
 SAME+=		de_DE.UTF-8 de_CH.UTF-8
-SAME+=		de_DE.UTF-8 de_AT.UTF-8
 SAME+=		en_US.UTF-8 en_ZA.UTF-8
 SAME+=		en_US.UTF-8 en_SG.UTF-8
 SAME+=		en_US.UTF-8 en_PH.UTF-8

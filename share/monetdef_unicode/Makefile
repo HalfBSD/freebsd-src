@@ -9,17 +9,6 @@ FILESNAME=	LC_MONETARY
 .src.out:
 	grep -v -E '^(#$$|#[ ])' < ${.IMPSRC} > ${.TARGET}
 
-LOCALES+=	am_ET.UTF-8
-LOCALES+=	ar_AE.UTF-8
-LOCALES+=	ar_EG.UTF-8
-LOCALES+=	ar_JO.UTF-8
-LOCALES+=	ar_MA.UTF-8
-LOCALES+=	ar_QA.UTF-8
-LOCALES+=	ar_SA.UTF-8
-LOCALES+=	be_BY.UTF-8
-LOCALES+=	cs_CZ.UTF-8
-LOCALES+=	da_DK.UTF-8
-LOCALES+=	de_AT.UTF-8
 LOCALES+=	en_AU.UTF-8
 LOCALES+=	en_CA.UTF-8
 LOCALES+=	en_GB.UTF-8
@@ -67,17 +56,11 @@ LOCALES+=	zh_TW.UTF-8
 
 
 
-SAME+=		en_ZA.UTF-8 af_ZA.UTF-8
 SAME+=		sk_SK.UTF-8 pt_PT.UTF-8
 SAME+=		sk_SK.UTF-8 lv_LV.UTF-8
-SAME+=		sk_SK.UTF-8 bg_BG.UTF-8
 SAME+=		it_IT.UTF-8 es_ES.UTF-8
 SAME+=		it_IT.UTF-8 el_GR.UTF-8
 SAME+=		it_IT.UTF-8 de_DE.UTF-8
-SAME+=		it_IT.UTF-8 ca_IT.UTF-8
-SAME+=		it_IT.UTF-8 ca_FR.UTF-8
-SAME+=		it_IT.UTF-8 ca_ES.UTF-8
-SAME+=		it_IT.UTF-8 ca_AD.UTF-8
 SAME+=		it_CH.UTF-8 de_CH.UTF-8
 SAME+=		zh_HK.UTF-8 en_HK.UTF-8
 SAME+=		ga_IE.UTF-8 en_IE.UTF-8

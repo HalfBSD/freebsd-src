@@ -550,7 +550,6 @@ DIRDEPS+= \
 	usr.sbin/pwd_mkdb \
 	usr.sbin/quot \
 	usr.sbin/quotaon \
-	usr.sbin/rarpd \
 	usr.sbin/repquota \
 	usr.sbin/rip6query \
 	usr.sbin/rmt \

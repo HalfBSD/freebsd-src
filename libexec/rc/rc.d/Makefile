@@ -49,7 +49,6 @@ CONFS=	DAEMON \
 	pwcheck \
 	quota \
 	random \
-	rarpd \
 	rctl \
 	root \
 	routing \

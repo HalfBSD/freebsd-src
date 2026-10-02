@@ -161,7 +161,6 @@ DIRDEPS = \
 	lib/libusbhid \
 	lib/libutil \
 	lib/libvmmapi \
-	lib/libwrap \
 	lib/libxo \
 	lib/liby \
 	lib/libyaml \

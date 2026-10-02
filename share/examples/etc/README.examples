@@ -18,7 +18,6 @@ fbtab		- configuration file for login(1)
 gettytab	- defines port configuration for getty(8)
 group		- group permissions file (see group(5))
 hosts		- see hosts(5)
-hosts.allow	- defines allow trusted hosts
 hosts.equiv	- defines system-wide trusted hosts (see ruserok(3))
 hosts.lpd	- defines trusted hosts for lpd(8)
 locate.rc	- configuration file for locate(1)

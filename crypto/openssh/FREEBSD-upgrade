@@ -82,9 +82,6 @@
 
 13) Review changes to config.h very carefully.
 
-    Note that libwrap should not be defined in config.h; as of
-    r311585 (233932cc2a60) it is conditional on MK_TCP_WRAPPERS.
-
 14) If source files have been added or removed, update the appropriate
     makefiles to reflect changes in the vendor's Makefile.in.
 
@@ -140,31 +137,23 @@
    Our setusercontext(3) can set environment variables, which we must
    take care to transfer to the child's environment.
 
-5) TCP wrappers
-
-   Support for TCP wrappers was removed in upstream 6.7p1.  We've
-   added it back by porting the 6.6p1 code forward.
-
-   TCP wrappers support in sshd will be disabled in HEAD and will
-   be removed from FreeBSD in the future.
-
-6) Agent client reference counting
+5) Agent client reference counting
 
    We've added code to ssh-agent.c to implement client reference
    counting; the agent will automatically exit when the last client
    disconnects.
 
-7) Blocklist integration
+6) Blocklist integration
 
    We include blocklist (https://github.com/zoulasc/blocklist) in FreeBSD,
    and ssh is patched to report login failures to it.
 
-8) Paths
+7) Paths
 
    A number of paths are changed to match FreeBSD's configuration (e.g.,
    using /usr/local/ instead of /uxr/X11R6/).
 
-9) Retired patches
+8) Retired patches
 
    We added support for client-side VersionAddendum in 2002 (commit
    9e2cbe04ff4f) and provided a default value (e.g. FreeBSD-20220415).

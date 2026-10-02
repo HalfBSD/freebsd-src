@@ -105,11 +105,6 @@
 #include "srclimit.h"
 #include "atomicio.h"
 
-#ifdef LIBWRAP
-#include <tcpd.h>
-#include <syslog.h>
-#endif /* LIBWRAP */
-
 /* Re-exec fds */
 #define REEXEC_DEVCRYPTO_RESERVED_FD	(STDERR_FILENO + 1)
 #define REEXEC_CONFIG_PASS_FD		(STDERR_FILENO + 2)
@@ -948,11 +943,6 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s,
 	socklen_t fromlen;
 	u_char rnd[256];
 	sigset_t nsigset, osigset;
-#ifdef LIBWRAP
-	struct request_info req;
-
-	request_init(&req, RQ_DAEMON, __progname, 0);
-#endif
 
 	/* pipes connected to unauthenticated child sshd processes */
 	child_alloc();
@@ -1160,42 +1150,6 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s,
 					usleep(100 * 1000);
 				continue;
 			}
-#ifdef LIBWRAP
-			/* Check whether logins are denied from this host. */
-			request_set(&req, RQ_FILE, *newsock,
-			    RQ_CLIENT_NAME, "", RQ_CLIENT_ADDR, "", 0);
-			sock_host(&req);
-			if (!hosts_access(&req)) {
-				const struct linger l = { .l_onoff = 1,
-				    .l_linger  = 0 };
-
-				(void )setsockopt(*newsock, SOL_SOCKET,
-				    SO_LINGER, &l, sizeof(l));
-				(void )close(*newsock);
-				/*
-				 * Mimic message from libwrap's refuse() as
-				 * precisely as we can afford.  The authentic
-				 * message prints the IP address and the
-				 * hostname it resolves to in parentheses.  If
-				 * the IP address cannot be resolved to a
-				 * hostname, the IP address will be repeated
-				 * in parentheses.  As name resolution in the
-				 * main server loop could stall, and logging
-				 * resolved names adds little or no value to
-				 * incident investigation, this implementation
-				 * only repeats the IP address in parentheses.
-				 * This should resemble librwap's refuse()
-				 * closely enough not to break auditing
-				 * software like sshguard or custom scripts.
-				 */
-				syslog(LOG_WARNING,
-				    "refused connect from %s (%s)",
-				    eval_hostaddr(req.client),
-				    eval_hostaddr(req.client));
-				debug("Connection refused by tcp wrapper");
-				continue;
-			}
-#endif /* LIBWRAP */
 			if (unset_nonblock(*newsock) == -1) {
 				close(*newsock);
 				continue;

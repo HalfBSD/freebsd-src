@@ -26,24 +26,6 @@
 #define	RPCPROC_MOUNT_MNT	1
 #define	RPCPROC_MOUNT_UMNT	3
 
-#ifdef LIBWRAP
-# include <tcpd.h>
-#ifndef LIBWRAP_ALLOW_FACILITY
-# define LIBWRAP_ALLOW_FACILITY LOG_AUTH
-#endif
-#ifndef LIBWRAP_ALLOW_SEVERITY
-# define LIBWRAP_ALLOW_SEVERITY LOG_INFO
-#endif
-#ifndef LIBWRAP_DENY_FACILITY
-# define LIBWRAP_DENY_FACILITY LOG_AUTH
-#endif
-#ifndef LIBWRAP_DENY_SEVERITY
-# define LIBWRAP_DENY_SEVERITY LOG_WARNING
-#endif
-int allow_severity = LIBWRAP_ALLOW_FACILITY|LIBWRAP_ALLOW_SEVERITY;
-int deny_severity = LIBWRAP_DENY_FACILITY|LIBWRAP_DENY_SEVERITY;
-#endif
-
 #ifndef PORTMAP_LOG_FACILITY
 # define PORTMAP_LOG_FACILITY LOG_AUTH
 #endif
@@ -59,9 +41,6 @@ check_access(SVCXPRT *xprt, rpcproc_t proc, void *args, unsigned int rpcbvers)
 {
 	struct netbuf *caller = svc_getrpccaller(xprt);
 	struct sockaddr *addr = (struct sockaddr *)caller->buf;
-#ifdef LIBWRAP
-	struct request_info req;
-#endif
 	rpcprog_t prog = 0;
 	rpcb *rpcbp;
 	struct pmap *pmap;
@@ -103,18 +82,6 @@ check_access(SVCXPRT *xprt, rpcproc_t proc, void *args, unsigned int rpcbvers)
 		break;
 	}
 
-#ifdef LIBWRAP
-	if (libwrap && addr->sa_family != AF_LOCAL) {
-		request_init(&req, RQ_DAEMON, "rpcbind", RQ_CLIENT_SIN, addr,
-		    0);
-		sock_methods(&req);
-		if(!hosts_access(&req)) {
-			logit(deny_severity, addr, proc, prog,
-			    ": request from unauthorized host");
-			return 0;
-		}
-	}
-#endif
 	if (verboselog)
 		logit(log_severity, addr, proc, prog, "");
     	return 1;
@@ -153,7 +120,6 @@ is_loopback(struct netbuf *nbuf)
 	
 	return 0;
 }
-
 
 /* logit - report events of interest via the syslog daemon */
 void
@@ -276,12 +242,7 @@ check_callit(SVCXPRT *xprt, struct r_rmtcall_args *args, int versnum __unused)
 
 	return 1;
 deny:
-#ifdef LIBWRAP
-	logit(deny_severity, sa, args->rmt_proc, args->rmt_prog,
-	    ": indirect call not allowed");
-#else
 	logit(0, sa, args->rmt_proc, args->rmt_prog,
 	    ": indirect call not allowed");
-#endif
 	return 0;
 }

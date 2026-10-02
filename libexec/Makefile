@@ -30,10 +30,6 @@ SUBDIR.${MK_LIB${LIBCOMPAT}}+=	rtld-elf${libcompat}
 .endfor
 .endif
 
-.if ${MK_TCP_WRAPPERS} != "no"
-SUBDIR+=	tcpd
-.endif
-
 .if ${MK_TESTS} != "no"
 _tests=		tests
 .endif

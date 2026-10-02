@@ -18,11 +18,6 @@ CFLAGS+= -DINET6
 CFLAGS+= -DWARMSTART
 .endif
 
-.if ${MK_TCP_WRAPPERS} != "no"
-CFLAGS+= -DLIBWRAP
-LIBADD+= wrap
-.endif
-
 HAS_TESTS=
 SUBDIR.${MK_TESTS}+= tests
 

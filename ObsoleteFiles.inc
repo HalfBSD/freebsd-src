@@ -51,6 +51,18 @@
 #   xargs -n1 | sort | uniq -d;
 # done
 
+# 20261002: Remove TCP wrappers
+OLD_FILES+=etc/hosts.allow
+OLD_FILES+=etc/hosts.deny
+OLD_FILES+=etc/periodic/security/900.tcpwrap
+OLD_FILES+=usr/include/tcpd.h
+OLD_FILES+=usr/lib/libwrap.a
+OLD_FILES+=usr/lib/libwrap.so
+OLD_LIBS+=usr/lib/libwrap.so.6
+OLD_FILES+=usr/libexec/tcpd
+OLD_FILES+=usr/sbin/tcpdchk
+OLD_FILES+=usr/sbin/tcpdmatch
+
 # 20261002: Replace getty with direct root login from init
 OLD_FILES+=etc/gettytab
 OLD_FILES+=usr/libexec/getty

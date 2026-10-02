@@ -69,9 +69,6 @@ extern int debugging;
 extern int doabort;
 extern int terminate_rfd;
 extern volatile sig_atomic_t doterminate;
-#ifdef LIBWRAP
-extern int libwrap;
-#endif
 extern int verboselog;
 extern int insecure;
 extern int oldstyle_local;

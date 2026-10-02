@@ -15,7 +15,6 @@ SRCS=	sshd-session.c auth-rhosts.c auth-passwd.c \
 	uidswap.c platform-listen.c $(SKSRCS)
 PACKAGE=	ssh
 
-
 MAN=
 
 # pam should always happen before ssh here for static linking
@@ -31,12 +30,6 @@ CFLAGS+= -DUSE_BLOCKLIST=1 -I${SRCTOP}/contrib/blocklist/include
 SRCS+=	blocklist.c
 LIBADD+= blocklist
 LDFLAGS+=-L${LIBBLOCKLISTDIR}
-.endif
-
-
-.if ${MK_TCP_WRAPPERS} != "no"
-CFLAGS+=	-DLIBWRAP=1
-LIBADD+=	wrap
 .endif
 
 LIBADD+=	crypto

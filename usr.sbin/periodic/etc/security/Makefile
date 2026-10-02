@@ -26,10 +26,4 @@ IPFW+=		500.ipfwdenied \
 IPFWPACKAGE=	ipfw
 .endif
 
-.if ${MK_TCP_WRAPPERS} != "no"
-CONFGROUPS+=	TCPWRAP
-TCPWRAP+=	900.tcpwrap
-TCPWRAPPACKAGE=	tcpd
-.endif
-
 .include <bsd.prog.mk>

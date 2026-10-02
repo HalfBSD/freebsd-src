@@ -262,7 +262,7 @@ log_init(const char *av0, LogLevel level, SyslogFacility facility,
 	}
 
 	/*
-	 * If an external library (eg libwrap) attempts to use syslog
+	 * If an external library attempts to use syslog
 	 * immediately after reexec, syslog may be pointing to the wrong
 	 * facility, so we force an open/close of syslog here.
 	 */

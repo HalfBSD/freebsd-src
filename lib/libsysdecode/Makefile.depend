@@ -93,7 +93,6 @@ DIRDEPS = \
 	lib/libutil \
 	lib/libveriexec \
 	lib/libvmmapi \
-	lib/libwrap \
 	lib/libxo/libxo \
 	lib/libz \
 	lib/libzstd \

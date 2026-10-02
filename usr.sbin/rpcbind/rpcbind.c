@@ -95,9 +95,6 @@ struct pidfh *pidfh = NULL;
 static int runasdaemon = 0;
 int insecure = 0;
 int oldstyle_local = 0;
-#ifdef LIBWRAP
-int libwrap = 0;
-#endif
 int nofork = 0;
 int verboselog = 0;
 int nobind_localhost = 0;
@@ -852,12 +849,7 @@ parseargs(int argc, char *argv[])
 #else
 #define	WSOP	""
 #endif
-#ifdef LIBWRAP
-#define WRAPOP	"W"
-#else
-#define WRAPOP	""
-#endif
-	while ((c = getopt(argc, argv, "6adh:IiLlNP:s" WRAPOP WSOP)) != -1) {
+	while ((c = getopt(argc, argv, "6adh:IiLlNP:s" WSOP)) != -1) {
 		switch (c) {
 		case '6':
 			ipv6_only = 1;
@@ -899,11 +891,6 @@ parseargs(int argc, char *argv[])
 		case 'P':
 			pidfile_path = strdup(optarg);
 			break;
-#ifdef LIBWRAP
-		case 'W':
-			libwrap = 1;
-			break;
-#endif
 #ifdef WARMSTART
 		case 'w':
 			warmstart = 1;
@@ -911,8 +898,8 @@ parseargs(int argc, char *argv[])
 #endif
 		default:	/* error */
 			fprintf(stderr,
-			    "usage: rpcbind [-6adIiLlNPs%s%s] [-h bindip]\n",
-			    WRAPOP, WSOP);
+			    "usage: rpcbind [-6adIiLlNPs%s] [-h bindip]\n",
+			    WSOP);
 			exit (1);
 		}
 	}

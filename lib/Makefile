@@ -102,7 +102,6 @@ SUBDIR=	${SUBDIR_BOOTSTRAP} \
 	libutil \
 	libutil++ \
 	libuvmem \
-	libwrap \
 	libxo \
 	liby \
 	libyaml \

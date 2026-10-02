@@ -36,7 +36,6 @@ DIRDEPS = \
 	lib/libsbuf \
 	lib/libufs \
 	lib/libutil \
-	lib/libwrap \
 	lib/libxo \
 	lib/libz \
 	lib/msun \

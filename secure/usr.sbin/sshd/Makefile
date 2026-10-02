@@ -18,11 +18,6 @@ moduli: .MADE
 
 LIBADD=	ssh util
 
-
-.if ${MK_TCP_WRAPPERS} != "no"
-LIBADD+=	wrap
-.endif
-
 LIBADD+=	crypto
 
 .include <bsd.prog.mk>

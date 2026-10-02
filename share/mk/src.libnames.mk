@@ -195,7 +195,6 @@ _LIBRARIES=	\
 		uvmem \
 		uutil \
 		vmmapi \
-		wrap \
 		xo \
 		y \
 		z \

@@ -15,11 +15,10 @@ ATF_TESTS_SH+=	\
 TEST_METADATA+= execenv="jail"
 TEST_METADATA+= execenv_jail_params="vnet allow.raw_sockets"
 
-PROGS=		divapp
+PROGS=		divapp tcp_server
 
 ${PACKAGE}FILES+=	\
 		utils.subr \
-		echo_inetd.conf \
 		runner.subr \
 		pft_icmp_check.py \
 		pft_ping.py \

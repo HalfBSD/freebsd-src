@@ -1552,12 +1552,6 @@ OLD_FILES+=usr/sbin/traceroute6
 OLD_FILES+=usr/share/doc/IPv6/IMPLEMENTATION
 .endif
 
-.if ${MK_INETD} == no
-OLD_FILES+=etc/inetd.conf
-OLD_FILES+=etc/rc.d/inetd
-OLD_FILES+=usr/sbin/inetd
-.endif
-
 .if ${MK_IPFW} == no
 OLD_FILES+=etc/rc.d/ipfw
 OLD_FILES+=etc/rc.d/natd

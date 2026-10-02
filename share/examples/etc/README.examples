@@ -21,7 +21,6 @@ hosts		- see hosts(5)
 hosts.allow	- defines allow trusted hosts
 hosts.equiv	- defines system-wide trusted hosts (see ruserok(3))
 hosts.lpd	- defines trusted hosts for lpd(8)
-inetd.conf	- configuration file for inetd(8)
 locate.rc	- configuration file for locate(1)
 login.access	- configuration file for login(8) (see login.access(5))
 login.conf	- login class capabilities database (see login.conf(5))

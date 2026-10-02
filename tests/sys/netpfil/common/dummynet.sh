@@ -215,8 +215,7 @@ queue_body()
 
 	ifconfig ${epair}a 192.0.2.1/24 up
 	jexec alcatraz ifconfig ${epair}b 192.0.2.2/24 up
-	jexec alcatraz /usr/sbin/inetd -p ${PWD}/inetd-alcatraz.pid \
-	    $(atf_get_srcdir)/echo_inetd.conf
+	firewall_tcp_server alcatraz 4 7
 
 	# Sanity check
 	atf_check -s exit:0 -o ignore ping -i .1 -c 3 -s 1200 192.0.2.2
@@ -317,8 +316,7 @@ queue_v6_body()
 
 	ifconfig ${epair}a inet6 2001:db8:42::1/64 no_dad up
 	jexec alcatraz ifconfig ${epair}b inet6 2001:db8:42::2 no_dad up
-	jexec alcatraz /usr/sbin/inetd -p ${PWD}/inetd-alcatraz.pid \
-	    $(atf_get_srcdir)/echo_inetd.conf
+	firewall_tcp_server alcatraz 6 7
 	jexec alcatraz sysctl net.inet6.icmp6.errppslimit=0
 
 	# Sanity check

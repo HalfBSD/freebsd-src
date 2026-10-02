@@ -63,10 +63,6 @@ fi
 df -k $(dirname $diskimage) | tail -1 | awk '{print $4}' |
     grep -Eq '^[0-9]+$' || { echo FATAL; df -k $(dirname $diskimage); }
 
-grep -Eq "^discard" /etc/inetd.conf ||
-    echo "Discard is not enabled in /etc/inetd.conf"
-pgrep -Sq inetd || echo "inetd is not running"
-
 [ `sysctl -n kern.maxvnodes` -le 2000 ] &&
     echo "FATAL kern.maxvnodes is too small"
 

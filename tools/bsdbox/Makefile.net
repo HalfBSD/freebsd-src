@@ -6,10 +6,6 @@
 CRUNCH_PROGS_sbin+=	route ping
 CRUNCH_PROGS_usr.sbin+=	arp
 
-# inetd
-CRUNCH_PROGS_usr.sbin+=	inetd
-CRUNCH_LIBS+=	-lwrap
-
 #.if ${MK_INET6_SUPPORT} != "no"
 #CRUNCH_PROGS_sbin+= ping6
 #.endif

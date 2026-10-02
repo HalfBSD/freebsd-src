@@ -43,7 +43,7 @@ setup_network_v4()
 
 	jexec alcatraz ifconfig ${epair}b 192.0.2.1/31 up
 
-	jexec alcatraz /usr/sbin/inetd -p /dev/null $(atf_get_srcdir)/lookup_inetd.conf
+	firewall_tcp_server alcatraz 4 82 "GOOD 82"
 
 	# Sanity checks
 	atf_check -s exit:0 -o ignore ping -i .1 -c 3 -s 1200 192.0.2.1
@@ -128,7 +128,7 @@ setup_network_v6()
 
 	jexec alcatraz ifconfig ${epair}b inet6 2001:db8:42::2/64 up no_dad
 
-	jexec alcatraz /usr/sbin/inetd -p /dev/null $(atf_get_srcdir)/lookup_inetd.conf
+	firewall_tcp_server alcatraz 6 82 "GOOD 82"
 
 	# Sanity checks
 	atf_check -s exit:0 -o ignore ping6 -i .1 -c 3 -s 1200 2001:db8:42::2

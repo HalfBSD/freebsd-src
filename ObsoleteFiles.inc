@@ -51,6 +51,14 @@
 #   xargs -n1 | sort | uniq -d;
 # done
 
+# 20261002: Remove inetd
+OLD_FILES+=etc/inetd.conf
+OLD_FILES+=etc/rc.d/inetd
+OLD_FILES+=usr/sbin/inetd
+OLD_FILES+=usr/tests/sys/netpfil/common/echo_inetd.conf
+OLD_FILES+=usr/tests/sys/netpfil/ipfw/fwd_inetd.conf
+OLD_FILES+=usr/tests/sys/netpfil/ipfw/lookup_inetd.conf
+
 # 20261001: Remove locales
 OLD_FILES+=usr/share/nls/fr_FR.UTF-8/bc.cat
 OLD_FILES+=usr/share/nls/ja_JP.UTF-8/bc.cat

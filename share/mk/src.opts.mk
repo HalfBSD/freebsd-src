@@ -95,7 +95,6 @@ __DEFAULT_YES_OPTIONS = \
     ICONV \
     INET \
     INET6 \
-    INETD \
     IPFW \
     ISCSI \
     JAIL \

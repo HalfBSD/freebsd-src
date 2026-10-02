@@ -46,7 +46,9 @@ local_body()
 	jexec alcatraz ifconfig lo0 127.0.0.1/8 up
 	jexec alcatraz ifconfig ${epair}b 192.0.2.1/31 up
 	jexec alcatraz route add default 192.0.2.0
-	jexec alcatraz /usr/sbin/inetd -p /dev/null $(atf_get_srcdir)/fwd_inetd.conf
+	# Keep a listener on the original port to detect incorrect forwarding.
+	firewall_tcp_server alcatraz 4 80 "BAD 80"
+	firewall_tcp_server alcatraz 4 82 "GOOD 82"
 
 	firewall_config alcatraz ipfw ipfw \
 	    "ipfw add 10 fwd 127.0.0.1,82 tcp from any to any dst-port 80 in via ${epair}b" \

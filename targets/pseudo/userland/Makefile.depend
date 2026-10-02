@@ -479,7 +479,6 @@ DIRDEPS+= \
 	usr.sbin/gstat \
 	usr.sbin/i2c \
 	usr.sbin/ifmcstat \
-	usr.sbin/inetd \
 	usr.sbin/iostat \
 	usr.sbin/iovctl \
 	usr.sbin/ip6addrctl \

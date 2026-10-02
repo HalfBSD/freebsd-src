@@ -28,6 +28,32 @@
 
 . $(atf_get_srcdir)/../../common/vnet.subr
 
+# Start a test-only TCP echo or fixed-response server in a jail.
+# Jail cleanup terminates the listener and its connection handlers.
+firewall_tcp_server()
+{
+	tcp_server_jail="$1"
+	tcp_server_family="$2"
+	tcp_server_port="$3"
+	shift 3
+	tcp_server_ready="$(pwd)/tcp-server-${tcp_server_jail}-${tcp_server_family}-${tcp_server_port}.ready"
+	rm -f "${tcp_server_ready}"
+	jexec "${tcp_server_jail}" "$(atf_get_srcdir)/../common/tcp_server" \
+	    "-${tcp_server_family}" "${tcp_server_port}" "${tcp_server_ready}" "$@" \
+	    > "${tcp_server_ready}.log" 2>&1 &
+	tcp_server_pid=$!
+
+	tcp_server_attempt=0
+	while [ "${tcp_server_attempt}" -lt 50 ]; do
+		[ -f "${tcp_server_ready}" ] && return
+		kill -0 "${tcp_server_pid}" 2>/dev/null || break
+		sleep 0.1
+		tcp_server_attempt=$((tcp_server_attempt + 1))
+	done
+	cat "${tcp_server_ready}.log"
+	atf_fail "TCP server did not start on port ${tcp_server_port}"
+}
+
 firewall_config()
 {
 	jname=$1

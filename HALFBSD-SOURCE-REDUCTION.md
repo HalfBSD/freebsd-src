@@ -13,7 +13,7 @@ driver support, the cal/ncal calendar-display commands, and their libcalendar
 helper library were removed. Direct PVH boot support, Firecracker kernel
 and release configurations, and its UART workaround were also removed.
 The fixed-snapshot measurements below remain unchanged; they do not include
-these later removals.
+these later removals or the LinuxKPI compatibility repair described below.
 
 ## Size and change estimates
 
@@ -78,7 +78,15 @@ they do not imply that equivalent third-party software cannot be installed.
 - Xen guest drivers, hypercalls, loader integration, and Xen-specific tools.
   Generic PVH boot remained at the measured snapshot. It was subsequently
   removed on October 2, 2026, together with Firecracker kernel/image support
-  and its UART workaround.
+  and its UART workaround. The LinuxKPI `xen/xen.h` compatibility header
+  and the exported `lkpi_xen_initial_domain()` and `lkpi_xen_pv_domain()`
+  functions were restored on October 2, 2026, after the Xen removal caused
+  AMDGPU module loading to fail with an undefined `lkpi_xen_initial_domain`
+  symbol. Both queries always return `false`; they preserve the interface
+  expected by external drivers such as drm-kmod without restoring Xen
+  guest support. Source checks verified the restored header, function
+  definitions, and existing kernel/module build integration; kernel
+  compilation and hardware testing remain unverified.
 - Hyper-V drivers, guest utilities, and integration services.
 - The `nuageinit` cloud-init implementation and startup integration.
 

@@ -100,6 +100,8 @@
 #include <linux/seq_file.h>
 #include <linux/uuid.h>
 
+#include <xen/xen.h>
+
 #if defined(__i386__) || defined(__amd64__)
 #include <asm/smp.h>
 #include <asm/processor.h>
@@ -2805,6 +2807,22 @@ lkpi_get_static_single_cpu_mask(int cpuid)
 	    __func__, cpuid));
 
 	return (static_single_cpu_mask[cpuid]);
+}
+
+/*
+ * Keep the LinuxKPI ABI used by external drivers such as drm-kmod.
+ * Xen is not supported, so both domain queries always return false.
+ */
+bool
+lkpi_xen_initial_domain(void)
+{
+	return (false);
+}
+
+bool
+lkpi_xen_pv_domain(void)
+{
+	return (false);
 }
 
 static void

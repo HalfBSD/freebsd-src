@@ -1,4 +1,0 @@
-C
-POSIX
-C.UTF-8
-en_US.UTF-8

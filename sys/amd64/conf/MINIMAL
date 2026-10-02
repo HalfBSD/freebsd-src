@@ -131,7 +131,6 @@ device		virtio_scsi		# VirtIO SCSI device
 
 # Linux KVM paravirtualization support
 device		kvm_clock		# KVM paravirtual clock driver
-options		PVH			# Direct PVH boot protocol
 
 # evdev interface
 options 	EVDEV_SUPPORT		# evdev support in legacy drivers

@@ -101,7 +101,6 @@ _LIBRARIES=	\
 		bz2 \
 		c \
 		c_pic \
-		calendar \
 		cam \
 		casper \
 		cap_dns \
@@ -224,7 +223,6 @@ _LIBRARIES+= \
 		ibcm \
 		ibverbs \
 		irdma \
-		mlx4 \
 		mlx5 \
 		bnxtre \
 		rdmacm
@@ -401,7 +399,6 @@ _DP_cxgb4=	ibverbs pthread
 _DP_ibcm=	ibverbs
 _DP_ibverbs=
 _DP_irdma=	ibverbs pthread
-_DP_mlx4=	ibverbs pthread
 _DP_mlx5=	ibverbs pthread
 _DP_bnxtre=	ibverbs pthread
 _DP_rdmacm=	ibverbs

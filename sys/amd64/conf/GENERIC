@@ -352,7 +352,6 @@ device		virtio_balloon		# VirtIO Memory Balloon device
 
 # Linux KVM paravirtualization support
 device		kvm_clock		# KVM paravirtual clock driver
-options		PVH			# Direct PVH boot protocol
 
 # Netmap provides direct access to TX/RX rings on supported NICs
 device		netmap			# netmap(4) support

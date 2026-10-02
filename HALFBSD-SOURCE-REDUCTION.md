@@ -8,6 +8,13 @@ Measured on October 2, 2026, using these fixed snapshots:
 Both snapshots include the FreeBSD 15.1-RELEASE-p4 security and errata
 updates. These measurements precede the addition of this report.
 
+Subsequent changes on October 2, 2026: mlx4 core, Ethernet, and InfiniBand
+driver support, the cal/ncal calendar-display commands, and their libcalendar
+helper library were removed. Direct PVH boot support, Firecracker kernel
+and release configurations, and its UART workaround were also removed.
+The fixed-snapshot measurements below remain unchanged; they do not include
+these later removals.
+
 ## Size and change estimates
 
 HalfBSD has removed roughly **15% of the files and 11% of the tree's
@@ -69,7 +76,9 @@ they do not imply that equivalent third-party software cannot be installed.
 - BOOTP, bootparam, remote boot, and reverse ARP services: `bootpd`,
   `bootparamd`, `rbootd`, and `rarpd`.
 - Xen guest drivers, hypercalls, loader integration, and Xen-specific tools.
-  Generic PVH boot remains for non-Xen use, including Firecracker.
+  Generic PVH boot remained at the measured snapshot. It was subsequently
+  removed on October 2, 2026, together with Firecracker kernel/image support
+  and its UART workaround.
 - Hyper-V drivers, guest utilities, and integration services.
 - The `nuageinit` cloud-init implementation and startup integration.
 
@@ -86,13 +95,17 @@ they do not imply that equivalent third-party software cannot be installed.
   diagnostic programs, and management components.
 - The mlx5 driver source tree, its Ethernet and hardware-offload components,
   kernel modules, and `mlx5tool`, removed by `f779687025e8` ("Updates").
-  The mlx4 source tree remains.
+  The mlx4 source tree remained at the measured snapshot and was subsequently
+  removed on October 2, 2026, along with its modules and build integration.
 - The `inetd` superserver and its configuration/startup integration.
 - Telnet client/server sources and supporting library code.
 - The legacy remote-command suite and related remote status, user-listing,
   and broadcast tools/services, including `rup`, `ruptime`, `rusers`,
   `rwall`, `rwho`, and `rwhod`.
-- The base FTP client (`ftp`/tnftp). This does not describe removal of `ftpd`.
+- The base FTP client (`ftp`/tnftp). The base `ftpd` daemon had already been
+  removed upstream by `259bb93b80c0` ("Remove ftpd(8)") and is absent from
+  both measured snapshots; its removal is not attributed to HalfBSD here.
+  The bundled Heimdal FTP server sources were removed with Heimdal.
 - Finger client/server and talk client/server.
 - SNMP daemon, tools, and supporting bsnmp/libbegemot libraries.
 
@@ -135,7 +148,9 @@ they do not imply that equivalent third-party software cannot be installed.
 - GNU dialog and its `dpv`/libdpv/libfigpar components.
 - Games and associated data/utilities, including `fortune`, `caesar`,
   `factor`, `grdc`, `morse`, `number`, `pom`, `primes`, and `random`.
-- The `calendar` reminder utility and its data/integration. `cal`/`ncal` remain.
+- The `calendar` reminder utility and its data/integration. The `cal`/`ncal`
+  display commands remained at the measured snapshot and were subsequently
+  removed on October 2, 2026, along with their tests and `libcalendar` helper.
 - Installed manual-page readers, lookup/indexing utilities, manual sources,
   manual build rules, and mandoc sources.
 - Most locale definitions and aliases. The remaining locale source data

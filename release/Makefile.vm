@@ -291,7 +291,6 @@ cloudware-release:
 
 .include "${.CURDIR}/Makefile.azure"
 .include "${.CURDIR}/Makefile.ec2"
-.include "${.CURDIR}/Makefile.firecracker"
 .include "${.CURDIR}/Makefile.gce"
 .include "${.CURDIR}/Makefile.vagrant"
 .include "${.CURDIR}/Makefile.inc1"

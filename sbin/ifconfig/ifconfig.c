@@ -2064,7 +2064,7 @@ ifmaybeload(struct ifconfig_args *args, const char *name)
 
 	/*
 	 * Try to load the module.  But ignore failures, because ifconfig can't
-	 * infer the names of all drivers (eg mlx4en(4)).
+	 * infer the names of all drivers.
 	 */
 	(void) kldload(ifkind);
 }

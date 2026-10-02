@@ -32,7 +32,6 @@ DIRDEPS = \
 	lib/libbz2 \
 	lib/libc \
 	lib/libc++ \
-	lib/libcalendar \
 	lib/libcam \
 	lib/libcapsicum \
 	lib/libcasper/libcasper \

@@ -40,7 +40,6 @@ SUBDIR=	${SUBDIR_BOOTSTRAP} \
 	libbsdstat \
 	libbsm \
 	libbz2 \
-	libcalendar \
 	libcam \
 	libcapsicum \
 	libcasper \

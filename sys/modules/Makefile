@@ -252,9 +252,6 @@ SUBDIR=	\
 	miiproxy \
 	mlx \
 	mlxfw \
-	${_mlx4} \
-	${_mlx4ib} \
-	${_mlx4en} \
 	${_mlx5ib} \
 	mmc \
 	mmcsd \
@@ -545,13 +542,7 @@ _rdma=		rdma
 .if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "amd64" || \
     ${MACHINE_CPUARCH} == "i386"
 _ipmi=		ipmi
-_mlx4=		mlx4
-.if (${MK_INET_SUPPORT} != "no" && ${MK_INET6_SUPPORT} != "no") || \
-	defined(ALL_MODULES)
-_mlx4en=	mlx4en
-.endif
 .if ${MK_OFED} != "no" || defined(ALL_MODULES)
-_mlx4ib=	mlx4ib
 _mlx5ib=	mlx5ib
 .endif
 .endif

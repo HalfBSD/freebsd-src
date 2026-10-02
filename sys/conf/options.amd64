@@ -69,5 +69,3 @@ UART_NS8250_EARLY_PORT	opt_uart.h
 
 # Enable asmc(4)-specific debug logic.
 ASMC_DEBUG		opt_asmc.h
-
-PVH				opt_global.h

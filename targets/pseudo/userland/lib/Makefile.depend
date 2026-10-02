@@ -46,7 +46,6 @@ DIRDEPS = \
 	lib/libc_nonshared \
 	lib/libc++ \
 	lib/libc++experimental \
-	lib/libcalendar \
 	lib/libcam \
 	lib/libcapsicum \
 	lib/libcompat \

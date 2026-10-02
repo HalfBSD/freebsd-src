@@ -344,8 +344,6 @@ device		cpufreq
 #	802.11 network adapters
 #	Requires the iwn firmware module
 # mthca: Mellanox HCA InfiniBand
-# mlx4ib: Mellanox ConnectX HCA InfiniBand
-# mlx4en: Mellanox ConnectX HCA Ethernet
 # nfe:	nVidia nForce MCP on-board Ethernet Networking (BSD open source)
 # vmx:	VMware VMXNET3 Ethernet (BSD open source)
 # wpi:	Intel 3945ABG Wireless LAN controller
@@ -360,9 +358,6 @@ device		iwm		# Intel IEEE 802.11ac wireless NICs.
 device		iwn		# Intel 4965/1000/5000/6000 wireless NICs.
 device		iwx		# Intel IEEE 802.11ax wireless NICs.
 device  	mthca		# Mellanox HCA InfiniBand
-device  	mlx4		# Shared code module between IB and Ethernet
-device  	mlx4ib		# Mellanox ConnectX HCA InfiniBand
-device  	mlx4en		# Mellanox ConnectX HCA Ethernet
 device		nfe		# nVidia nForce MCP on-board Ethernet
 device		vmx		# VMware VMXNET3 Ethernet
 device		wpi		# Intel 3945ABG wireless NICs.

@@ -1,6 +1,22 @@
 Updating Information for users of HalfBSD.
 
 20261002:
+	Direct PVH kernel boot and the Firecracker kernel configuration and
+	release image targets have been removed.  Remove the PVH option from
+	custom kernel configurations.  Firecracker guests are no longer
+	supported; amd64 systems must boot through the UEFI loader.
+
+20261002:
+	The cal and ncal calendar-display commands and their libcalendar
+	helper library have been removed from the base system.
+
+20261002:
+	The mlx4 core, Ethernet, and InfiniBand drivers have been removed.
+	Remove mlx4, mlx4en, and mlx4ib devices from custom kernel
+	configurations and their load directives from loader.conf.
+	Mellanox adapters requiring these drivers are no longer supported.
+
+20261002:
 	Import the FreeBSD 15.1-RELEASE-p4 security and errata fixes:
 	EN-26:23.syslogd, EN-26:24.tzdata, SA-26:64.sysvsem,
 	SA-26:65.kqueue, SA-26:66.jail, SA-26:67.ktls,

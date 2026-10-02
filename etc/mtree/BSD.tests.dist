@@ -1173,8 +1173,6 @@
         ..
         mktemp
         ..
-        ncal
-        ..
         opensm
         ..
         patch

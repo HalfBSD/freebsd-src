@@ -8,8 +8,7 @@ SECTIONS
   . = kernbase + kernload + SIZEOF_HEADERS;
   /*
    * Use the AT keyword in order to set the right LMA that contains
-   * the physical address where the section should be loaded. This is
-   * needed for direct PVH boot, which honours the LMA.
+   * the physical address where the section should be loaded.
    */
   .interp         : AT (kernload + SIZEOF_HEADERS) { *(.interp) }
   .hash           : { *(.hash) }

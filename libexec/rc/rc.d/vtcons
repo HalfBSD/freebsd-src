@@ -68,9 +68,6 @@ sc_init()
 				BIOS)
 					_sc_bootmethod="bios"
 					;;
-				PVH)
-					_sc_bootmethod="pvh"
-					;;
 				*)
 					_sc_bootmethod="uefi" # Default to UEFI
 					;;

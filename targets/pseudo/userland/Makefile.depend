@@ -248,7 +248,6 @@ DIRDEPS+= \
 	usr.bin/mkuzip \
 	usr.bin/mt \
 	usr.bin/nc \
-	usr.bin/ncal \
 	usr.bin/netstat \
 	usr.bin/newgrp \
 	usr.bin/newkey \

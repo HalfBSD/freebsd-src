@@ -91,7 +91,6 @@ SUBDIR=	alias \
 	mktemp \
 	mkuzip \
 	mt \
-	ncal \
 	ncurses \
 	netstat \
 	newgrp \

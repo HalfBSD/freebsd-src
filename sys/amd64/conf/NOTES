@@ -126,9 +126,6 @@ options		ASMC_DEBUG	# Enable asmc(4)-specific debug logic.
 # Only for legacy Atom C2XXX chipsets.
 device		qat_c2xxx
 
-# Direct PVH boot protocol (e.g., Firecracker)
-options		PVH
-
 #####################################################################
 # ABI Emulation
 

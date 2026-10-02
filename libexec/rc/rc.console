@@ -1,0 +1,17 @@
+#!/bin/sh
+# SPDX-License-Identifier: BSD-2-Clause
+#
+# Automatic local console login, started by init after terminal setup.
+# Use the normal rc.conf loader so defaults and rc.conf.local apply too.
+
+. /etc/rc.subr
+load_rc_config
+
+# Require an account name, rather than a numeric UID accepted by id(1).
+# Quote the value throughout so it remains a single login argument.
+if [ -z "${console_user}" ] ||
+    [ "$(/usr/bin/id -un -- "${console_user}" 2>/dev/null)" != "${console_user}" ]; then
+	console_user=root
+fi
+
+exec /usr/bin/login -f -- "${console_user}"

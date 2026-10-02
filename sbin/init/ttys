@@ -5,7 +5,7 @@
 # name  The name of the terminal device.
 #
 # getty The program to start running on the terminal.  HalfBSD starts
-#       login directly; init prepares its controlling terminal.  Use
+#       login through rc.console; init prepares its controlling terminal. Use
 #       none when no login session is needed.
 #
 # type The initial terminal type for this port.  For hardwired
@@ -24,5 +24,5 @@
 # when going to single-user mode.
 console	none				unknown	off secure
 #
-# HalfBSD automatically logs in as root on its only local login terminal.
-ttyv0	"/usr/bin/login -f root"		xterm	onifexists secure
+# HalfBSD automatically logs in as console_user (default root) from rc.conf.
+ttyv0	"/etc/rc.console"		xterm	onifexists secure

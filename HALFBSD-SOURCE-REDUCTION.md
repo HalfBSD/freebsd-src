@@ -137,13 +137,17 @@ they do not imply that equivalent third-party software cannot be installed.
 - The legacy syscons console, its data, and libvgl. The vt console remains;
   its startup service was renamed from `syscons` to `vtcons`.
 - The default `/etc/ttys` configuration now provides only the `ttyv0` local
-  session, automatically logged in as root through `/usr/bin/login -f root`.
+  session, automatically logged in through `/etc/rc.console`. Set
+  `console_user="charlie"` in `/etc/rc.conf` to select an existing account;
+  an unset, empty, or invalid account name falls back to root. The helper
+  loads the standard rc configuration, including `/etc/rc.conf.local`, and
+  runs `/usr/bin/login -f` for the selected user on each new session.
   Init prepares the controlling terminal and resets its modes before starting
-  login; exiting the session starts a fresh root login. Extra virtual-terminal,
+  login; exiting the session starts a fresh automatic login. Extra virtual-terminal,
   serial-terminal, and other console login entries were removed on October 2,
   2026. The non-login `console` entry remains for single-user authentication
-  policy. Wayland startup remains manual, after switching to a normal user
-  with `su`.
+  policy. The setting does not change the single-user recovery shell.
+  Wayland startup remains manual.
 - The getty program, gettytab configuration, build integration, and dependent
   installer auxiliary consoles and NanoBSD tty overrides were removed.
   Installed copies are listed for cleanup in `ObsoleteFiles.inc`.

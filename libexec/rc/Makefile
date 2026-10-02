@@ -9,7 +9,7 @@ CONFETCPACKAGE=	rc
 CONFETC+=	rc.firewall
 .endif
 CONFETCMODE=	644
-CONFETCEXEC=	netstart pccard_ether rc.resume rc.suspend
+CONFETCEXEC=	netstart pccard_ether rc.console rc.resume rc.suspend
 CONFETCEXECDIR=	/etc
 CONFETCEXECMODE=	755
 CONFETCEXECPACKAGE=	rc

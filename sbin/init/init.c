@@ -1357,12 +1357,13 @@ setupargv(session_t *sp, struct ttyent *typ)
 		free(sp->se_getty_argv_space);
 		free(sp->se_getty_argv);
 	}
-	/* login takes a user name, not the tty argument expected by getty. */
-	sp->se_login = strncmp(typ->ty_getty, _PATH_LOGIN,
+	/* Direct login and its console helper do not take a tty argument. */
+	sp->se_login = strcmp(typ->ty_getty, _PATH_CONSOLE_LOGIN) == 0 ||
+	    (strncmp(typ->ty_getty, _PATH_LOGIN,
 	    sizeof(_PATH_LOGIN) - 1) == 0 &&
 	    (typ->ty_getty[sizeof(_PATH_LOGIN) - 1] == '\0' ||
 	    typ->ty_getty[sizeof(_PATH_LOGIN) - 1] == ' ' ||
-	    typ->ty_getty[sizeof(_PATH_LOGIN) - 1] == '\t');
+	    typ->ty_getty[sizeof(_PATH_LOGIN) - 1] == '\t'));
 	if (asprintf(&sp->se_getty, "%s%s%s", typ->ty_getty,
 	    sp->se_login ? "" : " ", sp->se_login ? "" : typ->ty_name) < 0)
 		err(1, "asprintf");

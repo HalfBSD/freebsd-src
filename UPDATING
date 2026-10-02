@@ -1,5 +1,19 @@
 Updating Information for users of HalfBSD.
 
+20261002:
+	Import the FreeBSD 15.1-RELEASE-p4 security and errata fixes:
+	EN-26:23.syslogd, EN-26:24.tzdata, SA-26:64.sysvsem,
+	SA-26:65.kqueue, SA-26:66.jail, SA-26:67.ktls,
+	SA-26:68.openssl, and SA-26:69.udp.
+
+	These fix syslogd pipe-child cleanup on reload, semaphore and kqueue
+	memory-safety bugs, jail filesystem escapes, receive-side kernel TLS
+	denial of service, OpenSSL DTLS retransmission, and IPv6 UDP jail
+	network isolation.  The timezone database is updated to 2026d.
+
+	The new kern.ipc.tls.rx_enable tunable allows TLS receive offload
+	to be disabled independently of transmit offload.
+
 20261001:
 	The x86 BIOS boot loaders have been removed.  Systems must now boot
 	using UEFI.  Before updating, install loader.efi in an EFI System

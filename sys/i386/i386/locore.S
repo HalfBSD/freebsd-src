@@ -421,12 +421,3 @@ trycpuid:	/* Use the `cpuid' instruction. */
 	popl	%ebx
 	ret
 END(identify_cpu)
-
-#ifdef XENHVM
-/* Xen Hypercall page */
-	.text
-.p2align PAGE_SHIFT, 0x90	/* Hypercall_page needs to be PAGE aligned */
-
-ENTRY(hypercall_page)
-	.skip	0x1000, 0x90	/* Fill with "nop"s */
-#endif

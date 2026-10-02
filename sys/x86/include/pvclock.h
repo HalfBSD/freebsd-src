@@ -124,16 +124,8 @@ struct pvclock {
 	struct cdev			*cdev;
 };
 
-/*
- * NOTE: 'pvclock_get_timecount()' and 'pvclock_get_wallclock()' are purely
- * transitional; they should be removed after 'dev/xen/timer/timer.c' has been
- * migrated to the 'struct pvclock' API.
- */
 void		pvclock_resume(void);
 uint64_t	pvclock_tsc_freq(struct pvclock_vcpu_time_info *ti);
-uint64_t	pvclock_get_timecount(struct pvclock_vcpu_time_info *ti);
-void		pvclock_get_wallclock(struct pvclock_wall_clock *wc,
-		    struct timespec *ts);
 
 void		pvclock_init(struct pvclock *pvc, device_t dev,
 		    const char *tc_name, int tc_quality, u_int tc_flags);

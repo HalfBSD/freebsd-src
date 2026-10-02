@@ -106,7 +106,6 @@ Summary:         Metapackage which tracks in ${kmodname} kernel module for newes
 Group:           System Environment/Kernel
 
 Provides:        ${kmodname}-kmod = %{?epoch:%{epoch}:}%{version}-%{release}
-Provides:        kmod-${kmodname}-xen = %{?epoch:%{epoch}:}%{version}-%{release}
 Provides:        kmod-${kmodname}-smp = %{?epoch:%{epoch}:}%{version}-%{release}
 Provides:        kmod-${kmodname}-PAE = %{?epoch:%{epoch}:}%{version}-%{release}
 Requires:        akmod-${kmodname} = %{?epoch:%{epoch}:}%{version}-%{release}
@@ -520,7 +519,7 @@ if [[ -e ./kmodtool-kernel-variants ]]; then
 elif [[ -e /usr/share/kmodtool/kernel-variants ]] ; then
 	kernels_known_variants="$(cat /usr/share/kmodtool/kernel-variants)"
 else
-	kernels_known_variants="@(smp?(-debug)|PAE?(-debug)|debug|kdump|xen|kirkwood|highbank|imx|omap|tegra)"
+	kernels_known_variants="@(smp?(-debug)|PAE?(-debug)|debug|kdump|kirkwood|highbank|imx|omap|tegra)"
 fi
 
 # general sanity checks

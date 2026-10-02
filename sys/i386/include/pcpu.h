@@ -65,7 +65,6 @@ _Static_assert(sizeof(struct monitorbuf) == 128, "2x cache line");
 	u_int	pc_apic_id;						\
 	int	pc_private_tss;		/* Flag indicating private tss*/\
 	u_int	pc_cmci_mask;		/* MCx banks for CMCI */	\
-	u_int	pc_vcpu_id;		/* Xen vCPU ID */		\
 	struct	mtx pc_cmap_lock;					\
 	void	*pc_cmap_pte1;						\
 	void	*pc_cmap_pte2;						\

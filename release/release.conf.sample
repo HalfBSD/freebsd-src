@@ -29,7 +29,7 @@ PORTBRANCH="main"
 #TARGET_ARCH="amd64"
 #KERNEL="GENERIC"
 ## Multiple kernels may be set.
-#KERNEL="GENERIC XENHVM"
+#KERNEL="GENERIC"
 
 ## Set to specify a custom make.conf and/or src.conf
 #MAKE_CONF="/etc/local/make.conf"

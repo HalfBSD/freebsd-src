@@ -52,7 +52,7 @@
 #define	KTR_TRAP	0x00000100		/* Trap processing */
 #define	KTR_INTR	0x00000200		/* Interrupt tracing */
 #define	KTR_SIG		0x00000400		/* Signal processing */
-#define	KTR_SPARE2	0x00000800		/* cxgb, amd64, xen, clk, &c */
+#define	KTR_SPARE2	0x00000800		/* cxgb, amd64, clk, &c */
 #define	KTR_PROC	0x00001000		/* Process scheduling */
 #define	KTR_SYSC	0x00002000		/* System call */
 #define	KTR_INIT	0x00004000		/* System initialization */

@@ -749,7 +749,6 @@ extern ACPI_DMTABLE_INFO        AcpiDmTableInfoWdrt[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoWpbt[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoWpbt0[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoWsmt[];
-extern ACPI_DMTABLE_INFO        AcpiDmTableInfoXenv[];
 
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoGeneric[][2];
 

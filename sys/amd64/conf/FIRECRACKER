@@ -180,15 +180,9 @@ options 	NO_LEGACY_PCIB
 device		acpi
 device		pci
 
-# Xen HVM Guest Optimizations
-# NOTE: XENHVM depends on xenpci and xentimer.
-# They must be added or removed together.
-# NOTE: These are present in FIRECRACKER because the PVH boot method
-# originates from Xen; once that code is untangled these can be removed.
-options 	XENHVM			# Xen HVM kernel infrastructure
-device		xenpci			# Xen HVM Hypervisor services driver
-device		xentimer		# Xen x86 PV timer device
-
 # EFI devices
 device		efidev			# EFI pseudo-device
 device		efirtc			# EFI RTC
+
+# Direct PVH boot protocol
+options		PVH

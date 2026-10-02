@@ -1,8 +1,4 @@
-/******************************************************************************
- * console.h
- *
- * Console I/O interface for Xen guest OSes.
- *
+/*
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
  * deal in the Software without restriction, including without limitation the
@@ -21,36 +17,41 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * Copyright (c) 2005, Keir Fraser
+ * Copyright (c) 2016, Citrix Systems, Inc.
  */
 
-#ifndef __XEN_PUBLIC_IO_CONSOLE_H__
-#define __XEN_PUBLIC_IO_CONSOLE_H__
+#ifndef _X86_PVH_H_
+#define _X86_PVH_H_
 
-typedef uint32_t XENCONS_RING_IDX;
+/* PVH boot protocol, also used by Firecracker. Addresses are physical. */
+#define PVH_START_MAGIC 0x336ec578
 
-#define MASK_XENCONS_IDX(idx, ring) ((idx) & (sizeof(ring)-1))
-
-struct xencons_interface {
-    char in[1024];
-    char out[2048];
-    XENCONS_RING_IDX in_cons, in_prod;
-    XENCONS_RING_IDX out_cons, out_prod;
+struct pvh_start_info {
+	uint32_t magic;
+	uint32_t version;
+	uint32_t flags;
+	uint32_t nr_modules;
+	uint64_t modlist_paddr;
+	uint64_t cmdline_paddr;
+	uint64_t rsdp_paddr;
+	/* The following fields require version >= 1. */
+	uint64_t memmap_paddr;
+	uint32_t memmap_entries;
+	uint32_t reserved;
 };
 
-#ifdef XEN_WANT_FLEX_CONSOLE_RING
-#include "ring.h"
-DEFINE_XEN_FLEX_RING(xencons);
-#endif
+struct pvh_modlist_entry {
+	uint64_t paddr;
+	uint64_t size;
+	uint64_t cmdline_paddr;
+	uint64_t reserved;
+};
 
-#endif /* __XEN_PUBLIC_IO_CONSOLE_H__ */
+struct pvh_memmap_entry {
+	uint64_t addr;
+	uint64_t size;
+	uint32_t type;
+	uint32_t reserved;
+};
 
-/*
- * Local variables:
- * mode: C
- * c-file-style: "BSD"
- * c-basic-offset: 4
- * tab-width: 4
- * indent-tabs-mode: nil
- * End:
- */
+#endif /* _X86_PVH_H_ */

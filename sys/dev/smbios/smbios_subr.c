@@ -46,7 +46,6 @@ static const struct {
 	{ "QEMU",	VM_GUEST_VM },		/* QEMU */
 	{ "Plex86",	VM_GUEST_VM },		/* Plex86 */
 	{ "Bochs",	VM_GUEST_VM },		/* Bochs */
-	{ "Xen",	VM_GUEST_XEN },		/* Xen */
 	{ "BHYVE",	VM_GUEST_BHYVE },	/* bhyve */
 	{ "Seabios",	VM_GUEST_KVM },		/* KVM */
 };

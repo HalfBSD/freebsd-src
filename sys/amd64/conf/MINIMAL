@@ -131,14 +131,7 @@ device		virtio_scsi		# VirtIO SCSI device
 
 # Linux KVM paravirtualization support
 device		kvm_clock		# KVM paravirtual clock driver
-
-# Xen HVM Guest Optimizations
-# NOTE: XENHVM depends on xenpci and xentimer.
-# They must be added or removed together.
-options 	XENHVM			# Xen HVM kernel infrastructure
-device		xenefi			# Xen EFI timer device
-device		xenpci			# Xen HVM Hypervisor services driver
-device		xentimer		# Xen x86 PV timer device
+options		PVH			# Direct PVH boot protocol
 
 # evdev interface
 options 	EVDEV_SUPPORT		# evdev support in legacy drivers

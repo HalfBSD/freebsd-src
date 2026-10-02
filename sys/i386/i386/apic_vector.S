@@ -169,25 +169,6 @@ IDTVEC(errorint)
 	call	*%eax
 	jmp	doreti
 
-#ifdef XENHVM
-/*
- * Xen event channel upcall interrupt handler.
- * Only used when the hypervisor supports direct vector callbacks.
- */
-	.text
-	SUPERALIGN_TEXT
-IDTVEC(xen_intr_upcall)
-	PUSH_FRAME
-	SET_KERNEL_SREGS
-	cld
-	KENTER
-	pushl	%esp
-	movl	$xen_arch_intr_handle_upcall, %eax
-	call	*%eax
-	add	$4, %esp
-	jmp	doreti
-#endif
-
 #ifdef SMP
 /*
  * Global address space TLB shootdown.

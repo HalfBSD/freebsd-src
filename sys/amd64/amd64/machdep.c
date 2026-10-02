@@ -511,9 +511,6 @@ extern inthand_t
 #ifdef KDTRACE_HOOKS
 	IDTVEC(dtrace_ret), IDTVEC(dtrace_ret_pti),
 #endif
-#ifdef XENHVM
-	IDTVEC(xen_intr_upcall), IDTVEC(xen_intr_upcall_pti),
-#endif
 	IDTVEC(fast_syscall), IDTVEC(fast_syscall32),
 	IDTVEC(fast_syscall_pti);
 
@@ -1460,10 +1457,6 @@ hammer_time(u_int64_t modulep, u_int64_t physfree)
 #ifdef KDTRACE_HOOKS
 	setidt(IDT_DTRACE_RET, pti ? &IDTVEC(dtrace_ret_pti) :
 	    &IDTVEC(dtrace_ret), SDT_SYSIGT, SEL_UPL, 0);
-#endif
-#ifdef XENHVM
-	setidt(IDT_EVTCHN, pti ? &IDTVEC(xen_intr_upcall_pti) :
-	    &IDTVEC(xen_intr_upcall), SDT_SYSIGT, SEL_KPL, 0);
 #endif
 	r_idt.rd_limit = sizeof(idt0) - 1;
 	r_idt.rd_base = (long) idt;

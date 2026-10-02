@@ -2929,7 +2929,7 @@ retry:
 			 * the transition from allocated to free for managed
 			 * pages is blocked by the page busy lock.) (3) It is
 			 * allocated but not contained by an object and not
-			 * wired, e.g., allocated by Xen's balloon driver.
+			 * wired.
 			 */
 			run_ext = 0;
 		}

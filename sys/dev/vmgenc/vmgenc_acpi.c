@@ -38,7 +38,6 @@
  * HyperV/Azure:
  * - QEMU: https://bugzilla.redhat.com/show_bug.cgi?id=1118834
  * - VMware/ESXi: https://kb.vmware.com/s/article/2032586
- * - Xen: https://github.com/xenserver/xen-4.5/blob/master/tools/firmware/hvmloader/acpi/dsdt.asl#L456
  */
 
 #include <sys/param.h>

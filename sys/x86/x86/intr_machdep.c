@@ -113,9 +113,8 @@ static void	intrcnt_register(struct intsrc *is);
 /*
  * SYSINIT levels for SI_SUB_INTR:
  *
- * SI_ORDER_FIRST: Initialize locks and pics TAILQ, xen_hvm_cpu_init
- * SI_ORDER_SECOND: Xen PICs
- * SI_ORDER_THIRD: Add I/O APIC PICs, alloc MSI and Xen IRQ ranges
+ * SI_ORDER_FIRST: Initialize locks and pics TAILQ
+ * SI_ORDER_THIRD: Add I/O APIC PICs and allocate MSI IRQ ranges
  * SI_ORDER_FOURTH: Add 8259A PICs
  * SI_ORDER_FOURTH + 1: Finalize interrupt count and add interrupt sources
  * SI_ORDER_MIDDLE: SMP interrupt counters

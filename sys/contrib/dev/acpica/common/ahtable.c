@@ -277,7 +277,6 @@ const AH_TABLE      AcpiGbl_SupportedTables[] =
     {ACPI_SIG_WDRT, "Watchdog Resource Table"},
     {ACPI_SIG_WPBT, "Windows Platform Binary Table"},
     {ACPI_SIG_WSMT, "Windows SMM Security Mitigations Table"},
-    {ACPI_SIG_XENV, "Xen Environment Table"},
     {ACPI_SIG_XSDT, "Extended System Description Table"},
     {NULL,          NULL}
 };

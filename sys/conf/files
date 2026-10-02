@@ -3514,27 +3514,6 @@ dev/xdma/xdma_mbuf.c		optional xdma
 dev/xdma/xdma_queue.c		optional xdma
 dev/xdma/xdma_sg.c		optional xdma
 dev/xdma/xdma_sglist.c		optional xdma
-dev/xen/balloon/balloon.c	optional xenhvm
-dev/xen/blkfront/blkfront.c	optional xenhvm
-dev/xen/blkback/blkback.c	optional xenhvm
-dev/xen/bus/xen_intr.c		optional xenhvm
-dev/xen/bus/xenpv.c		optional xenhvm
-dev/xen/console/xen_console.c	optional xenhvm
-dev/xen/control/control.c	optional xenhvm
-dev/xen/cpu/xen_acpi_cpu.c	optional xenhvm acpi
-dev/xen/efi/pvefi.c		optional xenhvm xenefi efirt
-dev/xen/grant_table/grant_table.c	optional xenhvm
-dev/xen/netback/netback.c	optional xenhvm
-dev/xen/netfront/netfront.c	optional xenhvm
-dev/xen/timer/xen_timer.c	optional xenhvm xentimer
-dev/xen/xenpci/xenpci.c		optional xenpci
-dev/xen/xenstore/xenstore.c	optional xenhvm
-dev/xen/xenstore/xenstore_dev.c	optional xenhvm
-dev/xen/xenstore/xenstored_dev.c	optional xenhvm
-dev/xen/evtchn/evtchn_dev.c	optional xenhvm
-dev/xen/privcmd/privcmd.c	optional xenhvm
-dev/xen/gntdev/gntdev.c		optional xenhvm
-dev/xen/debug/debug.c		optional xenhvm
 dev/xl/if_xl.c			optional xl pci
 dev/xl/xlphy.c			optional xl pci
 fs/autofs/autofs.c		optional autofs
@@ -4909,15 +4888,6 @@ vm/vm_reserv.c			standard
 vm/vm_swapout.c			optional racct
 vm/vm_unix.c			standard
 vm/vnode_pager.c		standard
-xen/features.c			optional xenhvm
-xen/xen_common.c		optional xenhvm
-xen/xenbus/xenbus_if.m		optional xenhvm
-xen/xenbus/xenbus.c		optional xenhvm
-xen/xenbus/xenbusb_if.m		optional xenhvm
-xen/xenbus/xenbusb.c		optional xenhvm
-xen/xenbus/xenbusb_front.c	optional xenhvm
-xen/xenbus/xenbusb_back.c	optional xenhvm
-xen/xenmem/xenmem_if.m		optional xenhvm
 xdr/xdr.c			optional xdr | krpc | zfs
 xdr/xdr_array.c			optional xdr | krpc | zfs
 xdr/xdr_mbuf.c			optional xdr | krpc | zfs

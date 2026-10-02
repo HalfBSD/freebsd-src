@@ -50,8 +50,6 @@ local MSG_FAILEXAF = "Failed to execute '%s' after loading '%s'"
 local MSG_MALFORMED = "Malformed line (%d):\n\t'%s'"
 local MSG_DEFAULTKERNFAIL = "No kernel set, failed to load from module_path"
 local MSG_KERNFAIL = "Failed to load kernel '%s'"
-local MSG_XENKERNFAIL = "Failed to load Xen kernel '%s'"
-local MSG_XENKERNLOADING = "Loading Xen kernel..."
 local MSG_KERNLOADING = "Loading kernel..."
 local MSG_MODLOADING = "Loading configured modules..."
 local MSG_MODBLACKLIST = "Not loading blacklisted module '%s'"
@@ -840,17 +838,9 @@ function config.reload(file)
 end
 
 function config.loadelf()
-	local xen_kernel = loader.getenv('xen_kernel')
 	local kernel = config.kernel_selected or config.kernel_loaded
 	local status
 
-	if xen_kernel ~= nil then
-		print(MSG_XENKERNLOADING)
-		if cli_execute_unparsed('load ' .. xen_kernel) ~= 0 then
-			print(MSG_XENKERNFAIL:format(xen_kernel))
-			return false
-		end
-	end
 	print(MSG_KERNLOADING)
 	if not config.loadKernel(kernel) then
 		return false

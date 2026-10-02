@@ -839,23 +839,6 @@ ACPI_DMTABLE_INFO           AcpiDmTableInfoWsmt[] =
     ACPI_DMT_TERMINATOR
 };
 
-
-/*******************************************************************************
- *
- * XENV -  Xen Environment table (ACPI 6.0)
- *
- ******************************************************************************/
-
-ACPI_DMTABLE_INFO           AcpiDmTableInfoXenv[] =
-{
-    {ACPI_DMT_UINT64,   ACPI_XENV_OFFSET (GrantTableAddress),       "Grant Table Address", 0},
-    {ACPI_DMT_UINT64,   ACPI_XENV_OFFSET (GrantTableSize),          "Grant Table Size", 0},
-    {ACPI_DMT_UINT32,   ACPI_XENV_OFFSET (EventInterrupt),          "Event Interrupt", 0},
-    {ACPI_DMT_UINT8,    ACPI_XENV_OFFSET (EventFlags),              "Event Flags", 0},
-    ACPI_DMT_TERMINATOR
-};
-
-
 /*! [Begin] no source code translation */
 
 /*

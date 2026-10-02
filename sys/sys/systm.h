@@ -75,10 +75,10 @@ extern u_long maxphys;		/* max raw I/O transfer size */
  * Detected virtual machine guest types. The intention is to expand
  * and/or add to the VM_GUEST_VM type if specific VM functionality is
  * ever implemented (e.g. vendor-specific paravirtualization features).
- * Keep in sync with vm_guest_sysctl_names[].
+ * Keep in sync with vm_guest_sysctl_names[]. Preserve existing numeric values.
  */
-enum VM_GUEST { VM_GUEST_NO = 0, VM_GUEST_VM, VM_GUEST_XEN,
-		VM_GUEST_VMWARE, VM_GUEST_KVM, VM_GUEST_BHYVE, VM_GUEST_VBOX,
+enum VM_GUEST { VM_GUEST_NO = 0, VM_GUEST_VM,
+		VM_GUEST_VMWARE = 3, VM_GUEST_KVM, VM_GUEST_BHYVE, VM_GUEST_VBOX,
 		VM_GUEST_PARALLELS, VM_GUEST_NVMM, VM_GUEST_LAST };
 
 #endif /* KERNEL */

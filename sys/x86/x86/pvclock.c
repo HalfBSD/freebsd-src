@@ -151,41 +151,6 @@ pvclock_getsystime(struct pvclock *pvc)
 	return (ret);
 }
 
-/*
- * NOTE: Transitional-only; this should be removed after 'dev/xen/timer/timer.c'
- * has been migrated to the 'struct pvclock' API.
- */
-uint64_t
-pvclock_get_timecount(struct pvclock_vcpu_time_info *ti)
-{
-	uint64_t now, last, ret;
-	uint8_t flags;
-
-	pvclock_read_time_info(ti, &now, &flags);
-	ret = now;
-	if ((flags & PVCLOCK_FLAG_TSC_STABLE) == 0) {
-		last = atomic_load_acq_64(&pvclock_last_systime);
-		do {
-			if (last > now) {
-				ret = last;
-				break;
-			}
-		} while (!atomic_fcmpset_rel_64(&pvclock_last_systime, &last,
-		    now));
-	}
-	return (ret);
-}
-
-/*
- * NOTE: Transitional-only; this should be removed after 'dev/xen/timer/timer.c'
- * has been migrated to the 'struct pvclock' API.
- */
-void
-pvclock_get_wallclock(struct pvclock_wall_clock *wc, struct timespec *ts)
-{
-	pvclock_read_wall_clock(wc, ts);
-}
-
 static int
 pvclock_cdev_open(struct cdev *dev, int oflags, int devtype, struct thread *td)
 {

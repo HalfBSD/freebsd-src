@@ -352,7 +352,7 @@ x86/x86/mca.c			standard
 x86/x86/x86_mem.c		optional	mem
 x86/x86/mp_x86.c		optional	smp
 x86/x86/nexus.c			standard
-x86/x86/pvclock.c		optional	kvm_clock | xenhvm
+x86/x86/pvclock.c		optional	kvm_clock
 x86/x86/sdt_machdep.c		optional	kdtrace_hooks
 x86/x86/stack_machdep.c		optional	ddb | stack
 x86/x86/tsc.c			standard
@@ -360,6 +360,3 @@ x86/x86/ucode.c			standard
 x86/x86/ucode_subr.c		standard
 x86/x86/vmware_guestrpc.c	optional	vmware_guestrpc
 x86/x86/delay.c			standard
-x86/xen/hvm.c			optional	xenhvm
-x86/xen/xen_apic.c		optional	xenhvm smp
-x86/xen/xen_arch_intr.c		optional	xenhvm

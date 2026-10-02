@@ -126,11 +126,8 @@ options		ASMC_DEBUG	# Enable asmc(4)-specific debug logic.
 # Only for legacy Atom C2XXX chipsets.
 device		qat_c2xxx
 
-# Xen HVM Guest Optimizations
-options 	XENHVM		# Xen HVM kernel infrastructure
-device		xenefi		# Xen EFI timer device
-device 		xenpci		# Xen HVM Hypervisor services driver
-device		xentimer	# Xen x86 PV timer device
+# Direct PVH boot protocol (e.g., Firecracker)
+options		PVH
 
 #####################################################################
 # ABI Emulation

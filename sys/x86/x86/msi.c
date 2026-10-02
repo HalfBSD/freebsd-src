@@ -166,8 +166,7 @@ SYSCTL_UINT(_machdep, OID_AUTO, num_msi_irqs, CTLFLAG_RDTUN, &num_msi_irqs, 0,
 
 #ifdef SMP
 /**
- * Xen hypervisors prior to 4.6.0 do not properly handle updates to
- * enabled MSI-X table entries.  Allow migration of MSI-X interrupts
+ * Allow migration of MSI-X interrupts
  * to be disabled via a tunable. Values have the following meaning:
  *
  * -1: automatic detection by FreeBSD

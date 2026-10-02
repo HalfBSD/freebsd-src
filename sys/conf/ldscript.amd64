@@ -9,7 +9,7 @@ SECTIONS
   /*
    * Use the AT keyword in order to set the right LMA that contains
    * the physical address where the section should be loaded. This is
-   * needed for the Xen loader which honours the LMA.
+   * needed for direct PVH boot, which honours the LMA.
    */
   .interp         : AT (kernload + SIZEOF_HEADERS) { *(.interp) }
   .hash           : { *(.hash) }

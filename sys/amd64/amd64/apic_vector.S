@@ -144,19 +144,6 @@ IDTVEC(spuriousint)
 	KMSAN_LEAVE
 	jmp	doreti
 
-#ifdef XENHVM
-/*
- * Xen event channel upcall interrupt handler.
- * Only used when the hypervisor supports direct vector callbacks.
- */
-	INTR_HANDLER xen_intr_upcall
-	KMSAN_ENTER
-	movq	%rsp, %rdi
-	call	xen_arch_intr_handle_upcall
-	KMSAN_LEAVE
-	jmp	doreti
-#endif
-
 /*
  * Global address space TLB shootdown.
  */

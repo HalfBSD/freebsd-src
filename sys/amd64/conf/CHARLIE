@@ -333,15 +333,6 @@ device		snd_hda			# Intel High Definition Audio
 # Linux KVM paravirtualization support
 #device		kvm_clock		# KVM paravirtual clock driver
 
-
-# Xen HVM Guest Optimizations
-# NOTE: XENHVM depends on xenpci and xentimer.
-# They must be added or removed together.
-#options 	XENHVM			# Xen HVM kernel infrastructure
-#device		xenefi			# Xen EFI timer device
-#device		xenpci			# Xen HVM Hypervisor services driver
-#device		xentimer		# Xen x86 PV timer device
-
 # Netmap provides direct access to TX/RX rings on supported NICs
 device		netmap			# netmap(4) support
 

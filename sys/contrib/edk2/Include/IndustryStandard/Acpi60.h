@@ -2399,11 +2399,6 @@ typedef struct {
 ///
 #define EFI_ACPI_6_0_PLATFORM_BINARY_TABLE_SIGNATURE  SIGNATURE_32('W', 'P', 'B', 'T')
 
-///
-/// "XENV" Xen Project Table
-///
-#define EFI_ACPI_6_0_XEN_PROJECT_TABLE_SIGNATURE  SIGNATURE_32('X', 'E', 'N', 'V')
-
 #pragma pack()
 
 #endif

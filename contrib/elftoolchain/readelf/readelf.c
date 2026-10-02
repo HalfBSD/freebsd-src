@@ -379,7 +379,6 @@ static const char *note_type_linux_core(unsigned int nt);
 static const char *note_type_netbsd(unsigned int nt);
 static const char *note_type_openbsd(unsigned int nt);
 static const char *note_type_unknown(unsigned int nt);
-static const char *note_type_xen(unsigned int nt);
 static const char *option_kind(uint8_t kind);
 static const char *phdr_type(unsigned int mach, unsigned int ptype);
 static const char *ppc_abi_fp(uint64_t fp);
@@ -1158,8 +1157,6 @@ note_type(const char *name, unsigned int et, unsigned int nt)
 		return note_type_netbsd(nt);
 	else if (strcmp(name, "OpenBSD") == 0 && et != ET_CORE)
 		return note_type_openbsd(nt);
-	else if (strcmp(name, "Xen") == 0 && et != ET_CORE)
-		return note_type_xen(nt);
 	return note_type_unknown(nt);
 }
 
@@ -1294,33 +1291,6 @@ note_type_unknown(unsigned int nt)
 	snprintf(s_nt, sizeof(s_nt),
 	    nt >= 0x100 ? "<unknown: 0x%x>" : "<unknown: %u>", nt);
 	return (s_nt);
-}
-
-static const char *
-note_type_xen(unsigned int nt)
-{
-	switch (nt) {
-	case 0: return "XEN_ELFNOTE_INFO";
-	case 1: return "XEN_ELFNOTE_ENTRY";
-	case 2: return "XEN_ELFNOTE_HYPERCALL_PAGE";
-	case 3: return "XEN_ELFNOTE_VIRT_BASE";
-	case 4: return "XEN_ELFNOTE_PADDR_OFFSET";
-	case 5: return "XEN_ELFNOTE_XEN_VERSION";
-	case 6: return "XEN_ELFNOTE_GUEST_OS";
-	case 7: return "XEN_ELFNOTE_GUEST_VERSION";
-	case 8: return "XEN_ELFNOTE_LOADER";
-	case 9: return "XEN_ELFNOTE_PAE_MODE";
-	case 10: return "XEN_ELFNOTE_FEATURES";
-	case 11: return "XEN_ELFNOTE_BSD_SYMTAB";
-	case 12: return "XEN_ELFNOTE_HV_START_LOW";
-	case 13: return "XEN_ELFNOTE_L1_MFN_VALID";
-	case 14: return "XEN_ELFNOTE_SUSPEND_CANCEL";
-	case 15: return "XEN_ELFNOTE_INIT_P2M";
-	case 16: return "XEN_ELFNOTE_MOD_START_PFN";
-	case 17: return "XEN_ELFNOTE_SUPPORTED_FEATURES";
-	case 18: return "XEN_ELFNOTE_PHYS32_ENTRY";
-	default: return (note_type_unknown(nt));
-	}
 }
 
 static struct {
@@ -3770,45 +3740,10 @@ static struct flag_desc note_feature_ctl_flags[] = {
 	{ 0, NULL }
 };
 
-static bool
-dump_note_string(const char *description, const char *s, size_t len)
-{
-	size_t i;
-
-	if (len == 0 || s[--len] != '\0') {
-		return (false);
-	} else {
-		for (i = 0; i < len; i++)
-			if (!isprint(s[i]))
-				return (false);
-	}
-
-	printf("   %s: %s\n", description, s);
-	return (true);
-}
-
-struct note_desc {
-	uint32_t type;
-	const char *description;
-	bool (*fp)(const char *, const char *, size_t);
-};
-
-static struct note_desc xen_notes[] = {
-	{ 5, "Xen version", dump_note_string },
-	{ 6, "Guest OS", dump_note_string },
-	{ 7, "Guest version", dump_note_string },
-	{ 8, "Loader", dump_note_string },
-	{ 9, "PAE mode", dump_note_string },
-	{ 10, "Features", dump_note_string },
-	{ 11, "BSD symtab", dump_note_string },
-	{ 0, NULL, NULL }
-};
-
 static void
 dump_notes_data(struct readelf *re, const char *name, uint32_t type,
     const char *buf, size_t sz)
 {
-	struct note_desc *nd;
 	size_t i;
 	const uint32_t *ubuf;
 
@@ -3859,15 +3794,7 @@ dump_notes_data(struct readelf *re, const char *name, uint32_t type,
 			printf("\n");
 			return;
 		}
-	} else if (strcmp(name, "Xen") == 0) {
-		for (nd = xen_notes; nd->description != NULL; nd++) {
-			if (nd->type == type) {
-				if (nd->fp(nd->description, buf, sz))
-					return;
-				else
-					break;
-			}
-		}
+
 	}
 unknown:
 	printf("   description data:");

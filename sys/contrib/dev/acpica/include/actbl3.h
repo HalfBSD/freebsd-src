@@ -184,7 +184,6 @@
 #define ACPI_SIG_WDRT           "WDRT"      /* Watchdog Resource Table */
 #define ACPI_SIG_WPBT           "WPBT"      /* Windows Platform Binary Table */
 #define ACPI_SIG_WSMT           "WSMT"      /* Windows SMM Security Mitigations Table */
-#define ACPI_SIG_XENV           "XENV"      /* Xen Environment table */
 #define ACPI_SIG_XXXX           "XXXX"      /* Intermediate AML header for ASL/ASL+ converter */
 
 /*
@@ -1014,27 +1013,6 @@ typedef struct acpi_table_wsmt
 #define ACPI_WSMT_FIXED_COMM_BUFFERS                (1)
 #define ACPI_WSMT_COMM_BUFFER_NESTED_PTR_PROTECTION (2)
 #define ACPI_WSMT_SYSTEM_RESOURCE_PROTECTION        (4)
-
-
-/*******************************************************************************
- *
- * XENV - Xen Environment Table (ACPI 6.0)
- *        Version 1
- *
- * Conforms to "ACPI Specification for Xen Environment Table" 4 January 2015
- *
- ******************************************************************************/
-
-typedef struct acpi_table_xenv
-{
-    ACPI_TABLE_HEADER       Header;             /* Common ACPI table header */
-    UINT64                  GrantTableAddress;
-    UINT64                  GrantTableSize;
-    UINT32                  EventInterrupt;
-    UINT8                   EventFlags;
-
-} ACPI_TABLE_XENV;
-
 
 /* Reset to default packing */
 

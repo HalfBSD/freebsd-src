@@ -629,9 +629,6 @@ extern inthand_t
 #ifdef KDTRACE_HOOKS
 	IDTVEC(dtrace_ret),
 #endif
-#ifdef XENHVM
-	IDTVEC(xen_intr_upcall),
-#endif
 	IDTVEC(int0x80_syscall);
 
 #ifdef DDB
@@ -1348,10 +1345,6 @@ i386_setidt1(void)
 #ifdef KDTRACE_HOOKS
 	setidt(IDT_DTRACE_RET, &IDTVEC(dtrace_ret),
 	    SDT_SYS386IGT, SEL_UPL, GSEL(GCODE_SEL, SEL_KPL));
-#endif
-#ifdef XENHVM
-	setidt(IDT_EVTCHN, &IDTVEC(xen_intr_upcall),
-	    SDT_SYS386IGT, SEL_KPL, GSEL(GCODE_SEL, SEL_KPL));
 #endif
 }
 

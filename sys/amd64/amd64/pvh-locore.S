@@ -34,10 +34,6 @@
 #include <machine/pmap.h>
 #include <machine/specialreg.h>
 
-#include <xen/xen-os.h>
-#define __ASSEMBLY__
-#include <contrib/xen/elfnote.h>
-
 #include "assym.inc"
 
 #define	VTOP(x)		((x) - KERNBASE)
@@ -46,32 +42,20 @@
 #define	GDT_CODE	0x08
 #define	GDT_DATA	0x10
 
-.section __xen_guest
-	ELFNOTE(Xen, XEN_ELFNOTE_GUEST_OS,       .asciz, "FreeBSD")
-	ELFNOTE(Xen, XEN_ELFNOTE_GUEST_VERSION,  .asciz, __XSTRING(__FreeBSD_version))
-	ELFNOTE(Xen, XEN_ELFNOTE_XEN_VERSION,    .asciz, "xen-3.0")
-	ELFNOTE(Xen, XEN_ELFNOTE_VIRT_BASE,      .quad,  KERNBASE)
-	ELFNOTE(Xen, XEN_ELFNOTE_PADDR_OFFSET,   .quad,  0)
-	ELFNOTE(Xen, XEN_ELFNOTE_HYPERCALL_PAGE, .quad,	 hypercall_page)
-	ELFNOTE(Xen, XEN_ELFNOTE_HV_START_LOW,   .quad,  HYPERVISOR_VIRT_START)
-	ELFNOTE(Xen, XEN_ELFNOTE_FEATURES,       .asciz, "writable_descriptor_tables|auto_translated_physmap|supervisor_mode_kernel|hvm_callback_vector")
-	ELFNOTE(Xen, XEN_ELFNOTE_PAE_MODE,       .asciz, "yes")
-	ELFNOTE(Xen, XEN_ELFNOTE_L1_MFN_VALID,   .long,  PG_V, PG_V)
-	ELFNOTE(Xen, XEN_ELFNOTE_LOADER,         .asciz, "generic")
-	ELFNOTE(Xen, XEN_ELFNOTE_SUSPEND_CANCEL, .long,  0)
-	ELFNOTE(Xen, XEN_ELFNOTE_BSD_SYMTAB,	 .asciz, "yes")
-	/* For PVHv2 support. */
-	ELFNOTE(Xen, XEN_ELFNOTE_PHYS32_ENTRY,   .long,  VTOP(xen_start32))
+/*
+ * PVH loaders identify the 32-bit entry using ELF note type 18.
+ * The note owner is part of the boot ABI, including on Firecracker.
+ */
+.section .note.pvh,"a",@note
+.p2align 2
+	.long	4, 4, 18
+	.asciz	"Xen"
+	.long	VTOP(pvh_start32)
 
 	.text
-.p2align PAGE_SHIFT, 0x90	/* Hypercall_page needs to be PAGE aligned */
-
-ENTRY(hypercall_page)
-	.skip	0x1000, 0xcc	/* Fill with `int3` to generate a #BP trap. */
-
 /* PVH entry point. */
 	.code32
-ENTRY(xen_start32)
+ENTRY(pvh_start32)
 
 	/* Load flat GDT */
 	movl	$VTOP(gdtdesc32), %eax
@@ -157,11 +141,11 @@ longmode:
 
 start_kernel:
 	/*
-	 * Pass %ebx as the argument to hammer_time_xen, it contains
+	 * Pass %ebx as the argument to hammer_time_pvh, it contains
 	 * the startup info.
 	 */
 	movq	%rbx, %rdi
-	call	hammer_time_xen
+	call	hammer_time_pvh
 	movq	%rax, %rsp
 	call	mi_startup
 

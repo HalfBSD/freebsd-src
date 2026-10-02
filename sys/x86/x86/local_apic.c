@@ -73,7 +73,6 @@
 #include <machine/specialreg.h>
 #include <x86/init.h>
 #include <x86/kvm.h>
-#include <contrib/xen/arch-x86/cpuid.h>
 #include <x86/bhyve.h>
 
 #ifdef DDB
@@ -106,7 +105,6 @@ CTASSERT(IPI_STOP < APIC_SPURIOUS_INT);
 #define	IRQ_TIMER	-2
 #define	IRQ_SYSCALL	-3
 #define	IRQ_DTRACE_RET	-4
-#define	IRQ_EVTCHN	-5
 
 enum lat_timer_mode {
 	LAT_MODE_UNDEF =	0,
@@ -728,9 +726,6 @@ lapic_create(u_int apic_id, int boot_cpu)
 #ifdef KDTRACE_HOOKS
 	lapics[apic_id].la_ioint_irqs[IDT_DTRACE_RET - APIC_IO_INTS] =
 	    IRQ_DTRACE_RET;
-#endif
-#ifdef XENHVM
-	lapics[apic_id].la_ioint_irqs[IDT_EVTCHN - APIC_IO_INTS] = IRQ_EVTCHN;
 #endif
 
 #ifdef SMP
@@ -1854,10 +1849,6 @@ DB_SHOW_COMMAND_FLAGS(apic, db_show_apic, DB_CMD_MEMSAFE)
 			if (irq == IRQ_DTRACE_RET)
 				continue;
 #endif
-#ifdef XENHVM
-			if (irq == IRQ_EVTCHN)
-				continue;
-#endif
 			db_printf("vec 0x%2x -> ", i + APIC_IO_INTS);
 			if (irq == IRQ_TIMER)
 				db_printf("lapic timer\n");
@@ -2083,11 +2074,6 @@ detect_extended_dest_id(void)
 
 	/* Check if we support extended destination IDs. */
 	switch (vm_guest) {
-	case VM_GUEST_XEN:
-		cpuid_count(hv_base + 4, 0, regs);
-		if (regs[0] & XEN_HVM_CPUID_EXT_DEST_ID)
-			apic_ext_dest_id = 1;
-		break;
 	case VM_GUEST_KVM:
 		kvm_cpuid_get_features(regs);
 		if (regs[0] & KVM_FEATURE_MSI_EXT_DEST_ID)
@@ -2142,9 +2128,6 @@ apic_setup_io(void *dummy __unused)
 	/* Enable the MSI "pic". */
 	msi_init();
 
-#ifdef XENHVM
-	xen_intr_alloc_irqs();
-#endif
 }
 SYSINIT(apic_setup_io, SI_SUB_INTR, SI_ORDER_THIRD, apic_setup_io, NULL);
 

@@ -80,7 +80,6 @@ _Static_assert(sizeof(struct monitorbuf) == 128, "2x cache line");
 	uint64_t pc_pti_stack[PC_PTI_STACK_SZ];				\
 	register_t pc_pti_rsp0;						\
 	int pc_dbreg_cmd;		/* ddb debugging reg cmd */	\
-	u_int	pc_vcpu_id;		/* Xen vCPU ID */		\
 	uint32_t pc_pcid_next;						\
 	uint32_t pc_pcid_gen;						\
 	uint32_t pc_unused;						\

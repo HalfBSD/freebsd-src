@@ -67,7 +67,7 @@ KDB_BACKEND(ddb, db_init, db_trace_self_wrapper, db_trace_thread_wrapper,
 /*
  * Symbols can be loaded by specifying the exact addresses of
  * the symtab and strtab in memory. This is used when loaded from
- * boot loaders different than the native one (like Xen).
+ * boot loaders different than the native one.
  */
 vm_offset_t ksymtab, kstrtab, ksymtab_size, ksymtab_relbase;
 static struct db_private ksymtab_private;

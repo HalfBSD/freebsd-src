@@ -67,10 +67,6 @@
 #include <x86/isa/icu.h>
 #include <x86/vmware.h>
 
-#ifdef XENHVM
-#include <xen/xen-os.h>
-#endif
-
 #ifdef __i386__
 #define	IDENTBLUE_CYRIX486	0
 #define	IDENTBLUE_IBMCPU	1
@@ -1375,13 +1371,7 @@ SYSINIT(hook_tsc_freq, SI_SUB_CONFIGURE, SI_ORDER_ANY, hook_tsc_freq, NULL);
 static struct {
 	const char	*vm_cpuid;
 	int		vm_guest;
-	void		(*init)(void);
 } vm_cpuids[] = {
-	{ "XenVMMXenVMM",	VM_GUEST_XEN,
-#ifdef XENHVM
-	  &xen_early_init,
-#endif
-	},						/* XEN */
 	{ "VMwareVMware",	VM_GUEST_VMWARE },	/* VMware VM */
 	{ "KVMKVMKVM",		VM_GUEST_KVM },		/* KVM */
 	{ "bhyve bhyve ",	VM_GUEST_BHYVE },	/* bhyve */
@@ -1392,7 +1382,6 @@ static struct {
 static void
 identify_hypervisor_cpuid_base(void)
 {
-	void (*init_fn)(void) = NULL;
 	u_int leaf, regs[4];
 	int i;
 
@@ -1429,7 +1418,6 @@ identify_hypervisor_cpuid_base(void)
 				if (strncmp((const char *)&regs[1],
 				    vm_cpuids[i].vm_cpuid, 12) == 0) {
 					vm_guest = vm_cpuids[i].vm_guest;
-					init_fn = vm_cpuids[i].init;
 					break;
 				}
 
@@ -1456,8 +1444,6 @@ identify_hypervisor_cpuid_base(void)
 		}
 	}
 
-	if (init_fn != NULL)
-		init_fn();
 }
 
 void

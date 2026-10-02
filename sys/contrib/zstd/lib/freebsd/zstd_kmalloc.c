@@ -34,6 +34,6 @@ MALLOC_DEFINE(M_ZSTD, "zstd", "ZSTD Compressor");
 
 /*
  * Build zstd lib/common/debug.c (single extern variable) while avoiding
- * conflict with Xen's debug.c in objdir.
+ * object name collisions in objdir.
  */
 #include "debug.c"

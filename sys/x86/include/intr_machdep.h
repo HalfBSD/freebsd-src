@@ -49,9 +49,7 @@
  * directly by the ACPI bus driver.
  *
  * MSI interrupts allocate a block of interrupts starting at the end
- * of the I/O APIC range.  When running under the Xen Hypervisor, an
- * additional range of IRQ values are available for binding to event
- * channel events.
+ * of the I/O APIC range.
  */
 extern u_int first_msi_irq;
 extern u_int num_io_irqs;
@@ -159,9 +157,6 @@ int	msi_map(int irq, uint64_t *addr, uint32_t *data);
 int	msi_release(int *irqs, int count);
 int	msix_alloc(device_t dev, int *irq);
 int	msix_release(int irq);
-#ifdef XENHVM
-void	xen_intr_alloc_irqs(void);
-#endif
 
 #endif	/* _KERNEL */
 #endif	/* !__X86_INTR_MACHDEP_H__ */

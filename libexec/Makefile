@@ -6,7 +6,6 @@ SUBDIR=	${_atf} \
 	${_atrun} \
 	${_blocklistd-helper} \
 	flua \
-	getty \
 	rc \
 	${_rlogind} \
 	rpc.sprayd \

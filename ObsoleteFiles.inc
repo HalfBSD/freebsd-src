@@ -51,6 +51,10 @@
 #   xargs -n1 | sort | uniq -d;
 # done
 
+# 20261002: Replace getty with direct root login from init
+OLD_FILES+=etc/gettytab
+OLD_FILES+=usr/libexec/getty
+
 # 20261002: Remove PVH boot support
 OLD_FILES+=usr/include/x86/pvh.h
 

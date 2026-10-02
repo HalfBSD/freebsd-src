@@ -24,7 +24,7 @@
 #
 
 msg_configure_ttys="Configure TTYs"
-msg_help_text="Configuration of system TTYs requires editing the /etc/ttys file.\nTypical configuration activities might include enabling getty(8)\non the first serial port to allow login via serial console after\nreboot, or to enable xdm.  The default ttys file enables normal\nvirtual consoles, and most sites will not need to perform manual\nconfiguration.\n\nTo load /etc/ttys in the editor, select [Yes], otherwise, [No]."
+msg_help_text="Configuration of system TTYs requires editing the /etc/ttys file.\nHalfBSD starts a root login automatically on ttyv0.\nNo other login terminals are enabled by default.\n\nTo load /etc/ttys in the editor, select [Yes], otherwise, [No]."
 msg_no_such_file_or_directory="%s: %s: No such file or directory"
 msg_permission_denied="%s: %s: permission denied"
 msg_user_confirmation_requested="User Confirmation Requested"

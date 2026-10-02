@@ -125,13 +125,6 @@ arm_setup_usb_otg() {
 	echo '};' \
 		>> ${CHROOTDIR}/${DESTDIR}/etc/devd.conf
 
-	echo '# USB OTG virtual serial port' \
-		>> ${CHROOTDIR}/${DESTDIR}/etc/ttys
-	echo 'ttyU0	"/usr/libexec/getty 3wire"	vt100	onifconsole  secure' \
-		>> ${CHROOTDIR}/${DESTDIR}/etc/ttys
-	echo 'ttyU1	"/usr/libexec/getty 3wire"	vt100	onifconsole  secure' \
-		>> ${CHROOTDIR}/${DESTDIR}/etc/ttys
-
 	echo '# Configure USB OTG; see usb_template(4).' \
 		>> ${CHROOTDIR}/${DESTDIR}/boot/loader.conf
 	echo 'hw.usb.template=3' \
@@ -258,6 +251,7 @@ arm_install_uboot() {
 
 arm_do_quirk() {
 	# Override in the ${EMBEDDED_TARGET}/${BOARDNAME}.conf file.
+	return 0
 }
 
 arm_create_partitions() {

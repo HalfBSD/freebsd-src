@@ -59,6 +59,9 @@
 #include <string.h>
 #include <syslog.h>
 #include <time.h>
+#include <termios.h>
+#define TTYDEFCHARS
+#include <sys/ttydefaults.h>
 #include <ttyent.h>
 #include <unistd.h>
 
@@ -148,6 +151,7 @@ typedef struct init_session {
 #define	SE_IFCONSOLE	0x8		/* session defined as "onifconsole" */
 	int	se_nspace;		/* spacing count */
 	char	*se_device;		/* filename of port */
+	bool	se_login;		/* init must prepare the tty for login */
 	char	*se_getty;		/* what to run on that port */
 	char	*se_getty_argv_space;   /* pre-parsed argument array space */
 	char	**se_getty_argv;	/* pre-parsed argument array */
@@ -167,6 +171,7 @@ static char **construct_argv(char *);
 static void start_window_system(session_t *);
 static void collect_child(pid_t);
 static pid_t start_getty(session_t *);
+static void setup_login_tty(session_t *);
 static void transition_handler(int);
 static void alrm_handler(int);
 static void setsecuritylevel(int);
@@ -1352,7 +1357,14 @@ setupargv(session_t *sp, struct ttyent *typ)
 		free(sp->se_getty_argv_space);
 		free(sp->se_getty_argv);
 	}
-	if (asprintf(&sp->se_getty, "%s %s", typ->ty_getty, typ->ty_name) < 0)
+	/* login takes a user name, not the tty argument expected by getty. */
+	sp->se_login = strncmp(typ->ty_getty, _PATH_LOGIN,
+	    sizeof(_PATH_LOGIN) - 1) == 0 &&
+	    (typ->ty_getty[sizeof(_PATH_LOGIN) - 1] == '\0' ||
+	    typ->ty_getty[sizeof(_PATH_LOGIN) - 1] == ' ' ||
+	    typ->ty_getty[sizeof(_PATH_LOGIN) - 1] == '\t');
+	if (asprintf(&sp->se_getty, "%s%s%s", typ->ty_getty,
+	    sp->se_login ? "" : " ", sp->se_login ? "" : typ->ty_name) < 0)
 		err(1, "asprintf");
 	sp->se_getty_argv_space = strdup(sp->se_getty);
 	sp->se_getty_argv = construct_argv(sp->se_getty_argv_space);
@@ -1479,6 +1491,47 @@ start_window_system(session_t *sp)
 }
 
 /*
+ * Prepare a controlling terminal when starting login without getty.
+ * Only called in the session child, so failures cannot affect PID 1.
+ */
+static void
+setup_login_tty(session_t *sp)
+{
+	struct termios term;
+	int fd;
+
+	if (chown(sp->se_device, 0, 0) == -1 ||
+	    chmod(sp->se_device, 0600) == -1 ||
+	    revoke(sp->se_device) == -1) {
+		stall("can't reset terminal %s: %m", sp->se_device);
+		_exit(1);
+	}
+	fd = open(sp->se_device, O_RDWR | O_NOCTTY);
+	if (fd == -1) {
+		stall("can't open terminal %s: %m", sp->se_device);
+		_exit(1);
+	}
+	if (login_tty(fd) == -1) {
+		close(fd);
+		stall("can't acquire terminal %s: %m", sp->se_device);
+		_exit(1);
+	}
+	memset(&term, 0, sizeof(term));
+	term.c_iflag = TTYDEF_IFLAG;
+	term.c_oflag = TTYDEF_OFLAG;
+	term.c_cflag = TTYDEF_CFLAG;
+	term.c_lflag = TTYDEF_LFLAG;
+	memcpy(term.c_cc, ttydefchars, sizeof(term.c_cc));
+	if (cfsetspeed(&term, TTYDEF_SPEED) == -1 ||
+	    tcsetattr(STDIN_FILENO, TCSANOW, &term) == -1 ||
+	    tcflush(STDIN_FILENO, TCIOFLUSH) == -1) {
+		stall("can't initialize terminal %s: %m", sp->se_device);
+		_exit(1);
+	}
+	closefrom(3);
+}
+
+/*
  * Start a login session running.
  */
 static pid_t
@@ -1535,6 +1588,8 @@ start_getty(session_t *sp)
 		env[1] = NULL;
 	} else
 		env[0] = NULL;
+	if (sp->se_login)
+		setup_login_tty(sp);
 	execve(sp->se_getty_argv[0], sp->se_getty_argv, env);
 	stall("can't exec getty '%s' for port %s: %m",
 		sp->se_getty_argv[0], sp->se_device);

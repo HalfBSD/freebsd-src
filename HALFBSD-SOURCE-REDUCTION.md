@@ -13,7 +13,8 @@ driver support, the cal/ncal calendar-display commands, and their libcalendar
 helper library were removed. Direct PVH boot support, Firecracker kernel
 and release configurations, and its UART workaround were also removed.
 The fixed-snapshot measurements below remain unchanged; they do not include
-these later removals or the LinuxKPI compatibility repair described below.
+these later removals, the LinuxKPI compatibility repair, or the terminal
+configuration change described below.
 
 ## Size and change estimates
 
@@ -135,6 +136,23 @@ they do not imply that equivalent third-party software cannot be installed.
 
 - The legacy syscons console, its data, and libvgl. The vt console remains;
   its startup service was renamed from `syscons` to `vtcons`.
+- The default `/etc/ttys` configuration now provides only the `ttyv0` local
+  session, automatically logged in as root through `/usr/bin/login -f root`.
+  Init prepares the controlling terminal and resets its modes before starting
+  login; exiting the session starts a fresh root login. Extra virtual-terminal,
+  serial-terminal, and other console login entries were removed on October 2,
+  2026. The non-login `console` entry remains for single-user authentication
+  policy. Wayland startup remains manual, after switching to a normal user
+  with `su`.
+- The getty program, gettytab configuration, build integration, and dependent
+  installer auxiliary consoles and NanoBSD tty overrides were removed.
+  Installed copies are listed for cleanup in `ObsoleteFiles.inc`.
+  Validation covered FreeBSD amd64 init compilation, argument handling and
+  terminal setup failure paths in a host test harness, shell syntax, and
+  build/configuration checks. Full world builds and boot testing remain
+  unverified.
+- **Follow-up to consider:** remove the unused vt kernel virtual console slots.
+  They remain available for now; only `ttyv0` has a configured login session.
 - The `moused` mouse daemon and its service integration.
 - The `msconvd` console mouse service and related files.
 - APM power-management support and utilities. ACPI remains.

@@ -7,7 +7,6 @@ DIRDEPS = \
 	libexec/atf/atf-sh \
 	libexec/atrun \
 	libexec/ftpd \
-	libexec/getty \
 	libexec/rlogind \
 	libexec/rpc.sprayd \
 	libexec/rshd \

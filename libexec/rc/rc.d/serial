@@ -115,7 +115,7 @@ terminal() {
 	# with the cable or terminal arranged so that DCD is on
 	# at least while the terminal is on.
 	# Also works for bidirectional communications to another pc
-	# provided at most one side runs getty.
+	# provided at most one side runs a login session.
 	# Same as modem() except we want a faster speed and no dtrwait.
 
 	dc=$1; shift

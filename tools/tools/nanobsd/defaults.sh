@@ -746,12 +746,7 @@ UsbDevice ( ) {
 # Setup serial console
 
 cust_comconsole ( ) (
-	# Enable getty on console
-	sed -i "" -e '/^tty[du]0/s/off/onifconsole/' ${NANO_WORLDDIR}/etc/ttys
-
-	# Disable getty on syscons or vt devices
-	sed -i "" -E '/^ttyv[0-8]/s/\ton(ifexists)?/\toff/' ${NANO_WORLDDIR}/etc/ttys
-
+	# Login sessions remain on ttyv0; only loader output uses serial.
 	# Tell loader to use serial console early.
 	echo "${NANO_BOOT2CFG}" > ${NANO_WORLDDIR}/boot.config
 )

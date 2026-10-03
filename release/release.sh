@@ -44,14 +44,14 @@ VERSION=3
 # load_chroot_env(): Set up the build environment needed.
 #
 # Done as part of chroot_env().
-load_chroot_env() { }
+load_chroot_env() { :; }
 
 # load_target_env(): set up the build environment needed for the
 # chroot_build_target() and `${chroot_build_release}` steps.
-load_target_env() { }
+load_target_env() { :; }
 
 # buildenv_setup(): set up the build environment needed for post-chroot_setup()
-buildenv_setup() { }
+buildenv_setup() { :; }
 
 # chroot_cleanup(): Clean up resources setup in chroot_setup() at exit.
 #
@@ -158,7 +158,7 @@ env_check() {
 		WITH_DVD=
 		WITH_COMPRESSED_IMAGES=
 		case ${EMBEDDED_TARGET}:${EMBEDDED_TARGET_ARCH} in
-			arm:arm*|arm64:aarch64|riscv:riscv64*)
+			arm:arm*|arm64:aarch64)
 				chroot_build_release_cmd="chroot_arm_build_release"
 				;;
 			*)
@@ -391,9 +391,6 @@ efi_boot_name()
 		amd64)
 			echo "bootx64.efi"
 			;;
-		riscv)
-			echo "bootriscv64.efi"
-			;;
 	esac
 }
 
@@ -401,7 +398,7 @@ efi_boot_name()
 chroot_arm_build_release() {
 	load_target_env
 	case ${EMBEDDED_TARGET} in
-		arm|arm64|riscv)
+		arm|arm64)
 			if [ -e "${RELENGDIR}/tools/arm.subr" ]; then
 				. "${RELENGDIR}/tools/arm.subr"
 			fi

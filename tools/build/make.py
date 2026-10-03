@@ -73,7 +73,6 @@ mach_indep_targets = [
     "kernel-toolchains",
     "targets",
     "toolchains",
-    "makeman",
     "sysent",
 ]
 

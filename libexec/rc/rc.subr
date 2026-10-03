@@ -1283,9 +1283,6 @@ run_rc_command()
 				_opts="${_opts} allow.reserved_ports"
 				_opts="${_opts} ${_svcj_ip4} ${_svcj_ip6}"
 				;;
-			nfsd)
-				_opts="allow.nfsd enforce_statfs=1"
-				;;
 			routing)
 				_opts="allow.routing"
 				;;

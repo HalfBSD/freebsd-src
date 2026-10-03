@@ -29,7 +29,6 @@
 # PROVIDE: var
 # REQUIRE: mountcritlocal
 
-# NFS /var is not supported, unless NFS /var is part of diskless NFS /
 
 . /etc/rc.subr
 

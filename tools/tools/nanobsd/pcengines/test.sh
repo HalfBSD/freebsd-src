@@ -13,15 +13,6 @@ _run () {
     ARG="$ARG -m 1024 -k de -localtime -nographic"
     break
     ;;
-  "alix_nfs")
-    ARG="-cpu pentium"
-    ARG="$ARG -hda /usr/obj/nanobsd.alix_nfs/_.disk.full -boot c"
-    ARG="$ARG -hdb /z/scratch/scratch"
-    ARG="$ARG -net nic,model=e1000"
-    ARG="$ARG -net tap,ifname=tap0,script=no,downscript=no"
-    ARG="$ARG -m 1024 -k de -localtime -nographic"
-    break
-    ;;
 
   esac
   qemu-system-x86_64 -kernel-kqemu $ARG

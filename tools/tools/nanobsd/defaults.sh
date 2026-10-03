@@ -137,14 +137,6 @@ NANO_RAM_ETCSIZE=10240
 # Size of the /tmp+/var ramdisk in 512 bytes sectors
 NANO_RAM_TMPVARSIZE=10240
 
-# boot0 flags/options and configuration
-NANO_BOOT0CFG="-o packet -s 1 -m 3"
-NANO_BOOTLOADER="boot/boot0sio"
-
-# boot2 flags/options
-# default force serial console
-NANO_BOOT2CFG="-h -S115200"
-
 # Backing type of md(4) device
 # Can be "file" or "swap"
 NANO_MD_BACKING="file"
@@ -747,8 +739,8 @@ UsbDevice ( ) {
 
 cust_comconsole ( ) (
 	# Login sessions remain on ttyv0; only loader output uses serial.
-	# Tell loader to use serial console early.
-	echo "${NANO_BOOT2CFG}" > ${NANO_WORLDDIR}/boot.config
+	# Tell the EFI loader to use serial console.
+	echo 'boot_serial="YES"' >> ${NANO_WORLDDIR}/boot/loader.conf
 )
 
 #######################################################################
@@ -964,8 +956,6 @@ set_defaults_and_export ( ) {
 	export_var NANO_SRC
 	export_var NANO_TOOLS
 	export_var NANO_WORLDDIR
-	export_var NANO_BOOT0CFG
-	export_var NANO_BOOTLOADER
 	export_var NANO_LABEL
 	export_var NANO_MODULES
 	export_var NANO_NOPRIV_BUILD

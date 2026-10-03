@@ -36,7 +36,6 @@ get_uefi_bootname() {
         arm64) echo bootaa64 ;;
         i386) echo bootia32 ;;
         arm) echo bootarm ;;
-        riscv) echo bootriscv64 ;;
         *) die "machine type $(uname -m) doesn't support UEFI" ;;
     esac
 }
@@ -233,118 +232,35 @@ make_esp_gpt() {
     make_esp /dev/${dev}p${idx} ${dst}/boot/loader.efi
 }
 
-boot_nogeli_gpt_ufs_legacy() {
-    dev=$1
-    dst=$2
-
-    idx=$(find_part $dev "freebsd-boot")
-    if [ -z "$idx" ] ; then
-	die "No freebsd-boot partition found"
-    fi
-    doit gpart bootcode -b ${gpt0} -p ${gpt2} -i $idx $dev
-}
 
 boot_nogeli_gpt_ufs_uefi() {
     make_esp_gpt $1 $2
-}
-
-boot_nogeli_gpt_ufs_both() {
-    boot_nogeli_gpt_ufs_legacy $1 $2 $3
-    boot_nogeli_gpt_ufs_uefi $1 $2 $3
-}
-
-boot_nogeli_gpt_zfs_legacy() {
-    dev=$1
-    dst=$2
-
-    idx=$(find_part $dev "freebsd-boot")
-    if [ -z "$idx" ] ; then
-	die "No freebsd-boot partition found"
-    fi
-    doit gpart bootcode -b ${gpt0} -p ${gptzfs2} -i $idx $dev
 }
 
 boot_nogeli_gpt_zfs_uefi() {
     make_esp_gpt $1 $2
 }
 
-boot_nogeli_gpt_zfs_both() {
-    boot_nogeli_gpt_zfs_legacy $1 $2 $3
-    boot_nogeli_gpt_zfs_uefi $1 $2 $3
-}
-
-boot_nogeli_mbr_ufs_legacy() {
-    dev=$1
-    dst=$2
-
-    doit gpart bootcode -b ${mbr0} ${dev}
-    s=$(find_part $dev "freebsd")
-    if [ -z "$s" ] ; then
-	die "No freebsd slice found"
-    fi
-    doit gpart bootcode -p ${mbr2} ${dev}s${s}
-}
-
 boot_nogeli_mbr_ufs_uefi() {
     make_esp_mbr $1 $2
-}
-
-boot_nogeli_mbr_ufs_both() {
-    boot_nogeli_mbr_ufs_legacy $1 $2 $3
-    boot_nogeli_mbr_ufs_uefi $1 $2 $3
-}
-
-# ZFS+MBR+BIOS is not a supported configuration
-boot_nogeli_mbr_zfs_legacy() {
-    exit 1
 }
 
 boot_nogeli_mbr_zfs_uefi() {
     make_esp_mbr $1 $2
 }
 
-boot_nogeli_mbr_zfs_both() {
-    boot_nogeli_mbr_zfs_uefi $1 $2 $3
-}
-
-boot_geli_gpt_ufs_legacy() {
-    boot_nogeli_gpt_ufs_legacy $1 $2 $3
-}
-
 boot_geli_gpt_ufs_uefi() {
     boot_nogeli_gpt_ufs_uefi $1 $2 $3
-}
-
-boot_geli_gpt_ufs_both() {
-    boot_nogeli_gpt_ufs_both $1 $2 $3
-}
-
-boot_geli_gpt_zfs_legacy() {
-    boot_nogeli_gpt_zfs_legacy $1 $2 $3
 }
 
 boot_geli_gpt_zfs_uefi() {
     boot_nogeli_gpt_zfs_uefi $1 $2 $3
 }
 
-boot_geli_gpt_zfs_both() {
-    boot_nogeli_gpt_zfs_both $1 $2 $3
-}
 
 # GELI+MBR is not a valid configuration
-boot_geli_mbr_ufs_legacy() {
-    exit 1
-}
 
 boot_geli_mbr_ufs_uefi() {
-    exit 1
-}
-
-boot_geli_mbr_ufs_both() {
-    exit 1
-}
-
-boot_geli_mbr_zfs_legacy() {
     exit 1
 }
 
@@ -352,15 +268,12 @@ boot_geli_mbr_zfs_uefi() {
     exit 1
 }
 
-boot_geli_mbr_zfs_both() {
-    exit 1
-}
 
 usage() {
 	printf 'Usage: %s -b bios [-d destdir] -f fs [-g geli] [-h] [-o optargs] -s scheme <bootdev>\n' "$0"
 	printf 'Options:\n'
 	printf ' bootdev       device to install the boot code on\n'
-	printf ' -b bios       bios type: legacy, uefi or both\n'
+	printf ' -b bios       firmware type: uefi\n'
 	printf ' -d destdir    destination filesystem root\n'
 	printf ' -f fs         filesystem type: ufs or zfs\n'
 	printf ' -g geli       yes or no\n'
@@ -415,20 +328,9 @@ if [ -n "${scheme}" ] && [ -n "${fs}" ] && [ -n "${bios}" ]; then
     dev=$1
 fi
 
-# For gpt, we need to install pmbr as the primary boot loader
-# it knows about 
-gpt0=${srcroot}/boot/pmbr
-gpt2=${srcroot}/boot/gptboot
-gptzfs2=${srcroot}/boot/gptzfsboot
-
-# For MBR, we have lots of choices, but select mbr, boot0 has issues with UEFI
-mbr0=${srcroot}/boot/mbr
-mbr2=${srcroot}/boot/boot
-
-# sanity check here
-
 # Check if we've been given arguments. If not, this script is probably being
 # sourced, so we shouldn't run anything.
 if [ -n "${dev}" ]; then
+	[ "$bios" = uefi ] || die "HalfBSD supports only UEFI boot installation"
 	eval boot_${geli}_${scheme}_${fs}_${bios} $dev $srcroot $opts || echo "Unsupported boot env: ${geli}-${scheme}-${fs}-${bios}"
 fi

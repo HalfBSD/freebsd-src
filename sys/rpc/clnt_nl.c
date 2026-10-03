@@ -78,14 +78,14 @@
  * [netlink attribute RPCNL_REPLY_BODY]
  * [XDR encoded payload]
  *
- * Disclaimer: has been designed and tested only for the NFS related kernel
- * RPC clients: kgssapi, RPC binding for NLM, TLS client and TLS server.
+ * The kernel RPC binding client uses this transport to communicate with
+ * the local rpcbind service.
  *
  * Caveats:
  * 1) Now the privilege checking is hardcoded to PRIV_NFS_DAEMON at the netlink
- *    command and multicast layers.  If any new client in addition to NFS
- *    service emerges, we may want to rewrite privelege checking at the client
- *    level somehow.
+ *    command and multicast layers.  This legacy privilege ID remains part
+ *    of the transport policy; additional clients may need privilege checking
+ *    at the client level.
  * 2) Since we are using netlink attribute for the payload, payload size is
  *    limited to UINT16_MAX.  Today it is smaller than RPC_MAXDATASIZE of 9000.
  *    What if a future RPC wants more?

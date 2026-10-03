@@ -29,7 +29,6 @@
 #
 
 # Change mount point from rw to ro with a file mapped rw
-# Currently fails for NFS
 
 # Page fault seen:
 # https://people.freebsd.org/~pho/stress/log/mountu.txt
@@ -101,30 +100,6 @@ while mount | grep -q "$mntpoint "; do
 done
 mdconfig -d -u $mdstart
 
-# nfs
-if ping -c 2 `echo $nfs_export | sed 's/:.*//'` > /dev/null 2>&1; then
-	mount -t nfs -o tcp -o retrycnt=3 -o intr,soft -o rw $nfs_export \
-	    $mntpoint
-	sleep .2
-	rm -f $file
-	/tmp/mountu NFS $file &
-	pid=$!
-	sleep 1
-
-	r=`pstat $! | awk "\\$2 == \"$map\""`
-	mount -u -o ro $mntpoint 2>/dev/null ||
-	    mount -fu -o ro $mntpoint 2>/dev/null
-	ck NFS
-	wait $pid
-	s=$?
-	[ $s -ne 139 ] && { echo "NFS exit status is $s"; status=1; }
-
-	mount -u -o rw $mntpoint 2>/dev/null
-	sleep .2
-	[ -f $file ] && rm -f $file
-	umount $mntpoint || umount $mntpoint
-fi
-
 # msdos
 if [ -x /sbin/mount_msdosfs ]; then
 	mdconfig -a -t swap -s 100m -u $mdstart
@@ -177,7 +152,7 @@ rm -f /tmp/mountu
 exit 0
 EOF
 /* kib@ noted:
-   UFS/NFS/msdosfs reclaim vnode on rw->ro forced remount, and
+   UFS/msdosfs reclaim vnode on rw->ro forced remount, and
    change the type of the underying object to OBJT_DEAD, but leave
    the pages on the object queue and installed in the page tables.
    Applications can read/write already mapped pages, but cannot

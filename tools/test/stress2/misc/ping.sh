@@ -33,8 +33,7 @@
 . ../default.cfg
 [ `id -u ` -ne 0 ] && echo "Must be root!" && exit 1
 
-[ -z "$nfs_export" ] && exit 0
-ip=`echo $nfs_export | sed 's/:.*//'`
+ip=${1:-127.0.0.1}
 ping -c 2 $ip > /dev/null 2>&1 || exit 0
 
 log=/tmp/ping.log

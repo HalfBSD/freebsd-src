@@ -57,10 +57,6 @@
             libexec
                 bsdinstall
                 ..
-                sendmail
-                ..
-                sm.bin
-                ..
                 zfs
                 ..
             ..

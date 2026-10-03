@@ -6,8 +6,7 @@ uart_bus_acpi=uart_bus_acpi.c
 uart_cpu_acpi=uart_cpu_acpi.c
 .endif
 
-.if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "arm" || \
-    ${MACHINE_CPUARCH} == "riscv"
+.if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "arm"
 ofw_bus_if=	ofw_bus_if.h
 .endif
 

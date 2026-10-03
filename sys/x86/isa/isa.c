@@ -146,4 +146,3 @@ DRIVER_MODULE(isa, legacy, isa_driver, 0, 0);
 /*
  * Attach the ISA bus to the xenpv bus in order to get syscons.
  */
-DRIVER_MODULE(isa, xenpv, isa_driver, 0, 0);

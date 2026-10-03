@@ -395,7 +395,7 @@ vm_create_disk() {
 	MAKEFSARGS="-s ${VMSIZE} -D"
 
 	case "${TARGET}:${TARGET_ARCH}" in
-		amd64:amd64 | arm:armv7 | arm64:aarch64 | riscv:riscv64*)
+		amd64:amd64 | arm:armv7 | arm64:aarch64)
 			ESP=yes
 			BOOTPARTS=
 			ROOTFSPART="-p ${FSPARTTYPE}/rootfs:=${VMBASE}"

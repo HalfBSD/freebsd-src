@@ -7,7 +7,8 @@
 #
 
 # Demonstrate issue described in:
-# [Bug 276002] nfscl: data corruption using both copy_file_range and mmap'd I/O
+# [Bug 276002] data corruption using both copy_file_range and mmap'd I/O
+# Exercise the memory and file-operation regression on local UFS.
 
 # Issue seen:
 # 
@@ -26,9 +27,6 @@ set -u
 prog=$(basename "$0" .sh)
 log=/tmp/$prog.log
 serial=/tmp/$prog.serial
-grep -q $mntpoint /etc/exports ||
-    { echo "$mntpoint missing from /etc/exports"; exit 0; }
-rpcinfo 2>/dev/null | grep -q mountd || exit 0
 
 cat > /tmp/$prog.c <<EOF
 #include <sys/mman.h>
@@ -76,7 +74,7 @@ memwrite(void *arg __unused)
 		i = arc4random() % siz;
 		pthread_mutex_lock(&write_mutex);
 		c = cp[i];
-		cp[i] = 0xee;	/* This value seems to linger with NFS */
+		cp[i] = 0xee;	/* Detect stale data after copying and mapped I/O. */
 		cp[i] = c;
 		pthread_mutex_unlock(&write_mutex);
 		usleep(arc4random() % 200);
@@ -195,14 +193,9 @@ mdconfig -s 5g -u $mdstart
 newfs -n $newfs_flags /dev/md$mdstart > /dev/null
 mount /dev/md$mdstart $mntpoint
 
-mp2=${mntpoint}2
-mkdir -p $mp2
-mount | grep -q "on $mp2 " && umount -f $mp2
-mount -t nfs -o retrycnt=3 127.0.0.1:$mntpoint $mp2 || exit 1
-sleep .2
 
 here=`pwd`
-cd $mp2
+cd $mntpoint
 $here/../testcases/swap/swap -t 5m -i 20 > /dev/null &
 sleep 2
 
@@ -226,7 +219,6 @@ if ! cmp -s file.orig file; then
 fi
 
 cd $here
-umount $mp2
 umount $mntpoint
 mdconfig -d -u $mdstart
 rm -f $serial /tmp/$prog /tmp/$prog.c $log

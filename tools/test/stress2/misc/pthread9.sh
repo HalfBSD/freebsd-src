@@ -43,22 +43,17 @@ mycc -o pthread9 -Wall -Wextra -O2 pthread9.c -lpthread || exit 1
 rm -f pthread9.c
 
 status=0
-if ping -c 2 `echo $nfs_export | sed 's/:.*//'` > /dev/null 2>&1; then
-	mount -t nfs -o nfsv3,tcp,nolockd,retrycnt=3,intr $nfs_export \
-	    $mntpoint || exit 1
-	sleep .5
-	echo "Expect core dumps"
-	(cd $mntpoint; /tmp/pthread9) &
-	sleep 200
-	if pgrep -q pthread9; then
-		echo FAIL
-		procstat -k `pgrep pthread9 | grep -v $!`
-		status=1
-	fi
-	rm -f $mntpoint/pthread9.core
-	umount -f $mntpoint
-	wait
+workdir=`mktemp -d /tmp/pthread9.XXXXXX` || exit 1
+echo "Expect core dumps"
+(cd "$workdir"; /tmp/pthread9) &
+sleep 200
+if pgrep -q pthread9; then
+	echo FAIL
+	procstat -k `pgrep pthread9 | grep -v $!`
+	status=1
 fi
+wait
+rm -rf "$workdir"
 
 rm -f /tmp/pthread9 /tmp/pthread9.core
 exit $status

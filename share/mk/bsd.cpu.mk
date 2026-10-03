@@ -13,8 +13,6 @@ MACHINE_CPU = amd64 sse2 sse mmx
 MACHINE_CPU = arm
 . elif ${MACHINE_CPUARCH} == "i386"
 MACHINE_CPU = i486
-. elif ${MACHINE_CPUARCH} == "riscv"
-MACHINE_CPU = riscv
 . endif
 .else
 
@@ -261,9 +259,6 @@ MACHINE_CPU = ssse3 sse3
 MACHINE_CPU = sse3
 .  endif
 MACHINE_CPU += amd64 sse2 sse mmx
-########## riscv
-. elif ${MACHINE_CPUARCH} == "riscv"
-MACHINE_CPU = riscv
 . endif
 .endif
 
@@ -286,10 +281,6 @@ MACHINE_CPU += armv7
 # it was a transition tool from FreeBSD 10 to 11 and is a bit of an odd duck.
 CFLAGS += -mfloat-abi=softfp
 . endif
-.endif
-
-.if ${MACHINE_CPUARCH} == "riscv"
-CFLAGS += -march=rv64imafdc -mabi=lp64d
 .endif
 
 # NB: COPTFLAGS is handled in /usr/src/sys/conf/kern.pre.mk

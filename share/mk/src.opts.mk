@@ -110,7 +110,6 @@ __DEFAULT_YES_OPTIONS = \
     LOADER_GELI \
     LOADER_KBOOT \
     LOADER_LUA \
-    LOADER_OFW \
     LOADER_UBOOT \
     LOADER_IA32 \
     LOCALES \
@@ -118,7 +117,6 @@ __DEFAULT_YES_OPTIONS = \
     MACHDEP_OPTIMIZATIONS \
     MAKE \
     MALLOC_PRODUCTION \
-    MLX5TOOL \
     NETCAT \
     NETGRAPH \
     NETLINK \
@@ -173,7 +171,6 @@ __DEFAULT_NO_OPTIONS = \
     LLVM_ASSERTIONS \
     LLVM_FULL_DEBUGINFO \
     LLVM_LINK_STATIC_LIBRARIES \
-    OFED \
     OPENLDAP \
     PTHREADS_ASSERTIONS \
     RPCBIND_WARMSTART_SUPPORT \
@@ -259,11 +256,7 @@ __DEFAULT_NO_OPTIONS+=FDT
 __DEFAULT_YES_OPTIONS+=FDT
 .endif
 
-.if ${__T:Mriscv64*} == ""
 __DEFAULT_YES_OPTIONS+=LLDB
-.else
-__DEFAULT_NO_OPTIONS+=LLDB
-.endif
 # LIB32 is not supported on all 64-bit architectures.
 .if (${__T:Maarch64*} != "" && ((defined(X_COMPILER_TYPE) && ${X_COMPILER_TYPE} != "gcc") || (!defined(X_COMPILER_TYPE) && ${COMPILER_TYPE} != "gcc"))) || ${__T} == "amd64"
 __DEFAULT_YES_OPTIONS+=LIB32
@@ -274,7 +267,6 @@ BROKEN_OPTIONS+=LIB32
 .if ${__T} == "i386"
 BROKEN_OPTIONS+=EFI
 .endif
-BROKEN_OPTIONS+=LOADER_OFW
 # KBOOT is only for amd64 and aarch64
 .if ${__T} != "amd64" && ${__T} != "aarch64"
 BROKEN_OPTIONS+=LOADER_KBOOT
@@ -296,19 +288,12 @@ __DEFAULT_NO_OPTIONS+=OPENSSL_KTLS
 
 .if ${__T} != "aarch64" && ${__T} != "amd64" && ${__T} != "i386"
 BROKEN_OPTIONS+=CXGBETOOL
-BROKEN_OPTIONS+=MLX5TOOL
 .endif
 
-.if ${__T} == "aarch64" || ${__T} == "amd64" || ${__T} == "i386" || \
-    ${__T:Mriscv64*} != ""
+.if ${__T} == "aarch64" || ${__T} == "amd64" || ${__T} == "i386"
 __DEFAULT_YES_OPTIONS+=OPENMP
 .else
 __DEFAULT_NO_OPTIONS+=OPENMP
-.endif
-
-# Broken on 32-bit arm, kernel module compile errors
-.if ${__T:Marm*} != ""
-BROKEN_OPTIONS+= OFED
 .endif
 
 # MK_host_egacy is set by local.sys.mk so is valid here
@@ -333,10 +318,6 @@ BROKEN_OPTIONS+=BHYVE_SNAPSHOT
 MK_SOURCELESS_HOST:=	no
 MK_SOURCELESS_UCODE:= no
 .endif
-
-
-
-
 
 .if ${MK_CDDL} == "no"
 MK_CTF:=	no

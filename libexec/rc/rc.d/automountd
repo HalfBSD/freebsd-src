@@ -3,7 +3,7 @@
 #
 
 # PROVIDE: automountd
-# REQUIRE: rpcbind ypset nfsclient FILESYSTEMS ldconfig
+# REQUIRE: rpcbind FILESYSTEMS ldconfig
 # BEFORE: DAEMON
 # KEYWORD: nojail
 

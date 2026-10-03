@@ -10,9 +10,8 @@ First, you will need a few things.
 
 (3) A recent enough universe that the building of stand will work for all the
  architectures that I build. You can hack the ARCHES line near the top of
- tools/boot/full-test.sh if need be, but you'll need at least amd64, arm64 and
- maybe riscv (I don't have a good way to filter arches in this script yet, since
- it's at an early state of development.
+ tools/boot/full-test.sh if need be. The supported architectures are amd64 and
+ arm64.
 
 (4) Build the kernel for at least arm64 and use it as an 'override'. I do this
  by sudo -E make installkernel
@@ -23,9 +22,7 @@ First, you will need a few things.
 
 (5) You'll need to build the images. If you've done 1-5 correctly (and I've not
  missed anything), then "cd <mumble>/src; sh tools/boot/full-test.sh" will create
- all the images and scripts to run qemu. There should be no errors, though
- warnings about zfs.ko etc missing from powerpc is fine (and ignored by the
- script already).
+ all the images and scripts to run qemu.
 
 (6) There will be a script to recreate this created in
  $HOME/stand-test-root/scripts/arm64-aarch64/linuxboot-test.sh. Just run it with

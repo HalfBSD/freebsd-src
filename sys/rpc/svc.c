@@ -905,7 +905,6 @@ svc_xprt_free(SVCXPRT *xprt)
 
 	mem_free(xprt->xp_p3, sizeof(SVCXPRT_EXT));
 	/* The size argument is ignored, so 0 is ok. */
-	mem_free(xprt->xp_gidp, 0);
 	mem_free(xprt, sizeof(SVCXPRT));
 }
 
@@ -991,9 +990,8 @@ svc_getreq(SVCXPRT *xprt, struct svc_req **rqstp_ret)
 		}
 
 		/*
-		 * Defer enabling DDP until the first non-NULLPROC RPC
-		 * is received to allow STARTTLS authentication to
-		 * enable TLS offload first.
+		 * Enable DDP lazily when the transport receives its first
+		 * non-NULLPROC request.
 		 */
 		if (xprt->xp_doneddp == 0 && r->rq_proc != NULLPROC &&
 		    xprt->xp_socket != NULL &&

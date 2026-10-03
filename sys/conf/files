@@ -1892,14 +1892,6 @@ dev/iscsi/icl_conn_if.m		optional cfiscsi | iscsi
 dev/iscsi/icl_soft.c		optional iscsi
 dev/iscsi/icl_soft_proxy.c	optional iscsi
 dev/iscsi/iscsi.c		optional iscsi scbus
-dev/iser/icl_iser.c		optional iser				\
-	compile-with "${OFED_C} -DICL_KERNEL_PROXY"
-dev/iser/iser_initiator.c	optional iser				\
-	compile-with "${OFED_C} -DICL_KERNEL_PROXY"
-dev/iser/iser_memory.c		optional iser				\
-	compile-with "${OFED_C} -DICL_KERNEL_PROXY"
-dev/iser/iser_verbs.c		optional iser				\
-	compile-with "${OFED_C} -DICL_KERNEL_PROXY"
 dev/ismt/ismt.c			optional ismt
 dev/isl/isl.c			optional isl iicbus
 dev/isp/isp.c			optional isp
@@ -4510,73 +4502,7 @@ compat/lindebugfs/lindebugfs.c			optional lindebugfs \
 
 net/if_infiniband.c					optional lagg
 
-dev/irdma/icrdma.c		optional irdma ice inet inet6 pci ofed \
-	compile-with "${OFED_C} -I$S/dev/ice/"
-dev/irdma/irdma_cm.c		optional irdma ice inet inet6 pci ofed \
-	compile-with "${OFED_C} -I$S/dev/ice/"
-dev/irdma/irdma_ctrl.c		optional irdma ice inet inet6 pci ofed \
-	compile-with "${OFED_C} -I$S/dev/ice/"
-dev/irdma/irdma_hmc.c		optional irdma ice inet inet6 pci ofed \
-	compile-with "${OFED_C} -I$S/dev/ice/"
-dev/irdma/irdma_hw.c		optional irdma ice inet inet6 pci ofed \
-	compile-with "${OFED_C} -I$S/dev/ice/"
-dev/irdma/icrdma_hw.c		optional irdma ice inet inet6 pci ofed \
-	compile-with "${OFED_C} -I$S/dev/ice/"
-dev/irdma/fbsd_kcompat.c	optional irdma ice inet inet6 pci ofed \
-	compile-with "${OFED_C} -I$S/dev/ice/"
-dev/irdma/irdma_kcompat.c	optional irdma ice inet inet6 pci ofed \
-	compile-with "${OFED_C} -I$S/dev/ice/"
-dev/irdma/irdma_pble.c		optional irdma ice inet inet6 pci ofed \
-	compile-with "${OFED_C} -I$S/dev/ice/"
-dev/irdma/irdma_puda.c		optional irdma ice inet inet6 pci ofed \
-	compile-with "${OFED_C} -I$S/dev/ice/"
-dev/irdma/irdma_uda.c		optional irdma ice inet inet6 pci ofed \
-	compile-with "${OFED_C} -I$S/dev/ice/"
-dev/irdma/irdma_uk.c		optional irdma ice inet inet6 pci ofed \
-	compile-with "${OFED_C} -I$S/dev/ice/"
-dev/irdma/irdma_utils.c		optional irdma ice inet inet6 pci ofed \
-	compile-with "${OFED_C} -I$S/dev/ice/"
-dev/irdma/irdma_verbs.c		optional irdma ice inet inet6 pci ofed \
-	compile-with "${OFED_C} -I$S/dev/ice/"
-dev/irdma/irdma_ws.c		optional irdma ice inet inet6 pci ofed \
-	compile-with "${OFED_C} -I$S/dev/ice/"
 
-dev/mthca/mthca_allocator.c		optional mthca pci ofed \
-	compile-with "${OFED_C}"
-dev/mthca/mthca_av.c			optional mthca pci ofed \
-	compile-with "${OFED_C}"
-dev/mthca/mthca_catas.c			optional mthca pci ofed \
-	compile-with "${OFED_C}"
-dev/mthca/mthca_cmd.c			optional mthca pci ofed \
-	compile-with "${OFED_C}"
-dev/mthca/mthca_cq.c			optional mthca pci ofed \
-	compile-with "${OFED_C}"
-dev/mthca/mthca_eq.c			optional mthca pci ofed \
-	compile-with "${OFED_C}"
-dev/mthca/mthca_mad.c			optional mthca pci ofed \
-	compile-with "${OFED_C}"
-dev/mthca/mthca_main.c			optional mthca pci ofed \
-	compile-with "${OFED_C}"
-dev/mthca/mthca_mcg.c			optional mthca pci ofed \
-	compile-with "${OFED_C}"
-dev/mthca/mthca_memfree.c		optional mthca pci ofed \
-	compile-with "${OFED_C}"
-dev/mthca/mthca_mr.c			optional mthca pci ofed \
-	compile-with "${OFED_C}"
-dev/mthca/mthca_pd.c			optional mthca pci ofed \
-	compile-with "${OFED_C}"
-dev/mthca/mthca_profile.c		optional mthca pci ofed \
-	compile-with "${OFED_C}"
-dev/mthca/mthca_provider.c		optional mthca pci ofed \
-	compile-with "${OFED_C}"
-dev/mthca/mthca_qp.c			optional mthca pci ofed \
-	compile-with "${OFED_C}"
-dev/mthca/mthca_reset.c			optional mthca pci ofed \
-	compile-with "${OFED_C}"
-dev/mthca/mthca_srq.c			optional mthca pci ofed \
-	compile-with "${OFED_C}"
-dev/mthca/mthca_uar.c			optional mthca pci ofed \
-	compile-with "${OFED_C}"
 
 # crypto support
 opencrypto/cbc_mac.c		optional crypto
@@ -4640,7 +4566,6 @@ crypto/libsodium/utils.c	optional crypto \
 rpc/auth_none.c			optional krpc
 rpc/auth_unix.c			optional krpc
 rpc/authunix_prot.c		optional krpc
-rpc/clnt_bck.c			optional krpc
 rpc/clnt_dg.c			optional krpc
 rpc/clnt_nl.c			optional krpc
 rpc/clnt_rc.c			optional krpc
@@ -4658,41 +4583,6 @@ rpc/svc_auth_unix.c		optional krpc
 rpc/svc_dg.c			optional krpc
 rpc/svc_generic.c		optional krpc
 rpc/svc_vc.c			optional krpc
-#
-# Kernel RPC-over-TLS
-#
-rpctlscd.h			optional krpc	\
-	dependency		"$S/rpc/rpcsec_tls/rpctlscd.x"			\
-	compile-with		"RPCGEN_CPP='${CPP}' rpcgen -hM $S/rpc/rpcsec_tls/rpctlscd.x | grep -v pthread.h > rpctlscd.h" \
-	no-obj no-implicit-rule before-depend local			\
-	clean			"rpctlscd.h"
-rpctlscd_xdr.c			optional krpc	\
-	dependency		"$S/rpc/rpcsec_tls/rpctlscd.x rpctlscd.h"		\
-	compile-with		"RPCGEN_CPP='${CPP}' rpcgen -c $S/rpc/rpcsec_tls/rpctlscd.x -o rpctlscd_xdr.c" no-ctfconvert \
-	no-implicit-rule before-depend local				\
-	clean			"rpctlscd_xdr.c"
-rpctlscd_clnt.c			optional krpc	\
-	dependency		"$S/rpc/rpcsec_tls/rpctlscd.x rpctlscd.h"		\
-	compile-with		"RPCGEN_CPP='${CPP}' rpcgen -lM $S/rpc/rpcsec_tls/rpctlscd.x | grep -v string.h > rpctlscd_clnt.c" no-ctfconvert \
-	no-implicit-rule before-depend local				\
-	clean			"rpctlscd_clnt.c"
-rpctlssd.h			optional krpc	\
-	dependency		"$S/rpc/rpcsec_tls/rpctlssd.x"			\
-	compile-with		"RPCGEN_CPP='${CPP}' rpcgen -hM $S/rpc/rpcsec_tls/rpctlssd.x | grep -v pthread.h > rpctlssd.h" \
-	no-obj no-implicit-rule before-depend local			\
-	clean			"rpctlssd.h"
-rpctlssd_xdr.c			optional krpc	\
-	dependency		"$S/rpc/rpcsec_tls/rpctlssd.x rpctlssd.h"		\
-	compile-with		"RPCGEN_CPP='${CPP}' rpcgen -c $S/rpc/rpcsec_tls/rpctlssd.x -o rpctlssd_xdr.c" no-ctfconvert \
-	no-implicit-rule before-depend local				\
-	clean			"rpctlssd_xdr.c"
-rpctlssd_clnt.c			optional krpc	\
-	dependency		"$S/rpc/rpcsec_tls/rpctlssd.x rpctlssd.h"		\
-	compile-with		"RPCGEN_CPP='${CPP}' rpcgen -lM $S/rpc/rpcsec_tls/rpctlssd.x | grep -v string.h > rpctlssd_clnt.c" no-ctfconvert \
-	no-implicit-rule before-depend local				\
-	clean			"rpctlssd_clnt.c"
-rpc/rpcsec_tls/rpctls_impl.c	optional krpc
-rpc/rpcsec_tls/auth_tls.c	optional krpc
 security/audit/audit.c		optional audit
 security/audit/audit_arg.c	optional audit
 security/audit/audit_bsm.c	optional audit
@@ -4751,7 +4641,6 @@ security/mac_veriexec/mac_veriexec.c			optional mac_veriexec
 security/mac_veriexec/veriexec_fingerprint.c		optional mac_veriexec
 security/mac_veriexec/veriexec_metadata.c		optional mac_veriexec
 security/mac_veriexec_parser/mac_veriexec_parser.c	optional mac_veriexec mac_veriexec_parser
-security/mac_veriexec/mac_veriexec_rmd160.c		optional mac_veriexec_rmd160
 security/mac_veriexec/mac_veriexec_sha1.c		optional mac_veriexec_sha1
 security/mac_veriexec/mac_veriexec_sha256.c		optional mac_veriexec_sha256
 security/mac_veriexec/mac_veriexec_sha384.c		optional mac_veriexec_sha384

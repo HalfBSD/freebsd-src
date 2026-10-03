@@ -33,14 +33,9 @@
 
 #ifdef _KERNEL
 /*
- * Definitions now shared between client and server RPC for backchannels.
+ * Definitions shared by kernel RPC transports.
  */
 #define MCALL_MSG_SIZE 24
-
-void clnt_bck_svccall(void *, struct mbuf *, uint32_t);
-enum clnt_stat clnt_bck_call(CLIENT *, struct rpc_callextra *, rpcproc_t,
-    struct mbuf *, struct mbuf **, struct timeval, SVCXPRT *);
-struct mbuf *_rpc_copym_into_ext_pgs(struct mbuf *, int);
 
 /*
  * A pending RPC request which awaits a reply. Requests which have
@@ -79,22 +74,10 @@ struct rc_data {
 	struct ucred		*rc_ucred;
 	CLIENT*			rc_client; /* underlying RPC client */
 	struct rpc_err		rc_err;
-	void			*rc_backchannel;
-	bool			rc_tls; /* Enable TLS on connection */
-	char			*rc_tlscertname;
 	void			(*rc_reconcall)(CLIENT *, void *,
 				    struct ucred *); /* reconection upcall */
 	void			*rc_reconarg;	/* upcall arg */
 };
-
-/* Bits for ct_rcvstate. */
-#define RPCRCVSTATE_NORMAL		0x01	/* Normal reception. */
-#define RPCRCVSTATE_NONAPPDATA		0x02	/* Reception of a non-application record. */
-#define RPCRCVSTATE_TLSHANDSHAKE	0x04	/* Reception blocked for TLS handshake. */
-#define RPCRCVSTATE_UPCALLNEEDED	0x08	/* Upcall to rpctlscd needed. */
-#define RPCRCVSTATE_UPCALLINPROG	0x10	/* Upcall to rpctlscd in progress. */
-#define RPCRCVSTATE_SOUPCALLNEEDED	0x20	/* Socket upcall needed. */
-#define RPCRCVSTATE_UPCALLTHREAD	0x40	/* Upcall kthread running. */
 
 struct ct_data {
 	struct mtx	ct_lock;
@@ -116,13 +99,6 @@ struct ct_data {
 	bool_t		ct_record_eor;	 /* true if reading last fragment */
 	struct ct_request_list ct_pending;
 	int		ct_upcallrefs;	/* Ref cnt of upcalls in prog. */
-	SVCXPRT		*ct_backchannelxprt; /* xprt for backchannel */
-	enum tlsstate	{
-	    RPCTLS_NONE = 0,
-	    RPCTLS_INHANDSHAKE,	/* fd given to the daemon, daemon is working */
-	    RPCTLS_COMPLETE,	/* daemon reported success rpctlscd_connect() */
-	}		ct_tlsstate;
-	uint32_t 	ct_rcvstate;	/* Handle receiving for TLS upcalls */
 	struct mbuf	*ct_raw;	/* Raw mbufs recv'd */
 };
 

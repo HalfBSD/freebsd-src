@@ -1,5 +1,5 @@
-# We exclude several subdirectories: nfs and sysevent do not compile on
-# FreeBSD, and docsExamples doesn't seem amenable to automated testing.
+# sysevent does not compile on FreeBSD; docsExamples does not lend itself
+# to automated testing.
 
 TESTSDIR=	${TESTSBASE}/cddl/usr.sbin/dtrace/common
 TESTS_SUBDIRS+= aggs \

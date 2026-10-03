@@ -165,11 +165,6 @@
         ..
         fwget
         ..
-        ..
-        sendmail
-        ..
-        sm.bin
-        ..
         zfs
         ..
     ..
@@ -331,9 +326,6 @@
                 srcs
                 ..
             ..
-                print
-                ..
-            ..
             sound
             ..
             sunrpc
@@ -458,19 +450,7 @@
             ..
             gl_ES.ISO8859-1
             ..
-            kk_KZ.PT154
-            ..
             no_NO.ISO8859-1
-            ..
-            no_NO.ISO8859-15
-            ..
-            no_NO.UTF-8
-            ..
-            sr_YU.ISO8859-2
-            ..
-            sr_YU.ISO8859-5
-            ..
-            sr_YU.UTF-8
             ..
         ..
         pkg
@@ -479,15 +459,7 @@
         ..
         security
         ..
-        sendmail
-        ..
         skel
-        ..
-        snmp
-            defs
-            ..
-            mibs
-            ..
         ..
         tabset
         ..

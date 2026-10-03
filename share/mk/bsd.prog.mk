@@ -91,10 +91,6 @@ CXXFLAGS+= -fzero-call-used-regs=${ZEROREG_TYPE}
 # bsd.sanitizer.mk is not installed, so don't require it (e.g. for ports).
 .sinclude "bsd.sanitizer.mk"
 
-.if ${MACHINE_CPUARCH} == "riscv" && ${LINKER_FEATURES:Mriscv-relaxations} == ""
-CFLAGS += -mno-relax
-.endif
-
 .if defined(CRUNCH_CFLAGS)
 CFLAGS+=${CRUNCH_CFLAGS}
 .endif

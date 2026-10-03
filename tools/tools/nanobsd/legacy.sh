@@ -117,12 +117,6 @@ create_code_slice ( ) (
 
 	gpart create -s bsd "${MD}"
 	gpart add -t freebsd-ufs -b 16 "${MD}"
-	if [ -f ${NANO_WORLDDIR}/boot/boot ]; then
-	    echo "Making bootable partition"
-	    gpart bootcode -b ${NANO_WORLDDIR}/boot/boot ${MD}
-	else
-	    echo "Partition will not be bootable"
-	fi
 	gpart list ${MD}
 
 	# Create first image
@@ -146,101 +140,6 @@ create_code_slice ( ) (
 
 
 create_diskimage ( ) (
-	pprint 2 "build diskimage"
-	pprint 3 "log: ${NANO_OBJ}/_.di"
-
-	(
-
-	IMG=${NANO_DISKIMGDIR}/${NANO_IMGNAME}
-	MNT=${NANO_OBJ}/_.mnt
-	mkdir -p ${MNT}
-
-	if [ "${NANO_MD_BACKING}" = "swap" ] ; then
-		MD=`mdconfig -a -t swap -s ${NANO_MEDIASIZE} -x ${NANO_SECTS} \
-			-y ${NANO_HEADS}`
-	else
-		echo "Creating md backing file..."
-		rm -f ${IMG}
-		dd if=/dev/zero of=${IMG} seek=${NANO_MEDIASIZE} count=0
-		MD=`mdconfig -a -t vnode -f ${IMG} -x ${NANO_SECTS} \
-			-y ${NANO_HEADS}`
-	fi
-
-	awk '
-	BEGIN {
-		# Create MBR partition table
-		print "gpart create -s mbr $1"
-	}
-	{
-		# Make partition
-		print "gpart add -t freebsd -b ", $1, " -s ", $2, " -i ", $3, " $1"
-	}
-	END {
-		# Force slice 1 to be marked active. This is necessary
-		# for booting the image from a USB device to work.
-		print "gpart set -a active -i 1 $1"
-	}
-	' ${NANO_LOG}/_.partitioning > ${NANO_OBJ}/_.gpart
-
-	trap "echo 'Running exit trap code' ; df -i ${MNT} ; nano_umount ${MNT} || true ; mdconfig -d -u $MD" 1 2 15 EXIT
-
-	sh ${NANO_OBJ}/_.gpart ${MD}
-	gpart show ${MD}
-	# XXX: params
-	# XXX: pick up cached boot* files, they may not be in image anymore.
-	if [ -f ${NANO_WORLDDIR}/${NANO_BOOTLOADER} ]; then
-		gpart bootcode -b ${NANO_WORLDDIR}/${NANO_BOOTLOADER} ${NANO_BOOTFLAGS} ${MD}
-	fi
-
-	echo "Writing code image..."
-	dd conv=sparse if=${NANO_DISKIMGDIR}/_.disk.image of=/dev/${MD}${NANO_SLICE_ROOT} bs=64k
-
-	if [ $NANO_IMAGES -gt 1 -a $NANO_INIT_IMG2 -gt 0 ] ; then
-		# Duplicate to second image (if present)
-		echo "Duplicating to second image..."
-		dd conv=sparse if=/dev/${MD}${NANO_SLICE_ROOT} of=/dev/${MD}${NANO_SLICE_ALTROOT} bs=64k
-		mount /dev/${MD}${NANO_ALTROOT} ${MNT}
-		for f in ${MNT}/etc/fstab ${MNT}/conf/base/etc/fstab
-		do
-			sed -i "" "s=${NANO_DRIVE}${NANO_SLICE_ROOT}=${NANO_DRIVE}${NANO_SLICE_ALTROOT}=g" $f
-		done
-		nano_umount ${MNT}
-		# Override the label from the first partition so we
-		# don't confuse glabel with duplicates.
-		if [ -n "${NANO_LABEL}" ]; then
-			tunefs -L ${NANO_LABEL}"${NANO_ALTROOT}" /dev/${MD}${NANO_ALTROOT}
-		fi
-	fi
-
-	# Create Config slice
-	populate_cfg_slice /dev/${MD}${NANO_SLICE_CFG} "${NANO_CFGDIR}" ${MNT} "${NANO_SLICE_CFG}"
-
-	# Create Data slice, if any.
-	if [ -n "$NANO_SLICE_DATA" -a "$NANO_SLICE_CFG" = "$NANO_SLICE_DATA" -a \
-	   "$NANO_DATASIZE" -ne 0 ]; then
-		pprint 2 "NANO_SLICE_DATA is the same as NANO_SLICE_CFG, fix."
-		exit 2
-	fi
-	if [ $NANO_DATASIZE -ne 0 -a -n "$NANO_SLICE_DATA" ] ; then
-		populate_data_slice /dev/${MD}${NANO_SLICE_DATA} "${NANO_DATADIR}" ${MNT} "${NANO_SLICE_DATA}"
-	fi
-
-	if [ "${NANO_MD_BACKING}" = "swap" ] ; then
-		if [ ${NANO_IMAGE_MBRONLY} ]; then
-			echo "Writing out _.disk.mbr..."
-			dd if=/dev/${MD} of=${NANO_DISKIMGDIR}/_.disk.mbr bs=512 count=1
-		else
-			echo "Writing out ${NANO_IMGNAME}..."
-			dd if=/dev/${MD} of=${IMG} bs=64k
-		fi
-
-		echo "Writing out ${NANO_IMGNAME}..."
-		dd conv=sparse if=/dev/${MD} of=${IMG} bs=64k
-	fi
-
-	mdconfig -d -u $MD
-
-	trap - 1 2 15 EXIT
-
-	) > ${NANO_LOG}/_.di 2>&1
+	echo "HalfBSD NanoBSD legacy BIOS images are unsupported; use an embedded UEFI profile." >&2
+	exit 1
 )

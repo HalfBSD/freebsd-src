@@ -385,26 +385,6 @@ gpart_activate(struct gprovider *pp)
 	gctl_free(r);
 }
 
-void
-gpart_set_root(const char *lg_name, const char *attribute)
-{
-	struct gctl_req *r;
-	const char *errstr;
-
-	r = gctl_get_handle();
-	gctl_ro_param(r, "class", -1, "PART");
-	gctl_ro_param(r, "arg0", -1, lg_name);
-	gctl_ro_param(r, "flags", -1, "C");
-	gctl_ro_param(r, "verb", -1, "set");
-	gctl_ro_param(r, "attrib", -1, attribute);
-
-	errstr = gctl_issue(r);
-	if (errstr != NULL && errstr[0] != '\0') 
-		gpart_show_error("Error", "Error setting parameter on disk:",
-		    errstr);
-	gctl_free(r);
-}
-
 static void
 gpart_bootcode(struct ggeom *gp)
 {
@@ -727,7 +707,7 @@ set_default_part_metadata(const char *name, const char *scheme,
 {
 	struct partition_metadata *md;
 	char *zpool_name = NULL;
-	const char *default_bootmount = NULL;
+	const char *default_bootmount = NULL, *boot_type;
 	int i;
 
 	/* Set part metadata */
@@ -756,7 +736,8 @@ set_default_part_metadata(const char *name, const char *scheme,
 
 	if (strcmp(type, "freebsd-swap") == 0)
 		mountpoint = "none";
-	if (strcmp(type, bootpart_type(scheme, &default_bootmount)) == 0) {
+	boot_type = bootpart_type(scheme, &default_bootmount);
+	if (boot_type != NULL && strcmp(type, boot_type) == 0) {
 		if (default_bootmount == NULL)
 			md->bootcode = 1;
 		else if (mountpoint == NULL || strlen(mountpoint) == 0)
@@ -943,18 +924,22 @@ add_boot_partition(struct ggeom *geom, struct gprovider *pp,
 	struct gprovider *ppi;
 	int choice;
 	struct bsddialog_conf conf;
+	const char *boot_type, *bootmount = NULL;
 
-	/* Check for existing freebsd-boot partition */
+	boot_type = bootpart_type(scheme, &bootmount);
+	if (boot_type == NULL || bootpart_size(scheme) == 0)
+		return (0);
+
+	/* Check for an existing boot partition. */
 	LIST_FOREACH(ppi, &geom->lg_provider, lg_provider) {
 		struct partition_metadata *md;
-		const char *bootmount = NULL;
 
 		LIST_FOREACH(gc, &ppi->lg_config, lg_config)
 			if (strcmp(gc->lg_name, "type") == 0)
 				break;
 		if (gc == NULL)
 			continue;
-		if (strcmp(gc->lg_val, bootpart_type(scheme, &bootmount)) != 0)
+		if (strcmp(gc->lg_val, boot_type) != 0)
 			continue;
 
 		/*
@@ -993,7 +978,6 @@ add_boot_partition(struct ggeom *geom, struct gprovider *pp,
 
 	if (choice == BSDDIALOG_YES) {
 		struct partition_metadata *md;
-		const char *bootmount = NULL;
 		char *bootpartname = NULL;
 		char sizestr[7];
 
@@ -1001,7 +985,7 @@ add_boot_partition(struct ggeom *geom, struct gprovider *pp,
 		    bootpart_size(scheme), "B", HN_AUTOSCALE,
 		    HN_NOSPACE | HN_DECIMAL);
 
-		gpart_create(pp, bootpart_type(scheme, &bootmount),
+		gpart_create(pp, boot_type,
 		    sizestr, bootmount, &bootpartname, 0);
 
 		if (bootpartname == NULL) /* Error reported to user already */

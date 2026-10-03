@@ -234,9 +234,6 @@ static struct bool_flags pr_flag_allow[NBBY * NBPW] = {
 	{"allow.unprivileged_proc_debug", "allow.nounprivileged_proc_debug",
 	 PR_ALLOW_UNPRIV_DEBUG},
 	{"allow.suser", "allow.nosuser", PR_ALLOW_SUSER},
-#ifdef VIMAGE
-	{"allow.nfsd", "allow.nonfsd", PR_ALLOW_NFSD},
-#endif
 	{"allow.extattr", "allow.noextattr", PR_ALLOW_EXTATTR},
 	{"allow.adjtime", "allow.noadjtime", PR_ALLOW_ADJTIME},
 	{"allow.settime", "allow.nosettime", PR_ALLOW_SETTIME},
@@ -2262,11 +2259,6 @@ kern_jail_set(struct thread *td, struct uio *optuio, int flags)
 	}
 #endif
 
-	if (created && pr != &prison0 && (pr->pr_allow & PR_ALLOW_NFSD) != 0 &&
-	    (pr->pr_root->v_vflag & VV_ROOT) == 0)
-		printf("Warning jail jid=%d: mountd/nfsd requires a separate"
-		   " file system\n", pr->pr_id);
-
 	/*
 	 * Now that the prison is fully created without error, set the
 	 * jail descriptor if one was requested.  This is the only
@@ -3915,31 +3907,6 @@ prison_check(struct ucred *cred1, struct ucred *cred2)
 }
 
 /*
- * For mountd/nfsd to run within a prison, it must be:
- * - A vnet prison.
- * - PR_ALLOW_NFSD must be set on it.
- * - The root directory (pr_root) of the prison must be
- *   a file system mount point, so the mountd can hang
- *   export information on it.
- * - The prison's enforce_statfs cannot be 0, so that
- *   mountd(8) can do exports.
- */
-bool
-prison_check_nfsd(struct ucred *cred)
-{
-
-	if (jailed_without_vnet(cred))
-		return (false);
-	if (!prison_allow(cred, PR_ALLOW_NFSD))
-		return (false);
-	if ((cred->cr_prison->pr_root->v_vflag & VV_ROOT) == 0)
-		return (false);
-	if (cred->cr_prison->pr_enforce_statfs == 0)
-		return (false);
-	return (true);
-}
-
-/*
  * Return true if p2 is a child of p1, otherwise false.
  */
 bool
@@ -4193,17 +4160,6 @@ prison_priv_check(struct ucred *cred, int priv)
 	 * is only granted conditionally in the legacy jail case.
 	 */
 	switch (priv) {
-		/*
-		 * NFS-specific privileges.
-		 */
-	case PRIV_NFS_DAEMON:
-	case PRIV_VFS_GETFH:
-	case PRIV_VFS_MOUNT_EXPORTED:
-		if (!prison_check_nfsd(cred))
-			return (EPERM);
-#ifdef notyet
-	case PRIV_NFS_LOCKD:
-#endif
 		/*
 		 * Network stack privileges.
 		 */
@@ -5054,10 +5010,6 @@ SYSCTL_JAIL_PARAM(_allow, unprivileged_parent_tampering,
     " (signal/debug/cpuset)");
 SYSCTL_JAIL_PARAM(_allow, suser, CTLTYPE_INT | CTLFLAG_RW,
     "B", "Processes in jail with uid 0 have privilege");
-#ifdef VIMAGE
-SYSCTL_JAIL_PARAM(_allow, nfsd, CTLTYPE_INT | CTLFLAG_RW,
-    "B", "Mountd/nfsd may run in the jail");
-#endif
 SYSCTL_JAIL_PARAM(_allow, extattr, CTLTYPE_INT | CTLFLAG_RW,
     "B", "Jail may set system-level filesystem extended attributes");
 SYSCTL_JAIL_PARAM(_allow, adjtime, CTLTYPE_INT | CTLFLAG_RW,

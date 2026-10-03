@@ -244,5 +244,3 @@ if [ -n "$__a" ]; then
     echo "unmounting $__a"
     umount $__a
 fi
-
-NANO_BOOTLOADER="boot/boot0"

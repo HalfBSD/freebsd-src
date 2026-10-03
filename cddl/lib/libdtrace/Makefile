@@ -111,10 +111,6 @@ CFLAGS+=	-I${OPENSOLARIS_SYS_DISTDIR}/uts/intel -DDIS_MEM
 CFLAGS+=	-I${OPENSOLARIS_SYS_DISTDIR}/uts/arm
 .PATH:		${SRCTOP}/cddl/contrib/opensolaris/lib/libdtrace/arm
 .PATH:		${SRCTOP}/sys/cddl/dev/dtrace/arm
-.elif ${MACHINE_CPUARCH} == "riscv"
-CFLAGS+=	-I${OPENSOLARIS_SYS_DISTDIR}/uts/riscv
-.PATH:		${SRCTOP}/cddl/contrib/opensolaris/lib/libdtrace/riscv
-.PATH:		${SRCTOP}/sys/cddl/dev/dtrace/riscv
 .else
 # temporary hack
 CFLAGS+=	-I${OPENSOLARIS_SYS_DISTDIR}/uts/intel
@@ -125,10 +121,6 @@ SRCS+=		dis_tables.c instr_size.c
 DSRCS+=		regs_x86.d
 .endif
 
-.if ${MACHINE_CPUARCH} == "riscv"
-SRCS+=		instr_size.c
-DSRCS+=		regs_riscv.d
-.endif
 
 .if ${MACHINE_CPUARCH} == "aarch64"
 SRCS+=		instr_size.c

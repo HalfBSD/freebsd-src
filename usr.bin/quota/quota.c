@@ -41,11 +41,6 @@
 #include <sys/file.h>
 #include <sys/stat.h>
 #include <sys/mount.h>
-#include <sys/socket.h>
-
-#include <rpc/rpc.h>
-#include <rpc/pmap_prot.h>
-#include <rpcsvc/rquota.h>
 
 #include <ufs/ufs/quota.h>
 
@@ -54,7 +49,6 @@
 #include <fstab.h>
 #include <grp.h>
 #include <libutil.h>
-#include <netdb.h>
 #include <pwd.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -84,14 +78,9 @@ static void showrawquotas(int type, u_long id, struct quotause *qup);
 static void heading(int type, u_long id, const char *name, const char *tag);
 static int getufsquota(struct fstab *fs, struct quotause *qup, long id,
 	int quotatype);
-static int getnfsquota(struct statfs *fst, struct quotause *qup, long id,
-	int quotatype);
-static enum clnt_stat callaurpc(char *host, int prognum, int versnum, int procnum, 
-	xdrproc_t inproc, char *in, xdrproc_t outproc, char *out);
 static int alldigits(char *s);
 
 static int	hflag;
-static int	lflag;
 static int	rflag;
 static int	qflag;
 static int	vflag;
@@ -115,7 +104,7 @@ main(int argc, char *argv[])
 			hflag++;
 			break;
 		case 'l':
-			lflag++;
+			/* All supported quota filesystems are local. */
 			break;
 		case 'q':
 			qflag++;
@@ -505,12 +494,7 @@ getprivs(long id, int quotatype)
 		if (filename != NULL &&
 		    strcmp(sfb.f_mntonname, fst[i].f_mntonname) != 0)
 			continue;
-		if (strcmp(fst[i].f_fstypename, "nfs") == 0) {
-			if (lflag)
-				continue;
-			if (getnfsquota(&fst[i], qup, id, quotatype) == 0)
-				continue;
-		} else if (strcmp(fst[i].f_fstypename, "ufs") == 0) {
+		if (strcmp(fst[i].f_fstypename, "ufs") == 0) {
 			/*
 			 * XXX
 			 * UFS filesystems must be in /etc/fstab, and must
@@ -554,126 +538,6 @@ getufsquota(struct fstab *fs, struct quotause *qup, long id, int quotatype)
 		return (0);
 	quota_close(qf);
 	return (1);
-}
-
-static int
-getnfsquota(struct statfs *fst, struct quotause *qup, long id, int quotatype)
-{
-	struct ext_getquota_args gq_args;
-	struct getquota_args old_gq_args;
-	struct getquota_rslt gq_rslt;
-	struct dqblk *dqp = &qup->dqblk;
-	struct timeval tv;
-	char *cp, host[NI_MAXHOST];
-	enum clnt_stat call_stat;
-
-	if (fst->f_flags & MNT_LOCAL)
-		return (0);
-
-	/*
-	 * must be some form of "hostname:/path"
-	 */
-	cp = fst->f_mntfromname;
-	do {
-		cp = strrchr(cp, ':');
-	} while (cp != NULL && *(cp + 1) != '/');
-	if (cp == NULL) {
-		warnx("cannot find hostname for %s", fst->f_mntfromname);
-		return (0);
-	}
-	memset(host, 0, sizeof(host));
-	memcpy(host, fst->f_mntfromname, cp - fst->f_mntfromname);
-	host[sizeof(host) - 1] = '\0';
- 
-	/* Avoid attempting the RPC for special amd(8) filesystems. */
-	if (strncmp(fst->f_mntfromname, "pid", 3) == 0 &&
-	    strchr(fst->f_mntfromname, '@') != NULL)
-		return (0);
-
-	gq_args.gqa_pathp = cp + 1;
-	gq_args.gqa_id = id;
-	gq_args.gqa_type = quotatype;
-
-	call_stat = callaurpc(host, RQUOTAPROG, EXT_RQUOTAVERS,
-			      RQUOTAPROC_GETQUOTA, (xdrproc_t)xdr_ext_getquota_args, (char *)&gq_args,
-			      (xdrproc_t)xdr_getquota_rslt, (char *)&gq_rslt);
-	if (call_stat == RPC_PROGVERSMISMATCH || call_stat == RPC_PROGNOTREGISTERED) {
-		if (quotatype == USRQUOTA) {
-			old_gq_args.gqa_pathp = cp + 1;
-			old_gq_args.gqa_uid = id;
-			call_stat = callaurpc(host, RQUOTAPROG, RQUOTAVERS,
-					      RQUOTAPROC_GETQUOTA, (xdrproc_t)xdr_getquota_args, (char *)&old_gq_args,
-					      (xdrproc_t)xdr_getquota_rslt, (char *)&gq_rslt);
-		} else {
-			/* Old rpc quota does not support group type */
-			return (0);
-		}
-	}
-	if (call_stat != 0)
-		return (call_stat);
-
-	switch (gq_rslt.status) {
-	case Q_NOQUOTA:
-		break;
-	case Q_EPERM:
-		warnx("quota permission error, host: %s",
-			fst->f_mntfromname);
-		break;
-	case Q_OK:
-		gettimeofday(&tv, NULL);
-			/* blocks*/
-		dqp->dqb_bhardlimit =
-		    ((uint64_t)gq_rslt.getquota_rslt_u.gqr_rquota.rq_bhardlimit *
-		    gq_rslt.getquota_rslt_u.gqr_rquota.rq_bsize) / DEV_BSIZE;
-		dqp->dqb_bsoftlimit =
-		    ((uint64_t)gq_rslt.getquota_rslt_u.gqr_rquota.rq_bsoftlimit *
-		    gq_rslt.getquota_rslt_u.gqr_rquota.rq_bsize) / DEV_BSIZE;
-		dqp->dqb_curblocks =
-		    ((uint64_t)gq_rslt.getquota_rslt_u.gqr_rquota.rq_curblocks *
-		    gq_rslt.getquota_rslt_u.gqr_rquota.rq_bsize) / DEV_BSIZE;
-			/* inodes */
-		dqp->dqb_ihardlimit =
-			gq_rslt.getquota_rslt_u.gqr_rquota.rq_fhardlimit;
-		dqp->dqb_isoftlimit =
-			gq_rslt.getquota_rslt_u.gqr_rquota.rq_fsoftlimit;
-		dqp->dqb_curinodes =
-			gq_rslt.getquota_rslt_u.gqr_rquota.rq_curfiles;
-			/* grace times */
-		dqp->dqb_btime =
-		    tv.tv_sec + gq_rslt.getquota_rslt_u.gqr_rquota.rq_btimeleft;
-		dqp->dqb_itime =
-		    tv.tv_sec + gq_rslt.getquota_rslt_u.gqr_rquota.rq_ftimeleft;
-		return (1);
-	default:
-		warnx("bad rpc result, host: %s", fst->f_mntfromname);
-		break;
-	}
-
-	return (0);
-}
- 
-static enum clnt_stat
-callaurpc(char *host, int prognum, int versnum, int procnum,
-    xdrproc_t inproc, char *in, xdrproc_t outproc, char *out)
-{
-	enum clnt_stat clnt_stat;
-	struct timeval timeout, tottimeout;
- 
-	CLIENT *client = NULL;
-
- 	client = clnt_create(host, prognum, versnum, "udp");
-	if (client == NULL)
-		return ((int)rpc_createerr.cf_stat);
-	timeout.tv_usec = 0;
-	timeout.tv_sec = 6;
-	CLNT_CONTROL(client, CLSET_RETRY_TIMEOUT, (char *)(void *)&timeout);
-
-	client->cl_auth = authunix_create_default();
-	tottimeout.tv_sec = 25;
-	tottimeout.tv_usec = 0;
-	clnt_stat = clnt_call(client, procnum, inproc, in,
-	    outproc, out, tottimeout);
-	return (clnt_stat);
 }
 
 static int

@@ -443,10 +443,7 @@ SUBDIR+=	${_DIR}
 .endif
 .endfor
 
-# We must do etc/ last as it hooks into building the man whatis file
-# by calling 'makedb' in share/man.  This is only relevant for
-# install/distribute so they build the whatis file after every manpage is
-# installed.
+# Install/distribute etc/ after the other world directories.
 .if make(installworld) || make(install) || make(distributeworld) || make(distribute)
 SUBDIR+=.WAIT
 .endif
@@ -1514,10 +1511,6 @@ packageworld: .PHONY
 	    ${TAR_CMD} cvf - @${DESTDIR}/${DISTDIR}/${dist}.debug.meta | \
 	    ${XZ_CMD} > ${PACKAGEDIR}/${dist}-dbg.txz
 .endfor
-
-makeman: .PHONY
-	${_+_}cd ${.CURDIR}/tools/build/options; sh makeman > \
-	    ${.CURDIR}/share/man/man5/src.conf.5
 
 # Ensure no regressions in self-includeability of sys/*.h and net*/*.h
 test-includes: .PHONY
@@ -3080,7 +3073,6 @@ NXBMAKEARGS+= \
 	MK_LLDB=no \
 	MK_LLVM_LINK_STATIC_LIBRARIES=yes \
 	MK_MAN=no \
-	MK_OFED=no \
 	MK_OPENSSH=no \
 	MK_RETPOLINE=no \
 	MK_SSP=no \

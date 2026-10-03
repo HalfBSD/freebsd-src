@@ -12,7 +12,6 @@ LIB32LIST+=		liblua
 
 S.yes+=			libsa
 
-S.${MK_LOADER_OFW}+=	libofw
 S.${MK_FDT}+=		fdt
 
 S.${MK_LOADER_LUA}+=	liblua
@@ -44,9 +43,6 @@ SUBDIR_DEPEND_${MACHINE}+=	fdt
 .endif
 .if ${MK_LOADER_UBOOT} != "no"
 SUBDIR_DEPEND_${MACHINE}+=	uboot
-.endif
-.if ${MK_LOADER_OFW} != "no"
-SUBDIR_DEPEND_${MACHINE}+=	libofw
 .endif
 .endif
 

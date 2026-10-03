@@ -8,7 +8,7 @@ LIBADD+=	geom util bsddialog
 PARTEDIT_ARCH= ${MACHINE}
 .if ${MACHINE} == "i386" || ${MACHINE} == "amd64"
 PARTEDIT_ARCH= x86
-.elif ${MACHINE} == "arm64" || ${MACHINE} == "riscv"
+.elif ${MACHINE} == "arm64"
 PARTEDIT_ARCH= efi
 .endif
 .if !exists(partedit_${PARTEDIT_ARCH}.c)

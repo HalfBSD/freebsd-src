@@ -34,7 +34,6 @@
 # Pull in common definitions.
 . common
 
-NANO_BOOT0CFG="-o packet -s 1 -m 3 -t 18"
 
 # /var -> ~10MB (look through rc.initdiskless for the formula of how this
 # number is calculated out). Since we hope to run 

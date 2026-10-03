@@ -36,8 +36,5 @@ SYSDIR?=${SRCTOP}/sys
 
 SUBDIR=qlnxe
 SUBDIR+=qlnxev
-.if ${MK_OFED} != "no" || defined(ALL_MODULES)
-SUBDIR+=qlnxr
-.endif
 
 .include <bsd.subdir.mk>

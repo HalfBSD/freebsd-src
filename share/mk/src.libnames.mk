@@ -121,9 +121,7 @@ _LIBRARIES=	\
 		devdctl \
 		devinfo \
 		devstat \
-		dialog \
 		dl \
-		dpv \
 		dtrace \
 		dwarf \
 		edit \
@@ -131,7 +129,6 @@ _LIBRARIES=	\
 		elf \
 		execinfo \
 		fetch \
-		figpar \
 		formw \
 		geom \
 		gpio \
@@ -205,20 +202,6 @@ _LIBRARIES=	\
 		zpool \
 		zutil
 
-
-
-
-.if ${MK_OFED} != "no"
-_LIBRARIES+= \
-		cxgb4 \
-		ibcm \
-		ibverbs \
-		irdma \
-		mlx5 \
-		bnxtre \
-		rdmacm
-.endif
-
 .if ${MK_BEARSSL} == "yes"
 _LIBRARIES+= \
 		bearssl \
@@ -278,9 +261,6 @@ _DP_cap_pwd=	nv
 _DP_cap_sysctl=	nv
 _DP_cap_syslog=	nv
 _DP_crypt=	md
-.if ${MK_OFED} != "no"
-_DP_pcap=	ibverbs mlx5 bnxtre
-.endif
 _DP_pjdlog=	util
 _DP_usb=	pthread
 _DP_unbound=	ssl crypto pthread
@@ -312,8 +292,6 @@ _DP_fetch=	md
 .endif
 _DP_execinfo=	elf
 _DP_dwarf=	elf z
-_DP_dpv=	dialog figpar util tinfow ncursesw
-_DP_dialog=	tinfow ncursesw m
 _DP_cuse=	pthread
 _DP_atf_cxx=	atf_c
 _DP_gtest=	pthread regex
@@ -361,7 +339,6 @@ _DP_ncursesw=	tinfow
 _DP_formw=	ncursesw
 _DP_nvpair=	spl
 _DP_panelw=	ncursesw
-_DP_smb=	kiconv
 _DP_ulog=	md
 _DP_fifolog=	z
 _DP_tpool=	spl
@@ -377,17 +354,6 @@ _DP_be=		zfs spl nvpair zfsbootenv
 _DP_netmap=
 _DP_ifconfig=	m
 _DP_iscsiutil=	md
-
-# OFED support
-.if ${MK_OFED} != "no"
-_DP_cxgb4=	ibverbs pthread
-_DP_ibcm=	ibverbs
-_DP_ibverbs=
-_DP_irdma=	ibverbs pthread
-_DP_mlx5=	ibverbs pthread
-_DP_bnxtre=	ibverbs pthread
-_DP_rdmacm=	ibverbs
-.endif
 
 # Define special cases
 LDADD_supcplusplus=	-lsupc++

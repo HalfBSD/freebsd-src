@@ -59,18 +59,6 @@ while mount | grep -q "$mntpoint "; do
 done
 mdconfig -d -u $mdstart
 
-echo nfs:
-if ping -c 2 `echo $nfs_export | sed 's/:.*//'` > /dev/null 2>&1; then
-	mount -t nfs -o tcp -o retrycnt=3 -o intr,soft -o rw $nfs_export \
-	    $mntpoint
-	sleep .2
-	(cd $mntpoint; /tmp/truncate8)
-	s=$?
-	[ $s -ne 0 ] && { echo "NFS exit status is $s"; status=1; }
-
-	umount $mntpoint || umount $mntpoint
-fi
-
 echo msdos:
 if [ -x /sbin/mount_msdosfs ]; then
 	mdconfig -a -t swap -s 1g -u $mdstart

@@ -2,13 +2,10 @@
 
 DIRDEPS = \
 	include \
-	include/rpc \
-	include/rpcsvc \
 	include/xlocale \
 	lib/${CSU_DIR} \
 	lib/libc \
 	lib/libcompiler_rt \
-	lib/librpcsvc \
 	lib/libutil \
 
 

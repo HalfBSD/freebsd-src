@@ -12,7 +12,6 @@
     ..
     bsm                 tags=package=audit-dev
     ..
-    ..
     c++
         v1
             __algorithm
@@ -138,7 +137,6 @@
         ..
         hwpmc
         ..
-        ..
         ic
         ..
         iicbus
@@ -146,8 +144,6 @@
         io
         ..
         mfi
-        ..
-        mlx5
         ..
         mmc
         ..
@@ -203,12 +199,9 @@
         ..
         msdosfs
         ..
-        nfs
-        ..
         nullfs
         ..
         procfs
-        ..
         ..
         udf
         ..
@@ -247,12 +240,6 @@
         union
         ..
         virstor
-        ..
-    ..
-    infiniband          tags=package=utilities-dev
-        complib         tags=package=utilities-dev
-        ..
-        iba             tags=package=utilities-dev
         ..
     ..
     isofs
@@ -305,13 +292,6 @@
         route
         ..
     ..
-    ..
-    nfs
-    ..
-    nfsclient
-    ..
-    nfsserver
-    ..
     opencsd
         c_api
         ..
@@ -331,8 +311,6 @@
     pcap                tags=package=utilities-dev
     ..
     protocols
-    ..
-    rdma                tags=package=utilities-dev
     ..
     rpc
     ..

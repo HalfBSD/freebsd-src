@@ -132,7 +132,6 @@ options 	BLKDEV_IOSIZE=8192
 options 	DFLTPHYS=(64*1024)
 options 	MAXPHYS=(128*1024)
 
-
 # This allows you to actually store this configuration file into
 # the kernel binary itself. See config(8) for more details.
 #
@@ -734,19 +733,6 @@ options 	SCTP_SUPPORT
 # do. It's all controlled by a
 # corresponding man page, e.g., ng_bpf(4).
 
-# OpenFabrics Enterprise Distribution (Infiniband).
-options 	OFED
-options 	OFED_DEBUG_INIT
-
-# Sockets Direct Protocol
-options 	SDP
-options 	SDP_DEBUG
-
-# IP over Infiniband
-options 	IPOIB
-options 	IPOIB_DEBUG
-options 	IPOIB_CM
-
 # netgraph(4). Enable the base netgraph code with the NETGRAPH option.
 # Individual node types can be enabled with the corresponding option
 # listed below; however, this is not strictly necessary as netgraph
@@ -791,8 +777,6 @@ options 	NETGRAPH_NAT
 options 	NETGRAPH_ONE2MANY
 options 	NETGRAPH_PATCH
 options 	NETGRAPH_PIPE
-options 	NETGRAPH_PPP
-options 	NETGRAPH_PPPOE
 options 	NETGRAPH_PPTPGRE
 options 	NETGRAPH_PRED1
 options 	NETGRAPH_RFC1490
@@ -1008,7 +992,6 @@ options		ACCEPT_FILTER_TLS
 # 'options IPSEC_SUPPORT'.
 options 	TCP_SIGNATURE		#include support for RFC 2385
 
-
 # This allows a panicking kernel to transmit a kernel dump to a remote host.
 options 	NETDUMP
 
@@ -1029,9 +1012,8 @@ options 	NETGDB
 # resolved.
 #
 
-# One of these is mandatory:
+# The root filesystem requires a filesystem implementation:
 options 	FFS			#Fast filesystem
-options 	NFSCL			#Network File System client
 
 # The rest are optional:
 options 	AUTOFS			#Automounter filesystem
@@ -1039,19 +1021,14 @@ options 	CD9660			#ISO 9660 filesystem
 options 	FDESCFS			#File descriptor filesystem
 options 	FUSEFS			#FUSEFS support module
 options 	MSDOSFS			#MS DOS File System (FAT, FAT32)
-options 	NFSLOCKD		#Network Lock Manager
-options 	NFSD			#Network Filesystem Server
 
 options 	NULLFS			#NULL filesystem
 options 	PROCFS			#Process filesystem (requires PSEUDOFS)
 options 	PSEUDOFS		#Pseudo-filesystem framework
 options 	PSEUDOFS_TRACE		#Debugging support for PSEUDOFS
-options 	SMBFS			#SMB/CIFS filesystem
 options 	TMPFS			#Efficient memory filesystem
 options 	UDF			#Universal Disk Format
 options 	UNIONFS			#Union filesystem
-# The xFS_ROOT options REQUIRE the associated ``options xFS''
-options 	NFS_ROOT		#NFS usable as root device
 
 # Soft updates is a technique for improving filesystem speed and
 # making abrupt shutdown less risky.
@@ -1110,13 +1087,6 @@ options 	QUOTA			#enable disk quotas
 # they expect: "It's my dir so it must be my file".
 #
 options 	SUIDDIR
-
-# NFS options:
-options 	NFS_MINATTRTIMO=3	# VREG attrib cache timeout in sec
-options 	NFS_MAXATTRTIMO=60
-options 	NFS_MINDIRATTRTIMO=30	# VDIR attrib cache timeout in sec
-options 	NFS_MAXDIRATTRTIMO=60
-options 	NFS_DEBUG		# Enable NFS Debugging
 
 #
 # Add support for the EXT2FS filesystem of Linux fame.  Be a bit
@@ -1386,7 +1356,6 @@ options 	SES_ENABLE_PASSTHROUGH
 
 device		cfiscsi		# CAM Target Layer iSCSI target frontend
 device		iscsi		# iSCSI initiator
-device		iser		# iSCSI Extensions for RDMA (iSER) initiator
 
 
 #####################################################################
@@ -1824,8 +1793,6 @@ device		xmphy		# XaQti XMAC II
 #	88E8062, 88E8035, 88E8036, 88E8038, 88E8050, 88E8052, 88E8053,
 #	88E8055, 88E8056 and D-Link 560T/550SX.
 # mlxfw: Mellanox firmware update module.
-# mlx5:	Mellanox ConnectX-4 and ConnectX-4 LX IB and Eth shared code module.
-# mlx5en:Mellanox ConnectX-4 and ConnectX-4 LX PCIe Ethernet adapters.
 # my:	Myson Fast Ethernet (MTD80X, MTD89X)
 # nge:	Support for PCI gigabit ethernet adapters based on the National
 #	Semiconductor DP83820 and DP83821 chipset. This includes the
@@ -1893,8 +1860,6 @@ device		jme		# JMicron JMC250 Gigabit/JMC260 Fast Ethernet
 device		lge		# Level 1 LXT1001 gigabit Ethernet
 device		lio		# Support for Cavium 23XX Ethernet adapters
 device		mlxfw		# Mellanox firmware update module
-device		mlx5		# Shared code module between IB and Ethernet
-device		mlx5en		# Mellanox ConnectX-4 and ConnectX-4 LX
 device		msk		# Marvell/SysKonnect Yukon II Gigabit Ethernet
 device		my		# Myson Fast Ethernet (MTD80X, MTD89X)
 device		nge		# NatSemi DP83820 gigabit Ethernet
@@ -2258,16 +2223,6 @@ device		ip17x
 device		rtl8366rb
 device		ukswitch
 
-# Kernel BOOTP support
-
-options 	BOOTP		# Use BOOTP to obtain IP address/hostname
-				# Requires NFSCL and NFS_ROOT
-options 	BOOTP_NFSROOT	# NFS mount root filesystem using BOOTP info
-options 	BOOTP_NFSV3	# Use NFS v3 to NFS mount root
-options 	BOOTP_COMPAT	# Workaround for broken bootp daemons.
-options 	BOOTP_WIRED_TO=fxp0 # Use interface fxp0 for BOOTP
-options 	BOOTP_BLOCKSIZE=8192 # Override NFS block size
-
 #
 # Enable software watchdog routines, even if hardware watchdog is present.
 # By default, software watchdog timer is enabled only if no hardware watchdog
@@ -2548,7 +2503,6 @@ options 	SAFE_RNDTEST	# enable rndtest support
 
 #####################################################################
 
-
 #
 # Embedded system options:
 #
@@ -2656,7 +2610,6 @@ options 	MSGSSZ=16	# Size of a message segment
 options 	MSGTQL=41	# Max number of messages in system
 
 options 	NBUF=512	# Number of buffer headers
-
 
 options 	VFS_BIO_DEBUG	# VFS buffer I/O debugging
 

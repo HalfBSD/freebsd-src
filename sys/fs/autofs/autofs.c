@@ -102,8 +102,7 @@ static struct cdevsw autofs_cdevsw = {
 };
 
 /*
- * List of signals that can interrupt an autofs trigger.  Might be a good
- * idea to keep it synchronised with list in sys/fs/nfs/nfs_commonkrpc.c.
+ * List of signals that can interrupt an autofs trigger.
  */
 int autofs_sig_set[] = {
 	SIGINT,

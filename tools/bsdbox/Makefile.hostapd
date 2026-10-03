@@ -16,10 +16,6 @@ CRUNCH_PROGS_usr.sbin+=	wpa_supplicant wpa_cli
 CRUNCH_SRCDIR_wpa_supplicant=	${WPASRC}/wpa_supplicant
 CRUNCH_SRCDIR_wpa_cli=	${WPASRC}/wpa_cli
 
-.if ${MK_OFED} != "no"
-# libpcap dependencies if OFED is enabled
-CRUNCH_LIBS+=	-lmlx5 -libverbs
-.endif
 CRUNCH_LIBS+=	-lpcap
 
 # hostapd

@@ -1,13 +1,10 @@
 #!/bin/sh
 
-# Test scenario from Bug 64816: [nfs] [patch] mmap and/or ftruncate does not work correctly on nfs mounted file systems
+# mmap/ftruncate regression from Bug 64816, exercised on local UFS.
 
 . ../default.cfg
 
 set -u
-grep -q $mntpoint /etc/exports ||
-    { echo "$mntpoint missing from /etc/exports"; exit 0; }
-rpcinfo 2>/dev/null | grep -q mountd || exit 0
 
 prog=$(basename "$0" .sh)
 cat > /tmp/$prog.c <<EOF
@@ -77,19 +74,13 @@ mdconfig -s 1g -u $mdstart
 newfs -n $newfs_flags /dev/md$mdstart > /dev/null
 mount /dev/md$mdstart $mntpoint
 
-mp2=${mntpoint}2
-mkdir -p $mp2
-mount | grep -q "on $mp2 " && umount -f $mp2
-mount -t nfs -o retrycnt=3 127.0.0.1:$mntpoint $mp2 || exit 1
-sleep .2
 mount | grep  $mntpoint
 
-cd $mp2
+cd $mntpoint
 /tmp/$prog $prog.data; s=$?
-ls -ls $mp2/$prog.data
+ls -ls $mntpoint/$prog.data
 cd -
 
-umount $mp2
 umount $mntpoint
 mdconfig -d -u $mdstart
 rm -f /tmp/$prog /tmp/$prog.c

@@ -49,7 +49,7 @@
 #
 # These variables accumulate all the options from our possibly
 # multiple callers so they're available to build tools such as
-# tools/build/options/makeman.
+# the option descriptions in tools/build/options.
 #
 DEFAULT_NO_OPTIONS+=${__DEFAULT_NO_OPTIONS}
 DEFAULT_NO_OPTIONS:=${DEFAULT_NO_OPTIONS:O:u}

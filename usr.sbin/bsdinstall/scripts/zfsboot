@@ -204,13 +204,9 @@ GPART_ADD_ALIGN_INDEX='gpart add %s -i %s -t %s "%s"'
 GPART_ADD_ALIGN_INDEX_WITH_SIZE='gpart add %s -i %s -t %s -s %s "%s"'
 GPART_ADD_ALIGN_LABEL='gpart add %s -l %s -t %s "%s"'
 GPART_ADD_ALIGN_LABEL_WITH_SIZE='gpart add %s -l %s -t %s -s %s "%s"'
-GPART_BOOTCODE='gpart bootcode -b "%s" "%s"'
-GPART_BOOTCODE_PART='gpart bootcode -b "%s" -p "%s" -i %s "%s"'
 GPART_CREATE='gpart create -s %s "%s"'
 GPART_DESTROY_F='gpart destroy -F "%s"'
 GPART_SET_ACTIVE='gpart set -a active -i %s "%s"'
-GPART_SET_LENOVOFIX='gpart set -a lenovofix "%s"'
-GPART_SET_PMBR_ACTIVE='gpart set -a active "%s"'
 GRAID_DELETE='graid delete "%s"'
 KLDLOAD='kldload %s'
 LN_SF='ln -sf "%s" "%s"'
@@ -283,8 +279,6 @@ msg_null_index_argument="NULL index argument"
 msg_null_poolname="NULL poolname"
 msg_odd_disk_selected="An even number of disks must be selected to create a RAID 1+0. (%u selected)"
 msg_ok="OK"
-msg_partition_scheme="Partition Scheme"
-msg_partition_scheme_help="Select partitioning scheme. GPT is recommended."
 msg_please_enter_a_name_for_your_pool="Please enter a name for your pool:"
 msg_please_enter_amount_of_swap_space="Please enter amount of swap space (SI-Unit suffixes\nrecommended; e.g., \`2g' for 2 Gigabytes):"
 msg_please_select_one_or_more_disks="Please select one or more disks to create a pool:"
@@ -367,9 +361,6 @@ dialog_menu_main()
 		                        '$msg_force_4k_sectors_help'
 		'E $msg_encrypt_disks'  '$usegeli'
 		                        '$msg_encrypt_disks_help'
-		'P $msg_partition_scheme'
-		               '$ZFSBOOT_PARTITION_SCHEME ($ZFSBOOT_BOOT_TYPE)'
-		               '$msg_partition_scheme_help'
 		'S $msg_swap_size'      '$ZFSBOOT_SWAP_SIZE'
 		                        '$msg_swap_size_help'
 		'M $msg_swap_mirror'    '$swapmirror'
@@ -789,9 +780,14 @@ zfs_create_diskpart()
 	fi
 	f_dprintf "$funcname: disk=[%s] index=[%s]" "$disk" "$index"
 
+	if [ "$ZFSBOOT_BOOT_TYPE" != UEFI ]; then
+		f_show_err "HalfBSD supports only UEFI boot."
+		return $FAILURE
+	fi
+
 	# Check for unknown partition scheme before proceeding further
 	case "$ZFSBOOT_PARTITION_SCHEME" in
-	""|GPT*) : known good ;;
+	""|GPT) : known good ;;
 	*)
 		f_dprintf "$funcname: %s is an unsupported partition scheme" \
 		          "$ZFSBOOT_PARTITION_SCHEME"
@@ -838,94 +834,46 @@ zfs_create_diskpart()
 	fi
 
 	case "$ZFSBOOT_PARTITION_SCHEME" in
-	""|GPT*) f_dprintf "$funcname: Creating GPT layout..."
+	""|GPT) f_dprintf "$funcname: Creating GPT layout..."
 		#
 		# 1. Create GPT layout using labels
 		#
 		f_eval_catch $funcname gpart "$GPART_CREATE" gpt $disk ||
 		             return $FAILURE
 
-		#
-		# Apply workarounds if requested by the user
-		#
-		if [ "$ZFSBOOT_PARTITION_SCHEME" = "GPT + Lenovo Fix" ]; then
-			f_eval_catch $funcname gpart "$GPART_SET_LENOVOFIX" \
-			             $disk || return $FAILURE
-		elif [ "$ZFSBOOT_PARTITION_SCHEME" = "GPT + Active" ]; then
-			f_eval_catch $funcname gpart "$GPART_SET_PMBR_ACTIVE" \
-			             $disk || return $FAILURE
-		fi
+		# Add the EFI System Partition as p1.
+		f_eval_catch -k justaddedpart $funcname gpart \
+		             "$GPART_ADD_ALIGN_LABEL_WITH_SIZE" \
+		             "$align_small" efiboot$index efi 260M \
+		             $disk || return $FAILURE
 
-		#
-		# 2. Add small freebsd-boot and/or efi partition
-		#
-		if [ "$ZFSBOOT_BOOT_TYPE" = "UEFI" -o \
-		     "$ZFSBOOT_BOOT_TYPE" = "BIOS+UEFI" ]
-		then
-			f_eval_catch -k justaddedpart $funcname gpart \
-			             "$GPART_ADD_ALIGN_LABEL_WITH_SIZE" \
-			             "$align_small" efiboot$index efi 260M \
-			             $disk || return $FAILURE
+		# We'll configure the ESP in bootconfig
+		# Note: This will always be p1
+		efibootpart="/dev/gpt/efiboot$index"
+		f_dprintf "$funcname: configuring ESP at [%s]" \
+		          "${efibootpart}"
 
-			# We'll configure the ESP in bootconfig
-			# Note: This will always be p1
-			efibootpart="/dev/gpt/efiboot$index"
-			f_dprintf "$funcname: configuring ESP at [%s]" \
-			          "${efibootpart}"
-
-			f_eval_catch $funcname newfs_msdos "$NEWFS_ESP"\
-			             "$efibootpart" \
-			             || return $FAILURE
-			if [ $index -eq 0 ]; then
-				f_eval_catch $funcname printf "$PRINTF_FSTAB" \
-					$efibootpart /boot/efi msdosfs \
-					rw 2 2 "$BSDINSTALL_TMPETC/fstab" \
-					|| return $FAILURE
-			else
-				# Record the extra ones
-				echo "${efibootpart}" >> ${TMPDIR:-"/tmp"}/bsdinstall-esps
-			fi
-		fi
-
-		if [ "$ZFSBOOT_BOOT_TYPE" = "BIOS" -o \
-		     "$ZFSBOOT_BOOT_TYPE" = "BIOS+UEFI" ]
-		then
-			f_eval_catch $funcname gpart \
-			             "$GPART_ADD_ALIGN_LABEL_WITH_SIZE" \
-			             "$align_small" gptboot$index \
-			             freebsd-boot 512k $disk || return $FAILURE
-			if [ "$ZFSBOOT_BOOT_TYPE" = "BIOS" ]; then
-				f_eval_catch $funcname gpart \
-				             "$GPART_BOOTCODE_PART" \
-				             /boot/pmbr /boot/gptzfsboot 1 \
-				             $disk || return $FAILURE
-			else
-				f_eval_catch $funcname gpart \
-				             "$GPART_BOOTCODE_PART" \
-				             /boot/pmbr /boot/gptzfsboot 2 \
-				             $disk || return $FAILURE
-			fi
-		fi
-
-		# NB: ZFS pools will use `zfs#' GPT labels
-		if [ "$ZFSBOOT_BOOT_TYPE" = "BIOS+UEFI" ]; then
-			if [ "$ZFSBOOT_BOOT_POOL" ]; then
-				bootpart=p3 swappart=p4 targetpart=p4
-				[ ${swapsize:-0} -gt 0 ] && targetpart=p5
-			else
-				# Bootpart unused
-				bootpart=p3 swappart=p3 targetpart=p3
-				[ ${swapsize:-0} -gt 0 ] && targetpart=p4
-			fi
+		f_eval_catch $funcname newfs_msdos "$NEWFS_ESP"\
+		             "$efibootpart" \
+		             || return $FAILURE
+		if [ $index -eq 0 ]; then
+			f_eval_catch $funcname printf "$PRINTF_FSTAB" \
+				$efibootpart /boot/efi msdosfs \
+				rw 2 2 "$BSDINSTALL_TMPETC/fstab" \
+				|| return $FAILURE
 		else
-			if [ "$ZFSBOOT_BOOT_POOL" ]; then
-				bootpart=p2 swappart=p3 targetpart=p3
-				[ ${swapsize:-0} -gt 0 ] && targetpart=p4
-			else
-				# Bootpart unused
-				bootpart=p2 swappart=p2 targetpart=p2
-				[ ${swapsize:-0} -gt 0 ] && targetpart=p3
-			fi
+			# Record the extra ones
+			echo "${efibootpart}" >> ${TMPDIR:-"/tmp"}/bsdinstall-esps
+		fi
+
+		# NB: ZFS pools will use `zfs#' GPT labels.
+		if [ "$ZFSBOOT_BOOT_POOL" ]; then
+			bootpart=p2 swappart=p3 targetpart=p3
+			[ ${swapsize:-0} -gt 0 ] && targetpart=p4
+		else
+			# Bootpart unused
+			bootpart=p2 swappart=p2 targetpart=p2
+			[ ${swapsize:-0} -gt 0 ] && targetpart=p3
 		fi
 
 		#
@@ -983,8 +931,10 @@ zfs_create_diskpart()
 	f_expand_number "$ZFSBOOT_SWAP_SIZE" swapsize
 	if [ "$isswapmirror" ]; then
 		# This is not the first disk in the mirror, do nothing
+		:
 	elif [ ${swapsize:-0} -eq 0 ]; then
 		# If swap is 0 sized, don't add it to fstab
+		:
 	elif [ "$ZFSBOOT_SWAP_ENCRYPTION" -a "$ZFSBOOT_SWAP_MIRROR" ]; then
 		f_eval_catch $funcname printf "$PRINTF_FSTAB" \
 		             /dev/mirror/swap.eli none swap sw 0 0 \
@@ -1526,28 +1476,21 @@ for pool in ${pools}; do
 	fi
 done
 
-#
-# Determine default boot type
-#
+# Only GPT/UEFI installations are supported. Validate before partitioning.
+: ${ZFSBOOT_BOOT_TYPE:=UEFI}
+: ${ZFSBOOT_PARTITION_SCHEME:=GPT}
 case $(uname -m) in
-arm64|riscv)
-	# We support only UEFI boot for arm64 and riscv.
-	: ${ZFSBOOT_BOOT_TYPE:=UEFI}
-	: ${ZFSBOOT_PARTITION_SCHEME:=GPT}
-	;;
-*)
-	# If the system was booted with UEFI, set the default boot type to UEFI
-	bootmethod=$( sysctl -n machdep.bootmethod )
-	f_dprintf "machdep.bootmethod=[%s]" "$bootmethod"
-	if [ "$bootmethod" = "UEFI" ]; then
-		: ${ZFSBOOT_BOOT_TYPE:=BIOS+UEFI}
-		: ${ZFSBOOT_PARTITION_SCHEME:=GPT}
-	else
-		: ${ZFSBOOT_BOOT_TYPE:=BIOS}
-		: ${ZFSBOOT_PARTITION_SCHEME:=GPT}
-	fi
-	;;
+amd64|arm64) ;;
+*) f_die "This architecture does not support HalfBSD UEFI installation." ;;
 esac
+[ "$ZFSBOOT_BOOT_TYPE" = UEFI ] ||
+	f_die "HalfBSD supports only UEFI boot; set ZFSBOOT_BOOT_TYPE=UEFI."
+[ "$ZFSBOOT_PARTITION_SCHEME" = GPT ] ||
+	f_die "HalfBSD supports only GPT partitioning."
+if [ "$(uname -m)" = amd64 ] &&
+    [ "$(sysctl -n machdep.bootmethod)" != UEFI ]; then
+	f_die "Boot the installer using UEFI before installing HalfBSD."
+fi
 
 #
 # Loop over the main menu until we've accomplished what we came here to do
@@ -1672,29 +1615,6 @@ while :; do
 		else
 			ZFSBOOT_FORCE_4K_SECTORS=1
 			ZFSBOOT_GELI_ENCRYPTION=1
-		fi
-		;;
-	?" $msg_partition_scheme")
-		# Toggle between partition schemes
-		if [ "$ZFSBOOT_PARTITION_SCHEME" = "GPT" -a \
-		     "$ZFSBOOT_BOOT_TYPE" = "BIOS" ]
-		then
-			ZFSBOOT_PARTITION_SCHEME="GPT"
-			ZFSBOOT_BOOT_TYPE="UEFI"
-		elif [ "$ZFSBOOT_PARTITION_SCHEME" = "GPT" -a \
-		       "$ZFSBOOT_BOOT_TYPE" = "UEFI" ]
-		then
-			ZFSBOOT_PARTITION_SCHEME="GPT"
-			ZFSBOOT_BOOT_TYPE="BIOS+UEFI"
-		elif [ "$ZFSBOOT_PARTITION_SCHEME" = "GPT" ]; then
-			ZFSBOOT_PARTITION_SCHEME="GPT + Active"
-			ZFSBOOT_BOOT_TYPE="BIOS"
-		elif [ "$ZFSBOOT_PARTITION_SCHEME" = "GPT + Active" ]; then
-			ZFSBOOT_PARTITION_SCHEME="GPT + Lenovo Fix"
-			ZFSBOOT_BOOT_TYPE="BIOS"
-		else
-			ZFSBOOT_PARTITION_SCHEME="GPT"
-			ZFSBOOT_BOOT_TYPE="BIOS"
 		fi
 		;;
 	?" $msg_swap_size")

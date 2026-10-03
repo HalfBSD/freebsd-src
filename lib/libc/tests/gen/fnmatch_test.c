@@ -216,7 +216,8 @@ ATF_TC_HEAD(fnmatch_collsym, tc)
 
 ATF_TC_BODY(fnmatch_collsym, tc)
 {
-	setlocale(LC_ALL, "cs_CZ.UTF-8");
+	if (setlocale(LC_ALL, "cs_CZ.UTF-8") == NULL)
+		atf_tc_skip("cs_CZ.UTF-8 locale is not installed");
 	ATF_CHECK(fnmatch("[ch]", "ch", 0) != 0);
 	ATF_CHECK(fnmatch("[[.ch.]]", "ch", 0) == 0);
 	ATF_CHECK(fnmatch("[[.ch.]]h", "chh", 0) == 0);

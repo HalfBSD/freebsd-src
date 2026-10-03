@@ -117,12 +117,6 @@ struct __rpc_svcthread;
  * Server side transport handle. In the kernel, transports have a
  * reference count which tracks the number of currently assigned
  * worker threads plus one for the service pool's reference.
- * For NFSv4.1 sessions, a reference is also held for a backchannel.
- * xp_p2 - Points to the CLIENT structure for the RPC server end
- *         (the client end for callbacks).
- *         Points to the private structure (cl_private) for the
- *         CLIENT structure for the RPC client end (the server
- *         end for callbacks).
  */
 typedef struct __rpc_svcxprt {
 	volatile u_int	xp_refs;
@@ -149,11 +143,6 @@ typedef struct __rpc_svcxprt {
 	int		xp_upcallset;	/* socket upcall is set up */
 	uint32_t	xp_snd_cnt;	/* # of bytes to send to socket */
 	uint32_t	xp_snt_cnt;	/* # of bytes sent to socket */
-	bool_t		xp_dontrcv;	/* Do not receive on the socket */
-	uint32_t	xp_tls;		/* RPC-over-TLS on socket */
-	int		xp_ngrps;	/* Cred. from TLS cert. */
-	uid_t		xp_uid;
-	gid_t		*xp_gidp;
 	int		xp_doneddp;
 } SVCXPRT;
 
@@ -606,9 +595,6 @@ extern SVCXPRT *svc_vc_create(SVCPOOL *, struct socket *,
          * const size_t recvsize;                        -- max recv size
          */
 
-extern SVCXPRT *svc_vc_create_backchannel(SVCPOOL *);
-
-extern void *clnt_bck_create(struct socket *, const rpcprog_t, const rpcvers_t);
 	/*
 	 * struct socket *;			-- server transport socket
 	 * const rpcprog_t prog;		-- RPC program number

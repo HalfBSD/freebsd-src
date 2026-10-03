@@ -76,7 +76,6 @@ normalize_arch() {
 		       arch=arm64
 		       ;;
 		amd64) ;;
-		riscv64) ;;
 		*)
 			echo "Architecture ${arch} not supported for container images"
 			;;

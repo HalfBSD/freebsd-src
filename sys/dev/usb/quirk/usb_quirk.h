@@ -30,8 +30,7 @@
 
 enum {
 	/*
-	 * Keep in sync with usb_quirk_str in usb_quirk.c, and with
-	 * share/man/man4/usb_quirk.4
+	 * Keep in sync with usb_quirk_str in usb_quirk.c.
 	 */
 	UQ_NONE,		/* not a valid quirk */
 

@@ -88,7 +88,7 @@ genlibdepends()
 			libdir=$(dirname ${makefile})
 			libname=$(
 				cd ${libdir}
-				make -m ${USRSRC}/share/mk WITH_OFED=YES -V LIB
+				make -m ${USRSRC}/share/mk -V LIB
 			)
 			if [ "${libname}" ]; then
 			    echo "${libname} ${libdir}" >> $LIBDIRS
@@ -102,7 +102,7 @@ genlibdepends()
 			libdir=$(dirname ${makefile})
 			deps=$(
 				cd ${libdir}
-				make -m ${USRSRC}/share/mk WITH_OFED=YES -V LDADD
+				make -m ${USRSRC}/share/mk -V LDADD
 			)
 			if [ "${deps}" ]; then
 				echo ${libdir}"${FS}"$(echo ${deps} | tr ' ' '\n' | convert | resolvelibdirs)

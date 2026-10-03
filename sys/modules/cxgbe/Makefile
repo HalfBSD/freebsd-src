@@ -12,16 +12,12 @@ SUBDIR+=	t5_firmware
 SUBDIR+=	t6_firmware
 SUBDIR+=	t7_firmware
 SUBDIR+=	${_tom}
-SUBDIR+=	${_iw_cxgbe}
 SUBDIR+=	${_cxgbei}
 SUBDIR+=	ccr
 
 .if ${MACHINE_CPUARCH} == "amd64" || ${MACHINE_CPUARCH} == "aarch64"
 _tom=	tom
 _cxgbei=	cxgbei
-.if ${MK_OFED} != "no" || defined(ALL_MODULES)
-_iw_cxgbe=	iw_cxgbe
-.endif
 .endif
 
 .if ${MACHINE_CPUARCH} == "i386"

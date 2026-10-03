@@ -147,7 +147,6 @@ SUBDIR=	\
 	${_ichwd} \
 	${_ice} \
 	${_ice_ddp} \
-	${_irdma} \
 	${_ida} \
 	if_bridge \
 	${_if_cgem} \
@@ -188,7 +187,6 @@ SUBDIR=	\
 	${_ipw} \
 	${_ipwfw} \
 	${_isci} \
-	${_iser} \
 	isp \
 	${_ispfw} \
 	${_itwd} \
@@ -252,7 +250,6 @@ SUBDIR=	\
 	miiproxy \
 	mlx \
 	mlxfw \
-	${_mlx5ib} \
 	mmc \
 	mmcsd \
 	${_mpi3mr} \
@@ -264,7 +261,6 @@ SUBDIR=	\
 	msdosfs \
 	msdosfs_iconv \
 	msk \
-	${_mthca} \
 	mvs \
 	mwl \
 	${_mwlfw} \
@@ -324,7 +320,6 @@ SUBDIR=	\
 	${_random_fortuna} \
 	${_random_other} \
 	rc4 \
-	${_rdma} \
 	${_rdrand_rng} \
 	${_rdseed_rng} \
 	re \
@@ -522,7 +517,7 @@ SUBDIR+=	linux_common
 
 # LinuxKPI based wireless drivers.
 .if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "amd64" || \
-    ${MACHINE_CPUARCH} == "i386" || ${MACHINE_CPUARCH} == "riscv"
+    ${MACHINE_CPUARCH} == "i386"
 _iwlwifi=	iwlwifi
 _rtw88=		rtw88
 # rtw89 currently cannot be compiled without ACPI (seems also broken in Linux).
@@ -531,20 +526,9 @@ _rtw89=		rtw89
 .endif
 .endif
 
-.if ${MACHINE_CPUARCH} != "arm"
-.if ${MK_OFED} != "no" || defined(ALL_MODULES)
-_iser=		iser
-_mthca=		mthca
-_rdma=		rdma
-.endif
-.endif
-
 .if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "amd64" || \
     ${MACHINE_CPUARCH} == "i386"
 _ipmi=		ipmi
-.if ${MK_OFED} != "no" || defined(ALL_MODULES)
-_mlx5ib=	mlx5ib
-.endif
 .endif
 
 .if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "amd64" || \
@@ -606,8 +590,7 @@ _ralfw=		ralfw
 _rtwnfw=	rtwnfw
 .endif
 
-.if ${MK_SOURCELESS_UCODE} != "no" && ${MACHINE_CPUARCH} != "arm" && \
-	${MACHINE_CPUARCH} != "riscv"
+.if ${MK_SOURCELESS_UCODE} != "no" && ${MACHINE_CPUARCH} != "arm"
 _cxgbe=		cxgbe
 .endif
 
@@ -626,15 +609,9 @@ _ice=		ice
 .if ${MK_SOURCELESS_UCODE} != "no"
 _ice_ddp=	ice_ddp
 .endif
-.if ${MK_OFED} != "no" || defined(ALL_MODULES)
-.if ${MK_INET_SUPPORT} != "no" && ${MK_INET6_SUPPORT} != "no"
-_irdma=		irdma
-.endif
-.endif
 .endif
 
-.if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "arm" || \
-	${MACHINE_CPUARCH} == "riscv"
+.if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "arm"
 .if !empty(OPT_FDT)
 _allwinner=	allwinner
 _if_cgem=	if_cgem
@@ -828,8 +805,7 @@ _p2sb=		p2sb
 _hwt=		hwt
 .endif
 
-.if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "amd64" || \
-    ${MACHINE_CPUARCH} == "riscv"
+.if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "amd64"
 .if ${MK_BHYVE} != "no" || defined(ALL_MODULES)
 .if ${KERN_OPTS:MSMP}
 _vmm=		vmm
@@ -853,9 +829,6 @@ _sbni=		sbni
 _cfi=		cfi
 _cpsw=		cpsw
 .endif
-
-
-
 
 .if ${MACHINE_CPUARCH} == "arm" || ${MACHINE_CPUARCH} == "aarch64"
 _bcm283x_clkman=  bcm283x_clkman

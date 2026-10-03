@@ -36,9 +36,6 @@
 #define	_HID_QUIRK_H_
 #endif
 
-/*
- * Keep in sync with share/man/man4/hidquirk.4
- */
 #define	HID_QUIRK_LIST(...)						\
 	HQ(NONE),		/* not a valid quirk */			\
 									\

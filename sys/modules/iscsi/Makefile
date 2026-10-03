@@ -14,10 +14,6 @@ SRCS+=	device_if.h
 SRCS+=	icl_conn_if.c
 SRCS+=	icl_conn_if.h
 
-.if ${MK_OFED} != "no" || defined(ALL_MODULES)
-CFLAGS+=-DICL_KERNEL_PROXY
-.endif
-
 MFILES=	kern/bus_if.m kern/device_if.m dev/iscsi/icl_conn_if.m
 
 EXPORT_SYMS=	YES

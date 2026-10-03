@@ -76,7 +76,6 @@ void gpart_commit(struct gmesh *mesh);
 int gpart_partition(const char *lg_name, const char *scheme);
 void set_default_part_metadata(const char *name, const char *scheme,
     const char *type, const char *mountpoint, const char *newfs);
-void gpart_set_root(const char *lg_name, const char *attribute);
 const char *choose_part_type(const char *def_scheme);
 
 /* machine-dependent bootability checks */
@@ -88,7 +87,8 @@ int is_fs_bootable(const char *scheme, const char *fs); /* Ditto if FS boots */
 size_t bootpart_size(const char *scheme);
 
 /*
- * Type and mountpoint of boot partition for given scheme. If boot partition
+ * Type and mountpoint of boot partition for given scheme. NULL if none.
+ * If boot partition
  * should not be mounted, set mountpoint to NULL or leave it unchanged.
  * Note that mountpoint non-NULL implies partcode_path() will be ignored.
  * Do *NOT* set both!

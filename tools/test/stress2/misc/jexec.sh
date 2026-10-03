@@ -34,14 +34,8 @@
 [ `id -u ` -ne 0 ] && echo "Must be root!" && exit 1
 . ../default.cfg
 
-[ -z "$nfs_export" ] && exit 0
-ping -c 2 `echo $nfs_export | sed 's/:.*//'` > /dev/null 2>&1 ||
-    exit 0
-mount | grep "$mntpoint" | grep -q nfs && umount $mntpoint
-mount -t nfs -o tcp -o retrycnt=3 -o intr,soft -o rw $nfs_export $mntpoint
-
 here=`pwd`
-cd $mntpoint
+cd /tmp
 (cd $here/../testcases/swap; ./swap -t 2m -i 20) &
 sleep 10
 jail -c name=foo persist
@@ -55,10 +49,6 @@ jail -r foo
 jls -dv | grep foo && s=1 || s=0
 
 cd $here
-for i in `jot 5`; do
-	umount $mntpoint && break
-	sleep 2
-done
 wait
 
 # Break into kgdb and type "show prison"

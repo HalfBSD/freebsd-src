@@ -107,7 +107,6 @@ BLUETOOTH=	bluetooth \
 		sdpd \
 		ubthidhci
 
-
 CONFGROUPS.${MK_CCD}+=		CCD
 CCDPACKAGE=			ccdconfig
 CCD=		ccd
@@ -142,11 +141,9 @@ CONFGROUPS+=			GGATED
 GGATEDPACKAGE=			ggate
 GGATED=		ggated
 
-
 CONFGROUPS.${MK_HAST}+=		HAST
 HASTPACKAGE=			hast
 HAST=		hastd
-
 
 CONFGROUPS.${MK_IPFW}+=		IPFW
 IPFWPACKAGE=			ipfw
@@ -233,13 +230,6 @@ ZFS=		zfs \
 CONFGROUPS.${MK_LEGACY_CONSOLE}+=SYSCONS
 SYSCONSPACKAGE=			console-tools
 SYSCONS=	vtcons
-
-
-.if ${MK_OPENSSL} != "no" && ${MK_OPENSSL_KTLS} != "no"
-CONFGROUPS+=			KTLS
-KTLS=	tlsclntd \
-	tlsservd
-.endif
 
 .if ${MK_INET6} != "no" || ${MK_ROUTED} != "no"
 CONFGROUPS+=	RIP

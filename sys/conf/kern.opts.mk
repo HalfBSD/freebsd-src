@@ -56,7 +56,6 @@ __DEFAULT_NO_OPTIONS = \
     BHYVE_SNAPSHOT \
     KERNEL_BIN \
     KERNEL_RETPOLINE \
-    OFED \
     RATELIMIT \
     REPRODUCIBLE_BUILD \
     VERIEXEC
@@ -67,11 +66,6 @@ __DEFAULT_NO_OPTIONS = \
 # sometimes what is in the opt_*.h files by default.  Kernel config files are
 # unaffected, though some targets can be affected by KERNEL_BIN, KERNEL_SYMBOLS,
 # FORMAT_EXTENSIONS, CTF and SSP.
-
-# Broken on 32-bit arm, kernel module compile errors
-.if ${MACHINE_CPUARCH} == "arm"
-BROKEN_OPTIONS+= OFED
-.endif
 
 # Things that don't work based on toolchain support.
 .if ${MACHINE} != "i386" && ${MACHINE} != "amd64"

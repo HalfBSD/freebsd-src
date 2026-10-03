@@ -38,7 +38,6 @@
 # targets             - Print a list of supported TARGET/TARGET_ARCH pairs
 #                       for world and kernel targets.
 # toolchains          - Build a toolchain for all world and kernel targets.
-# makeman             - Regenerate src.conf(5)
 # sysent              - (Re)build syscall entries from syscalls.master.
 # xdev                - xdev-build + xdev-install for the architecture
 #                       specified with TARGET and TARGET_ARCH.
@@ -166,7 +165,7 @@ TGTS=	all all-man buildenv buildenvvars buildetc buildkernel buildworld \
 	installworld kernel-toolchain libraries \
 	list-old-dirs list-old-files list-old-libs \
 	obj objlink showconfig tags toolchain \
-	makeman sysent \
+	sysent \
 	_cleanworldtmp _worldtmp _legacy _bootstrap-tools _cleanobj _obj \
 	_build-tools _build-metadata _cross-tools _includes _libraries \
 	builddtb xdev xdev-build xdev-install \

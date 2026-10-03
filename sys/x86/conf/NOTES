@@ -343,7 +343,6 @@ device		cpufreq
 # iwn:	Intel Wireless WiFi Link 1000/105/135/2000/4965/5000/6000/6050 abgn
 #	802.11 network adapters
 #	Requires the iwn firmware module
-# mthca: Mellanox HCA InfiniBand
 # nfe:	nVidia nForce MCP on-board Ethernet Networking (BSD open source)
 # vmx:	VMware VMXNET3 Ethernet (BSD open source)
 # wpi:	Intel 3945ABG Wireless LAN controller
@@ -357,7 +356,6 @@ device		iwi		# Intel 2200BG/2225BG/2915ABG wireless NICs.
 device		iwm		# Intel IEEE 802.11ac wireless NICs.
 device		iwn		# Intel 4965/1000/5000/6000 wireless NICs.
 device		iwx		# Intel IEEE 802.11ax wireless NICs.
-device  	mthca		# Mellanox HCA InfiniBand
 device		nfe		# nVidia nForce MCP on-board Ethernet
 device		vmx		# VMware VMXNET3 Ethernet
 device		wpi		# Intel 3945ABG wireless NICs.
@@ -452,9 +450,6 @@ device		ossl		# OpenSSL OpenCrypto module
 # Linux KVM paravirtualization support
 device		kvm_clock	# KVM paravirtual clock driver
 
-# Microsoft Hyper-V enhancement support
-device 		hyperv		# HyperV drivers
-device		hvhid		# HyperV HID device
 
 # VMware hypervisor support
 device		pvscsi		# Paravirtual SCSI driver

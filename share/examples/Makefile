@@ -148,10 +148,6 @@ SE_KLD_SYSCALL_TEST= \
 	Makefile \
 	call.c
 
-SE_LIBVGL=	\
-	Makefile \
-	demo.c
-
 SE_DIRS+=	mdoc
 SE_MDOC= \
 	POSIX-copyright \
@@ -300,7 +296,6 @@ SE_LIBUSB20= \
 	control.c
 .endif
 
-
 # Setup the FILES_GROUPS for all DIRS variables above.
 # The variables are prefixed by 'SE_' to prevent variable collision in
 # other parts of the system
@@ -328,7 +323,6 @@ copies:
 		rm -f ${DESTDIR}${BINDIR}/$i; \
 	fi
 .endfor
-
 
 HAS_TESTS=
 SUBDIR.${MK_TESTS}+= tests

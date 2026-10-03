@@ -36,7 +36,7 @@ mountcritlocal_start()
 		fi
 	done < /etc/fstab
 
-	# Mount everything except nfs filesystems.
+	# Mount filesystems that do not require the network.
 	startmsg -n 'Mounting local filesystems:'
 	mount_excludes='no'
 	for i in ${netfs_types}; do

@@ -679,7 +679,7 @@ lcomma_flag_body()
 
 	atf_check \
 	    -o match:'\-rw\-r\-\-r\-\-[[:space:]]+.+[[:space:]]+1,000[[:space:]]+.+i' \
-	    env LC_ALL=en_US.ISO8859-1 ls -l, i
+	    env LC_ALL=en_US.UTF-8 ls -l, i
 }
 
 atf_test_case m_flag

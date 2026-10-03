@@ -26,14 +26,14 @@
 # SUCH DAMAGE.
 #
 
-# Demonstrate that vfs_export() leaks M_CRED when mountd(8) is started:
+# Check for credential leaks during concurrent tmpfs directory operations
+# and forced unmounts.
 # "M_CRED leaked 160".
 
 [ `id -u ` -ne 0 ] && echo "Must be root!" && exit 1
 
 . ../default.cfg
 
-pgrep -q mountd || echo "Note: mountd(8) must run for this test to fail"
 here=`pwd`
 cd /tmp
 sed '1,/^EOF/d' < $here/$0 > credleak.c

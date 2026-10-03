@@ -83,7 +83,7 @@ static void inetprint(const char *, struct in_addr *, int, const char *, int,
     const int);
 #endif
 #ifdef INET6
-static int udp_done, udplite_done, tcp_done, sdp_done;
+static int udp_done, udplite_done, tcp_done;
 #endif /* INET6 */
 
 static int
@@ -107,9 +107,7 @@ pcblist_sysctl(int proto, const char *name, char **bufp)
 		mibvar = "net.inet.raw.pcblist";
 		break;
 	}
-	if (strncmp(name, "sdp", 3) == 0)
-		mibvar = "net.inet.sdp.pcblist";
-	else if (strncmp(name, "divert", 6) == 0)
+	if (strncmp(name, "divert", 6) == 0)
 		mibvar = "net.inet.divert.pcblist";
 	len = 0;
 	if (sysctlbyname(mibvar, 0, &len, 0, 0) < 0) {
@@ -203,17 +201,10 @@ protopr(u_long off, const char *name, int af1, int proto)
 	switch (proto) {
 	case IPPROTO_TCP:
 #ifdef INET6
-		if (strncmp(name, "sdp", 3) != 0) {
-			if (tcp_done != 0)
-				return;
-			else
-				tcp_done = 1;
-		} else {
-			if (sdp_done != 0)
-				return;
-			else
-				sdp_done = 1;
-		}
+		if (tcp_done != 0)
+			return;
+		else
+			tcp_done = 1;
 #endif
 		istcp = 1;
 		break;

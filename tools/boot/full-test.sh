@@ -77,7 +77,6 @@ MTREE=$(SHELL="which mtree" ${MAKE} ${DEFARCH} buildenv | tail -1) || die "No mt
 # All the architectures under test
 # Note: we can't yet do armv7 because we don't have a good iso for it and would
 # need root to extract the files.
-#ARCHES="amd64:amd64 i386:i386 powerpc:powerpc powerpc:powerpc64 powerpc:powerpc64le powerpc:powerpcspe arm64:aarch64 riscv:riscv64"
 ARCHES="amd64:amd64 arm64:aarch64"
 
 # The smallest FAT32 filesystem is 33292 KB
@@ -197,7 +196,6 @@ EOF
 	    boot/kernel/zfs.ko \
 	    boot/kernel/geom_eli.ko || true
 	# XXX WHAT TO DO ABOUT LINKER HINTS -- PUNT FOR NOW
-	# XXX also, ZFS not supported on 32-bit powerpc platforms
     fi
 
     # Setup some common settings for serial console, etc
@@ -447,7 +445,6 @@ EOF
 make_freebsd_esps()
 {
     # At the moment, we have just three (armv7 could also be here too, but we're not doing that)
-#   for a in amd64:amd64 arm64:aarch64 riscv:riscv64; do
     for a in amd64:amd64 arm64:aarch64; do
 	m=${a%%:*}
 	ma=${a##*:}
@@ -468,9 +465,7 @@ make_freebsd_esps()
 
 make_freebsd_images()
 {
-    # ESP variant: In this variant, riscv, amd64 and arm64 are created more or
     # less the same way. UEFI + ACPI implementations
-#   for a in amd64:amd64 arm64:aarch64 riscv:riscv64; do
     for a in amd64:amd64 arm64:aarch64; do
 	m=${a%%:*}
 	ma=${a##*:}
@@ -496,54 +491,6 @@ EOF
 
     set -x
 
-if false; then
-    # BIOS i386
-    a=i386:i386
-    m=${a%%:*}
-    ma=${a##*:}
-    ma_combo="${m}"
-    [ "${m}" != "${ma}" ] && ma_combo="${m}-${ma}"
-    dir=${TREES}/${ma_combo}/freebsd
-    dir2=${TREES}/${ma_combo}/test-stand
-    ufs=${IMAGES}/${ma_combo}/freebsd-${ma_combo}.ufs
-    img=${IMAGES}/${ma_combo}/freebsd-${ma_combo}.img
-    mkdir -p ${IMAGES}/${ma_combo}
-    mkdir -p ${dir2}/etc
-    cat > ${dir2}/etc/fstab <<EOF
-/dev/ufs/root	/		ufs	rw	1	1
-EOF
-    ${MAKEFS} -t ffs -B little -s 200m \
-	   -o label=root,version=2,bsize=32768,fsize=4096,density=16384 \
-	   ${ufs} ${dir} ${dir2}
-    ${MKIMG} -s gpt -b ${dir2}/boot/pmbr \
-	  -p freebsd-boot:=${dir2}/boot/gptboot \
-	  -p freebsd-ufs:=${ufs} \
-	  -o ${img}
-    rm -f ${src}/etc/fstab
-
-    # PowerPC for 32-bit mac
-    a=powerpc:powerpc
-    m=${a%%:*}
-    ma=${a##*:}
-    ma_combo="${m}"
-    [ "${m}" != "${ma}" ] && ma_combo="${m}-${ma}"
-    dir=${TREES}/${ma_combo}/freebsd
-    dir2=${TREES}/${ma_combo}/test-stand
-    ufs=${IMAGES}/${ma_combo}/freebsd-${ma_combo}.ufs
-    img=${IMAGES}/${ma_combo}/freebsd-${ma_combo}.img
-    mkdir -p ${IMAGES}/${ma_combo}
-    mkdir -p ${dir2}/etc
-    cat > ${dir2}/etc/fstab <<EOF
-/dev/ufs/root	/		ufs	rw	1	1
-EOF
-    ${MAKEFS} -t ffs -B big -s 200m \
-	   -o label=root,version=2,bsize=32768,fsize=4096,density=16384 \
-	   ${ufs} ${dir} ${dir2}
-    ${MKIMG} -a 1 -s apm \
-        -p freebsd-boot:=${dir2}/boot/boot1.hfs \
-        -p freebsd-ufs:=${ufs} \
-        -o ${img}
-fi
 
     set +x
 }
@@ -612,43 +559,6 @@ EOF
 	esac
     done
 
-if false; then
-    set -x
-    a=powerpc:powerpc
-    m=${a%%:*}
-    ma=${a##*:}
-    ma_combo="${m}"
-    [ "${m}" != "${ma}" ] && ma_combo="${m}-${ma}"
-    img=${IMAGES}/${ma_combo}/freebsd-${ma_combo}.img
-    out=${SCRIPTS}/${ma_combo}/freebsd-test.sh
-    mkdir -p ${SCRIPTS}/${ma_combo}
-    cat > ${out} <<EOF
-${qemu_bin}/qemu-system-ppc -m 1g -M mac99,via=pmu \\
-	-vga none -nographic \\
-	-drive file=${img},if=virtio \\
-	-prom-env "boot-device=/pci@f2000000/scsi/disk@0:,\\\\\\:tbxi" \\
-        -monitor telnet::4444,server,nowait \\
-        -serial stdio \$*
-EOF
-
-    set -x
-    a=i386:i386
-    m=${a%%:*}
-    ma=${a##*:}
-    ma_combo="${m}"
-    [ "${m}" != "${ma}" ] && ma_combo="${m}-${ma}"
-    img=${IMAGES}/${ma_combo}/freebsd-${ma_combo}.img
-    out=${SCRIPTS}/${ma_combo}/freebsd-test.sh
-    mkdir -p ${SCRIPTS}/${ma_combo}
-    cat > ${out} <<EOF
-${qemu_bin}/qemu-system-i386 -m 1g \\
-	-vga none -nographic \\
-	-drive file=${img},format=raw \\
-	-nographic \\
-        -monitor telnet::4444,server,nowait \\
-        -serial stdio \$*
-EOF
-fi
 }
 
 # The smallest FAT32 filesystem is 33292 KB

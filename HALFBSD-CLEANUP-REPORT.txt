@@ -1,0 +1,211 @@
+HalfBSD definite-orphan cleanup — 2026-10-02
+
+Scope: ZFS installer and all 46 class-A report groups; independently useful/shared portions preserved.
+
+Correction: clnt_nl.c remains required by rpcb_clnt.c local_rpcb SYSINIT. Generic Netlink RPC is a survivor, not exclusively NFS support. NFS backchannel and RPC-over-TLS implementation chains were removed.
+
+ZFS: GPT/UEFI defaults, unsupported boot choices rejected before destructive disk work, ESP p1 and tested root targets p2/p3/p4 depending boot-pool and swap.
+NanoBSD: UEFI GPT default, EFI system image generated from installed loader.efi when absent.
+Stress: 40 NFS-only scenarios removed; local branches and generic payloads retained.
+Upgrade: retired OFED selector no longer gates old-file cleanup; installed module/daemon/header/library/directory entries consolidated.
+
+Completed report groups:
+1. OFED world-build chain
+2. Stranded RDMA provider sources/modules
+3. mlx5 orphan module Makefiles
+4. mlx5tool header/install/option/package chain
+5. NETSTAT SDP enablement
+6. Removed dialog/dpv/figpar library catalog
+7. Pseudo-userland dependencies to HalfBSD deletions
+8. makeman target to deleted directory
+9. getty bsdbox dependency
+10. RISC-V kernel manifests/private header
+11. RISC-V native build branches
+12. PowerMac sound source dead end
+13. Open Firmware loader private library
+14. NFS jail service support chain
+15. NFS-specific kernel RPC backchannel/TLS support
+16. RPC-over-TLS helper daemons and startup/install chain
+17. NFS mount startup path
+18. rcorder dependencies to removed services
+19. Direct deleted IPFILTER rc invocations
+20. Inert APM rc setting
+21. Private NFS quota helper chain
+22. NFS source tag globs
+23. Removed kernel options/drivers in NOTES
+24. Xen registration and stack-trace cases
+25. NFS install directory debris
+26. Sendmail install/debug directory debris
+27. SNMP installation subtree
+28. Six unused NLS alias directories
+29. Installer newaliases invocation
+30. ZFS installer defaults to deleted BIOS support
+31. x86 installer BIOS code paths
+32. Retired PowerPC installer backend
+33. i386 release images require deleted BIOS files
+34. Azure image configuration for deleted drivers
+35. EC2 EFS/NFS helper generation
+36. Retired architecture and BIOS boot test generators
+37. NanoBSD BIOS defaults and NFS mounts
+38. RISC-V release selectors
+39. NFS-only stress tests/branches
+40. DTrace NFS test Makefile after source deletion
+41. ls test requires removed locale
+42. fnmatch Czech collation test requires deleted data
+43. Unselected legacy locale source data and empty build scaffolding
+44. Dead libvgl example assignment
+45. Installed example/help inventories describe deleted features
+46. Two dangling upstream kernel entries (pre-existing, not HalfBSD cuts)
+
+Validation: 47 shell syntax checks; 49 BSD make conditional-balance checks; supported kernel manifest literal source existence; mtree hierarchy; RPC brace/preprocessor checks; deleted symbol/header/selector references; git diff --check.
+Behavior harnesses: four ZFS boot-pool/swap layouts, seven boot-selection cases, NanoBSD ESP/configuration/root layout.
+No real disk operations or destructive stress tests performed. This report accompanies the cleanup commit.
+No make/bmake/C compiler is available on this host. FreeBSD compilation, linking, disk installation, and boot validation remain unverified.
+
+Review corrections and retained functionality:
+- Generic Netlink RPC retained because local rpcbind registration calls client_nl_create.
+- Generic RPC transports, syscall/control number reservations, Ethernet RDMA bridges, public APIs, and working Unicode/NLS catalogs retained.
+- Installer review fixed nullable boot-type consumers and removed the remaining UEFI image reference to deleted BIOS bootcode.
+- Final review removed five obsolete OFED/Open Firmware option descriptions, private SDP netstat paths, and the remaining native RISC-V program-build branch.
+- Additional locale source candidates in active ctype/time directories remain for followup review.
+
+Audit groups not authorized for this cleanup:
+B: 15 original report groups; retained.
+  - RDMA bridges inside functioning NIC drivers
+  - ICL_KERNEL_PROXY leftovers
+  - Entire generic kernel RPC runtime
+  - WebNFS public export state
+  - MAC NFS credential association hook
+  - ALTQ private branches and dangling declarations
+  - etcupdate mail special-case chain
+  - PF and manual identity records
+  - Historical Kerberos RPC declarations/header
+  - Unreachable native architecture source remnants
+  - RISC-V old-object cleanup
+  - Historical examples/documentation for removed features
+  - Manual-authoring examples and inert man-source rules
+  - OFED_PREINIT constant/debug feature
+  - Additional stale DIRDEPS predating cuts
+C: 24 original report groups; retained.
+  - LinuxKPI Xen compatibility API
+  - LinuxKPI OFED-named module initialization
+  - vt shared syscons names/ioctls/options
+  - Kernel BIOS firmware-call infrastructure
+  - Local NFSv4 ACLs and their tests
+  - XDR and VFS file-handle/export support
+  - bremfreef buffer helper
+  - Conditional external MTA output
+  - FTP/POP/IMAP PAM configuration
+  - libutil UUCP locks and serial permissions
+  - Local netgroup/domain/Secure RPC APIs
+  - Public legacy RPC protocols and helpers
+  - RPC/service registries and rpcbind security rules
+  - Generic init/ttys command field
+  - Generic remote-filesystem startup
+  - Remaining libc NLS catalogs
+  - en_US.UTF-8 full locale category build
+  - Missing-locale tests that already skip
+  - LLVM/tool/vendor foreign-architecture support
+  - Remaining HTML option
+  - Upgrade cleanup inventories
+  - HID games group and hardware/protocol identifiers
+  - General hypervisor/PVH terminology
+  - Release FTP staging and optional Solaris fixtures
+D: 3 original report groups; retained.
+  - Functioning generic userland RPC service
+  - Functioning legacy video firmware users
+  - Functioning translations/external service conventions
+
+Original audit paths for the 46 cleaned groups (line numbers refer to the pre-cleanup tree):
+1. OFED world-build chain
+   share/mk/src.opts.mk:176,311; sys/conf/kern.opts.mk:59,73; lib/Makefile:143,214; lib/libpcap/Makefile:147; share/mk/src.libnames.mk:211,281,382; tools/bsdbox/Makefile.hostapd:19; Makefile.inc1:3083
+2. Stranded RDMA provider sources/modules
+   sys/dev/mthca; sys/dev/irdma; sys/dev/iser; sys/dev/bnxt/bnxt_re; sys/dev/qlnx/qlnxr; sys/dev/cxgbe/iw_cxgbe; sys/contrib/rdma/krping; corresponding sys/modules directories; sys/conf/files:1895,4513,4544; sys/modules/Makefile:535,545,629
+3. mlx5 orphan module Makefiles
+   sys/modules/mlx5ib/Makefile:1; sys/modules/mlx5fpga_tools/Makefile:1; sys/modules/Makefile:255,546
+4. mlx5tool header/install/option/package chain
+   include/Makefile:238; etc/mtree/BSD.include.dist:150; share/mk/src.opts.mk:121,299; tools/build/options/WITH_MLX5TOOL; tools/build/options/WITHOUT_MLX5TOOL; targets/pseudo/userland/Makefile.depend:657; release/packages/ucl/mlx-tools-all.ucl:32
+5. NETSTAT SDP enablement
+   usr.bin/netstat/Makefile:45
+6. Removed dialog/dpv/figpar library catalog
+   share/mk/src.libnames.mk:124,126,134,315,316,364
+7. Pseudo-userland dependencies to HalfBSD deletions
+   targets/pseudo/userland/Makefile.depend:394,395,566,567,640,658; targets/pseudo/userland/share/Makefile.depend:21,60,61,62,63,64,65,66,67,76
+8. makeman target to deleted directory
+   Makefile.inc1:1518; tools/build/options/makeman:18
+9. getty bsdbox dependency
+   tools/bsdbox/Makefile.login:6; tools/bsdbox/Makefile:99
+10. RISC-V kernel manifests/private header
+   sys/conf/files.riscv; sys/conf/options.riscv; sys/conf/ldscript.riscv; sys/dev/hwpmc/hwpmc_riscv.h:33
+11. RISC-V native build branches
+   cddl/lib/libdtrace/Makefile:114,128; sys/modules/vmm/Makefile:154; stand/efi/loader/Makefile.depend.riscv; targets/pseudo/loader/Makefile.depend.riscv; sys/conf/kern.mk:168,389; sys/conf/kern.pre.mk:141; sys/Makefile:9
+12. PowerMac sound source dead end
+   sys/dev/sound/macio/{aoa.c,aoa.h,davbus.c,davbusreg.h,onyx.c,snapper.c,tumbler.c}; sys/dev/sound/driver.c:58,69
+13. Open Firmware loader private library
+   stand/libofw; stand/Makefile:15,48; stand/defs.mk:55; share/mk/src.opts.mk:113,277
+14. NFS jail service support chain
+   sys/kern/kern_jail.c:238,2265,3928,4199,5058; sys/kern/vfs_mount.c:1002; sys/sys/jail.h:460; libexec/rc/rc.subr:1286
+15. NFS-specific kernel RPC backchannel/TLS support
+   sys/rpc/clnt_bck.c; sys/rpc/clnt_nl.c; sys/rpc/rpcsec_tls; sys/conf/files:4643-4695; sys/modules/krpc/Makefile
+16. RPC-over-TLS helper daemons and startup/install chain
+   usr.sbin/Makefile:136,137; usr.sbin/rpc.tlsclntd; usr.sbin/rpc.tlsservd; libexec/rc/rc.d/Makefile:238; libexec/rc/rc.d/tlsclntd; libexec/rc/rc.d/tlsservd; libexec/rc/rc.conf:274-277; include/Makefile:195,419
+17. NFS mount startup path
+   libexec/rc/rc.d/mountcritremote:17,26,29,39,41,47,65
+18. rcorder dependencies to removed services
+   libexec/rc/rc.d/automount:6; automountd:6; mountcritremote:6; quota:8; netwait:4; dnctl:6; securelevel:6
+19. Direct deleted IPFILTER rc invocations
+   libexec/rc/netstart:38-40
+20. Inert APM rc setting
+   libexec/rc/rc.conf:42
+21. Private NFS quota helper chain
+   usr.bin/quota/quota.c:87,89,508,560,656; usr.bin/quota/Makefile:5; usr.bin/quota/Makefile.depend:11
+22. NFS source tag globs
+   sys/kern/Make.tags.inc:27-29,75-77
+23. Removed kernel options/drivers in NOTES
+   sys/conf/NOTES:738,794,1034,1042,1043,1049,1054,1115,1827,1896,2263; sys/x86/conf/NOTES:456,457; sys/arm/conf/NOTES:77; tools/tools/nanobsd/pcengines/ALIX_DSK:16,17
+24. Xen registration and stack-trace cases
+   sys/x86/isa/isa.c:149; sys/amd64/amd64/db_trace.c:174; sys/i386/i386/db_trace.c:301
+25. NFS install directory debris
+   etc/mtree/BSD.include.dist:206,309,311,313
+26. Sendmail install/debug directory debris
+   etc/mtree/BSD.usr.dist:169,171,482; etc/mtree/BSD.debug.dist:60,62
+27. SNMP installation subtree
+   etc/mtree/BSD.usr.dist:486
+28. Six unused NLS alias directories
+   etc/mtree/BSD.usr.dist:461,465,467,469,471,473
+29. Installer newaliases invocation
+   usr.sbin/bsdinstall/scripts/config:53
+30. ZFS installer defaults to deleted BIOS support
+   usr.sbin/bsdinstall/scripts/zfsboot:890-905,1534-1546,1680-1697
+31. x86 installer BIOS code paths
+   usr.sbin/bsdinstall/partedit/partedit_x86.c:38,120,136; usr.sbin/bsdinstall/partedit/gpart_ops.c:337,431
+32. Retired PowerPC installer backend
+   usr.sbin/bsdinstall/partedit/partedit_powerpc.c; usr.sbin/bsdinstall/partedit/Makefile:11
+33. i386 release images require deleted BIOS files
+   release/i386/make-memstick.sh:61-63; release/i386/mkisoimages.sh:42
+34. Azure image configuration for deleted drivers
+   release/tools/azure.conf:44,58
+35. EC2 EFS/NFS helper generation
+   release/tools/ec2.conf:107-125
+36. Retired architecture and BIOS boot test generators
+   tools/boot/universe.sh:69-72; tools/boot/rootgen.sh:49,117,176,727,737; tools/boot/full-test.sh:518,543,617; tools/boot/install-boot.sh:39,420
+37. NanoBSD BIOS defaults and NFS mounts
+   tools/tools/nanobsd/defaults.sh:142; legacy.sh:191; embedded/common:506; dhcpd/common:248; rescue/common:20,87,114
+38. RISC-V release selectors
+   release/release.sh:161,394,404; release/Makefile.mirrors:23,43; release/Makefile.vm:7; release/tools/vmimage.subr:398; release/scripts/make-oci-image.sh:79
+39. NFS-only stress tests/branches
+   tools/test/stress2/misc/nfs*.sh; tools/test/stress2/default.cfg:21; tools/test/stress2/misc/all.exclude:41; misc/readdir.sh:67; mountu.sh:106; pthread9.sh:47; mmap44.sh:222; ftruncate3.sh:83; crossmp6.sh:50
+40. DTrace NFS test Makefile after source deletion
+   cddl/usr.sbin/dtrace/tests/common/nfs/Makefile:8,15; common/Makefile:1
+41. ls test requires removed locale
+   bin/ls/tests/ls_tests.sh:682
+42. fnmatch Czech collation test requires deleted data
+   lib/libc/tests/gen/fnmatch_test.c:219
+43. Unselected legacy locale source data and empty build scaffolding
+   share/colldef/ca_IT.ISO8859-15.src; share/monetdef/be_BY.CP1131.src; share/msgdef/be_BY.CP1131.src; share/numericdef/Makefile; share/Makefile:63-69
+44. Dead libvgl example assignment
+   share/examples/Makefile:151-153
+45. Installed example/help inventories describe deleted features
+   share/examples/etc/README.examples:18,22,26,33-35,42; usr.sbin/bsdconfig/security/include/securelevel.hlp:34; sys/dev/hid/hidquirk.h:40; sys/dev/usb/quirk/usb_quirk.h:34; sys/fs/autofs/autofs.c:106
+46. Two dangling upstream kernel entries (pre-existing, not HalfBSD cuts)
+   sys/conf/files.arm:50; sys/conf/files:4754

@@ -140,9 +140,6 @@ SUBDIR_DEPEND_libtacplus= libmd
 SUBDIR_DEPEND_libulog= libmd
 SUBDIR_DEPEND_libunbound= ${_libldns}
 SUBDIR_DEPEND_liblzma= libthr
-.if ${MK_OFED} != "no"
-SUBDIR_DEPEND_libpcap= ofed
-.endif
 SUBDIR_DEPEND_nss_tacplus= libtacplus
 SUBDIR_DEPEND_virtual_oss= libsamplerate
 
@@ -211,7 +208,6 @@ SUBDIR.${MK_TESTS_SUPPORT}+=	liblutok
 SUBDIR.${MK_TESTS}+=	tests
 SUBDIR.${MK_UNBOUND}+=	libunbound
 SUBDIR.${MK_USB}+=	libusbhid libusb
-SUBDIR.${MK_OFED}+=	ofed
 SUBDIR.${MK_VERIEXEC}+=	libveriexec
 SUBDIR.${MK_ZFS}+=	libbe
 

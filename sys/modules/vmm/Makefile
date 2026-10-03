@@ -151,15 +151,6 @@ vmx_genassym.o: offset.inc
 svm_genassym.o: offset.inc
 	${CC} -c ${NOSAN_CFLAGS:N-flto*:N-fno-common} -fcommon ${.IMPSRC}
 
-.elif ${MACHINE_CPUARCH} == "riscv"
-
-SRCS+=	vmm_aplic.c	\
-	vmm_fence.c	\
-	vmm_riscv.c	\
-	vmm_sbi.c	\
-	vmm_switch.S	\
-	vmm_vtimer.c
-
 .endif
 
 .include <bsd.kmod.mk>

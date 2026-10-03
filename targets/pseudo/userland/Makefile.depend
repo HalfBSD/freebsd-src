@@ -391,8 +391,6 @@ DIRDEPS+= \
 	usr.sbin/bsdconfig/include \
 	usr.sbin/bsdconfig/includes \
 	usr.sbin/bsdconfig/includes/include \
-	usr.sbin/bsdconfig/mouse \
-	usr.sbin/bsdconfig/mouse/include \
 	usr.sbin/bsdconfig/networking \
 	usr.sbin/bsdconfig/networking/include \
 	usr.sbin/bsdconfig/networking/share \
@@ -563,8 +561,6 @@ DIRDEPS+= \
 	usr.sbin/snapinfo \
 	usr.sbin/syslogd \
 	usr.sbin/sysrc \
-	usr.sbin/tcpdchk \
-	usr.sbin/tcpdmatch \
 	usr.sbin/tcpdrop \
 	usr.sbin/tcpdump/tcpdump \
 	usr.sbin/timed/timed \
@@ -637,7 +633,6 @@ DIRDEPS.i386= \
 	usr.sbin/btxld \
 	usr.sbin/cpucontrol \
 	usr.sbin/mptable \
-	usr.sbin/pnpinfo \
 	usr.sbin/sade \
 	usr.sbin/spkrtest \
 	usr.sbin/zzz \
@@ -654,9 +649,6 @@ DIRDEPS.arm64= \
 DIRDEPS+= usr.sbin/cxgbetool
 .endif
 
-.if ${MK_MLX5TOOL} != "no"
-DIRDEPS+= usr.sbin/mlx5tool
-.endif
 
 DIRDEPS+= ${DIRDEPS.${MACHINE}:U}
 

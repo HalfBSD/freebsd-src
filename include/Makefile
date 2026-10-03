@@ -192,8 +192,7 @@ VERIEXEC=	veriexec_ioctl.h
 VERIEXECDIR=	${INCLUDEDIR}/dev/veriexec
 
 .PATH: ${SRCTOP}/sys/rpc
-RPC=		rpcsec_tls.h \
-		types.h
+RPC=		types.h
 RPCDIR=		${INCLUDEDIR}/rpc
 
 .PATH: ${SRCTOP}/sys/teken
@@ -235,10 +234,6 @@ INCSGROUPS=	INCS \
 INCSGROUPS+=	NVPAIR
 .endif
 
-.if ${MK_MLX5TOOL} != "no"
-INCSGROUPS+=	MLX5
-.endif
-
 .if ${MK_BLUETOOTH} != "no"
 LSUBSUBDIRS+=	netgraph/bluetooth/include
 .endif
@@ -260,8 +255,7 @@ INCS+=		iconv.h
 LSUBDIRS+=	dev/usb
 .endif
 
-.if ${MACHINE_CPUARCH} == "amd64" || ${MACHINE_CPUARCH} == "aarch64" || \
-    ${MACHINE_CPUARCH} == "riscv"
+.if ${MACHINE_CPUARCH} == "amd64" || ${MACHINE_CPUARCH} == "aarch64"
 .if ${MK_BHYVE} != "no"
 LSUBDIRS+=	dev/vmm
 .endif
@@ -416,7 +410,7 @@ symlinks: .PHONY .META
 	    $$(printf '../../../../%s ' sys/fs/cd9660/*.h) \
 	    ${SDESTDIR}${INCLUDEDIR}/isofs/cd9660; \
 	cd ${SRCTOP}; ${INSTALL_SYMLINK} ${TAG_ARGS:D${TAG_ARGS},dev} \
-	    $$(printf '../../../sys/rpc/%s ' rpcsec_tls.h types.h) \
+	    $$(printf '../../../sys/rpc/%s ' types.h) \
 	    ${SDESTDIR}${INCLUDEDIR}/rpc;
 	cd ${SRCTOP}/sys/rpc;
 .if ${MK_CDDL} != "no"

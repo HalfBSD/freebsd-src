@@ -297,8 +297,7 @@ db_nextframe(struct i386_frame **fp, db_addr_t *ip, struct thread *td)
 			frame_type = SYSCALL;
 		else if (strcmp(name, "dblfault_handler") == 0)
 			frame_type = DOUBLE_FAULT;
-		else if (strcmp(name, "Xtimerint") == 0 ||
-		    strcmp(name, "Xxen_intr_upcall") == 0)
+		else if (strcmp(name, "Xtimerint") == 0)
 			frame_type = INTERRUPT;
 		else if (strcmp(name, "Xcpustop") == 0 ||
 		    strcmp(name, "Xrendezvous") == 0 ||

@@ -55,20 +55,13 @@ exit 0
 
 # List of known failures:
 
-credleak.sh			20170321 Known lockd issue
 db.sh				20170323 ls stalls for more than 90 secs
 dev3.sh				20170323 pts memory leak
 gnop5.sh			20170905 mount: Invalid sectorsize 16384
 graid1_7.sh			20170430 FAIL Remove component gptid/02b9...
 graid1_8.sh			20170512 Known: do not run fsck
-mountu.sh			20170321 Known NFS problem
-nfs13.sh			20170323 tmpfs using options triggers this
-nfs15lockd.sh			20170330 unmount of /mnt failed: Device busy
-nfs15lockd3.sh			20170330 unmount of /mnt failed: Device busy
-nfssillyrename.sh		20170321 Known problem
 rename11.sh			20170329 Too many links seen with SU.
 swappedout.sh			20170321 Known to fail
-tmpfs18.sh			20170323 tmpfs -o issue
 tvnlru.sh			20170329 Known performance issue
 umountf2.sh			20170323 umount hangs
 vm_fault_dontneed.sh		20170321 Recognition of sequential access

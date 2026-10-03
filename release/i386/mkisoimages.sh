@@ -28,10 +28,10 @@ scriptdir=$(dirname $(realpath $0))
 . ${scriptdir}/../scripts/tools.subr
 
 if [ "$1" = "-b" ]; then
-	MAKEFSARG="$4"
-else
-	MAKEFSARG="$3"
+	echo "HalfBSD i386 bootable ISO images are unsupported: BIOS loaders were removed." >&2
+	exit 1
 fi
+MAKEFSARG="$3"
 
 if [ -f ${MAKEFSARG} ]; then
 	BASEBITSDIR=`dirname ${MAKEFSARG}`
@@ -42,14 +42,6 @@ elif [ -d ${MAKEFSARG} ]; then
 else
 	echo "${MAKEFSARG} must exist"
 	exit 1
-fi
-
-if [ "$1" = "-b" ]; then
-	# This is highly x86-centric and will be used directly below.
-	bootable="-o bootimage=i386;$BASEBITSDIR/boot/cdboot -o no-emul-boot"
-	shift
-else
-	bootable=""
 fi
 
 if [ $# -lt 3 ]; then
@@ -70,7 +62,7 @@ if [ -n "${METALOG}" ]; then
 	echo "./etc/fstab type=file uname=root gname=wheel mode=0644" >> ${metalogfilename}
 	MAKEFSARG=${metalogfilename}
 fi
-${MAKEFS} -D -N ${BASEBITSDIR}/etc -t cd9660 $bootable -o rockridge -o label="$LABEL" -o publisher="$publisher" "$NAME" "$MAKEFSARG" "$@"
+${MAKEFS} -D -N ${BASEBITSDIR}/etc -t cd9660 -o rockridge -o label="$LABEL" -o publisher="$publisher" "$NAME" "$MAKEFSARG" "$@"
 rm -f "$BASEBITSDIR/etc/fstab"
 if [ -n "${METALOG}" ]; then
 	rm ${metalogfilename}

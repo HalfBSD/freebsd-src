@@ -3,8 +3,5 @@ SYSDIR?=${SRCTOP}/sys
 
 SUBDIR=	bnxt_en
 
-.if ${MK_OFED} != "no" || defined(ALL_MODULES)
-SUBDIR+=	bnxt_re
-.endif
 
 .include <bsd.subdir.mk>

@@ -3,7 +3,6 @@
 #
 # Full list of all arches we don't build.
 #
-#	powerpc/powerpcspe
 #
 # This script is expected to be run in stand (though you could run it anywhere
 # in the tree). It does a full clean build. For stand you can do all the archs in
@@ -66,10 +65,6 @@ for i in \
 	arm/armv7 \
 	arm64/aarch64 \
 	i386/i386 \
-	powerpc/powerpc \
-	powerpc/powerpc64 \
-	powerpc/powerpc64le \
-	riscv/riscv64 \
 	; do
     ta=${i##*/}
     dobuild $ta _.boot.${ta}.log ""

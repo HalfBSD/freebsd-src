@@ -34,7 +34,7 @@
 
 /*
  * partedit implementation for platforms on which the installer only offers
- * UEFI-based boot. Currently, this includes arm64 and RISC-V.
+ * UEFI-based boot. Currently, this includes arm64.
  */
 
 /* EFI partition size in bytes */

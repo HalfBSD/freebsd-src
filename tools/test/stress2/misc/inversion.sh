@@ -42,12 +42,6 @@ sed '1,/^EOF/d' < $odir/$0 > $dir/inversion.c
 mycc -o inversion -Wall inversion.c
 rm -f inversion.c
 
-mp=`df $dir | tail -1 | awk '{print $NF}'`
-mp=`mount | grep "on $mp "`
-if echo $mp | grep -wq nfs; then
-	pgrep -q lockd || { echo "lockd not running"; exit 0; }
-fi
-
 for i in `jot $N`; do
 	./inversion 600 &
 done

@@ -3305,7 +3305,6 @@ dev/usb/net/ruephy.c		optional rue
 dev/usb/net/usb_ethernet.c	optional uether | aue | axe | axge | cdce | \
 					 cdceem | cue | ipheth | kue | mos | \
 					 rue | smsc | udav | ure | urndis | muge
-dev/usb/net/uhso.c		optional uhso
 #
 # USB WLAN drivers
 #

@@ -2450,9 +2450,6 @@ device		ure
 #
 # Moschip MCS7730/MCS7840 USB to fast ethernet. Supports the Sitecom LN030.
 device		mos
-#
-# HSxPA devices from Option N.V
-device		uhso
 
 # Realtek RTL8188SU/RTL8191SU/RTL8192SU wireless driver
 device		rsu

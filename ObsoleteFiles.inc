@@ -51,6 +51,10 @@
 #   xargs -n1 | sort | uniq -d;
 # done
 
+# 20261002: Remove the uhso driver
+OLD_FILES+=boot/kernel/uhso.ko
+OLD_FILES+=boot/kernel/uhso.ko.debug
+
 # 20261002: Remove blacklist/blocklist
 OLD_FILES+=etc/blocklistd.conf
 OLD_FILES+=etc/rc.d/blocklistd

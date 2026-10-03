@@ -20,9 +20,7 @@ comment = "System resource accounting"
 
 desc = <<EOD
 System accounting monitors the system resources used by logged in users.  The
-accounting data is summarised daily and can be viewed using sa(8).  A monthly
-periodic(8) script is also provided which includes basic login time accounting
-in the monthly system status report.
+accounting data can be summarised and viewed using sa(8).
 
 System accounting tracks programs executed by each user, and provides the
 lastcomm(1) command to view this information.  However, system accounting

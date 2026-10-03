@@ -51,6 +51,109 @@
 #   xargs -n1 | sort | uniq -d;
 # done
 
+# 20261002: Remove blacklist/blocklist
+OLD_FILES+=etc/blocklistd.conf
+OLD_FILES+=etc/rc.d/blocklistd
+OLD_FILES+=usr/include/blocklist.h
+OLD_FILES+=usr/lib/libblocklist.a
+OLD_FILES+=usr/lib/libblocklist.so
+OLD_LIBS+=usr/lib/libblocklist.so.0
+OLD_FILES+=usr/libexec/blocklistd-helper
+OLD_FILES+=usr/sbin/blocklistctl
+OLD_FILES+=usr/sbin/blocklistd
+OLD_FILES+=etc/blacklistd.conf
+OLD_FILES+=etc/rc.d/blacklistd
+OLD_FILES+=usr/include/blacklist.h
+OLD_FILES+=usr/lib/libblacklist.a
+OLD_FILES+=usr/lib/libblacklist.so
+OLD_LIBS+=usr/lib/libblacklist.so.0
+OLD_FILES+=usr/libexec/blacklistd-helper
+OLD_FILES+=usr/sbin/blacklistctl
+OLD_FILES+=usr/sbin/blacklistd
+
+# 20261002: Remove banner and legacy modem and diagnostic utilities
+OLD_FILES+=etc/phones
+OLD_FILES+=etc/remote
+OLD_FILES+=etc/rc.d/serial
+OLD_FILES+=sbin/comcontrol
+OLD_FILES+=usr/bin/banner
+OLD_FILES+=usr/bin/cu
+OLD_FILES+=usr/bin/tip
+OLD_FILES+=usr/include/rpcsvc/spray.h
+OLD_FILES+=usr/include/rpcsvc/spray.x
+OLD_FILES+=usr/libexec/rpc.sprayd
+OLD_FILES+=usr/sbin/lptcontrol
+OLD_FILES+=usr/sbin/spray
+OLD_FILES+=usr/sbin/uhsoctl
+
+# 20261002: Remove periodic maintenance framework
+OLD_FILES+=etc/defaults/periodic.conf
+OLD_FILES+=etc/periodic/daily/100.clean-disks
+OLD_FILES+=etc/periodic/daily/110.clean-tmps
+OLD_FILES+=etc/periodic/daily/200.backup-passwd
+OLD_FILES+=etc/periodic/daily/221.backup-gpart
+OLD_FILES+=etc/periodic/daily/222.backup-gmirror
+OLD_FILES+=etc/periodic/daily/223.backup-zfs
+OLD_FILES+=etc/periodic/daily/400.status-disks
+OLD_FILES+=etc/periodic/daily/401.status-graid
+OLD_FILES+=etc/periodic/daily/404.status-zfs
+OLD_FILES+=etc/periodic/daily/450.status-security
+OLD_FILES+=etc/periodic/daily/480.leapfile-ntpd
+OLD_FILES+=etc/periodic/daily/480.status-ntpd
+OLD_FILES+=etc/periodic/daily/510.status-world-kernel
+OLD_FILES+=etc/periodic/daily/800.scrub-zfs
+OLD_FILES+=etc/periodic/daily/801.trim-zfs
+OLD_FILES+=etc/periodic/daily/999.local
+OLD_FILES+=etc/periodic/security/100.chksetuid
+OLD_FILES+=etc/periodic/security/110.neggrpperm
+OLD_FILES+=etc/periodic/security/200.chkmounts
+OLD_FILES+=etc/periodic/security/300.chkuid0
+OLD_FILES+=etc/periodic/security/400.passwdless
+OLD_FILES+=etc/periodic/security/410.logincheck
+OLD_FILES+=etc/periodic/security/500.ipfwdenied
+OLD_FILES+=etc/periodic/security/550.ipfwlimit
+OLD_FILES+=etc/periodic/security/700.kernelmsg
+OLD_FILES+=etc/periodic/security/800.loginfail
+OLD_FILES+=etc/periodic/security/security.functions
+OLD_FILES+=usr/sbin/periodic
+OLD_DIRS+=etc/periodic/daily
+OLD_DIRS+=etc/periodic/monthly
+OLD_DIRS+=etc/periodic/security
+OLD_DIRS+=etc/periodic/weekly
+OLD_DIRS+=etc/periodic
+
+# 20261002: Remove locate
+OLD_FILES+=etc/locate.rc
+OLD_FILES+=usr/bin/locate
+OLD_FILES+=usr/libexec/locate.bigram
+OLD_FILES+=usr/libexec/locate.code
+OLD_FILES+=usr/libexec/locate.concatdb
+OLD_FILES+=usr/libexec/locate.mklocatedb
+OLD_FILES+=usr/libexec/locate.updatedb
+OLD_FILES+=var/db/locate.database
+
+# 20261002: Remove weekly periodic maintenance
+OLD_FILES+=etc/periodic/weekly/340.noid
+OLD_FILES+=etc/periodic/weekly/450.status-security
+OLD_FILES+=etc/periodic/weekly/999.local
+
+# 20261002: Remove monthly periodic maintenance
+OLD_FILES+=etc/periodic/monthly/450.status-security
+OLD_FILES+=etc/periodic/monthly/999.local
+
+# 20261002: Remove obsolete periodic jobs
+OLD_FILES+=etc/periodic/daily/120.clean-preserve
+OLD_FILES+=etc/periodic/daily/310.accounting
+OLD_FILES+=etc/periodic/daily/406.status-gmirror
+OLD_FILES+=etc/periodic/daily/407.status-graid3
+OLD_FILES+=etc/periodic/daily/408.status-gstripe
+OLD_FILES+=etc/periodic/daily/409.status-gconcat
+OLD_FILES+=etc/periodic/daily/410.status-mfi
+OLD_FILES+=etc/periodic/daily/420.status-network
+OLD_FILES+=etc/periodic/daily/430.status-uptime
+OLD_FILES+=etc/periodic/weekly/310.locate
+OLD_FILES+=etc/periodic/monthly/200.accounting
+
 # 20261002: Remove TCP wrappers
 OLD_FILES+=etc/hosts.allow
 OLD_FILES+=etc/hosts.deny

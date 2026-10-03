@@ -5,7 +5,6 @@ SUBDIR=	alias \
 	asa \
 	awk \
 	backlight \
-	banner \
 	basename \
 	bintrans \
 	brandelf \
@@ -137,7 +136,6 @@ SUBDIR=	alias \
 	tcopy \
 	tee \
 	time \
-	tip \
 	top \
 	touch \
 	tr \
@@ -191,7 +189,6 @@ SUBDIR.${MK_KDUMP}+=	truss
 SUBDIR.${MK_LDNS_UTILS}+=	drill
 SUBDIR.${MK_LDNS_UTILS}+=	host
 SUBDIR.${MK_LIB32}+=	ldd32
-SUBDIR.${MK_LOCATE}+=	locate
 SUBDIR.${MK_MAKE}+=	bmake
 SUBDIR.${MK_NETCAT}+=	nc
 SUBDIR.${MK_NETLINK}+=	genl

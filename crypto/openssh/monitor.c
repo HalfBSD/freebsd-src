@@ -85,7 +85,6 @@
 #include "misc.h"
 #include "servconf.h"
 #include "monitor.h"
-#include "blocklist_client.h"
 
 #ifdef GSSAPI
 #include "ssh-gss.h"
@@ -355,8 +354,6 @@ monitor_child_preauth(struct ssh *ssh, struct monitor *pmonitor)
 			}
 		}
 		if (authctxt->failures > options.max_authtries) {
-			BLOCKLIST_NOTIFY(ssh, BLOCKLIST_AUTH_FAIL,
-			    "Too many authentication attempts");
 			/* Shouldn't happen */
 			fatal_f("privsep child made too many authentication "
 			    "attempts");
@@ -364,13 +361,9 @@ monitor_child_preauth(struct ssh *ssh, struct monitor *pmonitor)
 	}
 
 	if (!authctxt->valid) {
-		BLOCKLIST_NOTIFY(ssh, BLOCKLIST_AUTH_FAIL,
-		    "Authenticated invalid user");
 		fatal_f("authenticated invalid user");
 	}
 	if (strcmp(auth_method, "unknown") == 0) {
-		BLOCKLIST_NOTIFY(ssh, BLOCKLIST_AUTH_FAIL,
-		    "Authentication method name unknown");
 		fatal_f("authentication method name unknown");
 	}
 

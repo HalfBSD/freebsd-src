@@ -7,7 +7,7 @@ PACKAGE=	runtime
 LIB=    rpcsvc
 
 RPCSRCS= rex.x rnusers.x \
-	rquota.x rstat.x rwall.x spray.x
+	rquota.x rstat.x rwall.x
 
 OTHERSRCS=  rnusers.c rstat.c rwall.c
 SECRPCSRCS= secretkey.c xcrypt.c

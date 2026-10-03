@@ -63,8 +63,6 @@ __DEFAULT_YES_OPTIONS = \
     AUDIT \
     AUTOFS \
     BHYVE \
-    BLACKLIST \
-    BLOCKLIST \
     BLUETOOTH \
     BOOT \
     BSD_CPIO \
@@ -116,7 +114,6 @@ __DEFAULT_YES_OPTIONS = \
     LOADER_UBOOT \
     LOADER_IA32 \
     LOCALES \
-    LOCATE \
     LS_COLORS \
     MACHDEP_OPTIMIZATIONS \
     MAKE \
@@ -206,8 +203,6 @@ __LIBC_MALLOC_DEFAULT=	jemalloc
 # MK_* variable is set to "no".
 #
 .for var in \
-    BLACKLIST \
-    BLOCKLIST \
     BZIP2 \
     INET \
     INET6 \
@@ -339,21 +334,9 @@ MK_SOURCELESS_HOST:=	no
 MK_SOURCELESS_UCODE:= no
 .endif
 
-.if ${MK_BLACKLIST} == "no"
-MK_BLOCKLIST:=	no
-.endif
 
-.if ${MK_BLACKLIST_SUPPORT} == "no"
-MK_BLOCKLIST_SUPPORT:=	no
-.endif
 
-.if ${MK_BLOCKLIST} == "no"
-MK_BLACKLIST:=	no
-.endif
 
-.if ${MK_BLOCKLIST_SUPPORT} == "no"
-MK_BLACKLIST_SUPPORT:=	no
-.endif
 
 .if ${MK_CDDL} == "no"
 MK_CTF:=	no

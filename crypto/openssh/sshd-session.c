@@ -108,7 +108,6 @@
 #include "sk-api.h"
 #include "srclimit.h"
 #include "dh.h"
-#include "blocklist_client.h"
 
 /* Re-exec fds */
 #define REEXEC_DEVCRYPTO_RESERVED_FD	(STDERR_FILENO + 1)
@@ -1201,8 +1200,6 @@ main(int ac, char **av)
 	ssh_signal(SIGCHLD, SIG_DFL);
 	ssh_signal(SIGINT, SIG_DFL);
 
-	BLOCKLIST_INIT();
-
 	/*
 	 * Register our connection.  This turns encryption off because we do
 	 * not have a key.
@@ -1280,7 +1277,6 @@ main(int ac, char **av)
 
 	if ((r = kex_exchange_identification(ssh, -1,
 	    options.version_addendum)) != 0) {
-		BLOCKLIST_NOTIFY(ssh, BLOCKLIST_AUTH_FAIL, "Banner exchange");
 		sshpkt_fatal(ssh, r, "banner exchange");
 	}
 
@@ -1428,8 +1424,6 @@ cleanup_exit(int i)
 #endif
 	/* Override default fatal exit value when auth was attempted */
 	if (i == 255 && auth_attempted) {
-		BLOCKLIST_NOTIFY(the_active_state, BLOCKLIST_AUTH_FAIL,
-		    "Fatal exit");
 		_exit(EXIT_AUTH_ATTEMPTED);
 	}
 	_exit(i);

@@ -633,7 +633,6 @@ lfC l.
 /etc/disktab	default disk partition sizes/labels
 /etc/printcap	printer database
 /etc/gettytab	terminal type definitions
-/etc/remote	names and phone numbers of remote machines for \fItip\fP(1)
 /etc/group	group memberships
 /etc/master.passwd	password file; each account has a line
 /etc/rc.local	local system restart script; runs reboot; starts daemons

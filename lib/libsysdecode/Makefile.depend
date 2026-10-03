@@ -23,7 +23,6 @@ DIRDEPS = \
 	lib/libalias/libalias \
 	lib/libarchive \
 	lib/libbe \
-	lib/libblocklist \
 	lib/libblocksruntime \
 	lib/libbluetooth \
 	lib/libbsddialog \

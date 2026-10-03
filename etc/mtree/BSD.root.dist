@@ -69,16 +69,6 @@
         ..
         pam.d           tags=package=runtime
         ..
-        periodic        tags=package=periodic
-            daily       tags=package=periodic
-            ..
-            monthly     tags=package=periodic
-            ..
-            security    tags=package=periodic
-            ..
-            weekly      tags=package=periodic
-            ..
-        ..
         pkg             tags=package=pkg-bootstrap
         ..
         profile.d       tags=package=runtime

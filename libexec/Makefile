@@ -4,11 +4,9 @@
 
 SUBDIR=	${_atf} \
 	${_atrun} \
-	${_blocklistd-helper} \
 	flua \
 	rc \
 	${_rlogind} \
-	rpc.sprayd \
 	${_rshd} \
 	${_rtld-elf} \
 	save-entropy \
@@ -19,9 +17,6 @@ SUBDIR=	${_atf} \
 _atrun=		atrun
 .endif
 
-.if ${MK_BLOCKLIST} != "no"
-_blocklistd-helper+=	blocklistd-helper
-.endif
 
 .if !defined(NO_PIC) && !defined(NO_RTLD)
 _rtld-elf=	rtld-elf

@@ -57,7 +57,6 @@ CONFS=	DAEMON \
 	rtsold \
 	savecore \
 	securelevel \
-	serial \
 	static_arp \
 	static_ndp \
 	stf \
@@ -99,11 +98,6 @@ AUTOFSPACKAGE=			autofs
 AUTOFS=		automount \
 		automountd \
 		autounmountd
-
-CONFGROUPS.${MK_BLOCKLIST}+=	BLOCKLIST
-BLOCKLISTPACKAGE=		blocklist
-BLOCKLIST=	blacklistd \
-		blocklistd
 
 CONFGROUPS.${MK_BLUETOOTH}+=	BLUETOOTH
 BLUETOOTHPACKAGE=		bluetooth

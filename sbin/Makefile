@@ -3,7 +3,6 @@
 SUBDIR=adjkerntz \
 	camcontrol \
 	clri \
-	comcontrol \
 	conscontrol \
 	ddb \
 	devd \

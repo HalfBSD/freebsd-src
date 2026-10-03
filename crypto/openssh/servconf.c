@@ -217,7 +217,6 @@ initialize_server_options(ServerOptions *options)
 	options->sshd_session_path = NULL;
 	options->sshd_auth_path = NULL;
 	options->refuse_connection = -1;
-	options->use_blocklist = -1;
 }
 
 /* Returns 1 if a string option is unset or set to "none" or 0 otherwise. */
@@ -506,8 +505,6 @@ fill_default_server_options(ServerOptions *options)
 		options->sshd_auth_path = xstrdup(_PATH_SSHD_AUTH);
 	if (options->refuse_connection == -1)
 		options->refuse_connection = 0;
-	if (options->use_blocklist == -1)
-		options->use_blocklist = 0;
 
 	assemble_algorithms(options);
 
@@ -591,7 +588,6 @@ typedef enum {
 	sExposeAuthInfo, sRDomain, sPubkeyAuthOptions, sSecurityKeyProvider,
 	sRequiredRSASize, sChannelTimeout, sUnusedConnectionTimeout,
 	sSshdSessionPath, sSshdAuthPath, sRefuseConnection,
-	sUseBlocklist,
 	sDeprecated, sIgnore, sUnsupported
 } ServerOpCodes;
 
@@ -761,8 +757,6 @@ static struct {
 	{ "sshdsessionpath", sSshdSessionPath, SSHCFG_GLOBAL },
 	{ "sshdauthpath", sSshdAuthPath, SSHCFG_GLOBAL },
 	{ "refuseconnection", sRefuseConnection, SSHCFG_ALL },
-	{ "useblocklist", sUseBlocklist, SSHCFG_GLOBAL },
-	{ "useblacklist", sUseBlocklist, SSHCFG_GLOBAL }, /* alias */
 
 	{ NULL, sBadOption, 0 }
 };
@@ -2742,10 +2736,6 @@ process_server_config_line_depth(ServerOptions *options, char *line,
 		multistate_ptr = multistate_flag;
 		goto parse_multistate;
 
-	case sUseBlocklist:
-		intptr = &options->use_blocklist;
-		goto parse_flag;
-
 	case sDeprecated:
 	case sIgnore:
 	case sUnsupported:
@@ -3297,7 +3287,6 @@ dump_config(ServerOptions *o)
 	dump_cfg_fmtint(sFingerprintHash, o->fingerprint_hash);
 	dump_cfg_fmtint(sExposeAuthInfo, o->expose_userauth_info);
 	dump_cfg_fmtint(sRefuseConnection, o->refuse_connection);
-	dump_cfg_fmtint(sUseBlocklist, o->use_blocklist);
 
 	/* string arguments */
 	dump_cfg_string(sPidFile, o->pid_file);

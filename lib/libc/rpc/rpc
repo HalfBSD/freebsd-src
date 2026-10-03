@@ -12,7 +12,6 @@ walld		100008	rwall shutdown
 yppasswdd	100009	yppasswd
 etherstatd	100010	etherstat
 rquotad		100011	rquotaprog quota rquota
-sprayd		100012	spray
 3270_mapper	100013
 rje_mapper	100014
 selection_svc	100015	selnsvc

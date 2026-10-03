@@ -45,7 +45,6 @@ DIRDEPS+= \
 	sbin/camcontrol \
 	sbin/ccdconfig \
 	sbin/clri \
-	sbin/comcontrol \
 	sbin/conscontrol \
 	sbin/decryptcore \
 	sbin/ddb \
@@ -124,7 +123,6 @@ DIRDEPS+= \
 	usr.bin/atf/atf-version \
 	usr.bin/atm/sscop \
 	usr.bin/awk \
-	usr.bin/banner \
 	usr.bin/basename \
 	usr.bin/bc \
 	usr.bin/bintrans \
@@ -220,9 +218,6 @@ DIRDEPS+= \
 	usr.bin/limits \
 	usr.bin/locale \
 	usr.bin/localedef \
-	usr.bin/locate/bigram \
-	usr.bin/locate/code \
-	usr.bin/locate/locate \
 	usr.bin/lock \
 	usr.bin/lockf \
 	usr.bin/logger \
@@ -301,7 +296,6 @@ DIRDEPS+= \
 	usr.bin/tee \
 	usr.bin/time \
 	usr.bin/timeout \
-	usr.bin/tip/tip \
 	usr.bin/top \
 	usr.bin/touch \
 	usr.bin/tput \
@@ -533,7 +527,6 @@ DIRDEPS+= \
 	usr.sbin/ntp/ntptime \
 	usr.sbin/ntp/sntp \
 	usr.sbin/pciconf \
-	usr.sbin/periodic \
 	usr.sbin/pkg \
 	usr.sbin/pmcannotate \
 	usr.sbin/pmccontrol \
@@ -568,7 +561,6 @@ DIRDEPS+= \
 	usr.sbin/setpmac \
 	usr.sbin/smbmsg \
 	usr.sbin/snapinfo \
-	usr.sbin/spray \
 	usr.sbin/syslogd \
 	usr.sbin/sysrc \
 	usr.sbin/tcpdchk \
@@ -583,7 +575,6 @@ DIRDEPS+= \
 	usr.sbin/uathload \
 	usr.sbin/uefisign \
 	usr.sbin/ugidfw \
-	usr.sbin/uhsoctl \
 	usr.sbin/unbound/anchor \
 	usr.sbin/unbound/checkconf \
 	usr.sbin/unbound/control \
@@ -633,7 +624,6 @@ DIRDEPS.amd64= \
 	usr.sbin/btxld \
 	usr.sbin/camdd \
 	usr.sbin/cpucontrol \
-	usr.sbin/lptcontrol \
 	usr.sbin/mptable \
 	usr.sbin/spkrtest \
 	usr.sbin/sade \
@@ -646,7 +636,6 @@ DIRDEPS.i386= \
 	sbin/nvmecontrol \
 	usr.sbin/btxld \
 	usr.sbin/cpucontrol \
-	usr.sbin/lptcontrol \
 	usr.sbin/mptable \
 	usr.sbin/pnpinfo \
 	usr.sbin/sade \
@@ -659,17 +648,7 @@ DIRDEPS.arm64= \
 	usr.sbin/ofwdump
 
 
-.if ${MK_BLACKLIST_SUPPORT} != "no"
-DIRDEPS+= \
-	usr.sbin/blacklistctl \
-	usr.sbin/blacklistd
-.endif
 
-.if ${MK_BLOCKLIST_SUPPORT} != "no"
-DIRDEPS+= \
-	usr.sbin/blocklistctl \
-	usr.sbin/blocklistd
-.endif
 
 .if ${MK_CXGBETOOL} != "no"
 DIRDEPS+= usr.sbin/cxgbetool

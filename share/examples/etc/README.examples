@@ -20,7 +20,6 @@ group		- group permissions file (see group(5))
 hosts		- see hosts(5)
 hosts.equiv	- defines system-wide trusted hosts (see ruserok(3))
 hosts.lpd	- defines trusted hosts for lpd(8)
-locate.rc	- configuration file for locate(1)
 login.access	- configuration file for login(8) (see login.access(5))
 login.conf	- login class capabilities database (see login.conf(5))
 mac.conf	- TrustedBSD MAC userland policy configuration file
@@ -33,7 +32,6 @@ networks	- see networks(5)
 newsyslog.conf	- configuration for system log file rotator newsyslog(8)
 pf.conf		- pf(4) example configuration file
 pf.os		- SYN fingerprint database
-phones		- phone number database for tip(1)
 printcap	- configuration file for lpr(1)
 profile		- system-wide .profile for sh(1)
 protocols	- see protocols(5)
@@ -45,7 +43,6 @@ rc.resume	- sample run command file for APM Resume Event
 rc.shutdown	- system shutdown script (see init(8))
 rc.subr		- script with functions used by various rc scripts
 rc.suspend	- sample run command file for APM Resume Event
-remote		- configuration file for tip(1)
 rpc		- see rpc(5)
 security	- script run from crontab to do nightly security checks
 services	- see services(5)
@@ -55,5 +52,4 @@ syslog.conf	- configuration file for syslogd(8)
 ttys		- defines port configuration for init(8)
 defaults/bluetooth.device.conf	-
 defaults/devfs.rules		- default configuration rules for devfs(8)
-defaults/periodic.conf		- default configuration file for periodic(8)
 defaults/rc.conf		- default system configuration info (see rc.conf(5))

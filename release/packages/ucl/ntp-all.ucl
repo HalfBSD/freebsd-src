@@ -34,8 +34,6 @@ which participate in the NTP Pool system.
 This package provides the ntpd(8) daemon which implements both the client
 and server part of NTP depending on its configuration, and the ntpdate(8)
 utility which can be used for testing or one-off time synchronisation.
-
-A periodic(8) script to monitor the status of the NTP daemon is also provided.
 EOD
 
 annotations {

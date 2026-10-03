@@ -75,7 +75,6 @@
 #include "monitor_wrap.h"
 #include "ssherr.h"
 #include "channels.h"
-#include "blocklist_client.h"
 
 /* import */
 extern ServerOptions options;
@@ -286,12 +285,8 @@ auth_log(struct ssh *ssh, int authenticated, int partial,
 		authmsg = "Postponed";
 	else if (partial)
 		authmsg = "Partial";
-	else {
+	else
 		authmsg = authenticated ? "Accepted" : "Failed";
-		if (authenticated)
-			BLOCKLIST_NOTIFY(ssh, BLOCKLIST_AUTH_OK,
-			    "Authenticated");
-	}
 
 	if ((extra = format_method_key(authctxt)) == NULL) {
 		if (authctxt->auth_method_info != NULL)
@@ -339,7 +334,6 @@ auth_maxtries_exceeded(struct ssh *ssh)
 {
 	Authctxt *authctxt = (Authctxt *)ssh->authctxt;
 
-	BLOCKLIST_NOTIFY(ssh, BLOCKLIST_AUTH_FAIL, "Maximum attempts exceeded");
 	error("maximum authentication attempts exceeded for "
 	    "%s%.100s from %.200s port %d ssh2",
 	    authctxt->valid ? "" : "invalid user ",
@@ -500,7 +494,6 @@ getpwnamallow(struct ssh *ssh, const char *user)
 	aix_restoreauthdb();
 #endif
 	if (pw == NULL) {
-		BLOCKLIST_NOTIFY(ssh, BLOCKLIST_AUTH_FAIL, "Invalid user");
 		logit("Invalid user %.100s from %.100s port %d",
 		    user, ssh_remote_ipaddr(ssh), ssh_remote_port(ssh));
 #ifdef CUSTOM_FAILED_LOGIN

@@ -8,16 +8,11 @@ DIRDEPS = \
 	libexec/atrun \
 	libexec/ftpd \
 	libexec/rlogind \
-	libexec/rpc.sprayd \
 	libexec/rshd \
 	libexec/rtld-elf \
 	libexec/save-entropy \
-	libexec/tcpd \
 	libexec/ulog-helper \
 
 
-.if ${MK_BLOCKLIST_SUPPORT} != "no"
-DIRDEPS+=	libexec/blocklistd-helper
-.endif
 
 .include <dirdeps.mk>

@@ -47,7 +47,6 @@ SUBDIR=	adduser \
 	nmtree \
 	nologin \
 	pciconf \
-	periodic \
 	powerd \
 	prometheus_sysctl_exporter \
 	pstat \
@@ -67,7 +66,6 @@ SUBDIR=	adduser \
 	smbmsg \
 	snapinfo \
 	spi \
-	spray \
 	syslogd \
 	sysrc \
 	tcpdrop \
@@ -100,10 +98,6 @@ SUBDIR.${MK_AUDIT}+=	auditreduce
 SUBDIR.${MK_AUDIT}+=	praudit
 SUBDIR.${MK_AUDIT}+=	setaudit
 SUBDIR.${MK_AUTOFS}+=	autofs
-SUBDIR.${MK_BLACKLIST}+=	blacklistctl
-SUBDIR.${MK_BLACKLIST}+=	blacklistd
-SUBDIR.${MK_BLOCKLIST}+=	blocklistctl
-SUBDIR.${MK_BLOCKLIST}+=	blocklistd
 SUBDIR.${MK_BLUETOOTH}+=	bluetooth
 SUBDIR.${MK_BSDINSTALL}+=	bsdinstall
 .if ${MK_CAROOT} != "no"
@@ -153,7 +147,6 @@ SUBDIR.${MK_TOOLCHAIN}+=	config
 SUBDIR.${MK_TOOLCHAIN}+=	crunch
 SUBDIR.${MK_UNBOUND}+=	unbound
 SUBDIR.${MK_USB}+=	uathload
-SUBDIR.${MK_USB}+=	uhsoctl
 SUBDIR.${MK_USB}+=	usbconfig
 SUBDIR.${MK_USB}+=	usbdump
 SUBDIR.${MK_UTMPX}+=	ac

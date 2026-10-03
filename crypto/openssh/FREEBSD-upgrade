@@ -143,17 +143,12 @@
    counting; the agent will automatically exit when the last client
    disconnects.
 
-6) Blocklist integration
-
-   We include blocklist (https://github.com/zoulasc/blocklist) in FreeBSD,
-   and ssh is patched to report login failures to it.
-
-7) Paths
+6) Paths
 
    A number of paths are changed to match FreeBSD's configuration (e.g.,
    using /usr/local/ instead of /uxr/X11R6/).
 
-8) Retired patches
+7) Retired patches
 
    We added support for client-side VersionAddendum in 2002 (commit
    9e2cbe04ff4f) and provided a default value (e.g. FreeBSD-20220415).
@@ -162,7 +157,7 @@
    added the same functionality in the 10.0p2 release.  We have not restored
    setting a default value on FreeBSD.
 
-10) PrintLastLog bugfix
+8) PrintLastLog bugfix
 
    Upstream's autoconf sets DISABLE_LASTLOG if the system does not have
    lastlog.ll_line, but uses it to disable the PrintLastLog configuration

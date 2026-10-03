@@ -55,7 +55,7 @@ accounting_stop()
 accounting_rotate_log()
 {
 	# Note that this function must handle being called as "onerotate_log"
-	# (by the periodic scripts) when accounting is disabled, and handle
+	# when accounting is disabled, and handle
 	# being called multiple times (by an admin making mistakes) without
 	# anything having actually rotated the old .0 file out of the way.
 

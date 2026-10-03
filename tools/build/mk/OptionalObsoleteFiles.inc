@@ -8,7 +8,6 @@
 
 .if ${MK_ACCT} == no
 OLD_FILES+=etc/rc.d/accounting
-OLD_FILES+=etc/periodic/daily/310.accounting
 OLD_FILES+=usr/sbin/accton
 OLD_FILES+=usr/sbin/sa
 OLD_FILES+=usr/tests/usr.sbin/sa/Kyuafile
@@ -121,27 +120,6 @@ OLD_FILES+=usr/sbin/bhyvectl
 OLD_FILES+=usr/sbin/bhyveload
 OLD_FILES+=usr/share/examples/bhyve/vmrun.sh
 OLD_DIRS+=usr/share/examples/bhyve
-.endif
-
-.if ${MK_BLOCKLIST} == no
-OLD_FILES+=etc/blocklistd.conf
-OLD_FILES+=etc/rc.d/blocklistd
-OLD_FILES+=usr/include/blocklist.h
-OLD_FILES+=usr/lib/libblocklist.a
-OLD_FILES+=usr/lib/libblocklist.so
-OLD_LIBS+=usr/lib/libblocklist.so.0
-OLD_FILES+=usr/libexec/blocklistd-helper
-OLD_FILES+=usr/sbin/blocklistctl
-OLD_FILES+=usr/sbin/blocklistd
-OLD_FILES+=etc/blacklistd.conf
-OLD_FILES+=etc/rc.d/blacklistd
-OLD_FILES+=usr/include/blacklist.h
-OLD_FILES+=usr/lib/libblacklist.a
-OLD_FILES+=usr/lib/libblacklist.so
-OLD_LIBS+=usr/lib/libblacklist.so.0
-OLD_FILES+=usr/libexec/blacklistd-helper
-OLD_FILES+=usr/sbin/blacklistctl
-OLD_FILES+=usr/sbin/blacklistd
 .endif
 
 .if ${MK_BLUETOOTH} == no
@@ -1555,8 +1533,6 @@ OLD_FILES+=usr/share/doc/IPv6/IMPLEMENTATION
 .if ${MK_IPFW} == no
 OLD_FILES+=etc/rc.d/ipfw
 OLD_FILES+=etc/rc.d/natd
-OLD_FILES+=etc/periodic/security/500.ipfwdenied
-OLD_FILES+=etc/periodic/security/550.ipfwlimit
 OLD_FILES+=sbin/ipfw
 OLD_FILES+=sbin/natd
 OLD_FILES+=usr/sbin/ipfwpcap
@@ -1659,17 +1635,6 @@ OLD_FILES+=usr/share/locale/en_US.UTF-8/LC_MESSAGES
 OLD_FILES+=usr/share/locale/en_US.UTF-8/LC_MONETARY
 OLD_FILES+=usr/share/locale/en_US.UTF-8/LC_NUMERIC
 OLD_FILES+=usr/share/locale/en_US.UTF-8/LC_TIME
-.endif
-
-.if ${MK_LOCATE} == no
-OLD_FILES+=etc/locate.rc
-OLD_FILES+=etc/periodic/weekly/310.locate
-OLD_FILES+=usr/bin/locate
-OLD_FILES+=usr/libexec/locate.bigram
-OLD_FILES+=usr/libexec/locate.code
-OLD_FILES+=usr/libexec/locate.concatdb
-OLD_FILES+=usr/libexec/locate.mklocatedb
-OLD_FILES+=usr/libexec/locate.updatedb
 .endif
 
 .if ${MK_MAKE} == no
@@ -2090,8 +2055,6 @@ OLD_FILES+=usr/share/examples/etc/nscd.conf
 OLD_FILES+=etc/ntp/leap-seconds
 OLD_DIRS+=etc/ntp
 OLD_FILES+=etc/ntp.conf
-OLD_FILES+=etc/periodic/daily/480.status-ntpd
-OLD_FILES+=etc/periodic/daily/480.leapfile-ntpd
 OLD_FILES+=etc/rc.d/ntpd
 OLD_FILES+=usr/bin/ntpq
 OLD_FILES+=usr/sbin/ntp-keygen
@@ -3695,7 +3658,6 @@ OLD_FILES+=usr/libdata/pkgconfig/libusb-0.1.pc
 OLD_FILES+=usr/libdata/pkgconfig/libusb-1.0.pc
 OLD_FILES+=usr/libdata/pkgconfig/libusb-2.0.pc
 OLD_FILES+=usr/sbin/uathload
-OLD_FILES+=usr/sbin/uhsoctl
 OLD_FILES+=usr/sbin/usbconfig
 OLD_FILES+=usr/sbin/usbdump
 OLD_FILES+=usr/share/examples/libusb20/Makefile
@@ -3711,7 +3673,6 @@ OLD_FILES+=usr/share/misc/usbdevs
 .endif
 
 .if ${MK_UTMPX} == no
-OLD_FILES+=etc/periodic/monthly/200.accounting
 OLD_FILES+=etc/rc.d/utx
 OLD_FILES+=usr/bin/last
 OLD_FILES+=usr/bin/users
@@ -3778,8 +3739,6 @@ OLD_FILES+=etc/rc.d/zpoolreguid
 OLD_FILES+=etc/rc.d/zpoolupgrade
 OLD_FILES+=etc/rc.d/zvol
 OLD_FILES+=etc/devd/zfs.conf
-OLD_FILES+=etc/periodic/daily/404.status-zfs
-OLD_FILES+=etc/periodic/daily/800.scrub-zfs
 OLD_DIRS+=etc/zfs/compatibility.d
 OLD_FILES+=etc/zfs/exports
 OLD_DIRS+=etc/zfs

@@ -149,8 +149,6 @@ SUBDIR_DEPEND_virtual_oss= libsamplerate
 # NB: keep these sorted by MK_* knobs
 
 SUBDIR.${MK_BEARSSL}+=	libbearssl libsecureboot
-SUBDIR.${MK_BLACKLIST}+=libblacklist
-SUBDIR.${MK_BLOCKLIST}+=libblocklist
 SUBDIR.${MK_BLUETOOTH}+=libbluetooth libsdp
 
 .if !defined(COMPAT_LIBCOMPAT)

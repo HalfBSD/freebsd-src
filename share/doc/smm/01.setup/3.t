@@ -214,7 +214,6 @@ lfC c l.
 /etc/protocols	\(dd	in case you added any local protocols
 /etc/rc	*	for any local additions
 /etc/rc.local	*	site specific system startup commands
-/etc/remote	\(dg	auto-dialer configuration
 /etc/services	\(dd	for local additions
 /etc/shells	\(dd	list of valid shells
 /etc/syslog.conf	*	system logger configuration

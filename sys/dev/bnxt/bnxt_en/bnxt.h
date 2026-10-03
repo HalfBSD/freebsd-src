@@ -42,7 +42,9 @@
 #include <net/if.h>
 #include <net/if_var.h>
 #include <net/iflib.h>
+#include <linux/mutex.h>
 #include <linux/types.h>
+#include <linux/workqueue.h>
 
 #include "hsi_struct_def.h"
 #include "bnxt_dcb.h"

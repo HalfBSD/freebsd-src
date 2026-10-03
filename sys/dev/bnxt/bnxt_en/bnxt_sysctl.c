@@ -27,6 +27,7 @@
  */
 
 #include <sys/types.h>
+#include <sys/sbuf.h>
 #include <sys/sysctl.h>
 #include <sys/ctype.h>
 #include <linux/delay.h>

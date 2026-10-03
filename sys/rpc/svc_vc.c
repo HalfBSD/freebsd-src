@@ -71,21 +71,21 @@ SYSCTL_NODE(_kern, OID_AUTO, rpc, CTLFLAG_RW | CTLFLAG_MPSAFE, 0,
 SYSCTL_NODE(_kern_rpc, OID_AUTO, unenc, CTLFLAG_RW | CTLFLAG_MPSAFE, 0,
     "unencrypted");
 
-KRPC_VNET_DEFINE_STATIC(uint64_t, svc_vc_rx_msgbytes) = 0;
-SYSCTL_U64(_kern_rpc_unenc, OID_AUTO, rx_msgbytes, CTLFLAG_KRPC_VNET | CTLFLAG_RW,
-    &KRPC_VNET_NAME(svc_vc_rx_msgbytes), 0, "Count of RPC rx bytes");
+VNET_DEFINE_STATIC(uint64_t, svc_vc_rx_msgbytes) = 0;
+SYSCTL_U64(_kern_rpc_unenc, OID_AUTO, rx_msgbytes, CTLFLAG_VNET | CTLFLAG_RW,
+    &VNET_NAME(svc_vc_rx_msgbytes), 0, "Count of RPC rx bytes");
 
-KRPC_VNET_DEFINE_STATIC(uint64_t, svc_vc_rx_msgcnt) = 0;
-SYSCTL_U64(_kern_rpc_unenc, OID_AUTO, rx_msgcnt, CTLFLAG_KRPC_VNET | CTLFLAG_RW,
-    &KRPC_VNET_NAME(svc_vc_rx_msgcnt), 0, "Count of RPC rx messages");
+VNET_DEFINE_STATIC(uint64_t, svc_vc_rx_msgcnt) = 0;
+SYSCTL_U64(_kern_rpc_unenc, OID_AUTO, rx_msgcnt, CTLFLAG_VNET | CTLFLAG_RW,
+    &VNET_NAME(svc_vc_rx_msgcnt), 0, "Count of RPC rx messages");
 
-KRPC_VNET_DEFINE_STATIC(uint64_t, svc_vc_tx_msgbytes) = 0;
-SYSCTL_U64(_kern_rpc_unenc, OID_AUTO, tx_msgbytes, CTLFLAG_KRPC_VNET | CTLFLAG_RW,
-    &KRPC_VNET_NAME(svc_vc_tx_msgbytes), 0, "Count of RPC tx bytes");
+VNET_DEFINE_STATIC(uint64_t, svc_vc_tx_msgbytes) = 0;
+SYSCTL_U64(_kern_rpc_unenc, OID_AUTO, tx_msgbytes, CTLFLAG_VNET | CTLFLAG_RW,
+    &VNET_NAME(svc_vc_tx_msgbytes), 0, "Count of RPC tx bytes");
 
-KRPC_VNET_DEFINE_STATIC(uint64_t, svc_vc_tx_msgcnt) = 0;
-SYSCTL_U64(_kern_rpc_unenc, OID_AUTO, tx_msgcnt, CTLFLAG_KRPC_VNET | CTLFLAG_RW,
-    &KRPC_VNET_NAME(svc_vc_tx_msgcnt), 0, "Count of RPC tx messages");
+VNET_DEFINE_STATIC(uint64_t, svc_vc_tx_msgcnt) = 0;
+SYSCTL_U64(_kern_rpc_unenc, OID_AUTO, tx_msgcnt, CTLFLAG_VNET | CTLFLAG_RW,
+    &VNET_NAME(svc_vc_tx_msgcnt), 0, "Count of RPC tx messages");
 
 static bool_t svc_vc_rendezvous_recv(SVCXPRT *, struct rpc_msg *,
     struct sockaddr **, struct mbuf **);
@@ -667,10 +667,10 @@ svc_vc_recv(SVCXPRT *xprt, struct rpc_msg *msg,
 			return (FALSE);
 		}
 
-		KRPC_CURVNET_SET(so->so_vnet);
+		CURVNET_SET(so->so_vnet);
 
 		if (error) {
-			KRPC_CURVNET_RESTORE();
+			CURVNET_RESTORE();
 			SOCK_RECVBUF_LOCK(so);
 			if (xprt->xp_upcallset) {
 				xprt->xp_upcallset = 0;
@@ -684,7 +684,7 @@ svc_vc_recv(SVCXPRT *xprt, struct rpc_msg *msg,
 		}
 
 		if (!m) {
-			KRPC_CURVNET_RESTORE();
+			CURVNET_RESTORE();
 			/*
 			 * EOF - the other end has closed the socket.
 			 */
@@ -695,10 +695,10 @@ svc_vc_recv(SVCXPRT *xprt, struct rpc_msg *msg,
 		}
 
 		m_freem(ctrl);
-		KRPC_VNET(svc_vc_rx_msgcnt)++;
-		KRPC_VNET(svc_vc_rx_msgbytes) += 1000000000 -
+		VNET(svc_vc_rx_msgcnt)++;
+		VNET(svc_vc_rx_msgbytes) += 1000000000 -
 		    uio.uio_resid;
-		KRPC_CURVNET_RESTORE();
+		CURVNET_RESTORE();
 
 		if (cd->mpending)
 			m_last(cd->mpending)->m_next = m;
@@ -745,10 +745,10 @@ svc_vc_reply(SVCXPRT *xprt, struct rpc_msg *msg,
 		*mtod(mrep, uint32_t *) =
 			htonl(0x80000000 | (len - sizeof(uint32_t)));
 
-		KRPC_CURVNET_SET(xprt->xp_socket->so_vnet);
-		KRPC_VNET(svc_vc_tx_msgcnt)++;
-		KRPC_VNET(svc_vc_tx_msgbytes) += len;
-		KRPC_CURVNET_RESTORE();
+		CURVNET_SET(xprt->xp_socket->so_vnet);
+		VNET(svc_vc_tx_msgcnt)++;
+		VNET(svc_vc_tx_msgbytes) += len;
+		CURVNET_RESTORE();
 		atomic_add_32(&xprt->xp_snd_cnt, len);
 		/*
 		 * sosend consumes mreq.

@@ -134,9 +134,6 @@ NOASM=
 .include "${LIBC_SRCTOP}/x86/gen/Makefile.inc"
 .endif
 .include "${LIBC_SRCTOP}/capability/Makefile.inc"
-.if ${MK_HESIOD} != "no"
-CFLAGS+= -DHESIOD
-.endif
 .if ${MK_NS_CACHING} != "no"
 CFLAGS+= -DNS_CACHING
 .endif

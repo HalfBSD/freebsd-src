@@ -25,7 +25,6 @@ audit:*:77:
 www:*:80:
 u2f:*:116:
 ntpd:*:123:
-hast:*:845:
 tests:*:977:
 nogroup:*:65533:
 nobody:*:65534:

@@ -26,7 +26,6 @@ include 	"../mv/armadaxp/std.mv78x60"
 
 options 	SOC_MV_ARMADAXP
 
-options 	SCHED_ULE		# ULE scheduler
 options 	SMP			# Enable multiple cores
 
 

@@ -25,7 +25,6 @@ include 	"../annapurna/alpine/std.alpine"
 
 makeoptions	MODULES_OVERRIDE=""
 
-options 	SCHED_4BSD		# 4BSD scheduler
 options 	SMP			# Enable multiple cores
 options 	PLATFORM
 

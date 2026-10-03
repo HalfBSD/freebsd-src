@@ -92,7 +92,6 @@ SUBDIR=	${SUBDIR_BOOTSTRAP} \
 	libstdbuf \
 	libstdthreads \
 	libsysdecode \
-	libtacplus \
 	libthr \
 	libthread_db \
 	libucl \
@@ -107,8 +106,7 @@ SUBDIR=	${SUBDIR_BOOTSTRAP} \
 	libyaml \
 	libz \
 	libzstd \
-	ncurses \
-	nss_tacplus
+	ncurses
 
 # Inter-library dependencies.  When the makefile for a library contains LDADD
 # libraries, those libraries should be listed as build order dependencies here.
@@ -130,17 +128,14 @@ SUBDIR_DEPEND_libedit= ncurses
 SUBDIR_DEPEND_libgeom= libexpat libsbuf
 SUBDIR_DEPEND_libmagic= libz
 SUBDIR_DEPEND_libmemstat= libkvm
-SUBDIR_DEPEND_libpam= libcrypt ${_libradius} librpcsvc libtacplus libutil
+SUBDIR_DEPEND_libpam= libcrypt librpcsvc libutil
 SUBDIR_DEPEND_libpjdlog= libutil
 SUBDIR_DEPEND_libprocstat= libkvm libutil
-SUBDIR_DEPEND_libradius= libmd
 # See comment above about libssp_nonshared
 SUBDIR_DEPEND_libsys= libcompiler_rt libssp_nonshared
-SUBDIR_DEPEND_libtacplus= libmd
 SUBDIR_DEPEND_libulog= libmd
 SUBDIR_DEPEND_libunbound= ${_libldns}
 SUBDIR_DEPEND_liblzma= libthr
-SUBDIR_DEPEND_nss_tacplus= libtacplus
 SUBDIR_DEPEND_virtual_oss= libsamplerate
 
 # NB: keep these sorted by MK_* knobs
@@ -200,7 +195,6 @@ SUBDIR.${MK_OPENSSH}+=	libcbor libfido2
 .endif
 SUBDIR.${MK_OPENSSL}+=	libmp
 SUBDIR.${MK_PMC}+=	libpmc libpmcstat
-SUBDIR.${MK_RADIUS_SUPPORT}+=	libradius
 SUBDIR.${MK_SOUND}+=	libmixer
 SUBDIR.${MK_CUSE}.${MK_SOUND}+=	libsamplerate virtual_oss
 SUBDIR.${MK_TESTS_SUPPORT}+=	atf

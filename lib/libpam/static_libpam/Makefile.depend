@@ -15,13 +15,11 @@ DIRDEPS = \
 	lib/libpam/modules/pam_nologin \
 	lib/libpam/modules/pam_passwdqc \
 	lib/libpam/modules/pam_permit \
-	lib/libpam/modules/pam_radius \
 	lib/libpam/modules/pam_rhosts \
 	lib/libpam/modules/pam_rootok \
 	lib/libpam/modules/pam_securetty \
 	lib/libpam/modules/pam_self \
 	lib/libpam/modules/pam_ssh \
-	lib/libpam/modules/pam_tacplus \
 	lib/libpam/modules/pam_unix \
 
 

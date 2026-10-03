@@ -3219,7 +3219,7 @@ _prebuild_libs=	lib/libbz2 lib/libcrypt \
 		lib/ncurses/ncurses \
 		lib/libedit \
 		lib/libpam/libpam lib/libthr \
-		${_lib_libradius} lib/libsbuf lib/libtacplus \
+		lib/libsbuf \
 		lib/libgeom \
 		${_lib_librt} \
 		${_cddl_lib_libumem} ${_cddl_lib_libnvpair} \
@@ -3245,10 +3245,6 @@ lib/libgeom__L: lib/libexpat__L lib/libsbuf__L
 lib/libkldelf__L: lib/libelf__L
 lib/libkvm__L: lib/libelf__L
 
-.if ${MK_RADIUS_SUPPORT} != "no"
-_lib_libradius=	lib/libradius
-.endif
-
 lib/ncurses/ncurses__L:	lib/ncurses/tinfo__L
 
 lib/libedit__L:		lib/ncurses/ncurses__L
@@ -3270,7 +3266,6 @@ _generic_libs+= ${_DIR}
 .endif
 .endfor
 
-lib/libtacplus__L: lib/libmd__L lib/libpam/libpam__L
 lib/libxo__L: lib/libutil__L
 
 .if ${MK_CDDL} != "no"
@@ -3323,7 +3318,7 @@ lib/librtld_db__L: lib/libprocstat__L
 .if ${MK_OPENSSL} != "no"
 _secure_lib_libcrypto= secure/lib/libcrypto
 _secure_lib_libssl= secure/lib/libssl
-lib/libradius__L secure/lib/libssl__L: secure/lib/libcrypto__L
+secure/lib/libssl__L: secure/lib/libcrypto__L
 secure/lib/libcrypto__L: lib/libthr__L
 .if ${MK_LDNS} != "no"
 _lib_libldns= lib/libldns
@@ -3343,12 +3338,6 @@ _secure_lib=	secure/lib
 
 
 lib/libsqlite3__L: lib/libthr__L
-
-
-
-.if ${MK_OPENSSL} == "no"
-lib/libradius__L: lib/libmd__L
-.endif
 
 lib/libproc__L: \
     ${_cddl_lib_libctf:D${_cddl_lib_libctf}__L} \

@@ -22,7 +22,6 @@ include 	"../nvidia/tegra124/std.tegra124"
 
 ident		TEGRA124
 
-options 	SCHED_ULE		# ULE scheduler
 options 	PLATFORM		# Platform based SoC
 options 	SMP			# Enable multiple cores
 options 	LINUX_BOOT_ABI

@@ -17,7 +17,6 @@ makeoptions 	MODULES_EXTRA="dtb/mv"
 #options 	ROOTDEVNAME=\"ufs:md0\"
 options 	ROOTDEVNAME=\"/dev/da0s1a\"
 
-options 	SCHED_ULE		# ULE scheduler
 options 	SMP
 
 options 	VM_KMEM_SIZE_MAX=0x9CCD000

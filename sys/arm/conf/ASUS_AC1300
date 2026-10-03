@@ -37,7 +37,6 @@ options 	FDT_DTB_STATIC
 makeoptions 	FDT_DTS_FILE=qcom-ipq4018-rt-ac58u.dts
 
 options 	LINUX_BOOT_ABI
-options 	SCHED_ULE
 options 	SMP
 options 	PLATFORM
 

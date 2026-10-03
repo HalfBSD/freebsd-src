@@ -44,11 +44,141 @@
 #include <sys/proc.h>
 #include <sys/queue.h>
 #include <sys/runq.h>
+#include <sys/sbuf.h>
 #include <sys/sched.h>
 #include <sys/smp.h>
 #include <sys/sysctl.h>
 
 #include <machine/cpu.h>
+
+SCHED_STAT_DEFINE(ithread_demotions, "Interrupt thread priority demotions");
+SCHED_STAT_DEFINE(ithread_preemptions,
+    "Interrupt thread preemptions due to time-sharing");
+
+SDT_PROVIDER_DEFINE(sched);
+
+SDT_PROBE_DEFINE3(sched, , , change__pri, "struct thread *",
+    "struct proc *", "uint8_t");
+SDT_PROBE_DEFINE3(sched, , , dequeue, "struct thread *",
+    "struct proc *", "void *");
+SDT_PROBE_DEFINE4(sched, , , enqueue, "struct thread *",
+    "struct proc *", "void *", "int");
+SDT_PROBE_DEFINE4(sched, , , lend__pri, "struct thread *",
+    "struct proc *", "uint8_t", "struct thread *");
+SDT_PROBE_DEFINE2(sched, , , load__change, "int", "int");
+SDT_PROBE_DEFINE2(sched, , , off__cpu, "struct thread *",
+    "struct proc *");
+SDT_PROBE_DEFINE(sched, , , on__cpu);
+SDT_PROBE_DEFINE(sched, , , remain__cpu);
+SDT_PROBE_DEFINE2(sched, , , surrender, "struct thread *",
+    "struct proc *");
+
+#ifdef KDTRACE_HOOKS
+#include <sys/dtrace_bsd.h>
+int __read_mostly		dtrace_vtime_active;
+dtrace_vtime_switch_func_t	dtrace_vtime_switch_func;
+#endif
+
+struct cpu_group __read_mostly *cpu_top;		/* CPU topology */
+
+SYSCTL_NODE(_kern, OID_AUTO, sched, CTLFLAG_RD | CTLFLAG_MPSAFE, 0,
+    "Scheduler");
+
+SYSCTL_STRING(_kern_sched, OID_AUTO, name, CTLFLAG_RD, "ULE", 0,
+    "Scheduler name");
+SYSCTL_STRING(_kern_sched, OID_AUTO, available, CTLFLAG_RD, "ULE", 0,
+    "List of available schedulers");
+
+fixpt_t ccpu;
+SYSCTL_UINT(_kern, OID_AUTO, ccpu, CTLFLAG_RD, &ccpu, 0,
+    "Decay factor used for updating %CPU");
+
+/*
+ * Build the CPU topology dump string. Is recursively called to collect
+ * the topology tree.
+ */
+static int
+sysctl_kern_sched_topology_spec_internal(struct sbuf *sb,
+    struct cpu_group *cg, int indent)
+{
+	char cpusetbuf[CPUSETBUFSIZ];
+	int i, first;
+
+	if (cpu_top == NULL) {
+		sbuf_printf(sb, "%*s<group level=\"1\" cache-level=\"1\">\n",
+		    indent, "");
+		sbuf_printf(sb, "%*s</group>\n", indent, "");
+		return (0);
+	}
+
+	sbuf_printf(sb, "%*s<group level=\"%d\" cache-level=\"%d\">\n", indent,
+	    "", 1 + indent / 2, cg->cg_level);
+	sbuf_printf(sb, "%*s <cpu count=\"%d\" mask=\"%s\">", indent, "",
+	    cg->cg_count, cpusetobj_strprint(cpusetbuf, &cg->cg_mask));
+	first = TRUE;
+	for (i = cg->cg_first; i <= cg->cg_last; i++) {
+		if (CPU_ISSET(i, &cg->cg_mask)) {
+			if (!first)
+				sbuf_cat(sb, ", ");
+			else
+				first = FALSE;
+			sbuf_printf(sb, "%d", i);
+		}
+	}
+	sbuf_cat(sb, "</cpu>\n");
+
+	if (cg->cg_flags != 0) {
+		sbuf_printf(sb, "%*s <flags>", indent, "");
+		if ((cg->cg_flags & CG_FLAG_HTT) != 0)
+			sbuf_cat(sb, "<flag name=\"HTT\">HTT group</flag>");
+		if ((cg->cg_flags & CG_FLAG_THREAD) != 0)
+			sbuf_cat(sb, "<flag name=\"THREAD\">THREAD group</flag>");
+		if ((cg->cg_flags & CG_FLAG_SMT) != 0)
+			sbuf_cat(sb, "<flag name=\"SMT\">SMT group</flag>");
+		if ((cg->cg_flags & CG_FLAG_NODE) != 0)
+			sbuf_cat(sb, "<flag name=\"NODE\">NUMA node</flag>");
+		sbuf_cat(sb, "</flags>\n");
+	}
+
+	if (cg->cg_children > 0) {
+		sbuf_printf(sb, "%*s <children>\n", indent, "");
+		for (i = 0; i < cg->cg_children; i++)
+			sysctl_kern_sched_topology_spec_internal(sb,
+			    &cg->cg_child[i], indent + 2);
+		sbuf_printf(sb, "%*s </children>\n", indent, "");
+	}
+	sbuf_printf(sb, "%*s</group>\n", indent, "");
+	return (0);
+}
+
+/*
+ * Sysctl handler for retrieving topology dump. It's a wrapper for
+ * the recursive sysctl_kern_smp_topology_spec_internal().
+ */
+static int
+sysctl_kern_sched_topology_spec(SYSCTL_HANDLER_ARGS)
+{
+	struct sbuf *topo;
+	int err;
+
+	topo = sbuf_new_for_sysctl(NULL, NULL, 512, req);
+	if (topo == NULL)
+		return (ENOMEM);
+
+	sbuf_cat(topo, "<groups>\n");
+	err = sysctl_kern_sched_topology_spec_internal(topo, cpu_top, 1);
+	sbuf_cat(topo, "</groups>\n");
+
+	if (err == 0)
+		err = sbuf_finish(topo);
+	sbuf_delete(topo);
+	return (err);
+}
+
+SYSCTL_PROC(_kern_sched, OID_AUTO, topology_spec, CTLTYPE_STRING |
+    CTLFLAG_MPSAFE | CTLFLAG_RD, NULL, 0,
+    sysctl_kern_sched_topology_spec, "A",
+    "XML dump of detected CPU topology");
 
 /* Uncomment this to enable logging of critical_enter/exit. */
 #if 0

@@ -273,17 +273,6 @@ SE_UEFISIGN=	uefikeys
 SE_UEFISIGNPACKAGE=efi-tools
 .endif
 
-.if ${MK_HAST} != "no"
-LDIRS+=		hast
-SE_HASTPACKAGE=	hast
-SE_DIRS+=	hast
-SE_HAST=	ucarp.sh \
-	ucarp_down.sh \
-	ucarp_up.sh \
-	vip-down.sh \
-	vip-up.sh
-.endif
-
 .if ${MK_USB} != "no"
 LDIRS+=		libusb20
 SE_DIRS+=	libusb20

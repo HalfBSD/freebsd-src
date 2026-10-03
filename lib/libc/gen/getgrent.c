@@ -37,9 +37,6 @@
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
-#ifdef HESIOD
-#include <hesiod.h>
-#endif
 #include <grp.h>
 #include <nsswitch.h>
 #include <pthread.h>
@@ -61,7 +58,6 @@ enum constants {
 	GRP_STORAGE_MAX		= 1 << 20, /* 1 MByte */
 	SETGRENT		= 1,
 	ENDGRENT		= 2,
-	HESIOD_NAME_MAX		= 256,
 };
 
 static const ns_src defaultsrc[] = {
@@ -98,17 +94,6 @@ static	void	 files_endstate(void *);
 NSS_TLS_HANDLING(files);
 static	int	 files_setgrent(void *, void *, va_list);
 static	int	 files_group(void *, void *, va_list);
-
-
-#ifdef HESIOD
-struct dns_state {
-	long	counter;
-};
-static	void	 dns_endstate(void *);
-NSS_TLS_HANDLING(dns);
-static	int	 dns_setgrent(void *, void *, va_list);
-static	int	 dns_group(void *, void *, va_list);
-#endif
 
 struct compat_state {
 	FILE	*fp;
@@ -366,9 +351,6 @@ static const nss_cache_info setgrent_cache_info = NS_MP_CACHE_INFO_INITIALIZER(
 
 static const ns_dtab setgrent_dtab[] = {
 	{ NSSRC_FILES, files_setgrent, (void *)SETGRENT },
-#ifdef HESIOD
-	{ NSSRC_DNS, dns_setgrent, (void *)SETGRENT },
-#endif
 	{ NSSRC_COMPAT, compat_setgrent, (void *)SETGRENT },
 #ifdef NS_CACHING
 	NS_CACHE_CB(&setgrent_cache_info)
@@ -384,9 +366,6 @@ static const nss_cache_info endgrent_cache_info = NS_MP_CACHE_INFO_INITIALIZER(
 
 static const ns_dtab endgrent_dtab[] = {
 	{ NSSRC_FILES, files_setgrent, (void *)ENDGRENT },
-#ifdef HESIOD
-	{ NSSRC_DNS, dns_setgrent, (void *)ENDGRENT },
-#endif
 	{ NSSRC_COMPAT, compat_setgrent, (void *)ENDGRENT },
 #ifdef NS_CACHING
 	NS_CACHE_CB(&endgrent_cache_info)
@@ -402,9 +381,6 @@ static const nss_cache_info getgrent_r_cache_info = NS_MP_CACHE_INFO_INITIALIZER
 
 static const ns_dtab getgrent_r_dtab[] = {
 	{ NSSRC_FILES, files_group, (void *)nss_lt_all },
-#ifdef HESIOD
-	{ NSSRC_DNS, dns_group, (void *)nss_lt_all },
-#endif
 	{ NSSRC_COMPAT, compat_group, (void *)nss_lt_all },
 #ifdef NS_CACHING
 	NS_CACHE_CB(&getgrent_r_cache_info)
@@ -569,9 +545,6 @@ getgrnam_r(const char *name, struct group *grp, char *buffer, size_t bufsize,
 
 	static const ns_dtab dtab[] = {
 		{ NSSRC_FILES, files_group, (void *)nss_lt_name },
-#ifdef HESIOD
-		{ NSSRC_DNS, dns_group, (void *)nss_lt_name },
-#endif
 		{ NSSRC_COMPAT, compat_group, (void *)nss_lt_name },
 #ifdef NS_CACHING
 		NS_CACHE_CB(&cache_info)
@@ -604,9 +577,6 @@ getgrgid_r(gid_t gid, struct group *grp, char *buffer, size_t bufsize,
 
 	static const ns_dtab dtab[] = {
 		{ NSSRC_FILES, files_group, (void *)nss_lt_id },
-#ifdef HESIOD
-		{ NSSRC_DNS, dns_group, (void *)nss_lt_id },
-#endif
 		{ NSSRC_COMPAT, compat_group, (void *)nss_lt_id },
 #ifdef NS_CACHING
 		NS_CACHE_CB(&cache_info)
@@ -888,139 +858,6 @@ files_group(void *retval, void *mdata, va_list ap)
 	return (rv);
 }
 
-
-#ifdef HESIOD
-/*
- * dns backend
- */
-static void
-dns_endstate(void *p)
-{
-
-	free(p);
-}
-
-
-static int
-dns_setgrent(void *retval, void *cb_data, va_list ap)
-{
-	struct dns_state	*st;
-	int			 rv;
-
-	rv = dns_getstate(&st);
-	if (rv != 0)
-		return (NS_UNAVAIL);
-	st->counter = 0;
-	return (NS_UNAVAIL);
-}
-
-
-static int
-dns_group(void *retval, void *mdata, va_list ap)
-{
-	char			 buf[HESIOD_NAME_MAX];
-	struct dns_state	*st;
-	struct group		*grp;
-	const char		*name, *label;
-	void			*ctx;
-	char			*buffer, **hes;
-	size_t			 bufsize, adjsize, linesize;
-	gid_t			 gid;
-	enum nss_lookup_type	 how;
-	int			 rv, *errnop;
-
-	ctx = NULL;
-	hes = NULL;
-	name = NULL;
-	gid = (gid_t)-1;
-	how = (enum nss_lookup_type)(uintptr_t)mdata;
-	switch (how) {
-	case nss_lt_name:
-		name = va_arg(ap, const char *);
-		break;
-	case nss_lt_id:
-		gid = va_arg(ap, gid_t);
-		break;
-	case nss_lt_all:
-		break;
-	}
-	grp     = va_arg(ap, struct group *);
-	buffer  = va_arg(ap, char *);
-	bufsize = va_arg(ap, size_t);
-	errnop  = va_arg(ap, int *);
-	*errnop = dns_getstate(&st);
-	if (*errnop != 0)
-		return (NS_UNAVAIL);
-	if (hesiod_init(&ctx) != 0) {
-		*errnop = errno;
-		rv = NS_UNAVAIL;
-		goto fin;
-	}
-	do {
-		rv = NS_NOTFOUND;
-		switch (how) {
-		case nss_lt_name:
-			label = name;
-			break;
-		case nss_lt_id:
-			if (snprintf(buf, sizeof(buf), "%lu",
-			    (unsigned long)gid) >= sizeof(buf))
-				goto fin;
-			label = buf;
-			break;
-		case nss_lt_all:
-			if (st->counter < 0)
-				goto fin;
-			if (snprintf(buf, sizeof(buf), "group-%ld",
-			    st->counter++) >= sizeof(buf))
-				goto fin;
-			label = buf;
-			break;
-		}
-		hes = hesiod_resolve(ctx, label,
-		    how == nss_lt_id ? "gid" : "group");
-		if ((how == nss_lt_id && hes == NULL &&
-		    (hes = hesiod_resolve(ctx, buf, "group")) == NULL) ||
-		    hes == NULL) {
-			if (how == nss_lt_all)
-				st->counter = -1;
-			if (errno != ENOENT)
-				*errnop = errno;
-			goto fin;
-		}
-		rv = __gr_match_entry(hes[0], strlen(hes[0]), how, name, gid);
-		if (rv != NS_SUCCESS) {
-			hesiod_free_list(ctx, hes);
-			hes = NULL;
-			continue;
-		}
-		/* We need room at least for the line, a string NUL
-		 * terminator, alignment padding, and one (char *)
-		 * pointer for the member list terminator.
-		 */
-		adjsize = bufsize - _ALIGNBYTES - sizeof(char *);
-		linesize = strlcpy(buffer, hes[0], adjsize);
-		if (linesize >= adjsize) {
-			*errnop = ERANGE;
-			rv = NS_RETURN;
-			goto fin;
-		}
-		hesiod_free_list(ctx, hes);
-		hes = NULL;
-		rv = __gr_parse_entry(buffer, linesize, grp,
-		    &buffer[linesize + 1], bufsize - linesize - 1, errnop);
-	} while (how == nss_lt_all && !(rv & NS_TERMINATE));
-fin:
-	if (hes != NULL)
-		hesiod_free_list(ctx, hes);
-	if (ctx != NULL)
-		hesiod_end(ctx);
-	if (rv == NS_SUCCESS && retval != NULL)
-		*(struct group **)retval = grp;
-	return (rv);
-}
-#endif /* HESIOD */
-
 /*
  * compat backend
  */
@@ -1046,9 +883,6 @@ compat_setgrent(void *retval, void *mdata, va_list ap)
 		{ NULL, 0 }
 	};
 	ns_dtab dtab[] = {
-#ifdef HESIOD
-		{ NSSRC_DNS, dns_setgrent, NULL },
-#endif
 		{ NULL, NULL, NULL }
 	};
 	struct compat_state *st;
@@ -1102,9 +936,6 @@ compat_group(void *retval, void *mdata, va_list ap)
 		{ NULL, 0 }
 	};
 	ns_dtab dtab[] = {
-#ifdef HESIOD
-		{ NSSRC_DNS, dns_group, NULL },
-#endif
 		{ NULL, NULL, NULL }
 	};
 	struct compat_state	*st;

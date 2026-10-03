@@ -25,7 +25,6 @@ include 	"../xilinx/std.zynq7"
 
 makeoptions	MODULES_EXTRA="dtb/zynq"
 
-options 	SCHED_ULE		# ULE scheduler
 options 	PLATFORM		# Platform based SoC
 options 	SMP			# Enable multiple cores
 

@@ -67,8 +67,6 @@ SUBDIR+=	ping
 .endif
 
 SUBDIR.${MK_CCD}+=	ccdconfig
-SUBDIR.${MK_HAST}+=	hastctl
-SUBDIR.${MK_HAST}+=	hastd
 SUBDIR.${MK_INET6}+=	rtsol
 SUBDIR.${MK_IPFW}+=	ipfw
 SUBDIR.${MK_IPFW}+=	natd

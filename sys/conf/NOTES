@@ -191,25 +191,13 @@ options 	ROOTDEVNAME=\"ufs:da0s2e\"
 #####################################################################
 # Scheduler options:
 #
-# Specifying one of SCHED_4BSD or SCHED_ULE is mandatory.  These options
-# select which scheduler is compiled in.
-#
-# SCHED_4BSD is the historical, proven, BSD scheduler.  It has a global run
-# queue and no CPU affinity which makes it suboptimal for SMP.  It has very
-# good interactivity and priority selection.
-#
-# SCHED_ULE provides significant performance advantages over 4BSD on many
-# workloads on SMP machines.  It supports cpu-affinity, per-cpu runqueues
-# and scheduler locks.  It also has a stronger notion of interactivity
-# which leads to better responsiveness even on uniprocessor machines.  This
-# is the default scheduler.
+# ULE is always compiled in.  It provides CPU affinity, per-CPU run queues
+# and scheduler locks, and interactive scheduling for SMP workstations.
 #
 # SCHED_STATS is a debugging option which keeps some stats in the sysctl
 # tree at 'kern.sched.stats' and is useful for debugging scheduling decisions.
 #
-options 	SCHED_4BSD
 options 	SCHED_STATS
-options 	SCHED_ULE
 
 #####################################################################
 # SMP OPTIONS:
@@ -1792,7 +1780,6 @@ device		xmphy		# XaQti XMAC II
 #	Yukon II Gigabit controllers, including 88E8021, 88E8022, 88E8061,
 #	88E8062, 88E8035, 88E8036, 88E8038, 88E8050, 88E8052, 88E8053,
 #	88E8055, 88E8056 and D-Link 560T/550SX.
-# mlxfw: Mellanox firmware update module.
 # my:	Myson Fast Ethernet (MTD80X, MTD89X)
 # nge:	Support for PCI gigabit ethernet adapters based on the National
 #	Semiconductor DP83820 and DP83821 chipset. This includes the
@@ -1859,7 +1846,6 @@ device		gem		# Apple GMAC/Sun ERI/Sun GEM
 device		jme		# JMicron JMC250 Gigabit/JMC260 Fast Ethernet
 device		lge		# Level 1 LXT1001 gigabit Ethernet
 device		lio		# Support for Cavium 23XX Ethernet adapters
-device		mlxfw		# Mellanox firmware update module
 device		msk		# Marvell/SysKonnect Yukon II Gigabit Ethernet
 device		my		# Myson Fast Ethernet (MTD80X, MTD89X)
 device		nge		# NatSemi DP83820 gigabit Ethernet

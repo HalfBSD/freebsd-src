@@ -1,2 +1,0 @@
-Do not build RADIUS support, including
-.Xr pam_radius 8 .

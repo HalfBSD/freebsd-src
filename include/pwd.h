@@ -138,7 +138,6 @@ struct passwd {
  */                           
 #define _PWF_SOURCE	0x3000
 #define _PWF_FILES	0x1000
-#define _PWF_HESIOD	0x3000
 
 __BEGIN_DECLS
 struct passwd	*getpwnam(const char *);

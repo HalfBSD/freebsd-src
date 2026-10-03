@@ -1917,7 +1917,7 @@ explore_fqdn(const struct addrinfo *pai, const char *hostname,
 #endif
 	static const ns_dtab dtab[] = {
 		NS_FILES_CB(_files_getaddrinfo, NULL)
-		{ NSSRC_DNS, _dns_getaddrinfo, NULL },	/* force -DHESIOD */
+		{ NSSRC_DNS, _dns_getaddrinfo, NULL },
 #ifdef NS_CACHING
 		NS_CACHE_CB(&cache_info)
 #endif

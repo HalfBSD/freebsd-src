@@ -46,7 +46,6 @@
 #include <net/if_dl.h>
 #include <net/if_media.h>
 #include <net/if_types.h>
-#include <net/infiniband.h>
 #include <net/if_lagg.h>
 #include <net/pfil.h>
 
@@ -589,8 +588,7 @@ _tcp_lro_flush_tcphpts(struct lro_ctrl *lc, struct lro_entry *le)
 	bpf_req = bpf_peers_present(lc->ifp->if_bpf);
 	lagg_bpf_req = false;
 	lagg_ifp = NULL;
-	if (lc->ifp->if_type == IFT_IEEE8023ADLAG ||
-	    lc->ifp->if_type == IFT_INFINIBANDLAG) {
+	if (lc->ifp->if_type == IFT_IEEE8023ADLAG) {
 		struct lagg_port *lp = lc->ifp->if_lagg;
 		struct lagg_softc *sc = lp->lp_softc;
 

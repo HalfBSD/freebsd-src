@@ -688,10 +688,6 @@ arpintr(struct mbuf *m)
 		hlen = ETHER_ADDR_LEN;
 		layer = "ieee802";
 		break;
-	case ARPHRD_INFINIBAND:
-		hlen = 20;	/* RFC 4391, INFINIBAND_ALEN */
-		layer = "infiniband";
-		break;
 	case ARPHRD_IEEE1394:
 		hlen = 0; /* SHALL be 16 */ /* RFC 2734 */
 		layer = "firewire";

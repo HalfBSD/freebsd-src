@@ -1604,10 +1604,11 @@ sched_setup_smp(void)
  * information.
  */
 static void
-sched_ule_setup(void)
+sched_setup(void *dummy __unused)
 {
 	struct tdq *tdq;
 
+	cpu_top = smp_topo();
 #ifdef SMP
 	sched_setup_smp();
 #else
@@ -1629,7 +1630,7 @@ sched_ule_setup(void)
  */
 /* ARGSUSED */
 static void
-sched_ule_initticks(void)
+sched_initticks(void *dummy __unused)
 {
 	int incr;
 
@@ -1853,8 +1854,8 @@ sched_interact_fork(struct thread *td)
 /*
  * Called from proc0_init() to setup the scheduler fields.
  */
-static void
-sched_ule_init(void)
+void
+schedinit(void)
 {
 	struct td_sched *ts0;
 
@@ -1878,8 +1879,8 @@ sched_ule_init(void)
  * TDQ_SELF() relies on the below sched pcpu setting; it may be used only
  * after schedinit_ap().
  */
-static void
-sched_ule_init_ap(void)
+void
+schedinit_ap(void)
 {
 
 #ifdef SMP
@@ -1893,8 +1894,8 @@ sched_ule_init_ap(void)
  * priority they will switch when their slices run out, which will be
  * at most sched_slice stathz ticks.
  */
-static int
-sched_ule_rr_interval(void)
+int
+sched_rr_interval(void)
 {
 
 	/* Convert sched_slice from stathz to hz. */
@@ -2013,8 +2014,8 @@ sched_thread_priority(struct thread *td, u_char prio)
  * Update a thread's priority when it is lent another thread's
  * priority.
  */
-static void
-sched_ule_lend_prio(struct thread *td, u_char prio)
+void
+sched_lend_prio(struct thread *td, u_char prio)
 {
 
 	td->td_flags |= TDF_BORROWING;
@@ -2029,8 +2030,8 @@ sched_ule_lend_prio(struct thread *td, u_char prio)
  * important than prio, the thread will keep a priority boost
  * of prio.
  */
-static void
-sched_ule_unlend_prio(struct thread *td, u_char prio)
+void
+sched_unlend_prio(struct thread *td, u_char prio)
 {
 	u_char base_pri;
 
@@ -2049,8 +2050,8 @@ sched_ule_unlend_prio(struct thread *td, u_char prio)
 /*
  * Standard entry for setting the priority to an absolute value.
  */
-static void
-sched_ule_prio(struct thread *td, u_char prio)
+void
+sched_prio(struct thread *td, u_char prio)
 {
 	u_char oldprio;
 
@@ -2079,8 +2080,8 @@ sched_ule_prio(struct thread *td, u_char prio)
 /*
  * Set the base interrupt thread priority.
  */
-static void
-sched_ule_ithread_prio(struct thread *td, u_char prio)
+void
+sched_ithread_prio(struct thread *td, u_char prio)
 {
 	THREAD_LOCK_ASSERT(td, MA_OWNED);
 	MPASS(td->td_pri_class == PRI_ITHD);
@@ -2091,8 +2092,8 @@ sched_ule_ithread_prio(struct thread *td, u_char prio)
 /*
  * Set the base user priority, does not effect current running priority.
  */
-static void
-sched_ule_user_prio(struct thread *td, u_char prio)
+void
+sched_user_prio(struct thread *td, u_char prio)
 {
 
 	td->td_base_user_pri = prio;
@@ -2101,8 +2102,8 @@ sched_ule_user_prio(struct thread *td, u_char prio)
 	td->td_user_pri = prio;
 }
 
-static void
-sched_ule_lend_user_prio(struct thread *td, u_char prio)
+void
+sched_lend_user_prio(struct thread *td, u_char prio)
 {
 
 	THREAD_LOCK_ASSERT(td, MA_OWNED);
@@ -2117,8 +2118,8 @@ sched_ule_lend_user_prio(struct thread *td, u_char prio)
 /*
  * Like the above but first check if there is anything to do.
  */
-static void
-sched_ule_lend_user_prio_cond(struct thread *td, u_char prio)
+void
+sched_lend_user_prio_cond(struct thread *td, u_char prio)
 {
 
 	if (td->td_lend_user_pri == prio)
@@ -2289,8 +2290,8 @@ thread_unblock_switch(struct thread *td, struct mtx *mtx)
  * migrating a thread from one queue to another as running threads may
  * be assigned elsewhere via binding.
  */
-static void
-sched_ule_sswitch(struct thread *td, int flags)
+void
+sched_switch(struct thread *td, int flags)
 {
 	struct thread *newtd;
 	struct tdq *tdq;
@@ -2428,8 +2429,8 @@ sched_ule_sswitch(struct thread *td, int flags)
 /*
  * Adjust thread priorities as a result of a nice request.
  */
-static void
-sched_ule_nice(struct proc *p, int nice)
+void
+sched_nice(struct proc *p, int nice)
 {
 	struct thread *td;
 
@@ -2447,8 +2448,8 @@ sched_ule_nice(struct proc *p, int nice)
 /*
  * Record the sleep time for the interactivity scorer.
  */
-static void
-sched_ule_sleep(struct thread *td, int prio)
+void
+sched_sleep(struct thread *td, int prio)
 {
 
 	THREAD_LOCK_ASSERT(td, MA_OWNED);
@@ -2468,8 +2469,8 @@ sched_ule_sleep(struct thread *td, int prio)
  *
  * Requires the thread lock on entry, drops on exit.
  */
-static void
-sched_ule_wakeup(struct thread *td, int srqflags)
+void
+sched_wakeup(struct thread *td, int srqflags)
 {
 	struct td_sched *ts;
 	int slptick;
@@ -2508,8 +2509,8 @@ sched_ule_wakeup(struct thread *td, int srqflags)
  * Penalize the parent for creating a new child and initialize the child's
  * priority.
  */
-static void
-sched_ule_fork(struct thread *td, struct thread *child)
+void
+sched_fork(struct thread *td, struct thread *child)
 {
 	THREAD_LOCK_ASSERT(td, MA_OWNED);
 	sched_pctcpu_update(td_get_sched(td), 1);
@@ -2527,8 +2528,8 @@ sched_ule_fork(struct thread *td, struct thread *child)
 /*
  * Fork a new thread, may be within the same process.
  */
-static void
-sched_ule_fork_thread(struct thread *td, struct thread *child)
+void
+sched_fork_thread(struct thread *td, struct thread *child)
 {
 	struct td_sched *ts;
 	struct td_sched *ts2;
@@ -2573,8 +2574,8 @@ sched_ule_fork_thread(struct thread *td, struct thread *child)
 /*
  * Adjust the priority class of a thread.
  */
-static void
-sched_ule_class(struct thread *td, int class)
+void
+sched_class(struct thread *td, int class)
 {
 
 	THREAD_LOCK_ASSERT(td, MA_OWNED);
@@ -2586,8 +2587,8 @@ sched_ule_class(struct thread *td, int class)
 /*
  * Return some of the child's priority and interactivity to the parent.
  */
-static void
-sched_ule_exit(struct proc *p, struct thread *child)
+void
+sched_exit(struct proc *p, struct thread *child)
 {
 	struct thread *td;
 
@@ -2604,8 +2605,8 @@ sched_ule_exit(struct proc *p, struct thread *child)
  * jobs such as make.  This has little effect on the make process itself but
  * causes new processes spawned by it to receive worse scores immediately.
  */
-static void
-sched_ule_exit_thread(struct thread *td, struct thread *child)
+void
+sched_exit_thread(struct thread *td, struct thread *child)
 {
 
 	KTR_STATE1(KTR_SCHED, "thread", sched_tdname(child), "thread exit",
@@ -2622,8 +2623,8 @@ sched_ule_exit_thread(struct thread *td, struct thread *child)
 	thread_unlock(td);
 }
 
-static void
-sched_ule_preempt(struct thread *td)
+void
+sched_preempt(struct thread *td)
 {
 	struct tdq *tdq;
 	int flags;
@@ -2653,8 +2654,8 @@ sched_ule_preempt(struct thread *td)
  * Fix priorities on return to user-space.  Priorities may be elevated due
  * to static priorities in msleep() or similar.
  */
-static void
-sched_ule_userret_slowpath(struct thread *td)
+void
+sched_userret_slowpath(struct thread *td)
 {
 
 	thread_lock(td);
@@ -2680,8 +2681,8 @@ td_slice(struct thread *td, struct tdq *tdq)
  * Handle a stathz tick.  This is really only relevant for timeshare
  * and interrupt threads.
  */
-static void
-sched_ule_clock(struct thread *td, int cnt)
+void
+sched_clock(struct thread *td, int cnt)
 {
 	struct tdq *tdq;
 	struct td_sched *ts;
@@ -2766,8 +2767,8 @@ sched_ule_clock(struct thread *td, int cnt)
 	}
 }
 
-static u_int
-sched_ule_estcpu(struct thread *td __unused)
+u_int
+sched_estcpu(struct thread *td __unused)
 {
 
 	return (0);
@@ -2777,8 +2778,8 @@ sched_ule_estcpu(struct thread *td __unused)
  * Return whether the current CPU has runnable tasks.  Used for in-kernel
  * cooperative idle threads.
  */
-static bool
-sched_ule_runnable(void)
+bool
+sched_runnable(void)
 {
 	struct tdq *tdq;
 
@@ -2790,8 +2791,8 @@ sched_ule_runnable(void)
  * Choose the highest priority thread to run.  The thread is removed from
  * the run-queue while running however the load remains.
  */
-static struct thread *
-sched_ule_choose(void)
+struct thread *
+sched_choose(void)
 {
 	struct thread *td;
 	struct tdq *tdq;
@@ -2867,8 +2868,8 @@ tdq_add(struct tdq *tdq, struct thread *td, int flags)
  *
  * Requires the thread lock on entry, drops on exit.
  */
-static void
-sched_ule_add(struct thread *td, int flags)
+void
+sched_add(struct thread *td, int flags)
 {
 	struct tdq *tdq;
 #ifdef SMP
@@ -2927,8 +2928,8 @@ sched_ule_add(struct thread *td, int flags)
  * when we're stealing a thread from a remote queue.  Otherwise all threads
  * exit by calling sched_exit_thread() and sched_throw() themselves.
  */
-static void
-sched_ule_rem(struct thread *td)
+void
+sched_rem(struct thread *td)
 {
 	struct tdq *tdq;
 
@@ -2950,8 +2951,8 @@ sched_ule_rem(struct thread *td)
 /*
  * Fetch cpu utilization information.  Updates on demand.
  */
-static fixpt_t
-sched_ule_pctcpu(struct thread *td)
+fixpt_t
+sched_pctcpu(struct thread *td)
 {
 	struct td_sched *ts;
 	u_int len;
@@ -2972,8 +2973,8 @@ sched_ule_pctcpu(struct thread *td)
  * Enforce affinity settings for a thread.  Called after adjustments to
  * cpumask.
  */
-static void
-sched_ule_affinity(struct thread *td)
+void
+sched_affinity(struct thread *td)
 {
 #ifdef SMP
 	struct td_sched *ts;
@@ -3003,8 +3004,8 @@ sched_ule_affinity(struct thread *td)
 /*
  * Bind a thread to a target cpu.
  */
-static void
-sched_ule_bind(struct thread *td, int cpu)
+void
+sched_bind(struct thread *td, int cpu)
 {
 	struct td_sched *ts;
 
@@ -3027,8 +3028,8 @@ sched_ule_bind(struct thread *td, int cpu)
 /*
  * Release a bound thread.
  */
-static void
-sched_ule_unbind(struct thread *td)
+void
+sched_unbind(struct thread *td)
 {
 	struct td_sched *ts;
 
@@ -3041,8 +3042,8 @@ sched_ule_unbind(struct thread *td)
 	sched_unpin();
 }
 
-static int
-sched_ule_is_bound(struct thread *td)
+int
+sched_is_bound(struct thread *td)
 {
 	THREAD_LOCK_ASSERT(td, MA_OWNED);
 	return (td_get_sched(td)->ts_flags & TSF_BOUND);
@@ -3051,8 +3052,8 @@ sched_ule_is_bound(struct thread *td)
 /*
  * Basic yield call.
  */
-static void
-sched_ule_relinquish(struct thread *td)
+void
+sched_relinquish(struct thread *td)
 {
 	thread_lock(td);
 	mi_switch(SW_VOL | SWT_RELINQUISH);
@@ -3061,8 +3062,8 @@ sched_ule_relinquish(struct thread *td)
 /*
  * Return the total system load.
  */
-static int
-sched_ule_load(void)
+int
+sched_load(void)
 {
 #ifdef SMP
 	int total;
@@ -3077,14 +3078,14 @@ sched_ule_load(void)
 #endif
 }
 
-static int
-sched_ule_sizeof_proc(void)
+int
+sched_sizeof_proc(void)
 {
 	return (sizeof(struct proc));
 }
 
-static int
-sched_ule_sizeof_thread(void)
+int
+sched_sizeof_thread(void)
 {
 	return (sizeof(struct thread) + sizeof(struct td_sched));
 }
@@ -3099,8 +3100,8 @@ sched_ule_sizeof_thread(void)
 /*
  * The actual idle process.
  */
-static void
-sched_ule_idletd(void *dummy)
+void
+sched_idletd(void *dummy)
 {
 	struct thread *td;
 	struct tdq *tdq;
@@ -3202,8 +3203,8 @@ sched_throw_grab(struct tdq *tdq)
 /*
  * A CPU is entering for the first time.
  */
-static void
-sched_ule_ap_entry(void)
+void
+sched_ap_entry(void)
 {
 	struct thread *newtd;
 	struct tdq *tdq;
@@ -3232,8 +3233,8 @@ sched_ule_ap_entry(void)
 /*
  * A thread is exiting.
  */
-static void
-sched_ule_throw(struct thread *td)
+void
+sched_throw(struct thread *td)
 {
 	struct thread *newtd;
 	struct tdq *tdq;
@@ -3263,8 +3264,8 @@ sched_ule_throw(struct thread *td)
  * This is called from fork_exit().  Just acquire the correct locks and
  * let fork do the rest of the work.
  */
-static void
-sched_ule_fork_exit(struct thread *td)
+void
+sched_fork_exit(struct thread *td)
 {
 	struct tdq *tdq;
 	int cpuid;
@@ -3289,8 +3290,8 @@ sched_ule_fork_exit(struct thread *td)
 /*
  * Create on first use to catch odd startup conditions.
  */
-static char *
-sched_ule_tdname(struct thread *td)
+char *
+sched_tdname(struct thread *td)
 {
 #ifdef KTR
 	struct td_sched *ts;
@@ -3305,8 +3306,8 @@ sched_ule_tdname(struct thread *td)
 #endif
 }
 
-static void
-sched_ule_clear_tdname(struct thread *td)
+void
+sched_clear_tdname(struct thread *td)
 {
 #ifdef KTR
 	struct td_sched *ts;
@@ -3316,13 +3317,9 @@ sched_ule_clear_tdname(struct thread *td)
 #endif
 }
 
-static void
-sched_ule_schedcpu(void)
-{
-}
 
-static bool
-sched_ule_do_timer_accounting(void)
+bool
+sched_do_timer_accounting(void)
 {
 	return (true);
 }
@@ -3345,8 +3342,8 @@ sched_ule_find_child_with_core(int cpu, struct cpu_group *grp)
 	return (-1);
 }
 
-static int
-sched_ule_find_l2_neighbor(int cpu)
+int
+sched_find_l2_neighbor(int cpu)
 {
 	struct cpu_group *grp;
 	int i;
@@ -3387,65 +3384,13 @@ sched_ule_find_l2_neighbor(int cpu)
 	return (-1);
 }
 #else
-static int
-sched_ule_find_l2_neighbor(int cpu)
+int
+sched_find_l2_neighbor(int cpu)
 {
 	return (-1);
 }
 #endif
 
-struct sched_instance sched_ule_instance = {
-#define	SLOT(name) .name = sched_ule_##name
-	SLOT(load),
-	SLOT(rr_interval),
-	SLOT(runnable),
-	SLOT(exit),
-	SLOT(fork),
-	SLOT(fork_exit),
-	SLOT(class),
-	SLOT(nice),
-	SLOT(ap_entry),
-	SLOT(exit_thread),
-	SLOT(estcpu),
-	SLOT(fork_thread),
-	SLOT(ithread_prio),
-	SLOT(lend_prio),
-	SLOT(lend_user_prio),
-	SLOT(lend_user_prio_cond),
-	SLOT(pctcpu),
-	SLOT(prio),
-	SLOT(sleep),
-	SLOT(sswitch),
-	SLOT(throw),
-	SLOT(unlend_prio),
-	SLOT(user_prio),
-	SLOT(userret_slowpath),
-	SLOT(add),
-	SLOT(choose),
-	SLOT(clock),
-	SLOT(idletd),
-	SLOT(preempt),
-	SLOT(relinquish),
-	SLOT(rem),
-	SLOT(wakeup),
-	SLOT(bind),
-	SLOT(unbind),
-	SLOT(is_bound),
-	SLOT(affinity),
-	SLOT(sizeof_proc),
-	SLOT(sizeof_thread),
-	SLOT(tdname),
-	SLOT(clear_tdname),
-	SLOT(do_timer_accounting),
-	SLOT(find_l2_neighbor),
-	SLOT(init),
-	SLOT(init_ap),
-	SLOT(setup),
-	SLOT(initticks),
-	SLOT(schedcpu),
-#undef SLOT
-};
-DECLARE_SCHEDULER(ule_sched_selector, "ULE", &sched_ule_instance);
 
 static int
 sysctl_kern_quantum(SYSCTL_HANDLER_ARGS)
@@ -3510,3 +3455,7 @@ SYSCTL_INT(_kern_sched_ule, OID_AUTO, always_steal, CTLFLAG_RWTUN,
     &always_steal, 0,
     "Always run the stealer from the idle thread");
 #endif
+
+SYSINIT(sched_setup, SI_SUB_RUN_QUEUE, SI_ORDER_FIRST, sched_setup, NULL);
+SYSINIT(sched_initticks, SI_SUB_CLOCKS, SI_ORDER_THIRD, sched_initticks,
+    NULL);

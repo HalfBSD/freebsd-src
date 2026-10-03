@@ -55,7 +55,6 @@
 #include <net/if_media.h>
 #include <net/if_private.h>
 #include <net/if_types.h>
-#include <net/infiniband.h>
 #include <net/if_lagg.h>
 
 #include <netinet/in_systm.h>

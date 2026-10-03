@@ -9,7 +9,7 @@ SUBDIR.${MK_TESTS}+= tests
 SUBDIR.${MK_CAROOT}+= caroot
 
 # These are the programs which depend on crypto, but not Kerberos.
-SPROGS=	lib/libfetch lib/libpam lib/libradius	\
+SPROGS=	lib/libfetch lib/libpam	\
 	bin/ed usr.bin/fetch	\
 	usr.sbin/tcpdump/tcpdump
 

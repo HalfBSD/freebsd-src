@@ -234,8 +234,6 @@
             ..
             flua
             ..
-            hast
-            ..
             hostapd
             ..
             indent

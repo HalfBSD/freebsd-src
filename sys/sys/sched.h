@@ -68,7 +68,6 @@
 #ifdef SCHED_STATS
 #include <sys/pcpu.h>
 #endif
-#include <sys/linker_set.h>
 #include <sys/sdt.h>
 
 struct proc;
@@ -272,70 +271,6 @@ bool sched_do_timer_accounting(void);
  */
 int sched_find_l2_neighbor(int cpu);
 
-struct sched_instance {
-	int	(*load)(void);
-	int	(*rr_interval)(void);
-	bool	(*runnable)(void);
-	void	(*exit)(struct proc *p, struct thread *childtd);
-	void	(*fork)(struct thread *td, struct thread *childtd);
-	void	(*fork_exit)(struct thread *td);
-	void	(*class)(struct thread *td, int class);
-	void	(*nice)(struct proc *p, int nice);
-	void	(*ap_entry)(void);
-	void	(*exit_thread)(struct thread *td, struct thread *child);
-	u_int	(*estcpu)(struct thread *td);
-	void	(*fork_thread)(struct thread *td, struct thread *child);
-	void	(*ithread_prio)(struct thread *td, u_char prio);
-	void	(*lend_prio)(struct thread *td, u_char prio);
-	void	(*lend_user_prio)(struct thread *td, u_char pri);
-	void	(*lend_user_prio_cond)(struct thread *td, u_char pri);
-	fixpt_t	(*pctcpu)(struct thread *td);
-	void	(*prio)(struct thread *td, u_char prio);
-	void	(*sleep)(struct thread *td, int prio);
-	void	(*sswitch)(struct thread *td, int flags);
-	void	(*throw)(struct thread *td);
-	void	(*unlend_prio)(struct thread *td, u_char prio);
-	void	(*user_prio)(struct thread *td, u_char prio);
-	void	(*userret_slowpath)(struct thread *td);
-	void	(*add)(struct thread *td, int flags);
-	struct thread *(*choose)(void);
-	void	(*clock)(struct thread *td, int cnt);
-	void	(*idletd)(void *);
-	void	(*preempt)(struct thread *td);
-	void	(*relinquish)(struct thread *td);
-	void	(*rem)(struct thread *td);
-	void	(*wakeup)(struct thread *td, int srqflags);
-	void	(*bind)(struct thread *td, int cpu);
-	void	(*unbind)(struct thread *td);
-	int	(*is_bound)(struct thread *td);
-	void	(*affinity)(struct thread *td);
-	int	(*sizeof_proc)(void);
-	int	(*sizeof_thread)(void);
-	char	*(*tdname)(struct thread *td);
-	void	(*clear_tdname)(struct thread *td);
-	bool	(*do_timer_accounting)(void);
-	int	(*find_l2_neighbor)(int cpuid);
-	void	(*init)(void);
-	void	(*init_ap)(void);
-	void	(*setup)(void);
-	void	(*initticks)(void);
-	void	(*schedcpu)(void);
-};
-
-extern const struct sched_instance *active_sched;
-
-struct sched_selection {
-	const char *name;
-	const struct sched_instance *instance;
-};
-#define	DECLARE_SCHEDULER(xsel_name, xsched_name, xsched_instance)		\
-	static struct sched_selection xsel_name = {				\
-		.name = xsched_name,						\
-		.instance = xsched_instance,				\
-	};									\
-	DATA_SET(sched_instance_set, xsel_name);
-
-void sched_instance_select(void);
 
 #endif /* _KERNEL */
 

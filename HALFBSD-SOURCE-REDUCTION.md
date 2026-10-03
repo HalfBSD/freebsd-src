@@ -111,6 +111,10 @@ they do not imply that equivalent third-party software cannot be installed.
   sources/modules, private RDMA bridges in the bnxt/ice/qlnx Ethernet drivers,
   and iSER transport/discovery paths. The bnxt, ice, qlnx, and cxgbe Ethernet
   drivers and ordinary TCP iSCSI support remain.
+  On October 3, 2026, after the measured snapshots, remaining InfiniBand
+  networking, its lagg/IPv6/packet-hashing hooks, and orphaned `mlxfw`
+  sources/modules were removed. Ethernet lagg, LinuxKPI, and bnxt remain;
+  bnxt build flags no longer depend on retired OFED scaffolding.
 - The mlx5 driver source tree, its Ethernet and hardware-offload components,
   kernel modules, and `mlx5tool`, removed by `f779687025e8` ("Updates").
   The mlx4 source tree, modules, and build integration were also removed
@@ -132,7 +136,22 @@ they do not imply that equivalent third-party software cannot be installed.
   authentication reporting/configuration integration.
 - The RPC traffic-generation utilities `spray` and `rpc.sprayd`.
 
+### High-availability storage
+
+- HAST distributed block replication, its daemon and control utility, UCARP
+  failover examples, startup configuration, build option, package metadata,
+  and dedicated account/group were removed on October 3, 2026. Cleanup of
+  previously installed HAST programs, startup script, and examples is
+  unconditional. Shared GEOM and `libpjdlog` remain for retained consumers.
+  This removal is later than the fixed snapshots measured above.
+
 ### Authentication and directory services
+
+- TACACS+ libraries and NSS/PAM modules, PAM RADIUS and its base library,
+  and Hesiod lookup support were removed on October 3, 2026, after the
+  fixed snapshots measured above. Local NSS/PAM and WPA RADIUS/EAP remain.
+  Existing consumers of these retired libraries or optional Hesiod libc
+  symbols require replacement or rebuilding.
 
 - MIT Kerberos, Heimdal Kerberos, kernel Kerberos support, Kerberos PAM
   integration, and associated GSS/RPCSEC_GSS and error-table components.
@@ -217,6 +236,17 @@ contribution metadata, historical release/update notes, and temporary
 removal-planning documents, retired subsystem accounts/groups, unused MAC
 callbacks, and stale build/package/upgrade metadata. These contribute to the
 size reduction but do not represent separate runtime functionality.
+
+## Scheduler simplification after the measured snapshots
+
+On October 3, 2026, C3 made ULE the mandatory scheduler. The 4BSD implementation,
+scheduler-choice options, boot-time registry/selector, operation table, and
+scheduler dispatch shims were removed. ULE now directly exports the existing
+scheduling API. Shared tracing, statistics, and CPU-topology diagnostics remain;
+read-only scheduler identity sysctls report `ULE`. Existing custom kernel
+configurations must remove `SCHED_ULE` and `SCHED_4BSD` options. These changes
+are later than the fixed snapshots measured above and are not included in their
+size totals. Full FreeBSD builds and runtime scheduler testing remain required.
 
 ## Measurement method and limits
 

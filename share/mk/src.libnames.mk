@@ -163,7 +163,6 @@ _LIBRARIES=	\
 		proc \
 		procstat \
 		pthread \
-		radius \
 		regex \
 		rpcsvc \
 		rt \
@@ -178,7 +177,6 @@ _LIBRARIES=	\
 		supcplusplus \
 		sys \
 		sysdecode \
-		tacplus \
 		termcapw \
 		tinfow \
 		tpool \
@@ -265,11 +263,6 @@ _DP_pjdlog=	util
 _DP_usb=	pthread
 _DP_unbound=	ssl crypto pthread
 _DP_rt=	pthread
-.if ${MK_OPENSSL} == "no"
-_DP_radius=	md
-.else
-_DP_radius=	crypto
-.endif
 _DP_rtld_db=	elf procstat
 _DP_procstat=	kvm util elf
 _DP_proc=	cxxrt
@@ -299,7 +292,7 @@ _DP_gmock=	gtest
 _DP_gmock_main=	gmock
 _DP_gtest_main=	gtest
 _DP_devstat=	kvm
-_DP_pam=	radius tacplus md util
+_DP_pam=	md util
 .if ${MK_OPENSSH} != "no"
 _DP_fido2+=	crypto z
 _DP_pam+=	ssh
@@ -334,7 +327,6 @@ _DP_sys+=	ssp_nonshared
 _DP_thr=	c sys
 _DP_pthread=	${_DP_thr}
 .endif
-_DP_tacplus=	md pam
 _DP_ncursesw=	tinfow
 _DP_formw=	ncursesw
 _DP_nvpair=	spl

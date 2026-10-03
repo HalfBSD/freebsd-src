@@ -158,7 +158,6 @@ SUBDIR=	\
 	${_if_gif} \
 	${_if_gre} \
 	${_if_me} \
-	if_infiniband \
 	if_lagg \
 	if_ovpn \
 	${_if_stf} \
@@ -249,7 +248,6 @@ SUBDIR=	\
 	mii \
 	miiproxy \
 	mlx \
-	mlxfw \
 	mmc \
 	mmcsd \
 	${_mpi3mr} \

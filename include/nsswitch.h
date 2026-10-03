@@ -130,11 +130,6 @@ typedef struct _ns_dtab {
 #define NS_COMPAT_CB(F,C)	{ NSSRC_COMPAT,	F,	C },
 #define NS_FALLBACK_CB(F)	{ NSSRC_FALLBACK, F,	NULL },
  
-#ifdef HESIOD
-#   define NS_DNS_CB(F,C)	{ NSSRC_DNS,	F,	C },
-#else
-#   define NS_DNS_CB(F,C)
-#endif
 
 /*
  * ns_src - `nsswitch source'

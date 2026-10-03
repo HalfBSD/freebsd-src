@@ -34,11 +34,6 @@ LFLAGS+=-P_nsyy
 
 CFLAGS.nslexer.c= -DYY_BUF_SIZE=1024
 
-.if ${MK_HESIOD} != "no"
-SRCS+=	hesiod.c
-SYM_MAPS+=${LIBC_SRCTOP}/net/Symbol.hesiod.map
-.endif
-
 all: ${.OBJDIR}/nsswitch.conf
 
 # Stage nsswitch.conf in the object directory before installing.

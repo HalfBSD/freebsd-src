@@ -74,14 +74,12 @@ DIRDEPS = \
 	lib/libpmc \
 	lib/libproc \
 	lib/libprocstat \
-	lib/libradius \
 	lib/librss \
 	lib/librtld_db \
 	lib/libsdp \
 	lib/libsecureboot \
 	lib/libsqlite3 \
 	lib/libstdthreads \
-	lib/libtacplus \
 	lib/libthread_db \
 	lib/libucl \
 	lib/libufs \

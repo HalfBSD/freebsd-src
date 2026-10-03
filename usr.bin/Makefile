@@ -179,7 +179,6 @@ SUBDIR+=	clang
 .endif
 SUBDIR.${MK_FILE}+=	file
 SUBDIR+=		gh-bc
-SUBDIR.${MK_HESIOD}+=	hesinfo
 SUBDIR.${MK_ICONV}+=	iconv
 SUBDIR.${MK_ICONV}+=	mkcsmapper
 SUBDIR.${MK_ICONV}+=	mkesdb

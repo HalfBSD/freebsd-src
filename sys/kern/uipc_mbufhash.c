@@ -26,7 +26,6 @@
 #include <sys/fnv_hash.h>
 
 #include <net/ethernet.h>
-#include <net/infiniband.h>
 
 #if defined(INET) || defined(INET6)
 #include <netinet/in.h>
@@ -56,15 +55,6 @@ m_common_hash_gethdr(const struct mbuf *m, const u_int off,
 
 uint32_t
 m_ether_tcpip_hash_init(void)
-{
-	uint32_t seed;
-
-	seed = arc4random();
-	return (fnv_32_buf(&seed, sizeof(seed), FNV1_32_INIT));
-}
-
-uint32_t
-m_infiniband_tcpip_hash_init(void)
 {
 	uint32_t seed;
 
@@ -186,24 +176,5 @@ m_ether_tcpip_hash(const uint32_t flags, const struct mbuf *m,
 		etype = ntohs(vlan->evl_proto);
 		off += sizeof(*vlan) - sizeof(*eh);
 	}
-	return (m_tcpip_hash(flags, m, p, off, etype));
-}
-
-uint32_t
-m_infiniband_tcpip_hash(const uint32_t flags, const struct mbuf *m,
-    uint32_t p)
-{
-	const struct infiniband_header *ibh;
-	int off;
-	uint16_t etype;
-
-	off = sizeof(*ibh);
-	if (m->m_len < off)
-		return (p);
-	ibh = mtod(m, struct infiniband_header *);
-	etype = ntohs(ibh->ib_protocol);
-	if (flags & MBUF_HASHFLAG_L2)
-		p = fnv_32_buf(&ibh->ib_hwaddr, INFINIBAND_ADDR_LEN, p);
-
 	return (m_tcpip_hash(flags, m, p, off, etype));
 }

@@ -51,6 +51,53 @@
 #   xargs -n1 | sort | uniq -d;
 # done
 
+# 20261003: Retire InfiniBand networking and Mellanox firmware support.
+OLD_FILES+=boot/kernel/if_infiniband.ko
+OLD_FILES+=boot/kernel/mlxfw.ko
+OLD_FILES+=usr/include/net/infiniband.h
+
+# 20261003: Retire TACACS+, PAM RADIUS, and Hesiod authentication.
+OLD_FILES+=usr/bin/hesinfo
+OLD_FILES+=usr/include/hesiod.h
+OLD_FILES+=usr/include/radlib.h
+OLD_FILES+=usr/include/radlib_vs.h
+OLD_FILES+=usr/include/taclib.h
+OLD_FILES+=usr/lib/libradius.a
+OLD_FILES+=usr/lib/libradius.so
+OLD_FILES+=usr/lib/libtacplus.a
+OLD_FILES+=usr/lib/libtacplus.so
+OLD_FILES+=usr/lib/nss_tacplus.so
+OLD_FILES+=usr/lib/pam_radius.so
+OLD_FILES+=usr/lib/pam_tacplus.so
+OLD_FILES+=usr/lib32/libradius.a
+OLD_FILES+=usr/lib32/libradius.so
+OLD_FILES+=usr/lib32/libtacplus.a
+OLD_FILES+=usr/lib32/libtacplus.so
+OLD_FILES+=usr/lib32/nss_tacplus.so
+OLD_FILES+=usr/lib32/pam_radius.so
+OLD_FILES+=usr/lib32/pam_tacplus.so
+OLD_LIBS+=usr/lib/libradius.so.4
+OLD_LIBS+=usr/lib/libtacplus.so.5
+OLD_LIBS+=usr/lib/nss_tacplus.so.1
+OLD_LIBS+=usr/lib/pam_radius.so.6
+OLD_LIBS+=usr/lib/pam_tacplus.so.6
+OLD_LIBS+=usr/lib32/libradius.so.4
+OLD_LIBS+=usr/lib32/libtacplus.so.5
+OLD_LIBS+=usr/lib32/nss_tacplus.so.1
+OLD_LIBS+=usr/lib32/pam_radius.so.6
+OLD_LIBS+=usr/lib32/pam_tacplus.so.6
+
+# 20261003: Retire HAST distributed block replication.
+OLD_FILES+=etc/rc.d/hastd
+OLD_FILES+=sbin/hastctl
+OLD_FILES+=sbin/hastd
+OLD_FILES+=usr/share/examples/hast/ucarp.sh
+OLD_FILES+=usr/share/examples/hast/ucarp_down.sh
+OLD_FILES+=usr/share/examples/hast/ucarp_up.sh
+OLD_FILES+=usr/share/examples/hast/vip-down.sh
+OLD_FILES+=usr/share/examples/hast/vip-up.sh
+OLD_DIRS+=usr/share/examples/hast
+
 # 20261003: Remove mail configuration from the user skeleton.
 OLD_FILES+=usr/share/skel/dot.mail_aliases
 OLD_FILES+=usr/share/skel/dot.mailrc

@@ -2162,7 +2162,6 @@ in6_if2idlen(struct ifnet *ifp)
 	case IFT_PROPVIRTUAL:	/* XXX: no RFC. treat it as ether */
 	case IFT_L2VLAN:	/* ditto */
 	case IFT_BRIDGE:	/* bridge(4) only does Ethernet-like links */
-	case IFT_INFINIBAND:
 		return (64);
 	case IFT_PPP:		/* RFC2472 */
 		return (64);

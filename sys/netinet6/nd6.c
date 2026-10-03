@@ -2575,7 +2575,6 @@ nd6_need_cache(struct ifnet *ifp)
 	case IFT_ETHER:
 	case IFT_IEEE1394:
 	case IFT_L2VLAN:
-	case IFT_INFINIBAND:
 	case IFT_BRIDGE:
 	case IFT_PROPVIRTUAL:
 		return (1);

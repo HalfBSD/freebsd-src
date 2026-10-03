@@ -37,9 +37,6 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
-#ifdef HESIOD
-#include <hesiod.h>
-#endif
 #include <netdb.h>
 #include <nsswitch.h>
 #include <pthread.h>
@@ -76,7 +73,6 @@ enum constants {
 	PWD_STORAGE_MAX		= 1 << 20, /* 1 MByte */
 	SETPWENT		= 1,
 	ENDPWENT		= 2,
-	HESIOD_NAME_MAX		= 256
 };
 
 static const ns_src defaultsrc[] = {
@@ -135,17 +131,6 @@ static	DB	*pwdbopen(int *);
 static	void	 files_endstate(void *);
 static	int	 files_setpwent(void *, void *, va_list);
 static	int	 files_passwd(void *, void *, va_list);
-
-
-#ifdef HESIOD
-struct dns_state {
-	long	counter;
-};
-static	void	dns_endstate(void *);
-NSS_TLS_HANDLING(dns);
-static	int	 dns_setpwent(void *, void *, va_list);
-static	int	 dns_passwd(void *, void *, va_list);
-#endif
 
 struct compat_state {
 	DB		*db;
@@ -409,9 +394,6 @@ setpwent(void)
 
 	static const ns_dtab dtab[] = {
 		{ NSSRC_FILES, files_setpwent, (void *)SETPWENT },
-#ifdef HESIOD
-		{ NSSRC_DNS, dns_setpwent, (void *)SETPWENT },
-#endif
 		{ NSSRC_COMPAT, compat_setpwent, (void *)SETPWENT },
 #ifdef NS_CACHING
 		NS_CACHE_CB(&cache_info)
@@ -433,9 +415,6 @@ setpassent(int stayopen)
 
 	static const ns_dtab dtab[] = {
 		{ NSSRC_FILES, files_setpwent, (void *)SETPWENT },
-#ifdef HESIOD
-		{ NSSRC_DNS, dns_setpwent, (void *)SETPWENT },
-#endif
 		{ NSSRC_COMPAT, compat_setpwent, (void *)SETPWENT },
 #ifdef NS_CACHING
 		NS_CACHE_CB(&cache_info)
@@ -459,9 +438,6 @@ endpwent(void)
 
 	static const ns_dtab dtab[] = {
 		{ NSSRC_FILES, files_setpwent, (void *)ENDPWENT },
-#ifdef HESIOD
-		{ NSSRC_DNS, dns_setpwent, (void *)ENDPWENT },
-#endif
 		{ NSSRC_COMPAT, compat_setpwent, (void *)ENDPWENT },
 #ifdef NS_CACHING
 		NS_CACHE_CB(&cache_info)
@@ -484,9 +460,6 @@ getpwent_r(struct passwd *pwd, char *buffer, size_t bufsize,
 
 	static const ns_dtab dtab[] = {
 		{ NSSRC_FILES, files_passwd, (void *)nss_lt_all },
-#ifdef HESIOD
-		{ NSSRC_DNS, dns_passwd, (void *)nss_lt_all },
-#endif
 		{ NSSRC_COMPAT, compat_passwd, (void *)nss_lt_all },
 #ifdef NS_CACHING
 		NS_CACHE_CB(&cache_info)
@@ -520,9 +493,6 @@ getpwnam_r(const char *name, struct passwd *pwd, char *buffer, size_t bufsize,
 
 	static const ns_dtab dtab[] = {
 		{ NSSRC_FILES, files_passwd, (void *)nss_lt_name },
-#ifdef HESIOD
-		{ NSSRC_DNS, dns_passwd, (void *)nss_lt_name },
-#endif
 		{ NSSRC_COMPAT, compat_passwd, (void *)nss_lt_name },
 #ifdef NS_CACHING
 		NS_CACHE_CB(&cache_info)
@@ -556,9 +526,6 @@ getpwuid_r(uid_t uid, struct passwd *pwd, char *buffer, size_t bufsize,
 
 	static const ns_dtab dtab[] = {
 		{ NSSRC_FILES, files_passwd, (void *)nss_lt_id },
-#ifdef HESIOD
-		{ NSSRC_DNS, dns_passwd, (void *)nss_lt_id },
-#endif
 		{ NSSRC_COMPAT, compat_passwd, (void *)nss_lt_id },
 #ifdef NS_CACHING
 		NS_CACHE_CB(&cache_info)
@@ -1021,134 +988,6 @@ pwdb_parse_entry_v4(char *buffer, size_t bufsize, struct passwd *pwd,
 	return (NS_SUCCESS);
 }
 
-
-#ifdef HESIOD
-/*
- * dns backend
- */
-static void
-dns_endstate(void *p)
-{
-	free(p);
-}
-
-
-static int
-dns_setpwent(void *retval, void *mdata, va_list ap)
-{
-	struct dns_state	*st;
-	int			 rv;
-
-	rv = dns_getstate(&st);
-	if (rv != 0)
-		return (NS_UNAVAIL);
-	st->counter = 0;
-	return (NS_UNAVAIL);
-}
-
-
-static int
-dns_passwd(void *retval, void *mdata, va_list ap)
-{
-	char			 buf[HESIOD_NAME_MAX];
-	struct dns_state	*st;
-	struct passwd		*pwd;
-	const char		*name, *label;
-	void			*ctx;
-	char			*buffer, **hes;
-	size_t			 bufsize, linesize;
-	uid_t			 uid;
-	enum nss_lookup_type	 how;
-	int			 rv, *errnop;
-
-	ctx = NULL;
-	hes = NULL;
-	name = NULL;
-	uid = (uid_t)-1;
-	how = (enum nss_lookup_type)(uintptr_t)mdata;
-	switch (how) {
-	case nss_lt_name:
-		name = va_arg(ap, const char *);
-		break;
-	case nss_lt_id:
-		uid = va_arg(ap, uid_t);
-		break;
-	case nss_lt_all:
-		break;
-	}
-	pwd     = va_arg(ap, struct passwd *);
-	buffer  = va_arg(ap, char *);
-	bufsize = va_arg(ap, size_t);
-	errnop  = va_arg(ap, int *);
-	*errnop = dns_getstate(&st);
-	if (*errnop != 0)
-		return (NS_UNAVAIL);
-	if (hesiod_init(&ctx) != 0) {
-		*errnop = errno;
-		rv = NS_UNAVAIL;
-		goto fin;
-	}
-	do {
-		rv = NS_NOTFOUND;
-		switch (how) {
-		case nss_lt_name:
-			label = name;
-			break;
-		case nss_lt_id:
-			if (snprintf(buf, sizeof(buf), "%lu",
-			    (unsigned long)uid) >= sizeof(buf))
-				goto fin;
-			label = buf;
-			break;
-		case nss_lt_all:
-			if (st->counter < 0)
-				goto fin;
-			if (snprintf(buf, sizeof(buf), "passwd-%ld",
-			    st->counter++) >= sizeof(buf))
-				goto fin;
-			label = buf;
-			break;
-		}
-		hes = hesiod_resolve(ctx, label,
-		    how == nss_lt_id ? "uid" : "passwd");
-		if (hes == NULL) {
-			if (how == nss_lt_all)
-				st->counter = -1;
-			if (errno != ENOENT)
-				*errnop = errno;
-			goto fin;
-		}
-		rv = __pw_match_entry(hes[0], strlen(hes[0]), how, name, uid);
-		if (rv != NS_SUCCESS) {
-			hesiod_free_list(ctx, hes);
-			hes = NULL;
-			continue;
-		}
-		linesize = strlcpy(buffer, hes[0], bufsize);
-		if (linesize >= bufsize) {
-			*errnop = ERANGE;
-			rv = NS_RETURN;
-			continue;
-		}
-		hesiod_free_list(ctx, hes);
-		hes = NULL;
-		rv = __pw_parse_entry(buffer, bufsize, pwd, 0, errnop);
-	} while (how == nss_lt_all && !(rv & NS_TERMINATE));
-fin:
-	if (hes != NULL)
-		hesiod_free_list(ctx, hes);
-	if (ctx != NULL)
-		hesiod_end(ctx);
-	if (rv == NS_SUCCESS) {
-		pwd->pw_fields &= ~_PWF_SOURCE;
-		pwd->pw_fields |= _PWF_HESIOD;
-		if (retval != NULL)
-			*(struct passwd **)retval = pwd;
-	}
-	return (rv);
-}
-#endif /* HESIOD */
-
 /*
  * compat backend
  */
@@ -1316,9 +1155,6 @@ compat_redispatch(struct compat_state *st, enum nss_lookup_type how,
 		{ NULL, 0 }
 	};
 	ns_dtab dtab[] = {
-#ifdef HESIOD
-		{ NSSRC_DNS, dns_passwd, NULL },
-#endif
 		{ NULL, NULL, NULL }
 	};
 	void		*discard;
@@ -1402,9 +1238,6 @@ compat_setpwent(void *retval, void *mdata, va_list ap)
 		{ NULL, 0 }
 	};
 	ns_dtab dtab[] = {
-#ifdef HESIOD
-		{ NSSRC_DNS, dns_setpwent, NULL },
-#endif
 		{ NULL, NULL, NULL }
 	};
 	struct compat_state	*st;

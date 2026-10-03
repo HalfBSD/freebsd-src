@@ -971,11 +971,6 @@ OLD_FILES+=usr/share/examples/find_interface/Makefile
 OLD_FILES+=usr/share/examples/find_interface/README
 OLD_FILES+=usr/share/examples/find_interface/find_interface.c
 OLD_FILES+=usr/share/examples/flua/libjail.lua
-OLD_FILES+=usr/share/examples/hast/ucarp.sh
-OLD_FILES+=usr/share/examples/hast/ucarp_down.sh
-OLD_FILES+=usr/share/examples/hast/ucarp_up.sh
-OLD_FILES+=usr/share/examples/hast/vip-down.sh
-OLD_FILES+=usr/share/examples/hast/vip-up.sh
 OLD_FILES+=usr/share/examples/hostapd/hostapd.conf
 OLD_FILES+=usr/share/examples/hostapd/hostapd.eap_user
 OLD_FILES+=usr/share/examples/hostapd/hostapd.wpa_psk
@@ -1147,7 +1142,6 @@ OLD_DIRS+=usr/share/examples/etc
 OLD_DIRS+=usr/share/examples/etc/defaults
 OLD_DIRS+=usr/share/examples/find_interface
 OLD_DIRS+=usr/share/examples/flua
-OLD_DIRS+=usr/share/examples/hast
 OLD_DIRS+=usr/share/examples/ibcs2
 OLD_DIRS+=usr/share/examples/hostapd
 OLD_DIRS+=usr/share/examples/indent
@@ -1326,25 +1320,6 @@ OLD_FILES+=usr/lib/libgpio.so
 OLD_LIBS+=usr/lib/libgpio.so.0
 OLD_FILES+=usr/sbin/gpioctl
 .endif
-
-.if ${MK_HAST} == no
-OLD_FILES+=etc/rc.d/hastd
-OLD_FILES+=sbin/hastctl
-OLD_FILES+=sbin/hastd
-OLD_FILES+=usr/share/examples/hast/ucarp.sh
-OLD_FILES+=usr/share/examples/hast/ucarp_down.sh
-OLD_FILES+=usr/share/examples/hast/ucarp_up.sh
-OLD_FILES+=usr/share/examples/hast/vip-down.sh
-OLD_FILES+=usr/share/examples/hast/vip-up.sh
-OLD_DIRS+=usr/share/examples/hast
-.endif
-
-.if ${MK_HESIOD} == no
-OLD_FILES+=usr/bin/hesinfo
-OLD_FILES+=usr/include/hesiod.h
-.endif
-
-
 
 .if ${MK_ICONV} == no
 OLD_FILES+=usr/bin/iconv
@@ -2216,16 +2191,6 @@ OLD_FILES+=usr/sbin/edquota
 OLD_FILES+=usr/sbin/quotaoff
 OLD_FILES+=usr/sbin/quotaon
 OLD_FILES+=usr/sbin/repquota
-.endif
-
-.if ${MK_RADIUS_SUPPORT} == no
-OLD_FILES+=usr/lib/libradius.a
-OLD_FILES+=usr/lib/libradius.so
-OLD_LIBS+=usr/lib/libradius.so.4
-OLD_FILES+=usr/lib/pam_radius.so
-OLD_LIBS+=usr/lib/pam_radius.so.6
-OLD_FILES+=usr/include/radlib.h
-OLD_FILES+=usr/include/radlib_vs.h
 .endif
 
 .if ${MK_ROUTED} == no

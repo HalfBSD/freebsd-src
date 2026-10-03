@@ -211,8 +211,6 @@ convert_iftype(ifType iftype)
 	switch (iftype) {
 	case IFT_IEEE8023ADLAG:
 		return (IFT_ETHER);
-	case IFT_INFINIBANDLAG:
-		return (IFT_INFINIBAND);
 	default:
 		return (iftype);
 	}

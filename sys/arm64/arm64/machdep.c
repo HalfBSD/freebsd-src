@@ -798,7 +798,6 @@ initarm(struct arm64_bootparams *abp)
 
 	update_special_regs(0);
 
-	sched_instance_select();
 	link_elf_ireloc();
 
 	/* Set the pcpu data, this is needed by pmap_bootstrap */

@@ -2409,12 +2409,6 @@ dev/mii/ukphy.c			optional miibus | mii
 dev/mii/ukphy_subr.c		optional miibus | mii
 dev/mii/vscphy.c		optional miibus | vscphy
 dev/mii/xmphy.c			optional miibus | xmphy
-dev/mlxfw/mlxfw_fsm.c			optional mlxfw compat_linuxkpi \
-	compile-with "${MLXFW_C}"
-dev/mlxfw/mlxfw_mfa2.c			optional mlxfw compat_linuxkpi \
-	compile-with "${MLXFW_C}"
-dev/mlxfw/mlxfw_mfa2_tlv_multi.c	optional mlxfw compat_linuxkpi \
-	compile-with "${MLXFW_C}"
 dev/mlx/mlx.c			optional mlx
 dev/mlx/mlx_disk.c		optional mlx
 dev/mlx/mlx_pci.c		optional mlx pci
@@ -3796,9 +3790,7 @@ kern/link_elf.c			standard
 kern/linker_if.m		standard
 kern/p1003_1b.c			standard
 kern/posix4_mib.c		standard
-kern/sched_4bsd.c		optional sched_4bsd
-kern/sched_shim.c		standard
-kern/sched_ule.c		optional sched_ule
+kern/sched_ule.c		standard
 kern/serdev_if.m		standard
 kern/stack_protector.c		standard \
 	compile-with "${NORMAL_C:N-fstack-protector*}"
@@ -4498,7 +4490,6 @@ compat/linuxkpi/common/src/linux_simple_attr.c	optional compat_linuxkpi | lindeb
 compat/lindebugfs/lindebugfs.c			optional lindebugfs \
 	compile-with "${LINUXKPI_C}"
 
-net/if_infiniband.c					optional lagg
 
 
 

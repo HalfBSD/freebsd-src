@@ -73,8 +73,7 @@ struct lagg_protos {
 /* Supported lagg TYPEs */
 typedef enum {
 	LAGG_TYPE_ETHERNET = 0, /* ethernet (default) */
-	LAGG_TYPE_INFINIBAND,	/* infiniband */
-	LAGG_TYPE_MAX,
+	LAGG_TYPE_MAX = 2,	/* type 1 is reserved */
 } lagg_type;
 
 struct lagg_types {
@@ -85,7 +84,6 @@ struct lagg_types {
 #define	LAGG_TYPE_DEFAULT	LAGG_TYPE_ETHERNET
 #define LAGG_TYPES	{						\
 	{ "ethernet",		LAGG_TYPE_ETHERNET },			\
-	{ "infiniband",		LAGG_TYPE_INFINIBAND },			\
 }
 
 /*
@@ -229,9 +227,10 @@ struct lagg_counters {
 	uint64_t	val[IFCOUNTERS];
 };
 
+#define	LAGG_ADDR_LEN	ETHER_ADDR_LEN
+
 struct lagg_softc {
 	struct ifnet			*sc_ifp;	/* virtual interface */
-	struct mtx			sc_mtx;		/* watchdog mutex */
 	struct sx			sc_sx;
 	int				sc_proto;	/* lagg protocol */
 	u_int				sc_count;	/* number of ports */
@@ -255,10 +254,6 @@ struct lagg_softc {
 	u_int				sc_opts;
 	int				flowid_shift;	/* shift the flowid */
 	struct lagg_counters		detached_counters; /* detached ports sum */
-	struct callout			sc_watchdog;	/* watchdog timer */
-#define	LAGG_ADDR_LEN \
-	MAX(INFINIBAND_ADDR_LEN, ETHER_ADDR_LEN)
-	uint8_t				sc_bcast_addr[LAGG_ADDR_LEN];
 };
 
 struct lagg_port {
@@ -288,7 +283,6 @@ struct lagg_port {
 };
 
 extern struct mbuf *(*lagg_input_ethernet_p)(struct ifnet *, struct mbuf *);
-extern struct mbuf *(*lagg_input_infiniband_p)(struct ifnet *, struct mbuf *);
 extern void	(*lagg_linkstate_p)(struct ifnet *, int );
 
 int		lagg_enqueue(struct ifnet *, struct mbuf *);

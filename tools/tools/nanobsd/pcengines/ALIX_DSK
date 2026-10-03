@@ -5,7 +5,6 @@ cpu		I586_CPU
 ident		ALIX_DSK
 makeoptions	DEBUG=-g
 options		CPU_GEODE
-options 	SCHED_ULE
 options 	PREEMPTION
 options 	INET
 options 	INET6

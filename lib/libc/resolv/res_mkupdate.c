@@ -970,11 +970,7 @@ res_buildservicelist(void) {
 	struct servent *sp;
 	struct valuelist *slp;
 
-#ifdef MAYBE_HESIOD
-	setservent(0);
-#else
 	setservent(1);
-#endif
 	while ((sp = getservent()) != NULL) {
 		slp = (struct valuelist *)malloc(sizeof(struct valuelist));
 		if (!slp)
@@ -1020,11 +1016,7 @@ res_buildprotolist(void) {
 	struct protoent *pp;
 	struct valuelist *slp;
 
-#ifdef MAYBE_HESIOD
-	setprotoent(0);
-#else
 	setprotoent(1);
-#endif
 	while ((pp = getprotoent()) != NULL) {
 		slp = (struct valuelist *)malloc(sizeof(struct valuelist));
 		if (!slp)

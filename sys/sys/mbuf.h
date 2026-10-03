@@ -1555,8 +1555,6 @@ rt_m_getfib(struct mbuf *m)
 /* mbuf hashing helper routines */
 uint32_t	m_ether_tcpip_hash_init(void);
 uint32_t	m_ether_tcpip_hash(const uint32_t, const struct mbuf *, uint32_t);
-uint32_t	m_infiniband_tcpip_hash_init(void);
-uint32_t	m_infiniband_tcpip_hash(const uint32_t, const struct mbuf *, uint32_t);
 
 #ifdef MBUF_PROFILING
  void m_profile(struct mbuf *m);

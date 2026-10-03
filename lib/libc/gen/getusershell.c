@@ -46,9 +46,6 @@ __RCSID("$NetBSD: getusershell.c,v 1.17 1999/01/25 01:09:34 lukem Exp $");
 #include <stringlist.h>
 #include <unistd.h>
 
-#ifdef HESIOD
-#include <hesiod.h>
-#endif
 #include "un-namespace.h"
 
 static const char *const *curshell;
@@ -124,53 +121,11 @@ _local_initshells(void	*rv, void *cb_data, va_list ap)
 	return NS_SUCCESS;
 }
 
-#ifdef HESIOD
-static int	_dns_initshells(void *, void *, va_list);
-
-/*ARGSUSED*/
-static int
-_dns_initshells(void *rv, void *cb_data, va_list ap)
-{
-	char	  shellname[] = "shells-XXXXX";
-	int	  hsindex, hpi, r;
-	char	**hp;
-	void	 *context;
-
-	if (sl)
-		sl_free(sl, 1);
-	sl = sl_init();
-	r = NS_UNAVAIL;
-	if (hesiod_init(&context) == -1)
-		return (r);
-
-	for (hsindex = 0; ; hsindex++) {
-		snprintf(shellname, sizeof(shellname)-1, "shells-%d", hsindex);
-		hp = hesiod_resolve(context, shellname, "shells");
-		if (hp == NULL) {
-			if (errno == ENOENT) {
-				if (hsindex == 0)
-					r = NS_NOTFOUND;
-				else
-					r = NS_SUCCESS;
-			}
-			break;
-		} else {
-			for (hpi = 0; hp[hpi]; hpi++)
-				sl_add(sl, hp[hpi]);
-			free(hp);
-		}
-	}
-	hesiod_end(context);
-	return (r);
-}
-#endif /* HESIOD */
-
 static const char *const *
 initshells(void)
 {
 	static const ns_dtab dtab[] = {
 		NS_FILES_CB(_local_initshells, NULL)
-		NS_DNS_CB(_dns_initshells, NULL)
 		{ 0 }
 	};
 	if (sl)

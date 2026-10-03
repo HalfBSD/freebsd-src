@@ -6,9 +6,6 @@
 options 	COMPAT_LINUXKPI
 device		xz
 
-device		mlx5
-device		mlxfw
-device		mlx5en
 options 	RATELIMIT
 options 	KERN_TLS
 device		firmware

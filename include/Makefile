@@ -242,10 +242,6 @@ LSUBSUBDIRS+=	netgraph/bluetooth/include
 LSUBDIRS+=	fs/cuse
 .endif
 
-.if ${MK_HESIOD} != "no"
-INCS+=	hesiod.h
-.endif
-
 # Handle the #define aliases for libiconv
 .if ${MK_ICONV} == "yes"
 INCS+=		iconv.h

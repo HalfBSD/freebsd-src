@@ -238,13 +238,6 @@ in6_get_interface_hwaddr(struct ifnet *ifp, size_t *len)
 		 */
 		return (NULL);
 
-	case IFT_INFINIBAND:
-		if (*len != 20)
-			return (NULL);
-		*len = 8;
-		addr += 12;
-		break;
-
 	default:
 		return (NULL);
 	}

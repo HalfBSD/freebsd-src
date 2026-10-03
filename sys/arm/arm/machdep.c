@@ -521,7 +521,6 @@ initarm(struct arm_boot_params *abp)
 	/* Do basic tuning, hz etc */
 	init_param1();
 
-	sched_instance_select();
 	/* link_elf_ireloc(); */
 
 	/*

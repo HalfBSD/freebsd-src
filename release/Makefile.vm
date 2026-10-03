@@ -11,7 +11,7 @@ SWAPSIZE?=	1g
 VMBASE?=	vm
 
 VHD_DESC=	Azure, VirtualPC, Hyper-V disk image
-VMDK_DESC=	VMWare, VirtualBox disk image
+VMDK_DESC=	VirtualBox disk image
 QCOW2_DESC=	Qemu, KVM disk image
 RAW_DESC=	Unformatted raw disk image
 
@@ -41,9 +41,8 @@ OPENSTACK_FSLIST?=	ufs
 OPENSTACK_DESC=	OpenStack platform image
 VAGRANT_FORMAT=	vmdk
 VAGRANT_FSLIST?=	ufs
-VAGRANT_FLAVOURS?=	VIRTUALBOX VMWARE
+VAGRANT_FLAVOURS?=	VIRTUALBOX
 VAGRANT-VIRTUALBOX_DESC=	Vagrant Image for VirtualBox
-VAGRANT-VMWARE_DESC=	Vagrant Image for VMWare
 
 .for _CWT in ${CLOUDWARE_TYPES}
 . if defined(${_CWT}_FLAVOURS)

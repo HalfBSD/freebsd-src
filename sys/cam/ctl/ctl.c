@@ -3194,40 +3194,6 @@ ctl_ioctl(struct cdev *dev, u_long cmd, caddr_t addr, int flag,
 		sbuf_delete(sb);
 		break;
 	}
-	case CTL_ISCSI: {
-		struct ctl_iscsi *ci;
-		struct ctl_frontend *fe;
-
-		ci = (struct ctl_iscsi *)addr;
-
-		fe = ctl_frontend_find("iscsi");
-		if (fe == NULL) {
-			ci->status = CTL_ISCSI_ERROR;
-			snprintf(ci->error_str, sizeof(ci->error_str),
-			    "Frontend \"iscsi\" not found.");
-			break;
-		}
-
-		retval = fe->ioctl(dev, cmd, addr, flag, td);
-		break;
-	}
-	case CTL_NVMF: {
-		struct ctl_nvmf *cn;
-		struct ctl_frontend *fe;
-
-		cn = (struct ctl_nvmf *)addr;
-
-		fe = ctl_frontend_find("nvmf");
-		if (fe == NULL) {
-			cn->status = CTL_NVMF_ERROR;
-			snprintf(cn->error_str, sizeof(cn->error_str),
-			    "Frontend \"nvmf\" not found.");
-			break;
-		}
-
-		retval = fe->ioctl(dev, cmd, addr, flag, td);
-		break;
-	}
 	case CTL_PORT_REQ: {
 		struct ctl_req *req;
 		struct ctl_frontend *fe;

@@ -71,7 +71,6 @@ DIRDEPS= \
       cddl/usr.sbin/dtrace/tests/common/mib \
       cddl/usr.sbin/dtrace/tests/common/misc \
       cddl/usr.sbin/dtrace/tests/common/multiaggs \
-      cddl/usr.sbin/dtrace/tests/common/nfs \
       cddl/usr.sbin/dtrace/tests/common/offsetof \
       cddl/usr.sbin/dtrace/tests/common/operators \
       cddl/usr.sbin/dtrace/tests/common/pid \
@@ -171,7 +170,6 @@ DIRDEPS= \
       lib/libthr/tests \
       lib/libthr/tests/dlopen \
       lib/libthr/tests/dlopen/dso \
-      lib/libthread_db/tests \
       lib/libutil/tests \
       lib/libxo/tests \
       lib/libxo/tests/encoder \
@@ -344,7 +342,6 @@ DIRDEPS= \
       usr.bin/tail/tests \
       usr.bin/tar/tests \
       usr.bin/tests \
-      usr.bin/timeout/tests \
       usr.bin/tr/tests \
       usr.bin/truncate/tests \
       usr.bin/uniq/tests \

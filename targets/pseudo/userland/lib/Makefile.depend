@@ -20,7 +20,6 @@ DIRDEPS = \
 	lib/geom/part \
 	lib/geom/raid \
 	lib/geom/raid3 \
-	lib/geom/sched \
 	lib/geom/shsec \
 	lib/geom/stripe \
 	lib/geom/virstor \
@@ -59,10 +58,8 @@ DIRDEPS = \
 	lib/libdevstat \
 	lib/libdl \
 	lib/libdwarf \
-	lib/libedit/edit/readline \
 	lib/libelf \
 	lib/libelftc \
-	lib/libevent \
 	lib/libexecinfo \
 	lib/libexpat \
 	lib/libfetch \
@@ -92,8 +89,6 @@ DIRDEPS = \
 	lib/libiconv_modules/mapper_zone \
 	lib/libifconfig \
 	lib/libipsec \
-	lib/libipx \
-	lib/libiscsiutil \
 	lib/libjail \
 	lib/libkiconv \
 	lib/libkvm \
@@ -105,7 +100,6 @@ DIRDEPS = \
 	lib/libmixer \
 	lib/libmp \
 	lib/libnetgraph \
-	lib/libngatm \
 	lib/libnv \
 	lib/libpam/libpam \
 	lib/libpam/modules/pam_chroot \
@@ -138,7 +132,6 @@ DIRDEPS = \
 	lib/librss \
 	lib/librt \
 	lib/librtld_db \
-	lib/libsa \
 	lib/libsbuf \
 	lib/libsdp \
 	lib/libsqlite3 \
@@ -164,13 +157,13 @@ DIRDEPS = \
 	lib/libzstd \
 	lib/msun \
 	lib/ncurses/form \
-	lib/ncurses/formw \
+	lib/ncurses/form \
 	lib/ncurses/menu \
-	lib/ncurses/menuw \
+	lib/ncurses/menu \
 	lib/ncurses/ncurses \
-	lib/ncurses/ncursesw \
+	lib/ncurses/ncurses \
 	lib/ncurses/panel \
-	lib/ncurses/panelw \
+	lib/ncurses/panel \
 
 .if ${MK_CLANG} != "no" && \
     (${DEP_MACHINE_CPUARCH} == "aarch64" || ${DEP_MACHINE_CPUARCH} == "amd64" || \

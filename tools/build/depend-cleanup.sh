@@ -465,14 +465,6 @@ if [ $MACHINE_ARCH = aarch64 ]; then
 	ALL_libcompats= clean_dep   lib/libc timingsafe_memcmp c
 fi
 
-# 20250402  839d0755fea8    ctld converted to C++
-clean_dep   usr.sbin/ctld   ctld c
-clean_dep   usr.sbin/ctld   conf c
-clean_dep   usr.sbin/ctld   discovery c
-clean_dep   usr.sbin/ctld   isns c
-clean_dep   usr.sbin/ctld   kernel c
-clean_dep   usr.sbin/ctld   login c
-clean_dep   usr.sbin/ctld   uclparse c
 
 # 20250425  2e47f35be5dc    libllvm, libclang and liblldb became shared libraries
 if [ -f "$OBJTOP"/lib/clang/libllvm/libllvm.a ]; then

@@ -88,7 +88,7 @@ ec2ami-${_FL}-${_FS}: cw-ec2-${_FL}-${_FS} ${CW_EC2_PORTINSTALL}
 .endif
 	/usr/local/bin/bsdec2-image-upload ${PUBLISH} ${PUBLICSNAP} \
 	    ${EC2ARCH} ${SSMOPTS_${_FL}_${_FS}} ${SSMOPTSEXTRA_${_FL}_${_FS}} \
-	    ${BOOTMODEOPT} --sriov --ena \
+	    ${BOOTMODEOPT} --sriov \
 	    ${.OBJDIR}/${EC2-${_FL:tu}${_FS:tu}IMAGE} \
 	    "${AMIBASENAME} ${_FL} ${_FS:tu}" \
 	    "${TYPE}/${TARGET} ${GITBRANCH}@${GITREV}" \

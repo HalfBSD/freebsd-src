@@ -1990,7 +1990,7 @@ t4_tom_deactivate(struct adapter *sc)
 	if (td == NULL)
 		return (0);	/* XXX. KASSERT? */
 
-	if (uld_active(sc, ULD_IWARP) || uld_active(sc, ULD_ISCSI))
+	if (uld_active(sc, ULD_IWARP))
 		return (EBUSY);	/* both iWARP and iSCSI rely on the TOE. */
 
 	if (sc->offload_map != 0) {

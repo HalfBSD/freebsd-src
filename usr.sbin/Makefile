@@ -13,7 +13,6 @@ SUBDIR=	adduser \
 	ckdist \
 	crashinfo \
 	cron \
-	ctld \
 	ctladm \
 	daemon \
 	dconschat \
@@ -111,15 +110,11 @@ SUBDIR.${MK_GPIO}+=	gpioctl
 SUBDIR.${MK_INET6}+=	ip6addrctl
 SUBDIR.${MK_INET6}+=	mld6query
 SUBDIR.${MK_INET6}+=	ndp
-SUBDIR.${MK_INET6}+=	rip6query
-SUBDIR.${MK_INET6}+=	route6d
-SUBDIR.${MK_INET6}+=	rrenumd
 SUBDIR.${MK_INET6}+=	rtadvctl
 SUBDIR.${MK_INET6}+=	rtadvd
 SUBDIR.${MK_INET6}+=	rtsold
 SUBDIR.${MK_INET6}+=	traceroute6
 SUBDIR.${MK_IPFW}+=	ipfwpcap
-SUBDIR.${MK_ISCSI}+=	iscsid
 SUBDIR.${MK_JAIL}+=	jail
 SUBDIR.${MK_JAIL}+=	jexec
 SUBDIR.${MK_JAIL}+=	jls

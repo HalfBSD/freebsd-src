@@ -60,7 +60,8 @@ opt_wlan.h:
 	echo "#define IEEE80211_DEBUG 1" > ${.TARGET}
 	echo "#define IEEE80211_SUPPORT_MESH 1" >> ${.TARGET}
 KERN_OPTS.i386=DEV_PCI
-KERN_OPTS.amd64=DEV_PCI
+# Untied amd64 module builds generate SMP in opt_global.h above.
+KERN_OPTS.amd64=DEV_PCI SMP
 KERN_OPTS=MROUTING IEEE80211_DEBUG \
 	IEEE80211_SUPPORT_MESH DEV_BPF \
 	${KERN_OPTS.${MACHINE}} ${KERN_OPTS_EXTRA}

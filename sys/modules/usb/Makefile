@@ -108,4 +108,7 @@ _bcm2838_xhci=	bcm2838_xhci
 _uacpi=		uacpi
 .endif
 
+HALFBSD_MODULE_GROUP= usb
+.include "${SYSDIR}/conf/halfbsd.modules.mk"
+
 .include <bsd.subdir.mk>

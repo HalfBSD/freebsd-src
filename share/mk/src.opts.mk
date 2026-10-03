@@ -92,7 +92,6 @@ __DEFAULT_YES_OPTIONS = \
     INET \
     INET6 \
     IPFW \
-    ISCSI \
     JAIL \
     JEMALLOC_LG_VADDR_WIDE \
     KDUMP \
@@ -125,7 +124,6 @@ __DEFAULT_YES_OPTIONS = \
     PKGBOOTSTRAP \
     PMC \
     QUOTAS \
-    ROUTED \
     SERVICESDB \
     SETUID_LOGIN \
     SOUND \
@@ -292,7 +290,49 @@ BROKEN_OPTIONS+=BHYVE_SNAPSHOT
 
 .-include <site.src.opts.mk>
 
+# HalfBSD's top-level amd64 runtime has one core feature set. Sub-builds
+# (including bootstrap/native tools and lib32) retain their normal overrides.
+# Keep build,
+# bootstrap, testing, sanitizer and debugging choices independently selectable.
+.if ${__T} == "amd64" && defined(SRCTOP) && \
+    ${.CURDIR} == "${SRCTOP:U}" && ${.MAKE.LEVEL} == 0 && !defined(BOOTSTRAPPING)
+__HALFBSD_REQUIRED_OPTIONS= ACPI \
+    BHYVE \
+    BOOT \
+    CDDL \
+    CRYPT \
+    EFI \
+    INET \
+    INET6 \
+    IPFW \
+    JAIL \
+    NETLINK \
+    OPENSSH \
+    OPENSSL \
+    PAM \
+    SOUND \
+    USB \
+    VT \
+    WIRELESS \
+    ZFS \
+    LOADER_LUA \
+    LOADER_ZFS
+.for _halfbsd_opt in ${__HALFBSD_REQUIRED_OPTIONS}
+__DEFAULT_YES_OPTIONS:= ${__DEFAULT_YES_OPTIONS:N${_halfbsd_opt}}
+__REQUIRED_OPTIONS+= ${_halfbsd_opt}
+.endfor
+.endif
+
 .include <bsd.mkopt.mk>
+
+# Command-line MK_* assignments outrank makefile assignments. Reject attempts
+# to disable core features rather than silently building a different system.
+.for _halfbsd_opt in ${__HALFBSD_REQUIRED_OPTIONS}
+.if ${MK_${_halfbsd_opt}} != "yes"
+.error HalfBSD requires MK_${_halfbsd_opt}=yes
+.endif
+.endfor
+.undef __HALFBSD_REQUIRED_OPTIONS
 
 #
 # Force some options off if their dependencies are off.

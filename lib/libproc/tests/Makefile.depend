@@ -2,7 +2,6 @@
 
 DIRDEPS = \
 	cddl/lib/libctf \
-	gnu/lib/csu \
 	include \
 	include/xlocale \
 	lib/${CSU_DIR} \

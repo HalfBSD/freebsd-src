@@ -1,0 +1,4 @@
+include HALFBSD
+include "std.debug"
+
+ident HALFBSD-DEBUG

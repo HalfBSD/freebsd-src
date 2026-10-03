@@ -49,13 +49,11 @@ _INTERNALLIBS=	\
 		fdt \
 		fifolog \
 		ifconfig \
-		iscsiutil \
 		lua \
 		lutok \
 		netbsd \
 		ntp \
 		ntpevent \
-		nvmf \
 		openbsd \
 		opts \
 		parse \
@@ -274,7 +272,6 @@ _DP_mp=	crypto
 _DP_memstat=	kvm
 _DP_magic=	z
 _DP_mt=		sbuf bsdxml
-_DP_nvmf=	nv
 _DP_ldns=	ssl crypto
 _DP_lua=	m
 _DP_lutok=	lua
@@ -345,7 +342,6 @@ _DP_zutil=	avl geom m tpool
 _DP_be=		zfs spl nvpair zfsbootenv
 _DP_netmap=
 _DP_ifconfig=	m
-_DP_iscsiutil=	md
 
 # Define special cases
 LDADD_supcplusplus=	-lsupc++
@@ -469,11 +465,7 @@ LIBIFCONFIG?=	${LIBIFCONFIGDIR}/libifconfig${PIE_SUFFIX}.a
 LIBNVDIR=	${_LIB_OBJTOP}/lib/libnv
 LIBNV?=		${LIBNVDIR}/libnv${PIE_SUFFIX}.a
 
-LIBISCSIUTILDIR=	${_LIB_OBJTOP}/lib/libiscsiutil
-LIBISCSIUTIL?=	${LIBISCSIUTILDIR}/libiscsiutil${PIE_SUFFIX}.a
 
-LIBNVMFDIR=	${_LIB_OBJTOP}/lib/libnvmf
-LIBNVMF?=	${LIBNVMFDIR}/libnvmf${PIE_SUFFIX}.a
 
 LIBCRONDIR=	${_LIB_OBJTOP}/usr.sbin/cron/lib
 LIBCRON?=	${LIBCRONDIR}/libcron${PIE_SUFFIX}.a

@@ -8,7 +8,6 @@ DIRDEPS = \
 	lib/libcompiler_rt \
 	lib/libelf \
 	lib/libkvm \
-	lib/libprocstat/zfs \
 	lib/libutil \
 
 

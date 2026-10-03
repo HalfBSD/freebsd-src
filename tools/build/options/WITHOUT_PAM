@@ -2,3 +2,7 @@ Do not build PAM library and modules.
 .Bf -symbolic
 This option is deprecated and does nothing.
 .Ef
+.Pp
+HalfBSD requires this feature in top-level amd64 runtime builds.
+Disabling it is supported only for individual components, bootstrap tools,
+and compatibility-library sub-builds.

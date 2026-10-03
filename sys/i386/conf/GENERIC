@@ -120,7 +120,6 @@ device		mpt			# LSI-Logic MPT-Fusion
 device		mps			# LSI-Logic MPT-Fusion 2
 device		mpr			# LSI-Logic MPT-Fusion 3
 device		isci			# Intel C600 SAS controller
-device		pvscsi			# VMware PVSCSI
 
 # ATA/SCSI peripherals
 device		scbus			# SCSI bus (required for ATA/SCSI)
@@ -171,7 +170,6 @@ device		puc			# Multi-channel UARTs
 device		iflib
 device		igc			# Intel I225 2.5G Ethernet
 device		em			# Intel PRO/1000 Gigabit Ethernet Family
-device		vmx			# VMware VMXNET3 Ethernet
 
 # PCI Ethernet NICs.
 device		bxe			# Broadcom NetXtreme II BCM5771X/BCM578XX 10GbE

@@ -72,7 +72,6 @@ SUBDIR.${MK_IPFW}+=	ipfw
 SUBDIR.${MK_IPFW}+=	natd
 SUBDIR.${MK_OPENSSL}+=	decryptcore
 SUBDIR.${MK_QUOTAS}+=	quotacheck
-SUBDIR.${MK_ROUTED}+=	routed
 SUBDIR.${MK_VERIEXEC}+=	veriexec
 SUBDIR.${MK_ZFS}+=	bectl
 SUBDIR.${MK_ZFS}+=	zfsbootcfg

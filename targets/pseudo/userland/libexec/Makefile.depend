@@ -6,9 +6,6 @@ DIRDEPS = \
 	libexec/atf/atf-check \
 	libexec/atf/atf-sh \
 	libexec/atrun \
-	libexec/ftpd \
-	libexec/rlogind \
-	libexec/rshd \
 	libexec/rtld-elf \
 	libexec/save-entropy \
 	libexec/ulog-helper \

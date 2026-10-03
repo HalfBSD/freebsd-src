@@ -27,4 +27,7 @@ SUBDIR=	geom_cache \
 SUBDIR+=	geom_ccd
 .endif
 
+HALFBSD_MODULE_GROUP= geom
+.include "${SYSDIR}/conf/halfbsd.modules.mk"
+
 .include <bsd.subdir.mk>

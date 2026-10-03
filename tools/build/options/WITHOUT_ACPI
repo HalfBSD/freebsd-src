@@ -2,3 +2,7 @@ Do not build
 .Xr acpiconf 8 ,
 .Xr acpidump 8
 and related programs.
+.Pp
+HalfBSD requires this feature in top-level amd64 runtime builds.
+Disabling it is supported only for individual components, bootstrap tools,
+and compatibility-library sub-builds.

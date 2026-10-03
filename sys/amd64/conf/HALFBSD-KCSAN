@@ -1,0 +1,5 @@
+# HalfBSD KCSAN diagnostic kernel.
+include HALFBSD-DEBUG
+
+ident HALFBSD-KCSAN
+options KCSAN

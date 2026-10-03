@@ -12,12 +12,10 @@ SUBDIR+=	t5_firmware
 SUBDIR+=	t6_firmware
 SUBDIR+=	t7_firmware
 SUBDIR+=	${_tom}
-SUBDIR+=	${_cxgbei}
 SUBDIR+=	ccr
 
 .if ${MACHINE_CPUARCH} == "amd64" || ${MACHINE_CPUARCH} == "aarch64"
 _tom=	tom
-_cxgbei=	cxgbei
 .endif
 
 .if ${MACHINE_CPUARCH} == "i386"

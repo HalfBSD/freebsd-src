@@ -6,15 +6,6 @@
 #     make vagrant-box WITH_VMIMAGES=y WITH_CLOUDWARE=y \
 #       CLOUDWARE=vagrant-virtualbox VMFORMATS=vmdk
 #
-#   To create a Vagrant image for VMWare and Upload it to Atlas:
-#     VAGRANT_KEY is your Atlas API Token
-#     VAGRANT_USERNAME is your Atlas Username
-#     env VAGRANT_KEY=foo VAGRANT_USERNAME=bar make vagrant-upload \
-#       WITH_VMIMAGES=y WITH_CLOUDWARE=y CLOUDWARE=vagrant-vmware \
-#       VMFORMATS=vmdk
-#     For more info: https://www.vagrantup.com/docs/other/atlas.html
-#
-
 VAGRANT_IMG?=		${.OBJDIR}/vagrant.vmdk
 VAGRANT_UPLOAD_TGTS=	vagrant-check-depends
 CLEANFILES+=		${VAGRANT_UPLOAD_TGTS}
@@ -39,7 +30,7 @@ VAGRANT_PROVIDERS+=	${_PROVIDER:tu:S/VAGRANT-//:tl}
 .  endif
 . endfor
 .endif
-VAGRANT_PROVIDERS?=	vmware virtualbox
+VAGRANT_PROVIDERS?=	virtualbox
 
 
 vagrant-check-depends:
@@ -76,17 +67,12 @@ ${VAGRANT_TARGET}.${PROVIDER}.box: ${PROVIDER} cw-vagrant-${PROVIDER} vagrant-cr
 . if ${PROVIDER} == "virtualbox"
 	@(cd ${.OBJDIR}/${PROVIDER} && echo '{"provider":"${PROVIDER}"}' > metadata.json)
 	@(cd ${.OBJDIR}/${PROVIDER} && tar -czf ../${VAGRANT_TARGET}.${PROVIDER}.box metadata.json box.ovf vagrant.vmdk)
-. elif ${PROVIDER} == "vmware"
-	@(cd ${.OBJDIR}/${PROVIDER} && echo '{"provider":"${PROVIDER}_desktop"}' > metadata.json)
-	@(cd ${.OBJDIR}/${PROVIDER} && tar -czf ../${VAGRANT_TARGET}.${PROVIDER}.box metadata.json vagrant.vmx vagrant.vmdk)
 . endif
 
 CLEANFILES+=	vagrant-do-upload-${PROVIDER}
 vagrant-do-upload-${PROVIDER}: vagrant-box
 . if ${PROVIDER} == "virtualbox"
 	${.CURDIR}/scripts/atlas-upload.sh -b ${TYPE}-${REVISION}-${BRANCH} -f ${VAGRANT_TARGET}.${PROVIDER}.box -p ${PROVIDER} -k ${VAGRANT_KEY} -u ${VAGRANT_USERNAME} -v ${VAGRANT_VERSION}
-. elif ${PROVIDER} == "vmware"
-	${.CURDIR}/scripts/atlas-upload.sh -b ${TYPE}-${REVISION}-${BRANCH} -f ${VAGRANT_TARGET}.${PROVIDER}.box -p ${PROVIDER}_desktop -k ${VAGRANT_KEY} -u ${VAGRANT_USERNAME} -v ${VAGRANT_VERSION}
 . endif
 	touch ${.OBJDIR}/${.TARGET}
 
@@ -100,8 +86,3 @@ vagrant-create-virtualbox-metadata: virtualbox/box.ovf
 
 virtualbox/box.ovf: ${.CURDIR}/scripts/box.ovf
 	cp ${.ALLSRC} virtualbox/
-
-vmware/vagrant.vmx: ${.CURDIR}/scripts/vagrant.vmx
-	cp ${.ALLSRC} vmware/
-
-vagrant-create-vmware-metadata: vmware/vagrant.vmx

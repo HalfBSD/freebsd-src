@@ -28,7 +28,6 @@ DIRDEPS+= \
 	bin/ps \
 	bin/pwait \
 	bin/pwd \
-	bin/rcp \
 	bin/realpath \
 	bin/rm \
 	bin/rmdir \
@@ -40,8 +39,6 @@ DIRDEPS+= \
 	bin/test \
 	bin/uuidgen \
 	sbin/adjkerntz \
-	sbin/atacontrol \
-	sbin/atm/atmconfig \
 	sbin/camcontrol \
 	sbin/ccdconfig \
 	sbin/clri \
@@ -62,7 +59,7 @@ DIRDEPS+= \
 	sbin/fsck_msdosfs \
 	sbin/fsdb \
 	sbin/fsirand \
-	sbin/geom/core \
+	sbin/geom \
 	sbin/ggate/ggatec \
 	sbin/ggate/ggated \
 	sbin/ggate/ggatel \
@@ -92,7 +89,6 @@ DIRDEPS+= \
 	sbin/newfs_msdos \
 	sbin/nos-tun \
 	sbin/ping \
-	sbin/ping6 \
 	sbin/quotacheck \
 	sbin/rcorder \
 	sbin/reboot \
@@ -100,8 +96,6 @@ DIRDEPS+= \
 	sbin/resolvconf \
 	sbin/restore \
 	sbin/route \
-	sbin/routed \
-	sbin/routed/rtquery \
 	sbin/rtsol \
 	sbin/savecore \
 	sbin/setkey \
@@ -114,14 +108,8 @@ DIRDEPS+= \
 	usr.bin/apply \
 	usr.bin/ar \
 	usr.bin/at \
-	usr.bin/atf/atf-config \
-	usr.bin/atf/atf-report \
-	usr.bin/atf/atf-run \
-	usr.bin/atf/atf-version \
-	usr.bin/atm/sscop \
 	usr.bin/awk \
 	usr.bin/basename \
-	usr.bin/bc \
 	usr.bin/bintrans \
 	usr.bin/bluetooth/bthost \
 	usr.bin/bluetooth/btsockstat \
@@ -136,32 +124,24 @@ DIRDEPS+= \
 	usr.bin/c89 \
 	usr.bin/c99 \
 	usr.bin/cap_mkdb \
-	usr.bin/checknr \
-	usr.bin/chkey \
 	usr.bin/chpass \
 	usr.bin/cksum \
 	usr.bin/cmp \
 	usr.bin/col \
-	usr.bin/colcrt \
-	usr.bin/colldef \
 	usr.bin/colrm \
 	usr.bin/column \
 	usr.bin/comm \
 	usr.bin/compress \
 	usr.bin/cpio \
-	usr.bin/cpuset \
 	usr.bin/csplit \
 	usr.bin/ctags \
 	usr.bin/ctlstat \
 	usr.bin/cut \
-	usr.bin/dc \
 	usr.bin/diff3 \
-	usr.bin/dig \
 	usr.bin/dirname \
 	usr.bin/drill \
 	usr.bin/dtc \
 	usr.bin/du \
-	usr.bin/elf2aout \
 	usr.bin/elfdump \
 	usr.bin/env \
 	usr.bin/expand \
@@ -192,12 +172,9 @@ DIRDEPS+= \
 	usr.bin/indent \
 	usr.bin/ipcrm \
 	usr.bin/ipcs \
-	usr.bin/iscsictl \
 	usr.bin/join \
 	usr.bin/jot \
 	usr.bin/kdump \
-	usr.bin/keylogin \
-	usr.bin/keylogout \
 	usr.bin/killall \
 	usr.bin/ktrace \
 	usr.bin/ktrdump \
@@ -222,14 +199,12 @@ DIRDEPS+= \
 	usr.bin/lsvfs \
 	usr.bin/lzmainfo \
 	usr.bin/m4 \
-	usr.bin/minigzip \
 	usr.bin/ministat \
 	usr.bin/mkcsmapper \
 	usr.bin/mkdep \
 	usr.bin/mkesdb \
 	usr.bin/mkfifo \
 	usr.bin/mkimg \
-	usr.bin/mklocale \
 	usr.bin/mkstr \
 	usr.bin/mktemp \
 	usr.bin/mkuzip \
@@ -237,13 +212,9 @@ DIRDEPS+= \
 	usr.bin/nc \
 	usr.bin/netstat \
 	usr.bin/newgrp \
-	usr.bin/newkey \
 	usr.bin/nice \
 	usr.bin/nl \
 	usr.bin/nohup \
-	usr.bin/opieinfo \
-	usr.bin/opiekey \
-	usr.bin/opiepasswd \
 	usr.bin/pagesize \
 	usr.bin/passwd \
 	usr.bin/paste \
@@ -262,16 +233,13 @@ DIRDEPS+= \
 	usr.bin/resizewin \
 	usr.bin/rev \
 	usr.bin/revoke \
-	usr.bin/rlogin \
 	usr.bin/rpcgen \
 	usr.bin/rpcinfo \
 	usr.bin/rs \
-	usr.bin/rsh \
 	usr.bin/script \
 	usr.bin/sdiff \
 	usr.bin/sed \
 	usr.bin/seq \
-	usr.bin/shar \
 	usr.bin/sockstat \
 	usr.bin/soelim \
 	usr.bin/sort \
@@ -287,15 +255,12 @@ DIRDEPS+= \
 	usr.bin/tcopy \
 	usr.bin/tee \
 	usr.bin/time \
-	usr.bin/timeout \
 	usr.bin/top \
 	usr.bin/touch \
-	usr.bin/tput \
 	usr.bin/tr \
 	usr.bin/true \
 	usr.bin/truncate \
 	usr.bin/truss \
-	usr.bin/tset \
 	usr.bin/tsort \
 	usr.bin/tty \
 	usr.bin/uname \
@@ -330,25 +295,10 @@ DIRDEPS+= \
 	usr.bin/yacc \
 	usr.bin/yes \
 	usr.bin/zstd \
-	usr.sbin/IPXrouted \
 	usr.sbin/ac \
 	usr.sbin/accton \
 	usr.sbin/adduser \
-	usr.sbin/amd/amd \
-	usr.sbin/amd/amq \
-	usr.sbin/amd/doc \
-	usr.sbin/amd/fixmount \
-	usr.sbin/amd/fsinfo \
-	usr.sbin/amd/hlfsd \
-	usr.sbin/amd/include \
-	usr.sbin/amd/libamu \
-	usr.sbin/amd/mk-amd-map \
-	usr.sbin/amd/pawd \
-	usr.sbin/amd/scripts \
-	usr.sbin/amd/wire-test \
-	usr.sbin/ancontrol \
 	usr.sbin/arp \
-	usr.sbin/arpaname \
 	usr.sbin/audit \
 	usr.sbin/auditd \
 	usr.sbin/auditdistd \
@@ -362,7 +312,6 @@ DIRDEPS+= \
 	usr.sbin/bluetooth/btpand \
 	usr.sbin/bluetooth/hccontrol \
 	usr.sbin/bluetooth/hcsecd \
-	usr.sbin/bluetooth/hcseriald \
 	usr.sbin/bluetooth/iwmbtfw \
 	usr.sbin/bluetooth/l2control \
 	usr.sbin/bluetooth/l2ping \
@@ -423,24 +372,11 @@ DIRDEPS+= \
 	usr.sbin/crunch/crunchgen \
 	usr.sbin/crunch/crunchide \
 	usr.sbin/ctladm \
-	usr.sbin/ctld \
-	usr.sbin/ctm/ctm \
-	usr.sbin/ctm/ctm_dequeue \
-	usr.sbin/ctm/ctm_rmail \
-	usr.sbin/ctm/ctm_smail \
 	usr.sbin/daemon \
 	usr.sbin/dconschat \
-	usr.sbin/ddns-confgen \
 	usr.sbin/devctl \
 	usr.sbin/devinfo \
-	usr.sbin/digictl \
 	usr.sbin/diskinfo \
-	usr.sbin/dnssec-dsfromkey \
-	usr.sbin/dnssec-keyfromlabel \
-	usr.sbin/dnssec-keygen \
-	usr.sbin/dnssec-revoke \
-	usr.sbin/dnssec-settime \
-	usr.sbin/dnssec-signzone \
 	usr.sbin/edquota \
 	usr.sbin/etcupdate \
 	usr.sbin/extattr \
@@ -450,10 +386,8 @@ DIRDEPS+= \
 	usr.sbin/fifolog/fifolog_writer \
 	usr.sbin/fifolog/lib \
 	usr.sbin/flowctl \
-	usr.sbin/fmtree \
 	usr.sbin/fstyp \
 	usr.sbin/fwcontrol \
-	usr.sbin/genrandom \
 	usr.sbin/getfmac \
 	usr.sbin/getpmac \
 	usr.sbin/gpioctl \
@@ -464,9 +398,6 @@ DIRDEPS+= \
 	usr.sbin/iovctl \
 	usr.sbin/ip6addrctl \
 	usr.sbin/ipfwpcap \
-	usr.sbin/isc-hmac-fixup \
-	usr.sbin/iscsid \
-	usr.sbin/isfctl \
 	usr.sbin/jail \
 	usr.sbin/jexec \
 	usr.sbin/jls \
@@ -474,7 +405,6 @@ DIRDEPS+= \
 	usr.sbin/kbdmap \
 	usr.sbin/kldxref \
 	usr.sbin/lastlogin \
-	usr.sbin/lmcconfig \
 	usr.sbin/makefs \
 	usr.sbin/memcontrol \
 	usr.sbin/mfiutil \
@@ -483,10 +413,6 @@ DIRDEPS+= \
 	usr.sbin/mpsutil \
 	usr.sbin/mptutil \
 	usr.sbin/mtest \
-	usr.sbin/named \
-	usr.sbin/named-checkconf \
-	usr.sbin/named-checkzone \
-	usr.sbin/named-journalprint \
 	usr.sbin/ndp \
 	usr.sbin/newsyslog \
 	usr.sbin/ngctl \
@@ -494,7 +420,6 @@ DIRDEPS+= \
 	usr.sbin/nmtree \
 	usr.sbin/nologin \
 	usr.sbin/nscd \
-	usr.sbin/nsec3hash \
 	usr.sbin/ntp/doc \
 	usr.sbin/ntp/libntp \
 	usr.sbin/ntp/libopts \
@@ -521,13 +446,8 @@ DIRDEPS+= \
 	usr.sbin/quot \
 	usr.sbin/quotaon \
 	usr.sbin/repquota \
-	usr.sbin/rip6query \
 	usr.sbin/rmt \
-	usr.sbin/rndc \
-	usr.sbin/rndc-confgen \
-	usr.sbin/route6d \
 	usr.sbin/rpcbind \
-	usr.sbin/rrenumd \
 	usr.sbin/rtadvctl \
 	usr.sbin/rtadvd \
 	usr.sbin/rtprio \
@@ -545,8 +465,6 @@ DIRDEPS+= \
 	usr.sbin/sysrc \
 	usr.sbin/tcpdrop \
 	usr.sbin/tcpdump/tcpdump \
-	usr.sbin/timed/timed \
-	usr.sbin/timed/timedc \
 	usr.sbin/traceroute \
 	usr.sbin/traceroute6 \
 	usr.sbin/tzsetup \
@@ -557,7 +475,6 @@ DIRDEPS+= \
 	usr.sbin/unbound/checkconf \
 	usr.sbin/unbound/control \
 	usr.sbin/unbound/daemon \
-	usr.sbin/unbound/local-setup \
 	usr.sbin/usbconfig \
 	usr.sbin/usbdump \
 	usr.sbin/utx \
@@ -573,8 +490,6 @@ DIRDEPS+= \
 	usr.sbin/wpa/wpa_cli \
 	usr.sbin/wpa/wpa_passphrase \
 	usr.sbin/wpa/wpa_supplicant \
-	usr.sbin/zic/zdump \
-	usr.sbin/zic/zic \
 	usr.sbin/zonectl \
 	${DEP_RELDIR}/cddl \
 	${DEP_RELDIR}/gnu \
@@ -604,7 +519,6 @@ DIRDEPS.amd64= \
 	usr.sbin/cpucontrol \
 	usr.sbin/mptable \
 	usr.sbin/spkrtest \
-	usr.sbin/sade \
 	usr.sbin/zzz
 
 DIRDEPS.arm= \
@@ -615,7 +529,6 @@ DIRDEPS.i386= \
 	usr.sbin/btxld \
 	usr.sbin/cpucontrol \
 	usr.sbin/mptable \
-	usr.sbin/sade \
 	usr.sbin/spkrtest \
 	usr.sbin/zzz \
 	usr.sbin/acpi

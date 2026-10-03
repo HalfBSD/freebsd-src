@@ -101,7 +101,6 @@ SUBDIR=	\
 	e6000sw \
 	${_efirt} \
 	${_em} \
-	${_ena} \
 	${_enic} \
 	${_enetc} \
 	${_et} \
@@ -125,7 +124,6 @@ SUBDIR=	\
 	${_glxiic} \
 	${_glxsb} \
 	gpio \
-	${_gve} \
 	hid \
 	hifn \
 	hwpmc \
@@ -222,7 +220,6 @@ SUBDIR=	\
 	${_mac_veriexec_sha384} \
 	${_mac_veriexec_sha512} \
 	${_malo} \
-	${_mana} \
 	md \
 	mdio \
 	${_mgb} \
@@ -260,7 +257,6 @@ SUBDIR=	\
 	nvd \
 	${_nvdimm} \
 	nvme \
-	nvmf \
 	${_nvram} \
 	oce \
 	${_ossl} \
@@ -362,7 +358,6 @@ SUBDIR=	\
 	vkbd \
 	${_vmd} \
 	${_vmm} \
-	${_vmware} \
 	vr \
 	vte \
 	${_wbwd} \
@@ -464,10 +459,6 @@ _fib_dxr=	fib_dxr
 _dpdk_lpm6=	dpdk_lpm6
 .endif
 
-.if ${MK_ISCSI} != "no" || defined(ALL_MODULES)
-SUBDIR+=	cfiscsi
-SUBDIR+=	iscsi
-.endif
 
 .if !empty(OPT_FDT)
 SUBDIR+=	fdt
@@ -506,10 +497,7 @@ _ipmi=		ipmi
 .if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "amd64" || \
     ${MACHINE_CPUARCH} == "i386"
 _acpi=		acpi
-_ena=		ena
-_gve=		gve
 _igc=		igc
-_vmware=	vmware
 .endif
 
 .if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "amd64" || \
@@ -657,7 +645,6 @@ _ixv=		ixv
 .if ${MK_SOURCELESS_UCODE} != "no"
 _lio=		lio
 .endif
-_mana=		mana
 _mgb=		mgb
 _nctgpio=	nctgpio
 _ncthwm=	ncthwm
@@ -797,6 +784,9 @@ _malo=	malo
 .if ${MACHINE_CPUARCH} == "amd64" || ${MACHINE_CPUARCH} == "aarch64"
 _ufshci=ufshci
 .endif
+
+HALFBSD_MODULE_GROUP= top
+.include "${SYSDIR}/conf/halfbsd.modules.mk"
 
 SUBDIR+=${MODULES_EXTRA}
 

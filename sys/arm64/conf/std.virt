@@ -3,7 +3,6 @@
 #
 
 # Block devices
-device		pvscsi			# VMware PVSCSI
 
 # GPIO / PINCTRL
 device		pl061			# Arm PL061 GPIO controller
@@ -12,7 +11,6 @@ device		pl061			# Arm PL061 GPIO controller
 device		pl011
 
 # PCI/PCI-X/PCIe Ethernet NICs that use iflib infrastructure
-device		vmx			# VMware VMXNET3 Ethernet
 
 # VirtIO support
 device		virtio			# Generic VirtIO bus (required)

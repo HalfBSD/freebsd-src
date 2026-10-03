@@ -708,8 +708,6 @@
                     ..
                     inuse
                     ..
-                    iscsi
-                    ..
                     large_files
                     ..
                     largest_pool
@@ -881,7 +879,7 @@
         ..
         net
             bpf
-                ..
+            ..
             if_ovpn
                 ccd
                 ..

@@ -1,0 +1,5 @@
+# HalfBSD KMSAN diagnostic kernel.
+include HALFBSD-DEBUG
+
+ident HALFBSD-KMSAN
+options KMSAN

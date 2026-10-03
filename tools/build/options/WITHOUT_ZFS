@@ -6,3 +6,7 @@ or
 .Xr zfs 8 .
 Also disable ZFS support in utilities and libraries which implement
 ZFS-specific functionality.
+.Pp
+HalfBSD requires this feature in top-level amd64 runtime builds.
+Disabling it is supported only for individual components, bootstrap tools,
+and compatibility-library sub-builds.

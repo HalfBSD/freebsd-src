@@ -1,2 +1,6 @@
 Do not build
 programs and libraries related to IPv6 networking.
+.Pp
+HalfBSD requires this feature in top-level amd64 runtime builds.
+Disabling it is supported only for individual components, bootstrap tools,
+and compatibility-library sub-builds.

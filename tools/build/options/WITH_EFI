@@ -2,3 +2,7 @@ Build
 .Xr efivar 3
 and
 .Xr efivar 8 .
+.Pp
+HalfBSD requires this feature in top-level amd64 runtime builds.
+Disabling it is supported only for individual components, bootstrap tools,
+and compatibility-library sub-builds.

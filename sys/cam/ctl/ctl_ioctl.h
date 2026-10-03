@@ -42,14 +42,8 @@
 #ifndef	_CTL_IOCTL_H_
 #define	_CTL_IOCTL_H_
 
-#ifdef ICL_KERNEL_PROXY
-#include <sys/socket.h>
-#endif
-
 #include <sys/ioccom.h>
 #include <sys/nv.h>
-#include <dev/nvmf/nvmf.h>
-#include <dev/nvmf/nvmf_proto.h>
 
 #define	CTL_DEFAULT_DEV		"/dev/cam/ctl"
 /*
@@ -529,7 +523,7 @@ struct ctl_lun_list {
  * Port request interface:
  *
  * driver:		This is required, and is NUL-terminated a string
- *			that is the name of the frontend, like "iscsi" .
+ *			that is the name of the frontend, like "ioctl".
  *
  * reqtype:		The type of request, CTL_REQ_CREATE to create a
  *			port, CTL_REQ_REMOVE to delete a port.
@@ -567,259 +561,10 @@ struct ctl_req {
 	char			error_str[CTL_ERROR_STR_LEN];
 };
 
-/*
- * iSCSI status
- *
- * OK:			Request completed successfully.
- *
- * ERROR:		An error occurred, look at the error string for a
- *			description of the error.
- *
- * CTL_ISCSI_LIST_NEED_MORE_SPACE:
- * 			User has to pass larger buffer for CTL_ISCSI_LIST ioctl.
- */
-typedef enum {
-	CTL_ISCSI_OK,
-	CTL_ISCSI_ERROR,
-	CTL_ISCSI_LIST_NEED_MORE_SPACE,
-	CTL_ISCSI_SESSION_NOT_FOUND
-} ctl_iscsi_status;
-
-typedef enum {
-	CTL_ISCSI_HANDOFF,
-	CTL_ISCSI_LIST,
-	CTL_ISCSI_LOGOUT,
-	CTL_ISCSI_TERMINATE,
-	CTL_ISCSI_LIMITS,
-#if defined(ICL_KERNEL_PROXY) || 1
-	/*
-	 * We actually need those in all cases, but leave the ICL_KERNEL_PROXY,
-	 * to remember to remove them along with rest of proxy code, eventually.
-	 */
-	CTL_ISCSI_LISTEN,
-	CTL_ISCSI_ACCEPT,
-	CTL_ISCSI_SEND,
-	CTL_ISCSI_RECEIVE,
-#endif
-} ctl_iscsi_type;
-
-typedef enum {
-	CTL_ISCSI_DIGEST_NONE,
-	CTL_ISCSI_DIGEST_CRC32C
-} ctl_iscsi_digest;
-
-#define	CTL_ISCSI_NAME_LEN	224	/* 223 bytes, by RFC 3720, + '\0' */
-#define	CTL_ISCSI_ADDR_LEN	47	/* INET6_ADDRSTRLEN + '\0' */
-#define	CTL_ISCSI_ALIAS_LEN	128	/* Arbitrary. */
-#define	CTL_ISCSI_OFFLOAD_LEN	8	/* Arbitrary. */
-
-struct ctl_iscsi_handoff_params {
-	char			initiator_name[CTL_ISCSI_NAME_LEN];
-	char			initiator_addr[CTL_ISCSI_ADDR_LEN];
-	char			initiator_alias[CTL_ISCSI_ALIAS_LEN];
-	uint8_t			initiator_isid[6];
-	char			target_name[CTL_ISCSI_NAME_LEN];
-	int			socket;
-	int			portal_group_tag;
-
-	/*
-	 * Connection parameters negotiated by ctld(8).
-	 */
-	ctl_iscsi_digest	header_digest;
-	ctl_iscsi_digest	data_digest;
-	uint32_t		cmdsn;
-	uint32_t		statsn;
-	int			max_recv_data_segment_length;
-	int			max_burst_length;
-	int			first_burst_length;
-	uint32_t		immediate_data;
-	char			offload[CTL_ISCSI_OFFLOAD_LEN];
-#ifdef ICL_KERNEL_PROXY
-	int			connection_id;
-#else
-	int			spare;
-#endif
-	int			max_send_data_segment_length;
-};
-
-struct ctl_iscsi_list_params {
-	uint32_t		alloc_len;	/* passed to kernel */
-	char                   *conn_xml;	/* filled in kernel */
-	uint32_t		fill_len;	/* passed to userland */
-	int			spare[4];
-};
-
-struct ctl_iscsi_logout_params {
-	int			connection_id;	/* passed to kernel */
-	char			initiator_name[CTL_ISCSI_NAME_LEN];
-						/* passed to kernel */
-	char			initiator_addr[CTL_ISCSI_ADDR_LEN];
-						/* passed to kernel */
-	int			all;		/* passed to kernel */
-	int			spare[4];
-};
-
-struct ctl_iscsi_terminate_params {
-	int			connection_id;	/* passed to kernel */
-	char			initiator_name[CTL_ISCSI_NAME_LEN];
-						/* passed to kernel */
-	char			initiator_addr[CTL_ISCSI_NAME_LEN];
-						/* passed to kernel */
-	int			all;		/* passed to kernel */
-	int			spare[4];
-};
-
-struct ctl_iscsi_limits_params {
-	/* passed to kernel */
-	char			offload[CTL_ISCSI_OFFLOAD_LEN];
-	int			socket;
-
-	/* passed to userland */
-#ifdef __LP64__
-	int			spare;
-#endif
-	int			max_recv_data_segment_length;
-	int			max_send_data_segment_length;
-	int			max_burst_length;
-	int			first_burst_length;
-};
-
-#ifdef ICL_KERNEL_PROXY
-struct ctl_iscsi_listen_params {
-	int			iser;
-	int			domain;
-	int			socktype;
-	int			protocol;
-	struct sockaddr		*addr;
-	socklen_t		addrlen;
-	int			portal_id;
-	int			spare[4];
-};
-
-struct ctl_iscsi_accept_params {
-	int			connection_id;
-	int			portal_id;
-	struct sockaddr		*initiator_addr;
-	socklen_t		initiator_addrlen;
-	int			spare[4];
-};
-
-struct ctl_iscsi_send_params {
-	int			connection_id;
-	void			*bhs;
-	size_t			spare;
-	void			*spare2;
-	size_t			data_segment_len;
-	void			*data_segment;
-	int			spare3[4];
-};
-
-struct ctl_iscsi_receive_params {
-	int			connection_id;
-	void			*bhs;
-	size_t			spare;
-	void			*spare2;
-	size_t			data_segment_len;
-	void			*data_segment;
-	int			spare3[4];
-};
-
-#endif /* ICL_KERNEL_PROXY */
-
-union ctl_iscsi_data {
-	struct ctl_iscsi_handoff_params		handoff;
-	struct ctl_iscsi_list_params		list;
-	struct ctl_iscsi_logout_params		logout;
-	struct ctl_iscsi_terminate_params	terminate;
-	struct ctl_iscsi_limits_params		limits;
-#ifdef ICL_KERNEL_PROXY
-	struct ctl_iscsi_listen_params		listen;
-	struct ctl_iscsi_accept_params		accept;
-	struct ctl_iscsi_send_params		send;
-	struct ctl_iscsi_receive_params		receive;
-#endif
-};
-
-/*
- * iSCSI interface
- *
- * status:		The status of the request.  See above for the 
- *			description of the values of this field.
- *
- * error_str:		If the status indicates an error, this string will
- *			be filled in to describe the error.
- */
-struct ctl_iscsi {
-	ctl_iscsi_type		type;		/* passed to kernel */
-	union ctl_iscsi_data	data;		/* passed to kernel */
-	ctl_iscsi_status	status;		/* passed to userland */
-	char			error_str[CTL_ERROR_STR_LEN];
-						/* passed to userland */
-};
-
 struct ctl_lun_map {
 	uint32_t		port;
 	uint32_t		plun;
 	uint32_t		lun;
-};
-
-/*
- * NVMe over Fabrics status
- *
- * OK:			Request completed successfully.
- *
- * ERROR:		An error occurred, look at the error string for a
- *			description of the error.
- */
-typedef enum {
-	CTL_NVMF_OK,
-	CTL_NVMF_ERROR,
-	CTL_NVMF_LIST_NEED_MORE_SPACE,
-	CTL_NVMF_ASSOCIATION_NOT_FOUND
-} ctl_nvmf_status;
-
-typedef enum {
-	CTL_NVMF_HANDOFF,
-	CTL_NVMF_LIST,
-	CTL_NVMF_TERMINATE
-} ctl_nvmf_type;
-
-struct ctl_nvmf_list_params {
-	uint32_t		alloc_len;	/* passed to kernel */
-	char                   *conn_xml;	/* filled in kernel */
-	uint32_t		fill_len;	/* passed to userland */
-	int			spare[4];
-};
-
-struct ctl_nvmf_terminate_params {
-	int			cntlid;		/* passed to kernel */
-	char			hostnqn[NVME_NQN_FIELD_SIZE];
-						/* passed to kernel */
-	int			all;		/* passed to kernel */
-	int			spare[4];
-};
-
-union ctl_nvmf_data {
-	struct nvmf_ioc_nv			handoff;
-	struct ctl_nvmf_list_params		list;
-	struct ctl_nvmf_terminate_params	terminate;
-};
-
-/*
- * NVMe over Fabrics interface
- *
- * status:		The status of the request.  See above for the
- *			description of the values of this field.
- *
- * error_str:		If the status indicates an error, this string will
- *			be filled in to describe the error.
- */
-struct ctl_nvmf {
-	ctl_nvmf_type		type;		/* passed to kernel */
-	union ctl_nvmf_data	data;		/* passed to kernel */
-	ctl_nvmf_status		status;		/* passed to userland */
-	char			error_str[CTL_ERROR_STR_LEN];
-						/* passed to userland */
 };
 
 #define	CTL_IO			_IOWR(CTL_MINOR, 0x00, union ctl_io)
@@ -833,13 +578,11 @@ struct ctl_nvmf {
 #define	CTL_LUN_LIST		_IOWR(CTL_MINOR, 0x22, struct ctl_lun_list)
 #define	CTL_ERROR_INJECT_DELETE	_IOW(CTL_MINOR, 0x23, struct ctl_error_desc)
 #define	CTL_SET_PORT_WWNS	_IOW(CTL_MINOR, 0x24, struct ctl_port_entry)
-#define	CTL_ISCSI		_IOWR(CTL_MINOR, 0x25, struct ctl_iscsi)
 #define	CTL_PORT_REQ		_IOWR(CTL_MINOR, 0x26, struct ctl_req)
 #define	CTL_PORT_LIST		_IOWR(CTL_MINOR, 0x27, struct ctl_lun_list)
 #define	CTL_LUN_MAP		_IOW(CTL_MINOR, 0x28, struct ctl_lun_map)
 #define	CTL_GET_LUN_STATS	_IOWR(CTL_MINOR, 0x29, struct ctl_get_io_stats)
 #define	CTL_GET_PORT_STATS	_IOWR(CTL_MINOR, 0x2a, struct ctl_get_io_stats)
-#define	CTL_NVMF		_IOWR(CTL_MINOR, 0x2b, struct ctl_nvmf)
 
 #endif /* _CTL_IOCTL_H_ */
 

@@ -296,7 +296,6 @@ device		cpufreq
 
 # bxe:  Broadcom NetXtreme II (BCM5771X/BCM578XX) PCIe 10Gb Ethernet
 #       adapters.
-# gve:	Google Virtual NIC (gVNIC)
 # igc:	Intel I225 2.5Gb Ethernet adapter
 # ipw:	Intel PRO/Wireless 2100 IEEE 802.11 adapter
 #	Requires the ipw firmware module
@@ -306,12 +305,10 @@ device		cpufreq
 #	802.11 network adapters
 #	Requires the iwn firmware module
 # nfe:	nVidia nForce MCP on-board Ethernet Networking (BSD open source)
-# vmx:	VMware VMXNET3 Ethernet (BSD open source)
 # wpi:	Intel 3945ABG Wireless LAN controller
 #	Requires the wpi firmware module
 
 device		bxe		# Broadcom NetXtreme II BCM5771X/BCM578XX 10GbE
-device		gve		# Google Virtual NIC (gVNIC)
 device		igc		# Intel I225 2.5G Ethernet
 device		ipw		# Intel 2100 wireless NICs.
 device		iwi		# Intel 2200BG/2225BG/2915ABG wireless NICs.
@@ -319,7 +316,6 @@ device		iwm		# Intel IEEE 802.11ac wireless NICs.
 device		iwn		# Intel 4965/1000/5000/6000 wireless NICs.
 device		iwx		# Intel IEEE 802.11ax wireless NICs.
 device		nfe		# nVidia nForce MCP on-board Ethernet
-device		vmx		# VMware VMXNET3 Ethernet
 device		wpi		# Intel 3945ABG wireless NICs.
 
 # IEEE 802.11 adapter firmware modules
@@ -412,11 +408,6 @@ device		ossl		# OpenSSL OpenCrypto module
 # Linux KVM paravirtualization support
 device		kvm_clock	# KVM paravirtual clock driver
 
-
-# VMware hypervisor support
-device		pvscsi		# Paravirtual SCSI driver
-device		vmci		# Virtual Machine Communication Interface (VMCI)
-device		vmware_guestrpc	# GuestRPC interface
 
 #
 # Laptop/Notebook options:

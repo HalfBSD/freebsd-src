@@ -50,7 +50,9 @@ A7 (the four legacy synchronous-WAN Netgraph leaf nodes per `A7.md`),
 A10 (Kboot/native U-Boot/standalone USB boot), A11 (in-tree DRM2 and AGP),
 A12 (the revised utility list per `A12.md`),
 A13 (TACACS+, PAM RADIUS, and Hesiod),
-B1 (remaining InfiniBand networking and Mellanox firmware support), and C3
+B1 (remaining InfiniBand networking and Mellanox firmware support),
+A8 (RIP/IPv4 router discovery), A9 (VMware/cloud drivers), B2 (SAN protocols),
+C2 (maintained workstation build/kernel/module policy), and C3
 (the alternate scheduler and scheduler-selection machinery) are implemented.
 Their original assessments below remain as audit history; completed items are
 no longer pending removal candidates. NFS remains removed.
@@ -306,6 +308,25 @@ representative generic nodes, and verify retained bhyve networking paths.
 
 ### A8. RIP daemons and IPv6 router-renumbering service
 
+**Implementation status:** Removed on October 3, 2026, at the user's request.
+Deleted `routed`, its `rtquery` tool and integrated `rdisc.c`, `route6d`,
+`rip6query`, and `rrenumd`. Removed their build/dependency entries, rc scripts
+and defaults, the ROUTED option, RIP package description, unused RIP header,
+and obsolete crunch example entry. Installed binary, rc-script, header, and
+manual cleanup is unconditional. The CARP IPv4 unicast test now routes through
+the elected master explicitly instead of invoking RIP daemons.
+
+`rdisc` implements IPv4 ICMP router discovery inside `routed`, rather than a
+separate service. Removing it drops discovery on networks that rely exclusively
+on those advertisements; DHCP-provided and static IPv4 default routes remain.
+IPv6 discovery/SLAAC (`rtsold`, `ndp`, and kernel neighbor discovery), `route`,
+shared socket/IPsec facilities, and `rtadvd` remain. The independent router
+renumbering receiver in `rtadvd` is outside this daemon-removal scope.
+Shell syntax, build/dependency reference, retained-networking source, installed
+cleanup, and whitespace checks passed. This Linux host cannot validate a
+FreeBSD world build or live DHCP/default routes, SLAAC, DNS, SSH, VM NAT,
+and CARP; those checks remain required on FreeBSD before deployment.
+
 **Purpose and locations:** `sbin/routed`, `usr.sbin/route6d`, `usr.sbin/rrenumd`,
 associated rc scripts and configuration. Query tools can accompany the services
 where they serve only those protocols.
@@ -327,6 +348,20 @@ network-facing services. Low risk; high confidence.
 **Validation:** DHCP, default routes, IPv6 SLAAC, DNS, SSH, and VM NAT.
 
 ### A9. VMware-specific guest devices and cloud-only NICs
+
+**Implementation status:** Removed on October 3, 2026, at the user's request.
+Deleted VMware PVSCSI, VMXNET3, VMCI, and x86 GuestRPC implementation/header,
+plus ENA (including its dedicated ena-com library), GVE, and MANA drivers and
+modules. Removed kernel/config/module selections, dedicated documentation
+inputs, VMware Vagrant release generation, and ENA-specific release references.
+Installed-module/header/manual cleanup is unconditional. Retained `vmware.h`
+because CPU identification, TSC frequency, and APIC topology use its hypercalls;
+generic guest detection and hardware/firmware compatibility workarounds remain.
+Intel VMX under `sys/amd64/vmm` is bhyve host support and remains untouched.
+
+Static source/build dependency, shell syntax, installed cleanup, and whitespace
+checks passed. Native kernel/module/world builds and the runtime checks below
+remain required on FreeBSD.
 
 **Purpose and locations:** `sys/dev/vmware`, `sys/modules/vmware`, VMware
 guest-RPC support under `sys/x86`; separately, cloud-oriented `ena`, `gve`, and
@@ -524,6 +559,26 @@ Also remove stale mlx5 entries from `sys/amd64/conf/GENERIC`. Empty mlx4
 directories are not remaining tracked implementations.
 
 ### B2. iSCSI and NVMe over Fabrics
+
+**Implementation status:** Removed on October 3, 2026, at the user's request.
+Deleted iSCSI and NVMe-oF initiators/targets/transports, ctld and its discovery,
+iSNS, authentication and configuration parsers, iscsid/iscsictl, libiscsiutil,
+libnvmf, NVMe-oF example tools/devd configuration, and SAN-only regression tests.
+Removed Chelsio cxgbei and its iSCSI transmit glue from retained TCP offload.
+Removed fabric commands from nvmecontrol and ctladm, fabric state/transport
+formatting from nvmecontrol/camcontrol, CTL fabric ioctl declarations/dispatch,
+and CAM registration of the retired transports. Build options, libraries,
+headers, module selections, package/rc integration, and dependency metadata are
+cleaned up. Installed modules/binaries/scripts/headers/manuals/test files have
+unconditional cleanup; administrator-created SAN configuration is preserved.
+Local NVMe/CAM, CTL local backends/frontends/tools, CTL HA (B3), ordinary ZFS,
+SCSI protocol identifiers/serialization, and bhyve virtio-SCSI remain. Portable
+ZFS property-test helpers and NIC firmware protocol definitions are separate
+from the removed SAN implementation.
+
+Static source/build dependency, shell syntax, installed cleanup, and whitespace
+checks passed. Native kernel/module/world builds and the runtime checks below
+remain required on FreeBSD.
 
 **Purpose and locations:** `sys/dev/iscsi`, `sys/dev/nvmf`, `lib/libiscsiutil`,
 `lib/libnvmf`, `iscsid`, `iscsictl`, `ctld`, transport modules, startup scripts,
@@ -902,6 +957,39 @@ environments, encrypted layouts, and refusal of unsupported configurations
 before disk writes.
 
 ### C2. Fixed HalfBSD build policy and maintained kernel configuration
+
+**Implementation status:** Completed on October 3, 2026, at the user's request.
+The default amd64 kernel is now `HALFBSD`, derived from CHARLIE with VNET,
+modular IPsec/SCTP support and Wi-Fi/iflib cores enabled. CHARLIE is an include
+alias; HALFBSD-DEBUG/KASAN/KCSAN/KMSAN provide purposeful diagnostic builds.
+Top-level amd64 runtime builds require the core workstation features; bootstrap,
+native-tool, individual-component and lib32 sub-build overrides remain usable.
+Cross-host compiler/toolchain controls remain selectable. Kernel-only option
+handling remains compatible with external module builds.
+
+`sys/conf/halfbsd.modules.mk` defines the default in-tree workstation module
+set, including local NVMe/CAM/CTL, ZFS, bhyve VMM, VNET plumbing, current physical
+NIC/Wi-Fi families, USB devices, HDA/USB/pro audio, and LinuxKPI/graphics APIs.
+GEOM defaults retain GPT/labels/ELI/mirror and useful image/test classes.
+The filter respects existing architecture, option and firmware selections;
+MODULES_OVERRIDE, MODULES_EXTRA, WITHOUT_MODULES, and explicit ALL_MODULES builds
+remain available. Excluded implementations are not deleted by this build-policy
+change; pending A5/B3/B4/B13/B15/B16 decisions remain separate.
+
+Removed 24 descriptions of nonexistent options; preserved meta/dirdeps controls.
+Reconciled 133 committed dependency files, removing 242 stale edges and updating
+32 moved-source edges, including obsolete duplicate GNU CSU and ncurses paths.
+GENERIC's stale mlx5 selections had already been removed by B1. Cross-host CI
+now checks the policy, builds HALFBSD and its selected modules on amd64, and
+covers diagnostic variants on Ubuntu with clang 18. The arm64 cross-host build
+remains pending B8. Added `tools/build/check-halfbsd.py` to validate these choices
+without a compiler or object-tree writes. Corrected a pre-existing test-mtree
+indentation error exposed by these checks.
+
+BSD-make policy/override/firmware tests, source/dependency checks, shell syntax,
+mtree structure, and whitespace checks passed. Full world/kernel/module builds,
+staged packaging, native debug/sanitizer execution, hardware tests and external
+drm-kmod/Wi-Fi module loading still require a FreeBSD build/test environment.
 
 **Locations:** `share/mk/src.opts.mk`, `sys/conf/kern.opts.mk`,
 `sys/modules/Makefile`, `sys/amd64/conf`, `targets`, CI, release packages,

@@ -392,74 +392,6 @@ mbuf_raw_wr(struct mbuf *m)
 	return (m->m_pkthdr.PH_per.eight[6]);
 }
 
-static inline void
-set_mbuf_ulp_submode(struct mbuf *m, uint8_t ulp_submode)
-{
-
-	M_ASSERTPKTHDR(m);
-	m->m_pkthdr.PH_per.eight[0] = ulp_submode;
-}
-
-static inline uint8_t
-mbuf_ulp_submode(struct mbuf *m)
-{
-
-	M_ASSERTPKTHDR(m);
-	return (m->m_pkthdr.PH_per.eight[0]);
-}
-
-static inline void
-set_mbuf_iscsi_iso(struct mbuf *m, bool iso)
-{
-
-	M_ASSERTPKTHDR(m);
-	m->m_pkthdr.PH_per.eight[1] = iso;
-}
-
-static inline bool
-mbuf_iscsi_iso(struct mbuf *m)
-{
-
-	M_ASSERTPKTHDR(m);
-	return (m->m_pkthdr.PH_per.eight[1]);
-}
-
-/* Flags for iSCSI segmentation offload. */
-#define	CXGBE_ISO_TYPE(flags)	((flags) & 0x3)
-#define	CXGBE_ISO_F		0x4
-
-static inline void
-set_mbuf_iscsi_iso_flags(struct mbuf *m, uint8_t flags)
-{
-
-	M_ASSERTPKTHDR(m);
-	m->m_pkthdr.PH_per.eight[2] = flags;
-}
-
-static inline uint8_t
-mbuf_iscsi_iso_flags(struct mbuf *m)
-{
-
-	M_ASSERTPKTHDR(m);
-	return (m->m_pkthdr.PH_per.eight[2]);
-}
-
-static inline void
-set_mbuf_iscsi_iso_mss(struct mbuf *m, uint16_t mss)
-{
-
-	M_ASSERTPKTHDR(m);
-	m->m_pkthdr.PH_per.sixteen[2] = mss;
-}
-
-static inline uint16_t
-mbuf_iscsi_iso_mss(struct mbuf *m)
-{
-
-	M_ASSERTPKTHDR(m);
-	return (m->m_pkthdr.PH_per.sixteen[2]);
-}
-
 /* t4_tom.c */
 struct toepcb *alloc_toepcb(struct vi_info *, int);
 int init_toepcb(struct vi_info *, struct toepcb *);
@@ -532,7 +464,6 @@ int t4_send_fin(struct toedev *, struct tcpcb *);
 int t4_send_rst(struct toedev *, struct tcpcb *);
 void t4_set_tcb_field(struct adapter *, struct sge_wrq *, struct toepcb *,
     uint16_t, uint64_t, uint64_t, int, int);
-void t4_push_pdus(struct adapter *, struct toepcb *, int);
 bool t4_push_raw_wr(struct adapter *, struct toepcb *, struct mbuf *);
 void t4_raw_wr_tx(struct adapter *, struct toepcb *, struct mbuf *);
 void write_set_tcb_field(struct adapter *, void *, struct toepcb *, uint16_t,

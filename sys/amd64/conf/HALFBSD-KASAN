@@ -1,0 +1,5 @@
+# HalfBSD KASAN diagnostic kernel.
+include HALFBSD-DEBUG
+
+ident HALFBSD-KASAN
+options KASAN

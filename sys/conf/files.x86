@@ -241,12 +241,6 @@ dev/isci/scil/scif_sas_task_request_states.c			optional isci
 dev/isci/scil/scif_sas_timer.c					optional isci
 dev/itwd/itwd.c							optional itwd
 dev/kvm_clock/kvm_clock.c	optional	kvm_clock
-dev/mana/gdma_main.c		optional	mana
-dev/mana/mana_en.c		optional	mana
-dev/mana/mana_sysctl.c		optional	mana
-dev/mana/shm_channel.c		optional	mana
-dev/mana/hw_channel.c		optional	mana
-dev/mana/gdma_util.c		optional	mana
 dev/nctgpio/nctgpio.c		optional	nctgpio
 dev/nfe/if_nfe.c		optional	nfe pci
 dev/ntb/if_ntb/if_ntb.c		optional	if_ntb
@@ -337,5 +331,4 @@ x86/x86/stack_machdep.c		optional	ddb | stack
 x86/x86/tsc.c			standard
 x86/x86/ucode.c			standard
 x86/x86/ucode_subr.c		standard
-x86/x86/vmware_guestrpc.c	optional	vmware_guestrpc
 x86/x86/delay.c			standard

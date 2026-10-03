@@ -127,10 +127,6 @@ CONFGROUPS+=			CRON
 CRONPACKAGE=			cron
 CRON=		cron
 
-CONFGROUPS+=			CTL
-CTLPACKAGE=			ctl
-CTL=		ctld
-
 CONFGROUPS+=			GEOM
 GEOMPACKAGE=			geom
 GEOM=		geli \
@@ -149,10 +145,6 @@ IPFW=		ipfw \
 IPFW+=		ipfw_netflow
 .endif
 
-CONFGROUPS.${MK_ISCSI}+=	ISCSI
-ISCSIPACKAGE=			iscsi
-ISCSI=		iscsictl \
-		iscsid
 
 # natd is only built when ipfw is built
 CONFGROUPS.${MK_IPFW}+=		NATD
@@ -226,18 +218,6 @@ ZFS=		zfs \
 CONFGROUPS.${MK_LEGACY_CONSOLE}+=SYSCONS
 SYSCONSPACKAGE=			console-tools
 SYSCONS=	vtcons
-
-.if ${MK_INET6} != "no" || ${MK_ROUTED} != "no"
-CONFGROUPS+=	RIP
-RIPPACKAGE=	rip
-
-.if ${MK_INET6} != "no"
-RIP+=		route6d
-.endif
-.if ${MK_ROUTED} != "no"
-RIP+=		routed
-.endif
-.endif
 
 .for fg in ${CONFGROUPS} ${CONFGROUPS.yes}
 ${fg}MODE?=	${BINMODE}

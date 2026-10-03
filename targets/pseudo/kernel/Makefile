@@ -1,5 +1,6 @@
 # Build the kernel ${KERNCONF}
-KERNCONF?= ${KERNEL:UGENERIC}
+HALFBSD_KERNCONF.amd64= HALFBSD
+KERNCONF?= ${KERNEL:U${HALFBSD_KERNCONF.${MACHINE}:UGENERIC}}
 
 TARGET?= ${MACHINE}
 # keep this compatible with peoples expectations...

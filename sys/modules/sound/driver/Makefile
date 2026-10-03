@@ -19,4 +19,7 @@ _maestro3=	maestro3
 SUBDIR+=	cmi
 .endif
 
+HALFBSD_MODULE_GROUP= sound
+.include "${SYSDIR}/conf/halfbsd.modules.mk"
+
 .include <bsd.subdir.mk>

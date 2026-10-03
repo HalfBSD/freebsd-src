@@ -61,7 +61,6 @@ SUBDIR=	${SUBDIR_BOOTSTRAP} \
 	libgeom \
 	libifconfig \
 	libipsec \
-	libiscsiutil \
 	libjail \
 	libkiconv \
 	libkldelf \
@@ -75,7 +74,6 @@ SUBDIR=	${SUBDIR_BOOTSTRAP} \
 	libnetbsd \
 	libnetmap \
 	libnv \
-	libnvmf \
 	libopenbsd \
 	libpam \
 	libpathconv \

@@ -64,7 +64,6 @@ device		al_udma			# Universal DMA
 device		qcom_gcc		# Global Clock Controller
 
 # Google Virtual NIC
-device		gve		# Google Virtual NIC (gVNIC) driver
 
 
 # CPU frequency control

@@ -236,7 +236,6 @@ device		pst
 #
 
 # sbni: Granch SBNI12-xx ISA and PCI adapters
-# vmx:	VMware VMXNET3 Ethernet (BSD open source)
 # wpi:	Intel 3945ABG Wireless LAN controller
 #	Requires the wpi firmware module
 

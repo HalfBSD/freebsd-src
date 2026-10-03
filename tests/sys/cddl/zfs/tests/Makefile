@@ -26,7 +26,6 @@ TESTS_SUBDIRS+=	inheritance
 # TESTS_SUBDIRS+=	interop
 TESTS_SUBDIRS+=	inuse
 # Not yet ported to FreeBSD
-# TESTS_SUBDIRS+=	iscsi
 TESTS_SUBDIRS+=	large_files
 # Not yet ported to FreeBSD
 # TESTS_SUBDIRS+=	largest_pool

@@ -2,9 +2,9 @@ name: Cross-build Kernel
 
 on:
   push:
-    branches: [ main, 'stable/[1-9][0-9]' ]
+    branches: [ main, halfbsd2, 'stable/[1-9][0-9]' ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, halfbsd2 ]
   workflow_dispatch:
 
 permissions:
@@ -12,13 +12,27 @@ permissions:
 
 jobs:
   build:
-    name: ${{ matrix.target_arch }} ${{ matrix.os }} (${{ matrix.compiler }})
+    name: ${{ matrix.target_arch }} ${{ matrix.os }} (${{ matrix.compiler }}, ${{ matrix.variant }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         target_arch: [ amd64, aarch64 ]
         os: [ ubuntu-22.04, ubuntu-24.04, macos-latest ]
+        variant: [ normal, debug, kasan, kcsan, kmsan ]
+        exclude:
+          - { target_arch: aarch64, variant: debug }
+          - { target_arch: aarch64, variant: kasan }
+          - { target_arch: aarch64, variant: kcsan }
+          - { target_arch: aarch64, variant: kmsan }
+          - { os: ubuntu-22.04, variant: debug }
+          - { os: ubuntu-22.04, variant: kasan }
+          - { os: ubuntu-22.04, variant: kcsan }
+          - { os: ubuntu-22.04, variant: kmsan }
+          - { os: macos-latest, variant: debug }
+          - { os: macos-latest, variant: kasan }
+          - { os: macos-latest, variant: kcsan }
+          - { os: macos-latest, variant: kmsan }
         include:
           # TODO: both Ubuntu and macOS have bmake packages, we should try them instead of bootstrapping our own copy.
           - os: ubuntu-22.04
@@ -35,8 +49,10 @@ jobs:
             pkgs: bmake libarchive llvm@18
           - target_arch: amd64
             target: amd64
+            kernel-config: HALFBSD
           - target_arch: aarch64
             target: arm64
+            kernel-config: GENERIC
     steps:
       - uses: actions/checkout@v4
       - name: install packages (Ubuntu)
@@ -49,6 +65,8 @@ jobs:
         run: |
           brew update --quiet || true
           brew install ${{ matrix.pkgs }} || true
+      - name: check HalfBSD build policy
+        run: python3 tools/build/check-halfbsd.py --make bmake
       - name: create environment
         run: |
           echo "GITHUB_WORKSPACE = $GITHUB_WORKSPACE"
@@ -67,4 +85,16 @@ jobs:
       - name: make kernel-toolchain
         run: ./tools/build/make.py --debug $EXTRA_BUILD_ARGS TARGET=${{ matrix.target }} TARGET_ARCH=${{ matrix.target_arch }} kernel-toolchain -s -j$NPROC -DWITH_DISK_IMAGE_TOOLS_BOOTSTRAP
       - name: make buildkernel
-        run: ./tools/build/make.py --debug $EXTRA_BUILD_ARGS TARGET=${{ matrix.target }} TARGET_ARCH=${{ matrix.target_arch }} KERNCONF=GENERIC NO_MODULES=yes buildkernel -s -j$NPROC $EXTRA_MAKE_ARGS
+        run: |
+          kernel_config="${{ matrix.kernel-config }}"
+          case "${{ matrix.variant }}" in
+            debug) kernel_config="${kernel_config}-DEBUG" ;;
+            kasan) kernel_config="${kernel_config}-KASAN" ;;
+            kcsan) kernel_config="${kernel_config}-KCSAN" ;;
+            kmsan) kernel_config="${kernel_config}-KMSAN" ;;
+          esac
+          module_args=
+          if [ "${{ matrix.target_arch }}" != "amd64" ]; then
+            module_args=NO_MODULES=yes
+          fi
+          ./tools/build/make.py --debug $EXTRA_BUILD_ARGS TARGET=${{ matrix.target }} TARGET_ARCH=${{ matrix.target_arch }} KERNCONF=$kernel_config $module_args buildkernel -s -j$NPROC $EXTRA_MAKE_ARGS

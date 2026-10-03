@@ -39,11 +39,6 @@ BLUETOOTH+=		bluetooth.conf
 BLUETOOTHPACKAGE=	bluetooth
 .endif
 
-CONFGROUPS+=		NVME
-NVMEDIR=		${DEVDDIR}
-NVME+=			nvmf.conf
-NVMEPACKAGE=		nvme-tools
-
 .if ${MK_SOUND} != "no"
 CONFGROUPS+=		SND
 SNDDIR=			${DEVDDIR}

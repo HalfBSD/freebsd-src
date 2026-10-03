@@ -14,7 +14,6 @@ _sys_boot_zfs= stand/zfs
 
 DIRDEPS = \
 	etc \
-	etc/newsyslog.conf.d \
 
 .if ${MK_BOOT} != "no"
 DIRDEPS+= stand/common
@@ -28,7 +27,6 @@ DIRDEPS.amd64= \
 
 .if ${MK_ZFS} != "no"
 DIRDEPS.amd64+= \
-	stand/zfs32 \
 
 .endif
 

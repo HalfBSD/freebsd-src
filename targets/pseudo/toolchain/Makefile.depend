@@ -14,7 +14,6 @@ DIRDEPS= \
 	usr.bin/readelf \
 	usr.bin/size \
 	usr.bin/strings \
-	usr.bin/strip \
 	usr.bin/xinstall \
 
 .if ${MK_CLANG_BOOTSTRAP} == "yes"

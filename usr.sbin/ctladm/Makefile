@@ -17,10 +17,6 @@ WARNS?= 3
 
 LIBADD=		cam sbuf bsdxml util nv
 
-.if ${MK_ISCSI} != "no"
-CFLAGS+=	-DWANT_ISCSI
-.endif
-
 HAS_TESTS=
 SUBDIR.${MK_TESTS}+=	tests
 

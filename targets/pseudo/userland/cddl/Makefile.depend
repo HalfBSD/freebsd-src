@@ -5,7 +5,6 @@
 .endif
 
 DIRDEPS = \
-	lib/libprocstat/zfs \
 	cddl/lib/drti \
 	cddl/lib/libavl \
 	cddl/lib/libctf \
@@ -17,7 +16,6 @@ DIRDEPS = \
 	cddl/usr.bin/ctfdump \
 	cddl/usr.bin/ctfmerge \
 	cddl/usr.sbin/dtrace \
-	cddl/usr.sbin/dtruss \
 	cddl/usr.sbin/lockstat \
 	cddl/usr.sbin/plockstat \
 	cddl/usr.sbin/zfsd \
@@ -30,7 +28,6 @@ DIRDEPS.ZFS = \
 	cddl/sbin/zfs \
 	cddl/sbin/zpool \
 	cddl/usr.bin/zinject \
-	cddl/usr.bin/zstreamdump \
 	cddl/usr.bin/ztest \
 	cddl/usr.sbin/zdb \
 	cddl/usr.sbin/zhack \

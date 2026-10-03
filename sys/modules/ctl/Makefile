@@ -24,8 +24,6 @@ SRCS+=	device_if.h
 SRCS+=	vnode_if.h
 SRCS+=	opt_cam.h
 
-#CFLAGS+=-DICL_KERNEL_PROXY
-
 MFILES=	kern/bus_if.m kern/device_if.m
 
 EXPORT_SYMS=	YES

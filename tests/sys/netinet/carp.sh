@@ -195,13 +195,14 @@ unicast_v4_body()
 	wait_for_carp carp_uni_v4_two ${epair_one}b \
 	    carp_uni_v4_three ${epair_two}b
 
-	# Setup RIPv2 route daemon
-	jexec carp_uni_v4_two routed -s -Pripv2
-	jexec carp_uni_v4_three routed -s -Pripv2
-	jexec carp_uni_v4_one routed -Pripv2
-
-	# XXX Wait for route propagation
-	sleep 3
+	# Route the virtual address through the elected master.
+	if is_master carp_uni_v4_two ${epair_one}b; then
+		gateway=198.51.100.2
+	else
+		gateway=198.51.100.224
+	fi
+	atf_check -s exit:0 -o ignore jexec carp_uni_v4_one \
+	    route add -host 192.0.2.1 ${gateway}
 
 	atf_check -s exit:0 -o ignore jexec carp_uni_v4_one \
 	    ping -c 3 192.0.2.1

@@ -46,7 +46,6 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include <err.h>
-#include <libnvmf.h>
 #include <libutil.h>
 #include <limits.h>
 #include <inttypes.h>
@@ -5420,15 +5419,6 @@ cts_print(struct cam_device *device, struct ccb_trans_settings *cts)
 			    nvme->lanes, nvme->max_lanes);
 			fprintf(stdout, "%sPCIe Generation: %d (%d max)\n", pathstr,
 			    nvme->speed, nvme->max_speed);
-		}
-	}
-	if (cts->transport == XPORT_NVMF) {
-		struct ccb_trans_settings_nvmf *nvmf =
-		    &cts->xport_specific.nvmf;
-
-		if (nvmf->valid & CTS_NVMF_VALID_TRTYPE) {
-			fprintf(stdout, "%sTransport: %s\n", pathstr,
-			    nvmf_transport_type(nvmf->trtype));
 		}
 	}
 	if (cts->transport == XPORT_UFSHCI) {

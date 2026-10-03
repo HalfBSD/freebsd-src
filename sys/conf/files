@@ -102,7 +102,6 @@ cam/ctl/ctl_cmd_table.c		optional ctl
 cam/ctl/ctl_frontend.c		optional ctl
 cam/ctl/ctl_frontend_cam_sim.c	optional ctl
 cam/ctl/ctl_frontend_ioctl.c	optional ctl
-cam/ctl/ctl_frontend_iscsi.c	optional ctl cfiscsi
 cam/ctl/ctl_ha.c		optional ctl
 cam/ctl/ctl_nvme_all.c		optional ctl
 cam/ctl/ctl_nvme_cmd_table.c	optional ctl
@@ -1551,18 +1550,6 @@ dev/e1000/e1000_mbx.c		optional em \
 dev/e1000/e1000_osdep.c		optional em \
 	compile-with "${NORMAL_C} -I$S/dev/e1000"
 dev/et/if_et.c			optional et
-dev/ena/ena.c			optional ena \
-	compile-with "${NORMAL_C} -I$S/contrib"
-dev/ena/ena_datapath.c		optional ena \
-	compile-with "${NORMAL_C} -I$S/contrib"
-dev/ena/ena_netmap.c		optional ena \
-	compile-with "${NORMAL_C} -I$S/contrib"
-dev/ena/ena_rss.c		optional ena \
-	compile-with "${NORMAL_C} -I$S/contrib"
-dev/ena/ena_sysctl.c 		optional ena \
-	compile-with "${NORMAL_C} -I$S/contrib"
-contrib/ena-com/ena_com.c	optional ena
-contrib/ena-com/ena_eth_com.c	optional ena
 dev/etherswitch/arswitch/arswitch.c		optional arswitch
 dev/etherswitch/arswitch/arswitch_reg.c		optional arswitch
 dev/etherswitch/arswitch/arswitch_phy.c		optional arswitch
@@ -1624,15 +1611,6 @@ dev/fxp/if_fxp.c		optional fxp
 dev/fxp/inphy.c			optional fxp
 dev/gem/if_gem.c		optional gem
 dev/gem/if_gem_pci.c		optional gem pci
-dev/gve/gve_adminq.c		optional gve
-dev/gve/gve_main.c		optional gve
-dev/gve/gve_qpl.c		optional gve
-dev/gve/gve_rx.c		optional gve
-dev/gve/gve_rx_dqo.c		optional gve
-dev/gve/gve_sysctl.c		optional gve
-dev/gve/gve_tx.c		optional gve
-dev/gve/gve_tx_dqo.c		optional gve
-dev/gve/gve_utils.c		optional gve
 dev/goldfish/goldfish_rtc.c	optional goldfish_rtc fdt
 dev/gpio/acpi_gpiobus.c		optional acpi gpio
 dev/gpio/dwgpio/dwgpio.c	optional gpio dwgpio fdt
@@ -1799,11 +1777,6 @@ ipw_monitor.fw			optional ipwmonitorfw | ipwfw		\
 	compile-with	"${NORMAL_FW}"					\
 	no-obj no-implicit-rule						\
 	clean		"ipw_monitor.fw"
-dev/iscsi/icl.c			optional iscsi
-dev/iscsi/icl_conn_if.m		optional cfiscsi | iscsi
-dev/iscsi/icl_soft.c		optional iscsi
-dev/iscsi/icl_soft_proxy.c	optional iscsi
-dev/iscsi/iscsi.c		optional iscsi scbus
 dev/ismt/ismt.c			optional ismt
 dev/isl/isl.c			optional isl iicbus
 dev/iwi/if_iwi.c		optional iwi
@@ -2435,19 +2408,6 @@ dev/nvme/nvme_test.c		optional nvme
 dev/nvme/nvme_util.c		optional nvme | scbus
 dev/nvmem/nvmem.c		optional nvmem fdt
 dev/nvmem/nvmem_if.m		optional nvmem
-dev/nvmf/controller/ctl_frontend_nvmf.c		optional nvmft
-dev/nvmf/controller/nvmft_controller.c		optional nvmft
-dev/nvmf/controller/nvmft_subr.c		optional nvmft
-dev/nvmf/controller/nvmft_qpair.c		optional nvmft
-dev/nvmf/host/nvmf.c		optional nvmf
-dev/nvmf/host/nvmf_aer.c	optional nvmf
-dev/nvmf/host/nvmf_cmd.c	optional nvmf
-dev/nvmf/host/nvmf_ctldev.c	optional nvmf
-dev/nvmf/host/nvmf_ns.c		optional nvmf
-dev/nvmf/host/nvmf_qpair.c	optional nvmf
-dev/nvmf/host/nvmf_sim.c	optional nvmf
-dev/nvmf/nvmf_tcp.c		optional nvmf_tcp
-dev/nvmf/nvmf_transport.c	optional nvmf | nvmft
 dev/oce/oce_hw.c		optional oce pci
 dev/oce/oce_if.c		optional oce pci
 dev/oce/oce_mbox.c		optional oce pci
@@ -3293,18 +3253,6 @@ dev/virtio/scmi/virtio_scmi.c		optional	virtio_scmi
 dev/virtio/scsi/virtio_scsi.c		optional	virtio_scsi
 dev/vkbd/vkbd.c			optional vkbd
 dev/vmgenc/vmgenc_acpi.c	optional acpi
-dev/vmware/vmxnet3/if_vmx.c		optional vmx
-dev/vmware/vmci/vmci.c			optional vmci
-dev/vmware/vmci/vmci_datagram.c		optional vmci
-dev/vmware/vmci/vmci_doorbell.c		optional vmci
-dev/vmware/vmci/vmci_driver.c		optional vmci
-dev/vmware/vmci/vmci_event.c		optional vmci
-dev/vmware/vmci/vmci_hashtable.c	optional vmci
-dev/vmware/vmci/vmci_kernel_if.c	optional vmci
-dev/vmware/vmci/vmci_qpair.c		optional vmci
-dev/vmware/vmci/vmci_queue_pair.c	optional vmci
-dev/vmware/vmci/vmci_resource.c		optional vmci
-dev/vmware/pvscsi/pvscsi.c		optional pvscsi
 dev/vr/if_vr.c			optional vr pci
 dev/vt/colors/vt_termcolors.c	optional vt
 dev/vt/font/vt_font_default.c	optional vt

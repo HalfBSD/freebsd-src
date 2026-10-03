@@ -176,7 +176,6 @@ SUBDIR+=		gh-bc
 SUBDIR.${MK_ICONV}+=	iconv
 SUBDIR.${MK_ICONV}+=	mkcsmapper
 SUBDIR.${MK_ICONV}+=	mkesdb
-SUBDIR.${MK_ISCSI}+=	iscsictl
 SUBDIR.${MK_KDUMP}+=	kdump
 SUBDIR.${MK_KDUMP}+=	truss
 SUBDIR.${MK_LDNS_UTILS}+=	drill

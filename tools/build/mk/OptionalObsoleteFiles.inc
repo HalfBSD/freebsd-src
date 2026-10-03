@@ -1421,9 +1421,6 @@ OLD_FILES+=sbin/rtsol
 OLD_FILES+=usr/sbin/ip6addrctl
 OLD_FILES+=usr/sbin/mld6query
 OLD_FILES+=usr/sbin/ndp
-OLD_FILES+=usr/sbin/rip6query
-OLD_FILES+=usr/sbin/route6d
-OLD_FILES+=usr/sbin/rrenumd
 OLD_FILES+=usr/sbin/rtadvctl
 OLD_FILES+=usr/sbin/rtadvd
 OLD_FILES+=usr/sbin/rtsold
@@ -1437,13 +1434,6 @@ OLD_FILES+=etc/rc.d/natd
 OLD_FILES+=sbin/ipfw
 OLD_FILES+=sbin/natd
 OLD_FILES+=usr/sbin/ipfwpcap
-.endif
-
-.if ${MK_ISCSI} == no
-OLD_FILES+=etc/rc.d/iscsictl
-OLD_FILES+=etc/rc.d/iscsid
-OLD_FILES+=usr/bin/iscsictl
-OLD_FILES+=usr/sbin/iscsid
 .endif
 
 .if ${MK_JAIL} == no
@@ -2192,11 +2182,6 @@ OLD_FILES+=usr/sbin/quotaon
 OLD_FILES+=usr/sbin/repquota
 .endif
 
-.if ${MK_ROUTED} == no
-OLD_FILES+=etc/rc.d/routed
-OLD_FILES+=sbin/routed
-OLD_FILES+=sbin/rtquery
-.endif
 
 
 .if ${MK_SERVICESDB} == no

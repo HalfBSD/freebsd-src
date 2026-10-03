@@ -3,3 +3,7 @@ Do not build or install
 associated utilities, and examples.
 .Pp
 This option only affects amd64/amd64 and arm64/aarch64.
+.Pp
+HalfBSD requires this feature in top-level amd64 runtime builds.
+Disabling it is supported only for individual components, bootstrap tools,
+and compatibility-library sub-builds.

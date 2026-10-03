@@ -4765,7 +4765,7 @@ qlnx_dma_free_coherent(void *ecore_dev, void *v_addr, bus_addr_t phys,
 	uint32_t size)
 {
 	qlnx_dma_t dma_buf, *dma_p;
-	qlnx_host_t	*ha;
+	qlnx_host_t	*ha __unused;
 
 	ha = (qlnx_host_t *)ecore_dev;
 

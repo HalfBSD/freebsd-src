@@ -1,42 +1,38 @@
 # HalfBSD source-tree reduction
 
-Measured on October 2, 2026, using these fixed snapshots:
+Measured on October 3, 2026, using these fixed snapshots:
 
 - Original: `releng/15.1` at `e38a7085f3a8ecd317c947591fe42b5ca9ab317b`.
-- HalfBSD: `halfbsd2` at `fc9e45d1f9055c0bb92e71c4d391f73d41d0bbb5`.
+- HalfBSD: `halfbsd2` at `18799602c9b05a998468d3b9ff453c92e222409e`.
 
 Both snapshots include the FreeBSD 15.1-RELEASE-p4 security and errata
-updates. These measurements precede the addition of this report.
-
-Subsequent changes on October 2, 2026: mlx4 core, Ethernet, and InfiniBand
-driver support, the cal/ncal calendar-display commands, and their libcalendar
-helper library were removed. Direct PVH boot support, Firecracker kernel
-and release configurations, and its UART workaround were also removed.
-The fixed-snapshot measurements below remain unchanged; they do not include
-these later removals, the LinuxKPI compatibility repair, or the terminal
-configuration change described below.
+updates. The HalfBSD snapshot includes the additional October 2–3 removals
+and compatibility/build repairs. Measurements include the report and review
+files as committed at that snapshot; they exclude this document update and
+the staged deletion of `HALFBSD-CLEANUP-REPORT.txt` and
+`HALFBSD-GROUP-B-REVIEW.txt`.
 
 ## Size and change estimates
 
-HalfBSD has removed roughly **15% of the files and 11% of the tree's
+HalfBSD has removed roughly **16% of the files and 12% of the tree's
 content** relative to the original.
 
 | Measure | Original | HalfBSD | Net reduction |
 |---|---:|---:|---:|
-| Tracked files | 109,076 | 93,242 | 15,834 (14.5%) |
-| Uncompressed file content | 1,538,792,947 bytes | 1,376,592,186 bytes | 162,200,761 bytes (10.5%) |
-| Text lines | 41,835,868 | 37,075,865 | 4,760,003 (11.4%) |
+| Tracked files | 109,076 | 91,804 | 17,272 (15.8%) |
+| Uncompressed file content | 1,538,792,947 bytes | 1,361,564,761 bytes | 177,228,186 bytes (11.5%) |
+| Text lines | 41,835,868 | 36,621,924 | 5,213,944 (12.5%) |
 
 File-path accounting:
 
-- 15,854 original paths were deleted (14.5% of original files).
-- 1,304 existing paths were modified (1.2% of original files).
+- 17,292 original paths were deleted (15.9% of original files).
+- 1,383 existing paths were modified (1.3% of original files).
 - 20 paths were added.
-- 91,918 original paths are unchanged (84.3% of original files).
-- Altogether, 15.7% of original file paths were deleted or modified.
+- 90,401 original paths are unchanged (82.9% of original files).
+- Altogether, 17.1% of original file paths were deleted or modified.
 
-Git's default rename-aware diff reports 17,167 changed files,
-25,181 inserted lines, and 4,785,286 deleted lines. This differs from the
+Git's default rename-aware diff reports 18,686 changed files,
+27,023 inserted lines, and 5,241,069 deleted lines. This differs from the
 path accounting because Git recognizes some moves as renames. Git's line
 counts also use its own text/binary classification and diff rules.
 
@@ -47,14 +43,14 @@ content sizes, including edits and additions within each directory.
 
 | Directory | Net content removed |
 |---|---:|
-| `share` | 51.0 MB |
+| `share` | 54.8 MB |
 | `crypto` | 40.9 MB |
-| `contrib` | 26.5 MB |
-| `sys` | 19.3 MB |
+| `contrib` | 29.3 MB |
+| `sys` | 26.8 MB |
 | `lib` | 7.7 MB |
-| `usr.sbin` | 6.7 MB |
+| `usr.sbin` | 6.9 MB |
+| `usr.bin` | 3.4 MB |
 | `sbin` | 3.0 MB |
-| `usr.bin` | 3.0 MB |
 | `stand` | 1.6 MB |
 | `libexec` | 1.1 MB |
 | `tests` | 0.8 MB |
@@ -72,14 +68,18 @@ they do not imply that equivalent third-party software cannot be installed.
   support, diagnostic backends, and release/CI entry points.
 - RISC-V build targets, architecture sources, and minidump support.
 - Legacy x86 BIOS boot loaders and the `boot0cfg` utility. UEFI boot remains.
+  Installer and NanoBSD integration now use UEFI; the ZFS installer defaults
+  to GPT/UEFI and rejects retired boot methods before changing disks.
+- Open Firmware loader support and remaining PowerPC/RISC-V build metadata,
+  native crypto, sound, tracing, and diagnostic remnants.
 - Forth boot-loader implementation and integration. Lua loader support remains.
 - PXE boot, TFTP client/server support, and associated boot-loader integration.
 - BOOTP, bootparam, remote boot, and reverse ARP services: `bootpd`,
   `bootparamd`, `rbootd`, and `rarpd`.
 - Xen guest drivers, hypercalls, loader integration, and Xen-specific tools.
-  Generic PVH boot remained at the measured snapshot. It was subsequently
-  removed on October 2, 2026, together with Firecracker kernel/image support
-  and its UART workaround. The LinuxKPI `xen/xen.h` compatibility header
+  Direct PVH boot, Firecracker kernel/image support, and its UART workaround
+  were also removed on October 2, 2026. The LinuxKPI `xen/xen.h` compatibility
+  header
   and the exported `lkpi_xen_initial_domain()` and `lkpi_xen_pv_domain()`
   functions were restored on October 2, 2026, after the Xen removal caused
   AMDGPU module loading to fail with an undefined `lkpi_xen_initial_domain`
@@ -94,18 +94,27 @@ they do not imply that equivalent third-party software cannot be installed.
 ### Networking and network filesystems
 
 - PF and IPFILTER firewall engines, modules, control tools, proxies, and
-  associated libraries; PF-dependent ALTQ support. IPFW and dummynet remain.
+  associated libraries; PF-dependent ALTQ support and remaining ALTQ
+  scaffolding. IPFW and dummynet remain.
 - NFS client/server implementation and related mount, administration,
-  locking, status, quota, and GSS support. Local NFSv4-style ACL support remains.
+  locking, status, quota, and GSS support, plus leftover WebNFS state and
+  NFS-specific tests. Local NFSv4-style ACL support remains.
+- RPC-over-TLS kernel integration, `rpc.tlsclntd`/`rpc.tlsservd`, their startup
+  services, and the NFS callback RPC client. Generic RPC, rpcbind, and
+  general kernel TLS support remain.
 - SMBFS/SMB1 client support, `mount_smbfs`, `smbutil`, and supporting library code.
 - Userland PPP, PPPoE daemon, Bluetooth PPP daemon, kernel Netgraph PPP
   components, SLIP, and associated dial-up utilities and integration.
 - OFED/InfiniBand/RDMA libraries, tools, kernel integration, OpenSM,
-  diagnostic programs, and management components.
+  diagnostic programs, and management components. Later cleanup removed
+  orphaned `bnxt_re`, `iw_cxgbe`, `irdma`, `mthca`, `qlnxr`, and `krping`
+  sources/modules, private RDMA bridges in the bnxt/ice/qlnx Ethernet drivers,
+  and iSER transport/discovery paths. The bnxt, ice, qlnx, and cxgbe Ethernet
+  drivers and ordinary TCP iSCSI support remain.
 - The mlx5 driver source tree, its Ethernet and hardware-offload components,
   kernel modules, and `mlx5tool`, removed by `f779687025e8` ("Updates").
-  The mlx4 source tree remained at the measured snapshot and was subsequently
-  removed on October 2, 2026, along with its modules and build integration.
+  The mlx4 source tree, modules, and build integration were also removed
+  on October 2, 2026.
 - The `inetd` superserver and its configuration/startup integration.
 - Telnet client/server sources and supporting library code.
 - The legacy remote-command suite and related remote status, user-listing,
@@ -117,6 +126,11 @@ they do not imply that equivalent third-party software cannot be installed.
   The bundled Heimdal FTP server sources were removed with Heimdal.
 - Finger client/server and talk client/server.
 - SNMP daemon, tools, and supporting bsnmp/libbegemot libraries.
+- TCP wrappers, `libwrap`, `tcpd` utilities, and wrapper integration in sshd
+  and rpcbind.
+- Blacklist/blocklist daemons, control tools, libraries, helpers, and OpenSSH
+  authentication reporting/configuration integration.
+- The RPC traffic-generation utilities `spray` and `rpc.sprayd`.
 
 ### Authentication and directory services
 
@@ -130,7 +144,8 @@ they do not imply that equivalent third-party software cannot be installed.
   mail wrapper, and restricted shell.
 - DMA mail transport and base mail programs/services, including `mail`,
   `rmail`, `mail.local`, `biff`/`comsat`, `from`, and `vacation`.
-- Legacy LPR printing system and its spooler/administrative integration.
+- Legacy LPR printing system and its spooler/administrative integration,
+  plus the `lptcontrol` parallel-port control utility.
 
 ### Console, hardware, and system administration
 
@@ -157,6 +172,11 @@ they do not imply that equivalent third-party software cannot be installed.
   unverified.
 - **Follow-up to consider:** remove the unused vt kernel virtual console slots.
   They remain available for now; only `ttyv0` has a configured login session.
+- The periodic maintenance framework, its daily/weekly/monthly/security
+  scripts, configuration, and cron schedules. Cron itself remains.
+- Serial communication tools `tip`/`cu`, modem dialers, `comcontrol`, and
+  legacy serial startup configuration.
+- The `uhso` USB modem driver and `uhsoctl` control utility.
 - The `moused` mouse daemon and its service integration.
 - The `msconvd` console mouse service and related files.
 - APM power-management support and utilities. ACPI remains.
@@ -176,16 +196,16 @@ they do not imply that equivalent third-party software cannot be installed.
   and NTP HTML documentation and assets, removed October 3, 2026. The
   `HTML` and `SHAREDOCS` build options and troff document build support
   are retired; licenses alongside retained third-party sources remain.
-
 - The tcsh shell (`csh`/`tcsh` in the base system).
 - The `ee` editor.
+- The `locate` database search utility, database-building helpers, and
+  update integration, plus the `banner` utility.
 - GNU diff sources. The base BSD diff implementation remains.
 - GNU dialog and its `dpv`/libdpv/libfigpar components.
 - Games and associated data/utilities, including `fortune`, `caesar`,
   `factor`, `grdc`, `morse`, `number`, `pom`, `primes`, and `random`.
-- The `calendar` reminder utility and its data/integration. The `cal`/`ncal`
-  display commands remained at the measured snapshot and were subsequently
-  removed on October 2, 2026, along with their tests and `libcalendar` helper.
+- The `calendar` reminder utility and its data/integration, plus the
+  `cal`/`ncal` display commands, their tests, and `libcalendar` helper.
 - Installed manual-page readers, lookup/indexing utilities, manual sources,
   manual build rules, and mandoc sources.
 - Most locale definitions and aliases. The remaining locale source data
@@ -194,8 +214,9 @@ they do not imply that equivalent third-party software cannot be installed.
 
 Other deleted content includes obsolete GNU scaffolding, upstream CI and
 contribution metadata, historical release/update notes, and temporary
-removal-planning documents. These contribute to the size reduction but do
-not represent separate runtime functionality.
+removal-planning documents, retired subsystem accounts/groups, unused MAC
+callbacks, and stale build/package/upgrade metadata. These contribute to the
+size reduction but do not represent separate runtime functionality.
 
 ## Measurement method and limits
 
@@ -207,7 +228,7 @@ not represent separate runtime functionality.
 - Read blobs with `git cat-file --batch`. For the text-line estimate,
   exclude blobs containing NUL bytes; count newline characters and any
   final unterminated line. This yields 721 binary-classified files in the
-  original and 614 in HalfBSD.
+  original and 532 in HalfBSD.
 - Obtain Git's separate diff statistics with `git diff --shortstat`
   between the two snapshots.
 - Sum file sizes by top-level directory to obtain directory reductions.

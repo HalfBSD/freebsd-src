@@ -51,6 +51,9 @@
 #   xargs -n1 | sort | uniq -d;
 # done
 
+# 20261002: Retire unsupported Kerberos RPC headers
+OLD_FILES+=usr/include/rpc/auth_kerb.h
+
 # 20261002: Clean orphaned support from removed subsystems
 OLD_FILES+=usr/bin/ibv_asyncwatch
 OLD_FILES+=usr/bin/ibv_devices

@@ -188,12 +188,6 @@ stub_bpfdesc_create_mbuf(struct bpf_d *d, struct label *dlabel,
 
 }
 
-static void
-stub_cred_associate_nfsd(struct ucred *cred)
-{
-
-}
-
 static int
 stub_cred_check_relabel(struct ucred *cred, struct label *newlabel)
 {
@@ -1700,7 +1694,6 @@ static struct mac_policy_ops stub_ops =
 	.mpo_bpfdesc_destroy_label = stub_destroy_label,
 	.mpo_bpfdesc_init_label = stub_init_label,
 
-	.mpo_cred_associate_nfsd = stub_cred_associate_nfsd,
 	.mpo_cred_check_relabel = stub_cred_check_relabel,
 	.mpo_cred_check_setaudit = stub_cred_check_setaudit,
 	.mpo_cred_check_setaudit_addr = stub_cred_check_setaudit_addr,

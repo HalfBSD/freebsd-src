@@ -627,8 +627,7 @@ struct export_args {
 };
 
 /*
- * Structure holding information for a publicly exported filesystem
- * (WebNFS). Currently the specs allow just for one such filesystem.
+ * Reserved compatibility layout for retired WebNFS public exports.
  */
 struct nfs_public {
 	int		np_valid;	/* Do we hold valid information */
@@ -1030,7 +1029,7 @@ int	vfs_setopt_part(struct vfsoptlist *opts, const char *name, void *value,
 	    int len);
 int	vfs_setopts(struct vfsoptlist *opts, const char *name,
 	    const char *value);
-int	vfs_setpublicfs			    /* set publicly exported fs */
+int	vfs_setpublicfs			    /* WebNFS compatibility entrypoint */
 	    (struct mount *, struct netexport *, struct export_args *);
 void	vfs_periodic(struct mount *, int);
 int	vfs_busy(struct mount *, int);

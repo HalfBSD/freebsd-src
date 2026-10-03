@@ -9,7 +9,6 @@ SRCS=	bus_if.h
 SRCS+=	device_if.h
 SRCS+=	opt_inet.h
 SRCS+=	opt_inet6.h
-SRCS+=	opt_ofed.h
 SRCS+=	opt_rss.h
 SRCS+=	pci_if.h pci_iov_if.h
 SRCS+=	t4_vf.c

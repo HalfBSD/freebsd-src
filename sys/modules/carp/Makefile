@@ -4,6 +4,6 @@
 KMOD=	carp
 SRCS=	ip_carp.c sha1.c
 SRCS+=	device_if.h bus_if.h vnode_if.h
-SRCS+=	opt_carp.h opt_bpf.h opt_inet.h opt_inet6.h opt_ofed.h
+SRCS+=	opt_carp.h opt_bpf.h opt_inet.h opt_inet6.h
 
 .include <bsd.kmod.mk>

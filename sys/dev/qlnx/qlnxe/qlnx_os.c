@@ -62,10 +62,6 @@
 #include "qlnx_def.h"
 #include "qlnx_ver.h"
 
-#ifdef QLNX_ENABLE_IWARP
-#include "qlnx_rdma.h"
-#endif /* #ifdef QLNX_ENABLE_IWARP */
-
 #ifdef CONFIG_ECORE_SRIOV
 #include <sys/nv.h>
 #include <sys/iov_schema.h>
@@ -278,30 +274,6 @@ static int qlnxe_queue_count = QLNX_DEFAULT_RSS;
 SYSCTL_INT(_hw_qlnxe, OID_AUTO, queue_count, CTLFLAG_RDTUN,
 		&qlnxe_queue_count, 0, "Multi-Queue queue count");
 
-/*
- * Note on RDMA personality setting
- * 
- * Read the personality configured in NVRAM
- * If the personality is ETH_ONLY, ETH_IWARP or ETH_ROCE and 
- * the configured personality in sysctl is QLNX_PERSONALITY_DEFAULT 
- * use the personality in NVRAM.
-
- * Otherwise use t the personality configured in sysctl.
- *
- */
-#define QLNX_PERSONALITY_DEFAULT	0x0  /* use personality in NVRAM */
-#define QLNX_PERSONALITY_ETH_ONLY	0x1  /* Override with ETH_ONLY */
-#define QLNX_PERSONALITY_ETH_IWARP	0x2  /* Override with ETH_IWARP */
-#define QLNX_PERSONALITY_ETH_ROCE	0x3  /* Override with ETH_ROCE */
-#define QLNX_PERSONALITY_BITS_PER_FUNC	4
-#define QLNX_PERSONALIY_MASK		0xF
-
-/* RDMA configuration; 64bit field allows setting for 16 physical functions*/
-static uint64_t qlnxe_rdma_configuration = 0x22222222; 
-
-SYSCTL_U64(_hw_qlnxe, OID_AUTO, rdma_configuration, CTLFLAG_RDTUN,
-                &qlnxe_rdma_configuration, 0, "RDMA Configuration");
-
 int
 qlnx_vf_device(qlnx_host_t *ha)
 {
@@ -336,24 +308,6 @@ qlnx_valid_device(qlnx_host_t *ha)
 #endif /* #ifndef QLNX_VF */
         return -1;
 }
-
-#ifdef QLNX_ENABLE_IWARP
-static int
-qlnx_rdma_supported(struct qlnx_host *ha)
-{
-	uint16_t device_id;
-
-	device_id = pci_get_device(ha->pci_dev);
-
-	if ((device_id == QLOGIC_PCI_DEVICE_ID_1634) ||
-		(device_id == QLOGIC_PCI_DEVICE_ID_1656) ||
-		(device_id == QLOGIC_PCI_DEVICE_ID_1654) ||
-		(device_id == QLOGIC_PCI_DEVICE_ID_8070))
-		return (0);
-
-	return (-1);
-}
-#endif /* #ifdef QLNX_ENABLE_IWARP */
 
 /*
  * Name:	qlnx_pci_probe
@@ -423,10 +377,6 @@ qlnx_pci_probe(device_t dev)
         default:
                 return (ENXIO);
         }
-
-#ifdef QLNX_ENABLE_IWARP
-	qlnx_rdma_init();
-#endif /* #ifdef QLNX_ENABLE_IWARP */
 
         return (BUS_PROBE_DEFAULT);
 }
@@ -662,16 +612,8 @@ qlnx_error_recovery_taskqueue(void *context, int pending)
         qlnx_stop(ha);
         QLNX_UNLOCK(ha);
 
-#ifdef QLNX_ENABLE_IWARP
-	qlnx_rdma_dev_remove(ha);
-#endif /* #ifdef QLNX_ENABLE_IWARP */
-
         qlnx_slowpath_stop(ha);
         qlnx_slowpath_start(ha);
-
-#ifdef QLNX_ENABLE_IWARP
-	qlnx_rdma_dev_add(ha);
-#endif /* #ifdef QLNX_ENABLE_IWARP */
 
         qlnx_init(ha);
 
@@ -732,7 +674,6 @@ qlnx_pci_attach(device_t dev)
 	int		i;
 	uint32_t	mfw_ver;
 	uint32_t	num_sp_msix = 0;
-	uint32_t	num_rdma_irqs = 0;
 
         if ((ha = device_get_softc(dev)) == NULL) {
                 device_printf(dev, "cannot get softc\n");
@@ -881,23 +822,17 @@ qlnx_pci_attach(device_t dev)
 
         ha->msix_count = pci_msix_count(dev);
 
-#ifdef QLNX_ENABLE_IWARP
-
-	num_rdma_irqs = qlnx_rdma_get_num_irqs(ha);
-
-#endif /* #ifdef QLNX_ENABLE_IWARP */
-
         if (!ha->msix_count ||
-		(ha->msix_count < (num_sp_msix + 1 + num_rdma_irqs))) {
+		(ha->msix_count < (num_sp_msix + 1))) {
                 device_printf(dev, "%s: msix_count[%d] not enough\n", __func__,
                         ha->msix_count);
                 goto qlnx_pci_attach_err;
         }
 
-	if (ha->msix_count > (ha->num_rss + num_sp_msix + num_rdma_irqs))
-		ha->msix_count = ha->num_rss + num_sp_msix + num_rdma_irqs;
+	if (ha->msix_count > (ha->num_rss + num_sp_msix))
+		ha->msix_count = ha->num_rss + num_sp_msix;
 	else
-		ha->num_rss = ha->msix_count - (num_sp_msix + num_rdma_irqs);
+		ha->num_rss = ha->msix_count - (num_sp_msix);
 
 	QL_DPRINT1(ha, "\n\t\t\t"
 		"pci_reg = %p, reg_len = 0x%08x reg_rid = 0x%08x"
@@ -1072,9 +1007,6 @@ qlnx_pci_attach_err0:
 			goto qlnx_pci_attach_err;
 		}
 
-#ifdef QLNX_ENABLE_IWARP
-		qlnx_rdma_dev_add(ha);
-#endif /* #ifdef QLNX_ENABLE_IWARP */
 	}
 
 #ifndef QLNX_VF
@@ -1123,10 +1055,6 @@ qlnx_pci_detach(device_t dev)
 
 #endif /* #ifdef CONFIG_ECORE_SRIOV */
 
-#ifdef QLNX_ENABLE_IWARP
-		if (qlnx_rdma_dev_remove(ha) != 0)
-			return (EBUSY);
-#endif /* #ifdef QLNX_ENABLE_IWARP */
 	}
 
 	QLNX_LOCK(ha);
@@ -1137,57 +1065,6 @@ qlnx_pci_detach(device_t dev)
 
         return (0);
 }
-
-#ifdef QLNX_ENABLE_IWARP
-
-static uint8_t
-qlnx_get_personality(uint8_t pci_func)
-{
-	uint8_t personality;
-
-	personality = (qlnxe_rdma_configuration >>
-				(pci_func * QLNX_PERSONALITY_BITS_PER_FUNC)) &
-				QLNX_PERSONALIY_MASK;
-	return (personality);
-}
-
-static void
-qlnx_set_personality(qlnx_host_t *ha)
-{
-	uint8_t personality;
-
-	personality = qlnx_get_personality(ha->pci_func);
-
-	switch (personality) {
-	case QLNX_PERSONALITY_DEFAULT:
-               	device_printf(ha->pci_dev, "%s: DEFAULT\n",
-			__func__);
-		ha->personality = ECORE_PCI_DEFAULT;
-		break;
-
-	case QLNX_PERSONALITY_ETH_ONLY:
-               	device_printf(ha->pci_dev, "%s: ETH_ONLY\n",
-			__func__);
-		ha->personality = ECORE_PCI_ETH;
-		break;
-
-	case QLNX_PERSONALITY_ETH_IWARP:
-               	device_printf(ha->pci_dev, "%s: ETH_IWARP\n",
-			__func__);
-		ha->personality = ECORE_PCI_ETH_IWARP;
-		break;
-
-	case QLNX_PERSONALITY_ETH_ROCE:
-               	device_printf(ha->pci_dev, "%s: ETH_ROCE\n",
-			__func__);
-		ha->personality = ECORE_PCI_ETH_ROCE;
-		break;
-	}
-
-	return;
-}
-
-#endif /* #ifdef QLNX_ENABLE_IWARP */
 
 static int
 qlnx_init_hw(qlnx_host_t *ha)
@@ -1213,7 +1090,7 @@ qlnx_init_hw(qlnx_host_t *ha)
 
 	ha->cdev.regview = ha->pci_reg;
 
-	ha->personality = ECORE_PCI_DEFAULT;
+	ha->personality = ECORE_PCI_ETH;
 
 	if (qlnx_vf_device(ha) == 0) {
 		ha->cdev.b_is_vf = true;
@@ -1230,15 +1107,8 @@ qlnx_init_hw(qlnx_host_t *ha)
 		ha->cdev.db_phys_addr = ha->dbells_phys_addr;
 		ha->cdev.db_size = ha->dbells_size;
 
-#ifdef QLNX_ENABLE_IWARP
-
-		if (qlnx_rdma_supported(ha) == 0)
-			qlnx_set_personality(ha);
-		
-#endif /* #ifdef QLNX_ENABLE_IWARP */
 	}
-	QL_DPRINT2(ha, "%s: %s\n", __func__,
-		(ha->personality == ECORE_PCI_ETH_IWARP ? "iwarp": "ethernet"));
+	QL_DPRINT2(ha, "%s: ethernet\n", __func__);
 
 	bzero(&params, sizeof (struct ecore_hw_prepare_params));
 
@@ -2164,10 +2034,7 @@ qlnx_add_sysctls(qlnx_host_t *ha)
         SYSCTL_ADD_UINT(ctx, children,
                 OID_AUTO, "personality", CTLFLAG_RD,
                 &ha->personality, ha->personality,
-		"\tpersonality = 0 => Ethernet Only\n"
-		"\tpersonality = 3 => Ethernet and RoCE\n"
-		"\tpersonality = 4 => Ethernet and iWARP\n"
-		"\tpersonality = 6 => Default in Shared Memory\n");
+		"Ethernet only");
 
         ha->dbg_level = 0;
         SYSCTL_ADD_UINT(ctx, children,
@@ -2409,11 +2276,6 @@ qlnx_init_locked(qlnx_host_t *ha)
 		if_setdrvflagbits(ifp, IFF_DRV_RUNNING, 0);
 		if_setdrvflagbits(ifp, 0, IFF_DRV_OACTIVE);
 
-#ifdef QLNX_ENABLE_IWARP
-		if (qlnx_vf_device(ha) != 0) {
-			qlnx_rdma_dev_open(ha);
-		}
-#endif /* #ifdef QLNX_ENABLE_IWARP */
 	}
 
 	return;
@@ -3630,11 +3492,6 @@ qlnx_stop(qlnx_host_t *ha)
 					&fp->fp_task);
 		}
 	}
-#ifdef QLNX_ENABLE_IWARP
-	if (qlnx_vf_device(ha) != 0) {
-		qlnx_rdma_dev_close(ha);
-	}
-#endif /* #ifdef QLNX_ENABLE_IWARP */
 
 	qlnx_unload(ha);
 
@@ -4925,7 +4782,6 @@ qlnx_dma_free_coherent(void *ecore_dev, void *v_addr, bus_addr_t phys,
 
 	dma_buf = *dma_p;
 
-	if (!ha->qlnxr_debug)
 	qlnx_free_dmabuf((qlnx_host_t *)ecore_dev, &dma_buf);
 	return;
 }
@@ -5467,11 +5323,6 @@ qlnx_nic_setup(struct ecore_dev *cdev, struct ecore_pf_params *func_params)
                 struct ecore_hwfn *p_hwfn = &cdev->hwfns[i];
                 p_hwfn->pf_params = *func_params;
 
-#ifdef QLNX_ENABLE_IWARP
-		if (qlnx_vf_device((qlnx_host_t *)cdev) != 0) {
-			p_hwfn->using_ll2 = true;
-		}
-#endif /* #ifdef QLNX_ENABLE_IWARP */
         }
 
         rc = ecore_resc_alloc(cdev);
@@ -5518,27 +5369,6 @@ qlnx_slowpath_start(qlnx_host_t *ha)
 	memset(&pf_params, 0, sizeof(struct ecore_pf_params));
 	pf_params.eth_pf_params.num_cons  =
 		(ha->num_rss) * (ha->num_tc + 1);
-
-#ifdef QLNX_ENABLE_IWARP
-	if (qlnx_vf_device(ha) != 0) {
-		if(ha->personality == ECORE_PCI_ETH_IWARP) {
-			device_printf(ha->pci_dev, "setting parameters required by iWARP dev\n");	
-			pf_params.rdma_pf_params.num_qps = 1024;
-			pf_params.rdma_pf_params.num_srqs = 1024;
-			pf_params.rdma_pf_params.gl_pi = ECORE_ROCE_PROTOCOL_INDEX;
-			pf_params.rdma_pf_params.rdma_protocol = ECORE_RDMA_PROTOCOL_IWARP;
-		} else if(ha->personality == ECORE_PCI_ETH_ROCE) {
-			device_printf(ha->pci_dev, "setting parameters required by RoCE dev\n");	
-			pf_params.rdma_pf_params.num_qps = 8192;
-			pf_params.rdma_pf_params.num_srqs = 8192;
-			//pf_params.rdma_pf_params.min_dpis = 0;
-			pf_params.rdma_pf_params.min_dpis = 8;
-			pf_params.rdma_pf_params.roce_edpm_mode = 0;
-			pf_params.rdma_pf_params.gl_pi = ECORE_ROCE_PROTOCOL_INDEX;
-			pf_params.rdma_pf_params.rdma_protocol = ECORE_RDMA_PROTOCOL_ROCE;
-		}
-	}
-#endif /* #ifdef QLNX_ENABLE_IWARP */
 
 	cdev = &ha->cdev;
 

@@ -310,6 +310,10 @@ vfs_export(struct mount *mp, struct export_args *argp, bool do_exjail)
 	if ((argp->ex_flags & (MNT_DELEXPORT | MNT_EXPORTED)) == 0)
 		return (EINVAL);
 
+	/* Public exports require the removed WebNFS protocol support. */
+	if (argp->ex_flags & MNT_EXPUBLIC)
+		return (EOPNOTSUPP);
+
 	if ((argp->ex_flags & MNT_EXPORTED) != 0 &&
 	    (argp->ex_numsecflavors < 0
 	    || argp->ex_numsecflavors >= MAXSECFLAVORS))
@@ -339,12 +343,6 @@ vfs_export(struct mount *mp, struct export_args *argp, bool do_exjail)
 			goto out;
 		}
 		MNT_IUNLOCK(mp);
-		if (mp->mnt_flag & MNT_EXPUBLIC) {
-			vfs_setpublicfs(NULL, NULL, NULL);
-			MNT_ILOCK(mp);
-			mp->mnt_flag &= ~MNT_EXPUBLIC;
-			MNT_IUNLOCK(mp);
-		}
 		vfs_free_addrlist(nep);
 		mp->mnt_export = NULL;
 		free(nep, M_MOUNT);
@@ -380,23 +378,6 @@ vfs_export(struct mount *mp, struct export_args *argp, bool do_exjail)
 			    M_WAITOK | M_ZERO);
 			mp->mnt_export = nep;
 			new_nep = true;
-		}
-		if (argp->ex_flags & MNT_EXPUBLIC) {
-			if ((error = vfs_setpublicfs(mp, nep, argp)) != 0) {
-				if (new_nep) {
-					mp->mnt_export = NULL;
-					free(nep, M_MOUNT);
-				}
-				goto out;
-			}
-			new_nep = false;
-			MNT_ILOCK(mp);
-			if (do_exjail && mp->mnt_exjail == NULL) {
-				mp->mnt_exjail = crhold(curthread->td_ucred);
-				atomic_add_int(&pr->pr_exportcnt, 1);
-			}
-			mp->mnt_flag |= MNT_EXPUBLIC;
-			MNT_IUNLOCK(mp);
 		}
 		if (argp->ex_numsecflavors == 0) {
 			argp->ex_numsecflavors = 1;
@@ -525,83 +506,14 @@ tryagain:
 }
 
 /*
- * Set the publicly exported filesystem (WebNFS). Currently, only
- * one public filesystem is possible in the spec (RFC 2054 and 2055)
+ * Compatibility entrypoint for retired WebNFS public exports.
  */
 int
-vfs_setpublicfs(struct mount *mp, struct netexport *nep,
-    struct export_args *argp)
+vfs_setpublicfs(struct mount *mp, struct netexport *nep __unused,
+    struct export_args *argp __unused)
 {
-	int error;
-	struct vnode *rvp;
-	char *cp;
 
-	/*
-	 * mp == NULL -> invalidate the current info, the FS is
-	 * no longer exported. May be called from either vfs_export
-	 * or unmount, so check if it hasn't already been done.
-	 */
-	if (mp == NULL) {
-		if (nfs_pub.np_valid) {
-			nfs_pub.np_valid = 0;
-			if (nfs_pub.np_index != NULL) {
-				free(nfs_pub.np_index, M_TEMP);
-				nfs_pub.np_index = NULL;
-			}
-		}
-		return (0);
-	}
-
-	/*
-	 * Only one allowed at a time.
-	 */
-	if (nfs_pub.np_valid != 0 && mp != nfs_pub.np_mount)
-		return (EBUSY);
-
-	/*
-	 * Get real filehandle for root of exported FS.
-	 */
-	bzero(&nfs_pub.np_handle, sizeof(nfs_pub.np_handle));
-	nfs_pub.np_handle.fh_fsid = mp->mnt_stat.f_fsid;
-
-	if ((error = VFS_ROOT(mp, LK_EXCLUSIVE, &rvp)))
-		return (error);
-
-	if ((error = VOP_VPTOFH(rvp, &nfs_pub.np_handle.fh_fid)))
-		return (error);
-
-	vput(rvp);
-
-	/*
-	 * If an indexfile was specified, pull it in.
-	 */
-	if (argp->ex_indexfile != NULL) {
-		if (nfs_pub.np_index == NULL)
-			nfs_pub.np_index = malloc(MAXNAMLEN + 1, M_TEMP,
-			    M_WAITOK);
-		error = copyinstr(argp->ex_indexfile, nfs_pub.np_index,
-		    MAXNAMLEN, (size_t *)0);
-		if (!error) {
-			/*
-			 * Check for illegal filenames.
-			 */
-			for (cp = nfs_pub.np_index; *cp; cp++) {
-				if (*cp == '/') {
-					error = EINVAL;
-					break;
-				}
-			}
-		}
-		if (error) {
-			free(nfs_pub.np_index, M_TEMP);
-			nfs_pub.np_index = NULL;
-			return (error);
-		}
-	}
-
-	nfs_pub.np_mount = mp;
-	nfs_pub.np_valid = 1;
-	return (0);
+	return (mp == NULL ? 0 : EOPNOTSUPP);
 }
 
 /*

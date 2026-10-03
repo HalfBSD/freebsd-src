@@ -57,10 +57,6 @@
 #include "iscsid.h"
 
 static bool	timed_out(void);
-#ifdef ICL_KERNEL_PROXY
-static void	pdu_receive_proxy(struct pdu *pdu);
-static void	pdu_send_proxy(struct pdu *pdu);
-#endif /* ICL_KERNEL_PROXY */
 
 static volatile bool sigalrm_received = false;
 
@@ -68,10 +64,6 @@ static int nchildren = 0;
 
 static struct connection_ops conn_ops = {
 	.timed_out = timed_out,
-#ifdef ICL_KERNEL_PROXY
-	.pdu_receive_proxy = pdu_receive_proxy,
-	.pdu_send_proxy = pdu_send_proxy,
-#endif
 	.fail = fail,
 };
 
@@ -82,67 +74,6 @@ usage(void)
 	fprintf(stderr, "usage: iscsid [-P pidfile][-d][-m maxproc][-t timeout]\n");
 	exit(1);
 }
-
-#ifdef ICL_KERNEL_PROXY
-
-static void
-pdu_receive_proxy(struct pdu *pdu)
-{
-	struct iscsid_connection *conn;
-	struct iscsi_daemon_receive idr;
-	size_t len;
-	int error;
-
-	conn = (struct iscsid_connection *)pdu->pdu_connection;
-	assert(conn->conn_conf.isc_iser != 0);
-
-	pdu->pdu_data = malloc(conn->conn.conn_max_recv_data_segment_length);
-	if (pdu->pdu_data == NULL)
-		log_err(1, "malloc");
-
-	memset(&idr, 0, sizeof(idr));
-	idr.idr_session_id = conn->conn_session_id;
-	idr.idr_bhs = pdu->pdu_bhs;
-	idr.idr_data_segment_len = conn->conn.conn_max_recv_data_segment_length;
-	idr.idr_data_segment = pdu->pdu_data;
-
-	error = ioctl(conn->conn_iscsi_fd, ISCSIDRECEIVE, &idr);
-	if (error != 0)
-		log_err(1, "ISCSIDRECEIVE");
-
-	len = pdu_ahs_length(pdu);
-	if (len > 0)
-		log_errx(1, "protocol error: non-empty AHS");
-
-	len = pdu_data_segment_length(pdu);
-	assert(len <= (size_t)conn->conn.conn_max_recv_data_segment_length);
-	pdu->pdu_data_len = len;
-}
-
-static void
-pdu_send_proxy(struct pdu *pdu)
-{
-	struct iscsid_connection *conn;
-	struct iscsi_daemon_send ids;
-	int error;
-
-	conn = (struct iscsid_connection *)pdu->pdu_connection;
-	assert(conn->conn_conf.isc_iser != 0);
-
-	pdu_set_data_segment_length(pdu, pdu->pdu_data_len);
-
-	memset(&ids, 0, sizeof(ids));
-	ids.ids_session_id = conn->conn_session_id;
-	ids.ids_bhs = pdu->pdu_bhs;
-	ids.ids_data_segment_len = pdu->pdu_data_len;
-	ids.ids_data_segment = pdu->pdu_data;
-
-	error = ioctl(conn->conn_iscsi_fd, ISCSIDSEND, &ids);
-	if (error != 0)
-		log_err(1, "ISCSIDSEND");
-}
-
-#endif /* ICL_KERNEL_PROXY */
 
 static void
 resolve_addr(const struct connection *conn, const char *address,
@@ -224,17 +155,13 @@ connection_new(int iscsi_fd, const struct iscsi_daemon_request *request)
 	struct iscsid_connection *conn;
 	struct addrinfo *from_ai, *to_ai;
 	const char *from_addr, *to_addr;
-#ifdef ICL_KERNEL_PROXY
-	struct iscsi_daemon_connect idc;
-#endif
 	int error, optval;
 
 	conn = calloc(1, sizeof(*conn));
 	if (conn == NULL)
 		log_err(1, "calloc");
 
-	connection_init(&conn->conn, &conn_ops,
-	    request->idr_conf.isc_iser != 0);
+	connection_init(&conn->conn, &conn_ops, false);
 	conn->conn_protocol_level = 0;
 	conn->conn_initial_r2t = true;
 	conn->conn_iscsi_fd = iscsi_fd;
@@ -245,6 +172,11 @@ connection_new(int iscsi_fd, const struct iscsi_daemon_request *request)
 	    sizeof(conn->conn.conn_isid));
 	conn->conn.conn_tsih = request->idr_tsih;
 
+	if (conn->conn_conf.isc_iser) {
+		fail(&conn->conn, "iSER not supported");
+		log_errx(1, "iscsid(8) does not support iSER");
+	}
+
 	from_addr = conn->conn_conf.isc_initiator_addr;
 	to_addr = conn->conn_conf.isc_target_addr;
 
@@ -254,44 +186,6 @@ connection_new(int iscsi_fd, const struct iscsi_daemon_request *request)
 		from_ai = NULL;
 
 	resolve_addr(&conn->conn, to_addr, &to_ai, false);
-
-#ifdef ICL_KERNEL_PROXY
-	if (conn->conn_conf.isc_iser) {
-		memset(&idc, 0, sizeof(idc));
-		idc.idc_session_id = conn->conn_session_id;
-		if (conn->conn_conf.isc_iser)
-			idc.idc_iser = 1;
-		idc.idc_domain = to_ai->ai_family;
-		idc.idc_socktype = to_ai->ai_socktype;
-		idc.idc_protocol = to_ai->ai_protocol;
-		if (from_ai != NULL) {
-			idc.idc_from_addr = from_ai->ai_addr;
-			idc.idc_from_addrlen = from_ai->ai_addrlen;
-		}
-		idc.idc_to_addr = to_ai->ai_addr;
-		idc.idc_to_addrlen = to_ai->ai_addrlen;
-
-		log_debugx("connecting to %s using ICL kernel proxy", to_addr);
-		error = ioctl(iscsi_fd, ISCSIDCONNECT, &idc);
-		if (error != 0) {
-			fail(&conn->conn, strerror(errno));
-			log_err(1, "failed to connect to %s "
-			    "using ICL kernel proxy: ISCSIDCONNECT", to_addr);
-		}
-
-		if (from_ai != NULL)
-			freeaddrinfo(from_ai);
-		freeaddrinfo(to_ai);
-
-		return (conn);
-	}
-#endif /* ICL_KERNEL_PROXY */
-
-	if (conn->conn_conf.isc_iser) {
-		fail(&conn->conn, "iSER not supported");
-		log_errx(1, "iscsid(8) compiled without ICL_KERNEL_PROXY "
-		    "does not support iSER");
-	}
 
 	conn->conn.conn_socket = socket(to_ai->ai_family, to_ai->ai_socktype,
 	    to_ai->ai_protocol);
@@ -511,11 +405,6 @@ capsicate(struct iscsid_connection *conn)
 {
 	cap_rights_t rights;
 	const unsigned long cmds[] = {
-#ifdef ICL_KERNEL_PROXY
-		ISCSIDCONNECT,
-		ISCSIDSEND,
-		ISCSIDRECEIVE,
-#endif
 		ISCSIDLIMITS,
 		ISCSIDHANDOFF,
 		ISCSIDFAIL,

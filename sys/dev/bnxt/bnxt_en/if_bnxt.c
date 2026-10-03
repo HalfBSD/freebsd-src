@@ -69,8 +69,6 @@
 #include "bnxt_sysctl.h"
 #include "hsi_struct_def.h"
 #include "bnxt_mgmt.h"
-#include "bnxt_ulp.h"
-#include "bnxt_auxbus_compat.h"
 
 /*
  * PCI Device ID Table
@@ -247,8 +245,6 @@ static int bnxt_wol_config(if_ctx_t ctx);
 static bool bnxt_if_needs_restart(if_ctx_t, enum iflib_restart_event);
 static int bnxt_i2c_req(if_ctx_t ctx, struct ifi2creq *i2c);
 static void bnxt_get_port_module_status(struct bnxt_softc *softc);
-static void bnxt_rdma_aux_device_init(struct bnxt_softc *softc);
-static void bnxt_rdma_aux_device_uninit(struct bnxt_softc *softc);
 static void bnxt_queue_fw_reset_work(struct bnxt_softc *bp, unsigned long delay);
 void bnxt_queue_sp_work(struct bnxt_softc *bp);
 
@@ -304,8 +300,6 @@ void writel_fbsd(struct bnxt_softc *bp, u32 reg_off, u8 bar_idx, u32 val)
 	else
 		bus_space_write_4(bp->hwrm_bar.tag, bp->hwrm_bar.handle, reg_off, htole32(val));
 }
-
-static DEFINE_IDA(bnxt_aux_dev_ids);
 
 static device_method_t bnxt_iflib_methods[] = {
 	DEVMETHOD(ifdi_tx_queues_alloc, bnxt_tx_queues_alloc),
@@ -388,15 +382,13 @@ static struct if_shared_ctx bnxt_sctx_init = {
 	    PAGE_SIZE / sizeof(struct cmpl_base) * 16},
 	.isc_ntxd_max = {BNXT_MAX_TXD, BNXT_MAX_TXD, BNXT_MAX_TXD},
 
-	.isc_admin_intrcnt = BNXT_ROCE_IRQ_COUNT,
+	.isc_admin_intrcnt = BNXT_ADMIN_IRQ_COUNT,
 	.isc_vendor_info = bnxt_vendor_info_array,
 	.isc_driver_version = bnxt_driver_version,
 };
 
 #define PCI_SUBSYSTEM_ID	0x2e
 static struct workqueue_struct *bnxt_pf_wq;
-
-extern void bnxt_destroy_irq(struct bnxt_softc *softc);
 
 /*
  * Device Methods
@@ -1692,7 +1684,6 @@ static u32 bnxt_fw_health_readl(struct bnxt_softc *bp, int reg_idx)
 static void bnxt_fw_reset_close(struct bnxt_softc *bp)
 {
 	int i;
-	bnxt_ulp_stop(bp);
 	/* When firmware is in fatal state, quiesce device and disable
 	 * bus master to prevent any potential bad DMAs before freeing
 	 * kernel memory.
@@ -2076,22 +2067,15 @@ static int bnxt_open(struct bnxt_softc *bp)
 	bnxt_init(bp->ctx);
 	bnxt_intr_enable(bp->ctx);
 
-	if (test_and_clear_bit(BNXT_STATE_FW_RESET_DET, &bp->state)) {
-		if (!test_bit(BNXT_STATE_IN_FW_RESET, &bp->state)) {
-			bnxt_ulp_start(bp, 0);
-		}
-	}
+	(void)test_and_clear_bit(BNXT_STATE_FW_RESET_DET, &bp->state);
 
 	device_printf(bp->dev, "Network interface is UP and operational\n");
 
 	return rc;
 }
-static void bnxt_fw_reset_abort(struct bnxt_softc *bp, int rc)
+static void bnxt_fw_reset_abort(struct bnxt_softc *bp)
 {
 	clear_bit(BNXT_STATE_IN_FW_RESET, &bp->state);
-	if (bp->fw_reset_state != BNXT_FW_RESET_STATE_POLL_VF) {
-		bnxt_ulp_start(bp, rc);
-	}
 	bp->fw_reset_state = 0;
 }
 
@@ -2178,7 +2162,7 @@ static void bnxt_fw_reset_task(struct work_struct *work)
 		rc = bnxt_open(bp);
 		if (rc) {
 			device_printf(bp->dev, "bnxt_open() failed during FW reset\n");
-			bnxt_fw_reset_abort(bp, rc);
+			bnxt_fw_reset_abort(bp);
 			rtnl_unlock();
 			return;
 		}
@@ -2191,7 +2175,6 @@ static void bnxt_fw_reset_task(struct work_struct *work)
 		bp->fw_reset_state = 0;
 		smp_mb__before_atomic();
 		clear_bit(BNXT_STATE_IN_FW_RESET, &bp->state);
-		bnxt_ulp_start(bp, 0);
 		clear_bit(BNXT_STATE_FW_ACTIVATE, &bp->state);
 		set_bit(BNXT_STATE_OPEN, &bp->state);
 		rtnl_unlock();
@@ -2207,7 +2190,7 @@ fw_reset_abort_status:
 	}
 fw_reset_abort:
 	rtnl_lock();
-	bnxt_fw_reset_abort(bp, rc);
+	bnxt_fw_reset_abort(bp);
 	rtnl_unlock();
 }
 
@@ -2736,7 +2719,6 @@ bnxt_attach_post(if_ctx_t ctx)
 
 	softc->rx_buf_size = min(softc->scctx->isc_max_frame_size, BNXT_PAGE_SIZE);
 	bnxt_dcb_init(softc);
-	bnxt_rdma_aux_device_init(softc);
 
 failed:
 	return rc;
@@ -2749,8 +2731,6 @@ bnxt_detach(if_ctx_t ctx)
 	struct bnxt_vlan_tag *tag;
 	struct bnxt_vlan_tag *tmp;
 	int i;
-
-	bnxt_rdma_aux_device_uninit(softc);
 	cancel_delayed_work_sync(&softc->fw_reset_task);
 	cancel_work_sync(&softc->sp_task);
 	bnxt_dcb_free(softc);
@@ -2948,78 +2928,6 @@ static void bnxt_get_port_module_status(struct bnxt_softc *softc)
 	}
 }
 
-static void bnxt_aux_dev_free(struct bnxt_softc *softc)
-{
-	kfree(softc->aux_dev);
-	softc->aux_dev = NULL;
-}
-
-static struct bnxt_aux_dev *bnxt_aux_dev_init(struct bnxt_softc *softc)
-{
-	struct bnxt_aux_dev *bnxt_adev;
-
-	msleep(1000 * 2);
-	bnxt_adev = kzalloc(sizeof(*bnxt_adev), GFP_KERNEL);
-	if (!bnxt_adev)
-		return ERR_PTR(-ENOMEM);
-
-	return bnxt_adev;
-}
-
-static void bnxt_rdma_aux_device_uninit(struct bnxt_softc *softc)
-{
-	struct bnxt_aux_dev *bnxt_adev = softc->aux_dev;
-
-	/* Skip if no auxiliary device init was done. */
-	if (!(softc->flags & BNXT_FLAG_ROCE_CAP))
-		return;
-
-	if (IS_ERR_OR_NULL(bnxt_adev))
-		return;
-
-	bnxt_rdma_aux_device_del(softc);
-
-	if (bnxt_adev->id >= 0)
-		ida_free(&bnxt_aux_dev_ids, bnxt_adev->id);
-
-	bnxt_aux_dev_free(softc);
-}
-
-static void bnxt_rdma_aux_device_init(struct bnxt_softc *softc)
-{
-	int rc;
-
-	if (!(softc->flags & BNXT_FLAG_ROCE_CAP))
-		return;
-
-	softc->aux_dev = bnxt_aux_dev_init(softc);
-	if (IS_ERR_OR_NULL(softc->aux_dev)) {
-		device_printf(softc->dev, "Failed to init auxiliary device for ROCE\n");
-		goto skip_aux_init;
-	}
-
-	softc->aux_dev->id = ida_alloc(&bnxt_aux_dev_ids, GFP_KERNEL);
-	if (softc->aux_dev->id < 0) {
-		device_printf(softc->dev, "ida alloc failed for ROCE auxiliary device\n");
-		bnxt_aux_dev_free(softc);
-		goto skip_aux_init;
-	}
-
-	msleep(1000 * 2);
-	/* If aux bus init fails, continue with netdev init. */
-	rc = bnxt_rdma_aux_device_add(softc);
-	if (rc) {
-		device_printf(softc->dev, "Failed to add auxiliary device for ROCE\n");
-		msleep(1000 * 2);
-		ida_free(&bnxt_aux_dev_ids, softc->aux_dev->id);
-	}
-	device_printf(softc->dev, "%s:%d Added auxiliary device (id %d) for ROCE \n",
-		      __func__, __LINE__, softc->aux_dev->id);
-skip_aux_init:
-	return;
-}
-
-/* Device configuration */
 static void
 bnxt_init(if_ctx_t ctx)
 {
@@ -4759,53 +4667,12 @@ exit:
 	return rc;
 }
 
-#define ETHTOOL_SPEED_1000		1000
-#define ETHTOOL_SPEED_10000		10000
-#define ETHTOOL_SPEED_20000		20000
-#define ETHTOOL_SPEED_25000		25000
-#define ETHTOOL_SPEED_40000		40000
-#define ETHTOOL_SPEED_50000		50000
-#define ETHTOOL_SPEED_100000		100000
-#define ETHTOOL_SPEED_200000		200000
-#define ETHTOOL_SPEED_UNKNOWN		-1
-
-static u32
-bnxt_fw_to_ethtool_speed(u16 fw_link_speed)
-{
-	switch (fw_link_speed) {
-	case HWRM_PORT_PHY_QCFG_OUTPUT_LINK_SPEED_1GB:
-		return ETHTOOL_SPEED_1000;
-	case HWRM_PORT_PHY_QCFG_OUTPUT_LINK_SPEED_10GB:
-		return ETHTOOL_SPEED_10000;
-	case HWRM_PORT_PHY_QCFG_OUTPUT_LINK_SPEED_20GB:
-		return ETHTOOL_SPEED_20000;
-	case HWRM_PORT_PHY_QCFG_OUTPUT_LINK_SPEED_25GB:
-		return ETHTOOL_SPEED_25000;
-	case HWRM_PORT_PHY_QCFG_OUTPUT_LINK_SPEED_40GB:
-		return ETHTOOL_SPEED_40000;
-	case HWRM_PORT_PHY_QCFG_OUTPUT_LINK_SPEED_50GB:
-		return ETHTOOL_SPEED_50000;
-	case HWRM_PORT_PHY_QCFG_OUTPUT_LINK_SPEED_100GB:
-		return ETHTOOL_SPEED_100000;
-	case HWRM_PORT_PHY_QCFG_OUTPUT_LINK_SPEED_200GB:
-		return ETHTOOL_SPEED_200000;
-	default:
-		return ETHTOOL_SPEED_UNKNOWN;
-	}
-}
-
 void
 bnxt_report_link(struct bnxt_softc *softc)
 {
 	struct bnxt_link_info *link_info = &softc->link_info;
 	const char *duplex = NULL, *flow_ctrl = NULL;
 	const char *signal_mode = "";
-
-	if(softc->edev) {
-		softc->edev->espeed =
-		    bnxt_fw_to_ethtool_speed(link_info->link_speed);
-		softc->edev->lanes = link_info->active_lanes;
-	}
 
 	if (link_info->link_up == link_info->last_link_up) {
 		if (!link_info->link_up)
@@ -5149,7 +5016,7 @@ bnxt_handle_async_event(struct bnxt_softc *softc, struct cmpl_base *cmpl)
 	bnxt_queue_sp_work(softc);
 
 async_event_process_exit:
-	bnxt_ulp_async_events(softc, ae);
+	return;
 }
 
 static void

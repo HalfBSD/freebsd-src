@@ -299,7 +299,6 @@ static struct _s_x return_types[] = {
 };
 
 static struct _s_x rule_action_params[] = {
-	{ "altq",		TOK_ALTQ },
 	{ "log",		TOK_LOG },
 	{ "tag",		TOK_TAG },
 	{ "untag",		TOK_UNTAG },
@@ -2163,9 +2162,6 @@ print_action_instruction(struct buf_pr *bp, const struct format_opts *fo,
 			print_logdst(bp, cmd->arg1);
 		break;
 	case O_ALTQ:
-#ifndef NO_ALTQ
-		print_altq_cmd(bp, insntoc(cmd, altq));
-#endif
 		break;
 	case O_TAG:
 		bprint_uint_arg(bp, cmd->len & F_NOT ? " untag ":
@@ -2822,10 +2818,6 @@ ipfw_sysctl_handler(char *av[], int which)
 		    &which, sizeof(which));
 	} else if (_substrcmp(*av, "skipto_cache") == 0) {
 		manage_skipto_cache(which);
-#ifndef NO_ALTQ
-	} else if (_substrcmp(*av, "altq") == 0) {
-		altq_set_enabled(which);
-#endif
 	} else {
 		warnx("unrecognize enable/disable keyword: %s\n", *av);
 	}
@@ -4240,7 +4232,7 @@ get_lookup_bitmask(int ltype, ipfw_insn_lookup *cmd, const char *src)
  * optional action parameters, and the various match patterns.
  * In the assembled microcode, the first opcode must be an O_PROBE_STATE
  * (generated if the rule includes a keep-state option), then the
- * various match patterns, log/altq actions, and the actual action.
+ * various match patterns, log actions, and the actual action.
  *
  */
 static void
@@ -4265,7 +4257,7 @@ compile_rule(char *av[], uint32_t *rbuf, int *rbufsize, struct tidx *tstate)
 	 */
 	ipfw_insn *have_state = NULL;	/* any state-related option */
 	int have_rstate = 0;
-	ipfw_insn *have_log = NULL, *have_altq = NULL, *have_tag = NULL;
+	ipfw_insn *have_log = NULL, *have_tag = NULL;
 	ipfw_insn *have_skipcmd = NULL;
 	size_t len;
 
@@ -4746,7 +4738,6 @@ compile_rule(char *av[], uint32_t *rbuf, int *rbufsize, struct tidx *tstate)
 	action = next_cmd(action, &ablen);
 
 	/*
-	 * [altq queuename] -- altq tag, optional
 	 * [log [logamount N]]	-- log, optional
 	 *
 	 * If they exist, it go first in the cmdbuf, but then it is
@@ -4807,25 +4798,6 @@ compile_rule(char *av[], uint32_t *rbuf, int *rbufsize, struct tidx *tstate)
 			}
 		    }
 			break;
-
-#ifndef NO_ALTQ
-		case TOK_ALTQ:
-		    {
-			ipfw_insn_altq *a = (ipfw_insn_altq *)cmd;
-
-			NEED1("missing altq queue name");
-			if (have_altq)
-				errx(EX_DATAERR,
-				    "altq cannot be specified more than once");
-			have_altq = (ipfw_insn *)a;
-			cmd->len = F_INSN_SIZE(ipfw_insn_altq);
-			CHECK_CMDLEN;
-			cmd->opcode = O_ALTQ;
-			a->qid = altq_name_to_qid(*av);
-			av++;
-		    }
-			break;
-#endif
 
 		case TOK_TAG:
 		case TOK_UNTAG: {
@@ -5719,17 +5691,11 @@ done:
 	 */
 	rule->act_ofs = dst - rule->cmd;
 
-	/* put back O_LOG, O_ALTQ, O_TAG if necessary */
+	/* put back O_LOG, O_TAG if necessary */
 	if (have_log) {
 		i = F_LEN(have_log);
 		CHECK_RBUFLEN(i);
 		bcopy(have_log, dst, i * sizeof(uint32_t));
-		dst += i;
-	}
-	if (have_altq) {
-		i = F_LEN(have_altq);
-		CHECK_RBUFLEN(i);
-		bcopy(have_altq, dst, i * sizeof(uint32_t));
 		dst += i;
 	}
 	if (have_tag) {

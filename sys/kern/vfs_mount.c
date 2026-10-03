@@ -2298,9 +2298,6 @@ dounmount(struct mount *mp, uint64_t flags, struct thread *td)
 		vrele(rootvp);
 	}
 
-	if (mp->mnt_flag & MNT_EXPUBLIC)
-		vfs_setpublicfs(NULL, NULL, NULL);
-
 	vfs_periodic(mp, MNT_WAIT);
 	MNT_ILOCK(mp);
 	async_flag = mp->mnt_flag & MNT_ASYNC;

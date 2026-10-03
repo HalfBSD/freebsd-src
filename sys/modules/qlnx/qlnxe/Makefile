@@ -48,13 +48,12 @@ SRCS+=ecore_vf.c
 
 #roce/iwarp files. Compilation can be turned off roce/iwarp are not required.
 # In other words if you don't need RDMA please comment out SRCS adds for
-# ecore_rdma.c ecore_roce.c ecore_iwarp.c ecore_ooo.c ecore_ll2.c qlnx_rdma.c
+# ecore_rdma.c ecore_roce.c ecore_iwarp.c ecore_ooo.c ecore_ll2.c
 SRCS+=ecore_rdma.c
 SRCS+=ecore_roce.c
 SRCS+=ecore_iwarp.c
 SRCS+=ecore_ooo.c
 SRCS+=ecore_ll2.c
-SRCS+=qlnx_rdma.c
 
 SRCS+=qlnx_ioctl.c
 SRCS+=qlnx_os.c
@@ -81,10 +80,9 @@ CFLAGS += -DCONFIG_ECORE_SRIOV
 
 # For roce/iwarp files. Compilation can be turned off if roce/iwarp are not required.
 # In other words if you don't need RDMA please comment out the CFLAGS which define
-# CONFIG_ECORE_LL2 CONFIG_ECORE_ROCE CONFIG_ECORE_IWARP QLNX_ENABLE_IWARP
+# CONFIG_ECORE_LL2 CONFIG_ECORE_ROCE CONFIG_ECORE_IWARP
 CFLAGS += -DCONFIG_ECORE_LL2
 CFLAGS += -DCONFIG_ECORE_ROCE
 CFLAGS += -DCONFIG_ECORE_IWARP
 CFLAGS += -DCONFIG_ECORE_RDMA
-CFLAGS += -DQLNX_ENABLE_IWARP
 

@@ -809,17 +809,6 @@ biba_bpfdesc_create_mbuf(struct bpf_d *d, struct label *dlabel,
 	biba_copy_effective(source, dest);
 }
 
-static void
-biba_cred_associate_nfsd(struct ucred *cred)
-{
-	struct mac_biba *label;
-
-	label = SLOT(cred->cr_label);
-	biba_set_effective(label, MAC_BIBA_TYPE_LOW, 0, NULL);
-	biba_set_range(label, MAC_BIBA_TYPE_LOW, 0, NULL, MAC_BIBA_TYPE_HIGH,
-	    0, NULL);
-}
-
 static int
 biba_cred_check_relabel(struct ucred *cred, struct label *newlabel)
 {
@@ -3569,7 +3558,6 @@ static struct mac_policy_ops mac_biba_ops =
 	.mpo_bpfdesc_destroy_label = biba_destroy_label,
 	.mpo_bpfdesc_init_label = biba_init_label,
 
-	.mpo_cred_associate_nfsd = biba_cred_associate_nfsd,
 	.mpo_cred_check_relabel = biba_cred_check_relabel,
 	.mpo_cred_check_visible = biba_cred_check_visible,
 	.mpo_cred_copy_label = biba_copy_label,

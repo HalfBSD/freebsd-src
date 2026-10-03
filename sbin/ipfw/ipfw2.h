@@ -120,7 +120,6 @@ enum tokens {
 	TOK_CALL,
 	TOK_RETURN,
 
-	TOK_ALTQ,
 	TOK_LOG,
 	TOK_TAG,
 	TOK_UNTAG,
@@ -389,7 +388,6 @@ int contigmask(const uint8_t *p, int len);
  * functions involved, so we do not lose error checking.
  */
 struct _ipfw_insn;
-struct _ipfw_insn_altq;
 struct _ipfw_insn_u32;
 struct _ipfw_insn_ip6;
 struct _ipfw_insn_icmp6;
@@ -421,8 +419,6 @@ void ipfw_nat64stl_handler(int ac, char *av[]);
 void ipfw_nptv6_handler(int ac, char *av[]);
 int ipfw_check_object_name(const char *name);
 int ipfw_check_nat64prefix(const struct in6_addr *prefix, int length);
-
-#define NO_ALTQ
 
 /* dummynet.c */
 void dummynet_list(int ac, char *av[], int show_counters);

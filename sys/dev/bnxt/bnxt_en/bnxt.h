@@ -46,7 +46,6 @@
 
 #include "hsi_struct_def.h"
 #include "bnxt_dcb.h"
-#include "bnxt_auxbus_compat.h"
 
 #define DFLT_HWRM_CMD_TIMEOUT		500
 
@@ -222,9 +221,9 @@
 #define DBR_TYPE_NULL					(0xfULL << 60)
 
 #define BNXT_MAX_L2_QUEUES				128
-#define BNXT_ROCE_IRQ_COUNT				9
+#define BNXT_ADMIN_IRQ_COUNT				1
 
-#define BNXT_MAX_NUM_QUEUES (BNXT_MAX_L2_QUEUES + BNXT_ROCE_IRQ_COUNT)
+#define BNXT_MAX_NUM_QUEUES (BNXT_MAX_L2_QUEUES + BNXT_ADMIN_IRQ_COUNT)
 
 /* Completion related defines */
 #define CMP_VALID(cmp, v_bit) \
@@ -899,17 +898,6 @@ struct bnxt_softc_list {
 #define BIT_ULL(nr)		(1ULL << (nr))
 #endif
 
-struct bnxt_aux_dev {
-	struct auxiliary_device aux_dev;
-	struct bnxt_en_dev *edev;
-	int id;
-};
-
-struct bnxt_msix_tbl {
-	uint32_t entry;
-	uint32_t vector;
-};
-
 enum bnxt_health_severity {
 	SEVERITY_NORMAL = 0,
 	SEVERITY_WARNING,
@@ -1081,9 +1069,6 @@ struct bnxt_softc {
 #define BNXT_STATE_LINK_CHANGE  (0)
 #define BNXT_STATE_MAX		(BNXT_STATE_LINK_CHANGE + 1)
 	bitstr_t 		*state_bv;
-
-	uint32_t		total_irqs;
-	struct bnxt_msix_tbl	*irq_tbl;
 
 	struct bnxt_func_info	func;
 	struct bnxt_func_qcfg	fn_qcfg;
@@ -1271,11 +1256,7 @@ struct bnxt_softc {
 #define BNXT_PHY_FL_NO_PFC              (HWRM_PORT_PHY_QCAPS_OUTPUT_FLAGS2_PFC_UNSUPPORTED << 8)
 #define BNXT_PHY_FL_BANK_SEL            (HWRM_PORT_PHY_QCAPS_OUTPUT_FLAGS2_BANK_ADDR_SUPPORTED << 8)
 #define BNXT_PHY_FL_SPEEDS2		(HWRM_PORT_PHY_QCAPS_OUTPUT_FLAGS2_SPEEDS2_SUPPORTED << 8)
-	struct bnxt_aux_dev     *aux_dev;
-	struct net_device	*net_dev;
-	struct mtx		en_ops_lock;
 	uint8_t			port_partition_type;
-	struct bnxt_en_dev	*edev;
 	unsigned long		state;
 #define BNXT_STATE_OPEN			0
 #define BNXT_STATE_IN_SP_TASK		1

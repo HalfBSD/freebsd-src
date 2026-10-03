@@ -4,7 +4,7 @@
 
 KMOD    = if_fwip
 SRCS    = bus_if.h device_if.h \
-          opt_inet.h opt_inet6.h opt_ofed.h \
+          opt_inet.h opt_inet6.h \
           if_fwip.c if_fwipvar.h \
           firewire.h firewirereg.h \
           if_fwsubr.c

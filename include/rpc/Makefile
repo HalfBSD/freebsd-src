@@ -20,9 +20,6 @@ HFILES+= clnt_nl.h
 # Secure RPC
 HFILES+= auth_des.h des.h des_crypt.h
 
-# Kerberos
-HFILES+= auth_kerb.h
-
 CLEANFILES+= ${HDRS}
 
 INCS=	${HFILES} ${XFILES} ${HDRS}

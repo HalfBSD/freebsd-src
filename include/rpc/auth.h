@@ -92,18 +92,6 @@ struct des_clnt_data32 {
 };
 #endif /* _SYSCALL32_IMPL */
 
-#ifdef KERBEROS
-/*
- * flavor specific data to hold the data for AUTH_DES/AUTH_KERB(v4)
- * in sec_data->data opaque field.
- */
-typedef struct krb4_svc_data {
-	int		window;		/* window option value */
-} krb4_svcdata_t;
- 
-typedef struct krb4_svc_data	des_svcdata_t;
-#endif /* KERBEROS */
-
 /*
  * authentication/security specific flags
  */
@@ -129,17 +117,14 @@ enum auth_stat {
 	*/
 	AUTH_INVALIDRESP=6,		/* bogus response verifier */
 	AUTH_FAILED=7,			/* some unknown reason */
-#ifdef KERBEROS
 	/*
 	 * kerberos errors
 	 */
-	,
 	AUTH_KERB_GENERIC = 8,		/* kerberos generic error */
 	AUTH_TIMEEXPIRE = 9,		/* time of credential expired */
 	AUTH_TKT_FILE = 10,		/* something wrong with ticket file */
 	AUTH_DECODE = 11,			/* can't decode authenticator */
 	AUTH_NET_ADDR = 12,		/* wrong net address in ticket */
-#endif /* KERBEROS */
 	/*
 	 * RPCSEC_GSS errors
 	 */
@@ -304,39 +289,6 @@ extern int getpublickey (const char *, char *);
 extern int getpublicandprivatekey (const char *, char *);
 extern int getsecretkey (char *, char *, char *);
 __END_DECLS
-
-#ifdef KERBEROS
-/*
- * Kerberos style authentication
- * AUTH *authkerb_seccreate(service, srv_inst, realm, window, timehost, status)
- *	const char *service;			- service name
- *	const char *srv_inst;			- server instance
- *	const char *realm;			- server realm
- *	const u_int window;			- time to live
- *	const char *timehost;			- optional hostname to sync with
- *	int *status;				- kerberos status returned
- */
-__BEGIN_DECLS
-extern AUTH	*authkerb_seccreate(const char *, const char *, const  char *,
-		    const u_int, const char *, int *);
-__END_DECLS
-
-/*
- * Map a kerberos credential into a unix cred.
- *
- *	authkerb_getucred(rqst, uid, gid, grouplen, groups)
- *	const struct svc_req *rqst;		- request pointer
- *	uid_t *uid;
- *	gid_t *gid;
- *	short *grouplen;
- *	int *groups;
- *
- */
-__BEGIN_DECLS
-extern int	authkerb_getucred(/* struct svc_req *, uid_t *, gid_t *,
-		    short *, int * */);
-__END_DECLS
-#endif /* KERBEROS */
 
 __BEGIN_DECLS
 struct svc_req;

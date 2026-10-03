@@ -437,38 +437,8 @@ login_negotiate_key(struct iscsid_connection *conn, const char *name,
 		/* Ignore */
 	} else if (strcmp(name, "IFMarker") == 0) {
 		/* Ignore */
-	} else if (strcmp(name, "RDMAExtensions") == 0) {
-		if (conn->conn_conf.isc_iser == 1 &&
-		    strcmp(value, "Yes") != 0) {
-			log_errx(1, "received unsupported RDMAExtensions");
-		}
-	} else if (strcmp(name, "InitiatorRecvDataSegmentLength") == 0) {
-		tmp = strtoul(value, NULL, 10);
-		if (tmp <= 0)
-			log_errx(1, "received invalid "
-			    "InitiatorRecvDataSegmentLength");
-		if ((int)tmp > isl->isl_max_recv_data_segment_length) {
-			log_debugx("capping InitiatorRecvDataSegmentLength "
-			    "from %d to %d", tmp,
-			    isl->isl_max_recv_data_segment_length);
-			tmp = isl->isl_max_recv_data_segment_length;
-		}
-		conn->conn.conn_max_recv_data_segment_length = tmp;
 	} else if (strcmp(name, "TargetPortalGroupTag") == 0) {
 		/* Ignore */
-	} else if (strcmp(name, "TargetRecvDataSegmentLength") == 0) {
-		tmp = strtoul(value, NULL, 10);
-		if (tmp <= 0) {
-			log_errx(1,
-			    "received invalid TargetRecvDataSegmentLength");
-		}
-		if (tmp > isl->isl_max_send_data_segment_length) {
-			log_debugx("capping TargetRecvDataSegmentLength "
-			    "from %d to %d", tmp,
-			    isl->isl_max_send_data_segment_length);
-			tmp = isl->isl_max_send_data_segment_length;
-		}
-		conn->conn.conn_max_send_data_segment_length = tmp;
 	} else {
 		log_debugx("unknown key \"%s\"; ignoring",  name);
 	}
@@ -517,16 +487,8 @@ login_negotiate(struct iscsid_connection *conn)
 		    isl->isl_first_burst_length);
 		keys_add(request_keys, "InitialR2T", "Yes");
 		keys_add(request_keys, "MaxOutstandingR2T", "1");
-		if (conn->conn_conf.isc_iser == 1) {
-			keys_add_int(request_keys, "InitiatorRecvDataSegmentLength",
-			    isl->isl_max_recv_data_segment_length);
-			keys_add_int(request_keys, "TargetRecvDataSegmentLength",
-			    isl->isl_max_send_data_segment_length);
-			keys_add(request_keys, "RDMAExtensions", "Yes");
-		} else {
-			keys_add_int(request_keys, "MaxRecvDataSegmentLength",
-			    isl->isl_max_recv_data_segment_length);
-		}
+		keys_add_int(request_keys, "MaxRecvDataSegmentLength",
+		    isl->isl_max_recv_data_segment_length);
 	} else {
 		keys_add(request_keys, "HeaderDigest", "None");
 		keys_add(request_keys, "DataDigest", "None");

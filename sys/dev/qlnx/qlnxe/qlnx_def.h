@@ -494,9 +494,6 @@ struct qlnx_host {
 	qlnx_sriov_task_t	sriov_task[MAX_HWFNS_PER_DEVICE];
 	uint32_t		curr_vf;
 
-	void			*next;
-	void			*qlnx_rdma;
-	volatile int		qlnxr_debug;
 };
 
 typedef struct qlnx_host qlnx_host_t;
@@ -718,7 +715,6 @@ extern int qlnx_alloc_mem_sb(qlnx_host_t *ha, struct ecore_sb_info *sb_info,
         ((flags) & (PARSING_AND_ERR_FLAGS_TAG8021QEXIST_MASK \
                 << PARSING_AND_ERR_FLAGS_TAG8021QEXIST_SHIFT))
 
-#ifndef QLNX_RDMA
 #if defined(__i386__) || defined(__amd64__)
 
 static __inline
@@ -729,7 +725,6 @@ void prefetch(void *x)
 
 #else
 #define prefetch(x)
-#endif
 #endif
 
 #endif /* #ifndef _QLNX_DEF_H_ */

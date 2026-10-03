@@ -178,12 +178,6 @@ dev/ice/ice_fw_logging.c	optional	ice pci \
 	compile-with "${NORMAL_C} -I$S/dev/ice"
 dev/ice/ice_fwlog.c		optional	ice pci \
 	compile-with "${NORMAL_C} -I$S/dev/ice"
-dev/ice/ice_rdma.c		optional	ice pci \
-	compile-with "${NORMAL_C} -I$S/dev/ice"
-dev/ice/irdma_if.m		optional	ice pci \
-	compile-with "${NORMAL_M} -I$S/dev/ice"
-dev/ice/irdma_di_if.m		optional	ice pci \
-	compile-with "${NORMAL_M} -I$S/dev/ice"
 dev/ice/ice_ddp_common.c	optional	ice pci \
 	compile-with "${NORMAL_C} -I$S/dev/ice"
 dev/ice/ice_iov.c	optional	ice pci pci_iov \
@@ -294,8 +288,6 @@ dev/qlnx/qlnxe/ecore_rdma.c	optional	qlnxe pci \
 dev/qlnx/qlnxe/ecore_roce.c	optional	qlnxe pci \
 	compile-with "${LINUXKPI_C}"
 dev/qlnx/qlnxe/ecore_ooo.c	optional	qlnxe pci \
-	compile-with "${LINUXKPI_C}"
-dev/qlnx/qlnxe/qlnx_rdma.c	optional	qlnxe pci \
 	compile-with "${LINUXKPI_C}"
 dev/qlnx/qlnxe/qlnx_ioctl.c	optional	qlnxe pci \
 	compile-with "${LINUXKPI_C}"

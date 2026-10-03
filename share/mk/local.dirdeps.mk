@@ -58,7 +58,11 @@ DIRDEPS_FILTER.host+= ${N_host_libs}
 
 DIRDEPS_FILTER.host32 = ${DIRDEPS_FILTER.host}
 
+# Older generated graphs already include lib/${CSU_DIR}, but also retain
+# this obsolete GNU startup dependency. Filter only the duplicate old edge.
 DIRDEPS_FILTER+= \
+	Ngnu/lib/csu \
+	Ngnu/lib/csu.* \
 	Nbin/cat.host \
 	${DIRDEPS_FILTER.xtras:U}
 

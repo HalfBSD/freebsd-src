@@ -773,17 +773,6 @@ mls_bpfdesc_create_mbuf(struct bpf_d *d, struct label *dlabel,
 	mls_copy_effective(source, dest);
 }
 
-static void
-mls_cred_associate_nfsd(struct ucred *cred) 
-{
-	struct mac_mls *label;
-
-	label = SLOT(cred->cr_label);
-	mls_set_effective(label, MAC_MLS_TYPE_LOW, 0, NULL);
-	mls_set_range(label, MAC_MLS_TYPE_LOW, 0, NULL, MAC_MLS_TYPE_HIGH, 0,
-	    NULL);
-}
-
 static int
 mls_cred_check_relabel(struct ucred *cred, struct label *newlabel)
 {
@@ -3198,7 +3187,6 @@ static struct mac_policy_ops mls_ops =
 	.mpo_bpfdesc_destroy_label = mls_destroy_label,
 	.mpo_bpfdesc_init_label = mls_init_label,
 
-	.mpo_cred_associate_nfsd = mls_cred_associate_nfsd,
 	.mpo_cred_check_relabel = mls_cred_check_relabel,
 	.mpo_cred_check_visible = mls_cred_check_visible,
 	.mpo_cred_copy_label = mls_copy_label,

@@ -202,9 +202,6 @@ static int ice_update_port_topology(u8 lport,
 static int ice_get_port_topology(struct ice_hw *hw, u8 lport,
 				 struct ice_port_topology *port_topology);
 
-static int ice_module_init(void);
-static int ice_module_exit(void);
-
 /*
  * package version comparison functions
  */
@@ -4336,11 +4333,6 @@ ice_config_pfc(struct ice_softc *sc, u8 new_mode)
 	local_dcbx_cfg->pfc.pfccap = ICE_MAX_TRAFFIC_CLASS;
 	local_dcbx_cfg->pfc.willing = 0;
 	local_dcbx_cfg->pfc.mbc = 0;
-
-	/* Warn if PFC is being disabled with RoCE v2 in use */
-	if (new_mode == 0 && sc->rdma_entry.attached)
-		device_printf(dev,
-		    "WARNING: Recommended that Priority Flow Control is enabled when RoCEv2 is in use\n");
 
 	status = ice_set_dcb_cfg(pi);
 	if (status) {
@@ -9058,7 +9050,7 @@ ice_set_default_local_mib_settings(struct ice_softc *sc)
 }
 
 /**
- * ice_do_dcb_reconfig - notify RDMA and reconfigure PF LAN VSI
+ * ice_do_dcb_reconfig - reconfigure PF LAN VSI
  * @sc: the device private softc
  * @pending_mib: FW has a pending MIB change to execute
  * 
@@ -9079,8 +9071,6 @@ ice_do_dcb_reconfig(struct ice_softc *sc, bool pending_mib)
 
 	pi = sc->hw.port_info;
 	local_dcbx_cfg = &pi->qos_cfg.local_dcbx_cfg;
-
-	ice_rdma_notify_dcb_qos_change(sc);
 	/* If there's a pending MIB, tell the FW to execute the MIB change
 	 * now.
 	 */
@@ -9123,9 +9113,6 @@ ice_do_dcb_reconfig(struct ice_softc *sc, bool pending_mib)
 
 	/* Change PF VSI configuration */
 	ice_dcb_recfg(sc);
-
-	/* Send new configuration to RDMA client driver */
-	ice_rdma_dcb_qos_update(sc, pi);
 
 	ice_request_stack_reinit(sc);
 }
@@ -10014,36 +10001,6 @@ ice_init_saved_phy_cfg(struct ice_softc *sc)
 }
 
 /**
- * ice_module_init - Driver callback to handle module load
- *
- * Callback for handling module load events. This function should initialize
- * any data structures that are used for the life of the device driver.
- */
-static int
-ice_module_init(void)
-{
-	ice_rdma_init();
-	return (0);
-}
-
-/**
- * ice_module_exit - Driver callback to handle module exit
- *
- * Callback for handling module unload events. This function should release
- * any resources initialized during ice_module_init.
- *
- * If this function returns non-zero, the module will not be unloaded. It
- * should only return such a value if the module cannot be unloaded at all,
- * such as due to outstanding memory references that cannot be revoked.
- */
-static int
-ice_module_exit(void)
-{
-	ice_rdma_exit();
-	return (0);
-}
-
-/**
  * ice_module_event_handler - Callback for module events
  * @mod: unused module_t parameter
  * @what: the event requested
@@ -10058,9 +10015,8 @@ ice_module_event_handler(module_t __unused mod, int what, void __unused *arg)
 {
 	switch (what) {
 	case MOD_LOAD:
-		return ice_module_init();
 	case MOD_UNLOAD:
-		return ice_module_exit();
+		return (0);
 	default:
 		/* TODO: do we need to handle MOD_QUIESCE and MOD_SHUTDOWN? */
 		return (EOPNOTSUPP);
@@ -10403,17 +10359,9 @@ ice_alloc_intr_tracking(struct ice_softc *sc)
 		err = ENOMEM;
 		goto free_imgr;
 	}
-	if (!(sc->rdma_imap =
-	      (u16 *)malloc(sizeof(u16) * hw->func_caps.common_cap.num_msix_vectors,
-	      M_ICE, M_NOWAIT))) {
-		device_printf(dev, "Unable to allocate RDMA imap memory\n");
-		err = ENOMEM;
-		free(sc->pf_imap, M_ICE);
-		goto free_imgr;
-	}
+
 	for (u32 i = 0; i < hw->func_caps.common_cap.num_msix_vectors; i++) {
 		sc->pf_imap[i] = ICE_INVALID_RES_IDX;
-		sc->rdma_imap[i] = ICE_INVALID_RES_IDX;
 	}
 
 	return (0);
@@ -10440,12 +10388,6 @@ ice_free_intr_tracking(struct ice_softc *sc)
 				       sc->lan_vectors);
 		free(sc->pf_imap, M_ICE);
 		sc->pf_imap = NULL;
-	}
-	if (sc->rdma_imap) {
-		ice_resmgr_release_map(&sc->dev_imgr, sc->rdma_imap,
-				       sc->lan_vectors);
-		free(sc->rdma_imap, M_ICE);
-		sc->rdma_imap = NULL;
 	}
 
 	ice_resmgr_destroy(&sc->dev_imgr);

@@ -391,22 +391,6 @@ clean_dep   cddl/lib/libzpool zfs_debug c "linux/zfs/zfs_debug\.c"
 # 20241011
 clean_dep   cddl/lib/libzpool arc_os c "linux/zfs/arc_os\.c"
 
-# 20241018  1363acbf25de    libc/csu: Support IFUNCs on riscv
-if [ ${MACHINE} = riscv ]; then
-	for f in "$OBJTOP"/lib/libc/.depend.libc_start1.*o; do
-		if [ ! -f "$f" ]; then
-			continue
-		fi
-		if ! grep -q 'lib/libc/csu/riscv/reloc\.c' "$f"; then
-			echo "Removing stale dependencies and objects for libc_start1.c"
-			run rm -fv \
-			    "$OBJTOP"/lib/libc/.depend.libc_start1.* \
-			    "$OBJTOP"/lib/libc/libc_start1.*o
-			break
-		fi
-	done
-fi
-
 # 20241018  5deeebd8c6ca   Merge llvm-project release/19.x llvmorg-19.1.2-0-g7ba7d8e2f7b6
 p="$OBJTOP"/lib/clang/libclang/clang/Basic
 f="$p"/arm_mve_builtin_sema.inc
@@ -507,35 +491,6 @@ fi
 # 20250813  4f766afc1ca0    tcopy converted to C++
 clean_dep   usr.bin/tcopy   tcopy c
 
-if [ ${MACHINE} = riscv ]; then
-	# 20251031  df21a004be23  libc: scalar strrchr() in RISC-V assembly
-	clean_dep   lib/libc strrchr c
-
-	# 20251031  563efdd3bd5d  libc: scalar memchr() in RISC-V assembly
-	clean_dep   lib/libc memchr c
-
-	# 20251031  40a958d5850d  libc: scalar memset() in RISC-V assembly
-	clean_dep   lib/libc memset c
-
-	# 20251031  e09c1583eddd  libc: scalar strlen() in RISC-V assembly
-	clean_dep   lib/libc strlen c
-
-	# 20251031  25fdd86a4c92  libc: scalar memcpy() in RISC-V assembly
-	clean_dep   lib/libc memcpy c
-
-	# 20251031  5a52f0704435  libc: scalar strnlen() in RISC-V assembly
-	#clean_dep   lib/libc strnlen c
-
-	# 20251031  08af0bbc9c7d  libc: scalar strchrnul() in RISC-V assembly
-	clean_dep   lib/libc strchrnul c
-
-	# 20251031  b5dbf3de5611  libc/riscv64: implement bcopy() and bzero() through memcpy() and memset()
-	clean_dep   lib/libc bcopy c "libc.string.bcopy.c"
-	clean_dep   lib/libc bzero c "libc.string.bzero.c"
-
-	# 20260307  2a4e3112c811   libc/riscv64: temporarily disable strnlen() implementation until a fix is developed
-	clean_dep   lib/libc strnlen S
-fi
 
 if [ ${MACHINE_ARCH} = "aarch64" ]; then
 	# 20260113  41ccf82b29f3  libc/aarch64: Use MOPS implementations of memcpy/memmove/memset where availble

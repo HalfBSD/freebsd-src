@@ -746,12 +746,10 @@ ice_update_link_status(struct ice_softc *sc, bool update_media)
 				ice_set_default_local_lldp_mib(sc);
 
 			iflib_link_state_change(sc->ctx, LINK_STATE_UP, baudrate);
-			ice_rdma_link_change(sc, LINK_STATE_UP, baudrate);
 
 			ice_link_up_msg(sc);
 		} else { /* link is down */
 			iflib_link_state_change(sc->ctx, LINK_STATE_DOWN, 0);
-			ice_rdma_link_change(sc, LINK_STATE_DOWN, 0);
 		}
 #ifdef PCI_IOV
 		ice_vc_notify_all_vfs_link_state(sc);
@@ -874,10 +872,6 @@ ice_if_attach_post(if_ctx_t ctx)
 	/* Enable ITR 0 right away, so that we can handle admin interrupts */
 	ice_enable_intr(&sc->hw, sc->irqvs[0].me);
 
-	err = ice_rdma_pf_attach(sc);
-	if (err)
-		return (err);
-
 	/* Start the admin timer */
 	mtx_lock(&sc->admin_mtx);
 	callout_reset(&sc->admin_timer, hz/2, ice_admin_timer, sc);
@@ -982,7 +976,6 @@ ice_if_detach(if_ctx_t ctx)
 	/* Remove additional interfaces if they exist */
 	if (sc->mirr_if)
 		ice_destroy_mirror_interface(sc);
-	ice_rdma_pf_detach(sc);
 
 #ifdef PCI_IOV
 	if (ice_is_bit_set(sc->feat_cap, ICE_FEATURE_SRIOV))
@@ -1379,7 +1372,6 @@ ice_msix_admin(void *arg)
 		if (oicr & PFINT_OICR_HMC_ERR_M)
 			/* Log the HMC errors */
 			ice_log_hmc_error(hw, dev);
-		ice_rdma_notify_pe_intr(sc, oicr);
 	}
 
 	if (oicr & PFINT_OICR_PCI_EXCEPTION_M) {
@@ -1397,13 +1389,12 @@ ice_msix_admin(void *arg)
  * Map the MSI-X bar, and then request MSI-X vectors in a two-stage process.
  *
  * First, determine a suitable total number of vectors based on the number
- * of CPUs, RSS buckets, the administrative vector, and other demands such as
- * RDMA.
+ * of CPUs, RSS buckets, the administrative vector, and reserved subinterface
+ * vectors.
  *
  * Request the desired amount of vectors, and see how many we obtain. If we
  * don't obtain as many as desired, reduce the demands by lowering the number
- * of requested queues or reducing the demand from other features such as
- * RDMA.
+ * of requested queues and releasing reserved subinterface vectors.
  *
  * @remark This function is required because the driver sets the
  * IFLIB_SKIP_MSIX flag indicating that the driver will manage MSI-X vectors
@@ -1429,7 +1420,6 @@ ice_allocate_msix(struct ice_softc *sc)
 	cpuset_t cpus;
 	int bar, queues, vectors, requested;
 	int err = 0;
-	int rdma;
 
 	/* Allocate the MSI-X bar */
 	bar = scctx->isc_msix_bar;
@@ -1475,24 +1465,11 @@ ice_allocate_msix(struct ice_softc *sc)
 	queues = imin(queues, sc->ifc_sysctl_ntxqs ?: scctx->isc_ntxqsets);
 	queues = imin(queues, sc->ifc_sysctl_nrxqs ?: scctx->isc_nrxqsets);
 
-	if (ice_is_bit_set(sc->feat_cap, ICE_FEATURE_RDMA)) {
-		/*
-		 * Choose a number of RDMA vectors based on the number of CPUs
-		 * up to a maximum
-		 */
-		rdma = min(CPU_COUNT(&cpus), ICE_RDMA_MAX_MSIX);
-
-		/* Further limit by the user configurable tunable */
-		rdma = min(rdma, ice_rdma_max_msix);
-	} else {
-		rdma = 0;
-	}
-
 	/*
 	 * Determine the number of vectors to request. Note that we also need
 	 * to allocate one vector for administrative tasks.
 	 */
-	requested = rdma + queues + 1;
+	requested = queues + 1;
 	/* Add extra vectors requested by the user for later subinterface
 	 * creation.
 	 */
@@ -1523,17 +1500,6 @@ ice_allocate_msix(struct ice_softc *sc)
 		 * number of vectors allocated to certain features.
 		 */
 
-		if (rdma >= diff) {
-			/* Reduce the number of RDMA vectors we reserve */
-			rdma -= diff;
-			diff = 0;
-		} else {
-			/* Disable RDMA and reduce the difference */
-			ice_clear_bit(ICE_FEATURE_RDMA, sc->feat_cap);
-			diff -= rdma;
-			rdma = 0;
-		}
-
 		/*
 		 * If we still have a difference, we need to reduce the number
 		 * of queue pairs.
@@ -1551,9 +1517,6 @@ ice_allocate_msix(struct ice_softc *sc)
 	}
 
 	device_printf(dev, "Using %d Tx and Rx queues\n", queues);
-	if (rdma)
-		device_printf(dev, "Reserving %d MSI-X interrupts for iRDMA\n",
-			      rdma);
 	device_printf(dev, "Using MSI-X interrupts with %d vectors\n",
 		      vectors);
 
@@ -1563,28 +1526,20 @@ ice_allocate_msix(struct ice_softc *sc)
 	scctx->isc_ntxqsets = queues;
 	scctx->isc_intr = IFLIB_INTR_MSIX;
 
-	sc->irdma_vectors = rdma;
-
 	/* Interrupt allocation tracking isn't required in recovery mode,
-	 * since neither RDMA nor VFs are enabled.
+	 * since VFs are not enabled.
 	 */
 	if (ice_test_state(&sc->state, ICE_STATE_RECOVERY_MODE))
 		return (0);
 
 	/* Keep track of which interrupt indices are being used for what */
-	sc->lan_vectors = vectors - rdma;
+	sc->lan_vectors = vectors;
 	sc->lan_vectors -= extra_vectors;
 	err = ice_resmgr_assign_contiguous(&sc->dev_imgr, sc->pf_imap, sc->lan_vectors);
 	if (err) {
 		device_printf(dev, "Unable to assign PF interrupt mapping: %s\n",
 			      ice_err_str(err));
 		goto err_pci_release_msi;
-	}
-	err = ice_resmgr_assign_contiguous(&sc->dev_imgr, sc->rdma_imap, rdma);
-	if (err) {
-		device_printf(dev, "Unable to assign PF RDMA interrupt mapping: %s\n",
-			      ice_err_str(err));
-		goto err_release_pf_imap;
 	}
 	sc->extra_vectors = extra_vectors;
 	/* Setup another resource manager to track the assignments of extra OS
@@ -1595,8 +1550,6 @@ ice_allocate_msix(struct ice_softc *sc)
 	if (err) {
 		device_printf(dev, "Unable to initialize OS extra interrupt manager: %s\n",
 			      ice_err_str(err));
-		ice_resmgr_release_map(&sc->dev_imgr, sc->rdma_imap,
-					    rdma);
 		goto err_release_pf_imap;
 	}
 	return (0);
@@ -1710,7 +1663,7 @@ ice_if_msix_intr_assign(if_ctx_t ctx, int msix)
 	}
 
 	/* For future interrupt assignments */
-	sc->last_rid = rid + sc->irdma_vectors;
+	sc->last_rid = rid;
 
 #ifdef PCI_IOV
 	/* Create soft IRQ for handling VF resets */
@@ -2156,8 +2109,6 @@ ice_if_init(if_ctx_t ctx)
 			 ice_test_state(&sc->state, ICE_STATE_LINK_ACTIVE_ON_DOWN)))
 			ice_set_link(sc, true);
 
-	ice_rdma_pf_init(sc);
-
 	ice_set_state(&sc->state, ICE_STATE_DRIVER_INITIALIZED);
 
 	if (sc->mirr_if && ice_testandclear_state(&mif->state, ICE_STATE_SUBIF_NEEDS_REINIT)) {
@@ -2330,9 +2281,6 @@ ice_transition_recovery_mode(struct ice_softc *sc)
 	/* Request that the device be re-initialized */
 	ice_request_stack_reinit(sc);
 
-	ice_rdma_pf_detach(sc);
-	ice_clear_bit(ICE_FEATURE_RDMA, sc->feat_cap);
-
 #ifdef PCI_IOV
 	if (ice_test_and_clear_bit(ICE_FEATURE_SRIOV, sc->feat_en))
 		 ice_iov_detach(sc);
@@ -2382,9 +2330,6 @@ ice_transition_safe_mode(struct ice_softc *sc)
 	/* Indicate that we are in Safe mode */
 	ice_set_bit(ICE_FEATURE_SAFE_MODE, sc->feat_cap);
 	ice_set_bit(ICE_FEATURE_SAFE_MODE, sc->feat_en);
-
-	ice_rdma_pf_detach(sc);
-	ice_clear_bit(ICE_FEATURE_RDMA, sc->feat_cap);
 
 #ifdef PCI_IOV
 	if (ice_test_and_clear_bit(ICE_FEATURE_SRIOV, sc->feat_en))
@@ -2521,11 +2466,6 @@ ice_prepare_for_reset(struct ice_softc *sc)
 	/* In recovery mode, hardware is not initialized */
 	if (ice_test_state(&sc->state, ICE_STATE_RECOVERY_MODE))
 		return;
-
-	/* inform the RDMA client */
-	ice_rdma_notify_reset(sc);
-	/* stop the RDMA client */
-	ice_rdma_pf_stop(sc);
 
 	/* Release the main PF VSI queue mappings */
 	ice_resmgr_release_map(&sc->tx_qmgr, sc->pf_vsi.tx_qmap,
@@ -2798,7 +2738,6 @@ ice_rebuild(struct ice_softc *sc)
 	ice_clear_state(&sc->state, ICE_STATE_LINK_STATUS_REPORTED);
 	ice_init_link(sc);
 
-	/* RDMA interface will be restarted by the stack re-init */
 
 	/* Configure interrupt causes for the administrative interrupt */
 	ice_configure_misc_interrupts(sc);
@@ -2972,7 +2911,6 @@ ice_init_device_features(struct ice_softc *sc)
 	/* Set capabilities that all devices support */
 	ice_set_bit(ICE_FEATURE_SRIOV, sc->feat_cap);
 	ice_set_bit(ICE_FEATURE_RSS, sc->feat_cap);
-	ice_set_bit(ICE_FEATURE_RDMA, sc->feat_cap);
 	ice_set_bit(ICE_FEATURE_LENIENT_LINK_MODE, sc->feat_cap);
 	ice_set_bit(ICE_FEATURE_LINK_MGMT_VER_1, sc->feat_cap);
 	ice_set_bit(ICE_FEATURE_LINK_MGMT_VER_2, sc->feat_cap);
@@ -2991,8 +2929,6 @@ ice_init_device_features(struct ice_softc *sc)
 	/* Disable features due to hardware limitations... */
 	if (!hw->func_caps.common_cap.rss_table_size)
 		ice_clear_bit(ICE_FEATURE_RSS, sc->feat_cap);
-	if (!hw->func_caps.common_cap.iwarp || !ice_enable_irdma)
-		ice_clear_bit(ICE_FEATURE_RDMA, sc->feat_cap);
 	if (!hw->func_caps.common_cap.dcb)
 		ice_clear_bit(ICE_FEATURE_DCB, sc->feat_cap);
 	/* Disable features due to firmware limitations... */
@@ -3162,8 +3098,6 @@ ice_if_stop(if_ctx_t ctx)
 		device_printf(sc->dev, "request to stop interface while device is prepared for impending reset\n");
 		return;
 	}
-
-	ice_rdma_pf_stop(sc);
 
 	/* Remove the MAC filters, stop Tx, and stop Rx. We don't check the
 	 * return of these functions because there's nothing we can really do

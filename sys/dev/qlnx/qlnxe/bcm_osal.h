@@ -100,8 +100,6 @@ extern void qlnx_vf_flr_update(void *p_hwfn);
 #define s16 uint16_t
 #define s32 uint32_t
 
-#ifndef QLNX_RDMA
-
 #define max_t(type, val1, val2) \
 	((type)(val1) > (type)(val2) ? (type)(val1) : (val2))
 #define min_t(type, val1, val2) \
@@ -109,8 +107,6 @@ extern void qlnx_vf_flr_update(void *p_hwfn);
 
 #define ARRAY_SIZE(arr)		(sizeof(arr) / sizeof(arr[0]))
 #define BUILD_BUG_ON(cond)	nothing
-
-#endif /* #ifndef QLNX_RDMA */
 
 #define OSAL_UNUSED
 

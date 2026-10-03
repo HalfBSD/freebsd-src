@@ -5647,9 +5647,11 @@ ecore_get_hw_info(struct ecore_hwfn *p_hwfn, struct ecore_ptt *p_ptt,
 
 #ifndef ASIC_ONLY
 	/* To overcome ILT lack for emulation, until at least until we'll have
-	 * a definite answer from system about it, allow only PF0 to be RoCE.
+	 * a definite answer from system about it, allow only PF0 to be RoCE
+	 * when the caller has not explicitly selected a personality.
 	 */
-	if (CHIP_REV_IS_EMUL(p_hwfn->p_dev) && ECORE_IS_AH(p_hwfn->p_dev)) {
+	if (personality == ECORE_PCI_DEFAULT &&
+	    CHIP_REV_IS_EMUL(p_hwfn->p_dev) && ECORE_IS_AH(p_hwfn->p_dev)) {
 		if (!p_hwfn->rel_pf_id)
 			p_hwfn->hw_info.personality = ECORE_PCI_ETH_ROCE;
 		else

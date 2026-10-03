@@ -1,0 +1,288 @@
+HalfBSD Group B cleanup — 2026-10-02
+Base revision: 0c30595d79ae
+Status: implemented; included in the Group B cleanup commit.
+
+Implemented scope
+The user approved B8/B9 retirement and cleanup of all reviewed Group B
+subsets except B3 and B7. Independent kernel, userland and build investigations
+ran concurrently; the main agent reconciled shared consumers and interfaces.
+B3 generic kernel RPC and B7 etcupdate mail-input support remain unchanged.
+
+B1: Removed private ICE/BNXT/QLNX RDMA peer bridges, lifecycle/state and
+RDMA-only interrupt reservations, with matching module/kernel selections.
+Preserved Ethernet firmware/reset/DCB/SR-IOV support and shared vendor code.
+QLNX explicitly requests Ethernet. Its AH emulation override now applies only
+to a DEFAULT personality request, preserving explicit requests and prior
+vendor default behavior.
+B2: Removed iscsid's obsolete iSER proxy selection, transport operations and
+RDMA login negotiation; explicit unsupported-iSER rejection remains. Normal
+TCP and the optional kernel TCP proxy, ICL methods and ioctl ABI remain.
+B4: Removed WebNFS public-export state creation and teardown. MNT_EXPUBLIC
+requests fail with EOPNOTSUPP before state mutation. Retained exported
+vfs_setpublicfs compatibility stub, zero-initialized nfs_pub and ABI layouts.
+B5: Removed private Biba/MLS/stub NFS credential callbacks and registrations.
+The MAC operation slot, MAC_VERSION and original exported dispatch remain;
+no framework no-op replacement was introduced.
+B6: Removed excluded private ipfw ALTQ scaffolding and unsupported help text.
+Preserved old opcode encoding/rejection, log/tag syntax and shared queue APIs.
+B8: Removed man/proxy/authpf/_pflogd group records and existing corresponding
+passwd records (authpf had none). Numeric identities were not reassigned.
+B9: Removed auth_kerb.h installation/file and obsolete KERBEROS declaration
+blocks in both RPC auth headers. Added obsolete-installed-header cleanup.
+Preserved AUTH_KERB4 and historical error values, normal RPC/DES/GSS behavior.
+B10: Removed unsupported native RISC-V libproc arms, PowerPC DTrace backend,
+64 generated PowerPC kernel crypto files and private native wrapper glue.
+Supported native APIs/backends and imported foreign-target generators remain.
+B11: Removed two RISC-V-only old-object repair branches; generic repairs and
+historical installed-file cleanup inventories remain.
+B12: Removed unselected rcmds package metadata; printf's locale case now
+explicitly tests C-byte fallback, preserving its 24-case plan and UTF-8 case.
+Historical documentation and useful examples remain.
+B13: Removed inert stand/man build traversal/Makefile. Loader source manuals,
+installed mdoc examples and manually callable vendor doc tooling remain.
+B14: Removed five unused opt_ofed.h generation entries. Shared LinuxKPI
+initialization ordering, diagnostics and compatibility constants remain.
+B15: Removed unsupported handwritten GCC/GNU pseudo targets and obsolete
+GNU toolchain edges/options; libproc now selects libcxxrt unconditionally.
+A narrow resolver filter ignores gnu/lib/csu and its dot-qualified variants.
+All 121 affected generated graphs already have the current lib/${CSU_DIR}
+edge. Generated graphs were not regenerated; broader stale edges remain a
+separate regeneration task, not a claim of 404 verified removals.
+
+Validation and limits
+Whitespace checks, shell syntax, make/preprocessor structure and baseline
+brace checks passed. Supported kernel manifest paths and removed-symbol
+references were checked. Account format/name uniqueness and numeric
+reservations, RPC values, unchanged B3/B7 paths, printf plan and CSU filter
+qualification/control cases were checked. Independent reviews examined NIC
+resource/unwind handling, TCP preservation and shared export/MAC interfaces.
+No FreeBSD build/compiler, physical NIC/emulator execution, full printf TAP
+suite or authoritative filemon DIRDEPS regeneration was available. These
+static checks do not establish runtime/build success.
+
+A preexisting ICE fallback issue remains outside this cleanup:
+ice_allocate_msix() adds extra_vectors to its deficit when dropping optional
+extras; this can reject an otherwise sufficient allocation. It predates this
+patch and requires a separate behavioral fix.
+
+The original review below is historical, preimplementation evidence. Its
+policy questions and recommendations describe the earlier audit stage;
+the implemented scope and validation above supersede its status statements.
+
+=======================================================================
+PREIMPLEMENTATION REVIEW AND INVESTIGATOR APPENDICES
+=======================================================================
+
+HalfBSD Group B followup review — 2026-10-02
+Audited source revision: 0c30595d79ae
+
+Scope and result
+The 15 original B groups were investigated concurrently, then reconciled across kernel/userland/build/install interfaces. No cleanup or removal changes were made. This report is the only new repository file.
+
+There are narrowly scoped cleanup candidates in 11 groups. Two groups should be retained as live functionality (B3 and B7). Two require an explicit compatibility decision before retiring their public surfaces (B8 and B9). Most groups must be split: a safe private subset does not make the entire group removable.
+
+“Safe” here means supported-tree consumers and selection/generation paths have been traced, with the stated interfaces and live functionality preserved. It does not certify unimplemented patches: any subsequent cleanup must be built and tested at a level appropriate to its changes. NIC interrupt/resource changes especially need Ethernet attachment/reset/detach validation on FreeBSD and relevant hardware.
+
+Recommended exact boundaries
+
+B1 — RDMA bridges in functioning Ethernet drivers: TARGETED CLEANUP.
+Remove private peer registration/lifecycle bridges and the associated unused RDMA-only state, tunables, auxiliary devices and vector reservations in ice, bnxt and qlnx. There are no surviving peer registrants. Do this coherently with module/manifest selections and cleanup/error paths. Preserve Ethernet drivers, queue/interrupt/reset/DCB/SR-IOV behavior, hardware capability decoding and shared firmware APIs. Do not approve blanket deletion of vendor ecore LL2/RDMA files before resolving their shared dependencies.
+
+B2 — ICL_KERNEL_PROXY: TARGETED CLEANUP; KEEP TCP PROXY.
+The iscsid -DICL_KERNEL_PROXY selection and static iSER-only proxy send/receive paths target the removed provider and can be retired, preserving explicit unsupported-iSER rejection. Whole icl_soft_proxy.c removal is not safe: icl_listen_add(false) and icl_soft_proxy_connect implement TCP, with optional ctld/CTL builds supporting it. Preserve generic ICL methods and ioctl numbers/layouts. Empty default-build compilation is not proof that an optional implementation is orphaned.
+
+B3 — Generic kernel RPC runtime: KEEP; CORRECT TO INTENTIONAL SURVIVOR.
+rpcbind explicitly attempts to load krpc and creates its Netlink transport. Its local Netlink configuration is hardcoded, not read from /etc/netconfig. Failure to load krpc warns and disables that integration, rather than terminating all rpcbind service. libc svc_nl and genl also consume the protocol. Removing the entire runtime would withdraw functioning support; no further private subset is approved by this review.
+
+B4 — WebNFS public-export state: TARGETED CLEANUP WITH ABI PRESERVED.
+No protocol consumer of nfs_pub remains. Its state allocation, public-root file-handle creation and teardown are removable. Preserve generic VFS exports/file handles, MNT_EXPUBLIC's numeric reservation and export_args layouts including ex_indexfile. Public-export requests should be explicitly rejected with EOPNOTSUPP. Retain a compatibility vfs_setpublicfs stub if preserving the exported kernel entrypoint. Full removal of exported state/types/interfaces is a separate compatibility question.
+
+B5 — MAC NFS credential hook: TARGETED PRIVATE CLEANUP.
+Remove the static Biba/MLS/stub NFS credential-association callbacks and their initializer assignments, which have no remaining in-tree caller. Preserve the mac_policy_ops operation slot/type and exported framework surface (a compatibility stub is an option). MAC_VERSION=6 represents exact module ABI matching; deleting the slot and shifting later callbacks is not safe cleanup.
+
+B6 — ALTQ: TARGETED PRIVATE IPFW CLEANUP.
+Remove excluded NO_ALTQ implementation branches, associated private token/scaffolding/always-NULL state and the unsupported help text. Preserve log/tag syntax, legacy O_ALTQ encoding and explicit EOPNOTSUPP rejection. Keep installed if_altq.h, queue structure layout and tbr_dequeue_ptr: the latter has a real definition and queue consumers. Removing installed ALTQ callable declarations requires source-compatibility policy; do not treat the entire header as dangling.
+
+B7 — etcupdate mail hook: KEEP; LIVE CUSTOM/HISTORICAL INPUT SUPPORT.
+Base aliases/newaliases producers are gone, but etcupdate accepts alternate source trees and saved tarballs. Those inputs can still reach the aliases post-install hook and staged-root warning. A stubbed execution harness confirmed live-root invocation, staged-root warning, dry-run suppression and unrelated-file isolation. Removing the hook would withdraw supported input behavior, rather than simply clean dead code. A missing-command guard would be a separate possible improvement.
+
+B8 — PF/manual identities: COMPATIBILITY DECISION REQUIRED.
+No current base owner/name-lookup consumers were found for man/proxy/authpf/_pflogd. However passwd/group installation and etcupdate merge paths are live: deleting records can affect upgrades as well as new images. This source audit cannot prove the absence of externally installed services or numeric ownership. Decide identity/upgrade policy before deletion; never reuse UID/GID 9/62/63/64.
+
+B9 — Historical Kerberos RPC headers: COMPATIBILITY DECISION REQUIRED.
+KRB4 callable declarations have no in-tree implementation or symbol-map exports, and KERBEROS header dependencies/conditional syntax were already broken in the FreeBSD baseline. Installed auth_kerb.h is still a public source surface, including for code that includes it without enabling KERBEROS. Header/declaration retirement needs an explicit policy, or an inert compatibility header. Preserve AUTH_KERB=4, historical error slots and libc's error decoding; normal Secure RPC/GSS behavior is outside this cleanup.
+
+B10 — Unsupported native architecture remnants: SAFE SCOPED REMOVAL.
+Remove four libproc native __riscv register-access branches, the unselected libdtrace PowerPC backend, and 64 generated kernel OpenSSL PowerPC/powerpc64/powerpc64le files plus solely native wrapper/header arms. Supported build selectors and current assembly-generation loops exclude those architectures. Preserve supported native backends, public libproc/DTrace/crypto APIs and imported OpenSSL foreign-target generators. Do not equate generated kernel copies with upstream perlasm sources.
+
+B11 — RISC-V old-object repairs: SAFE SCOPED REMOVAL.
+Remove the two MACHINE=riscv blocks in tools/build/depend-cleanup.sh. Supported native target lists cannot execute them. Keep generic/supported-target dependency repairs and historical installed-file cleanup inventories. This retires the standalone helper's manually requested cleanup of historical RISC-V object trees, not current build behavior.
+
+B12 — Old examples/docs/package/test: TARGETED CLEANUP, PRESERVE HISTORY.
+Remove the unselected release/packages/ucl/rcmds.ucl fragment; no surviving base package producer selects it, and its inclusion is optional package-specific metadata. Correct printf's active legacy locale test to exercise documented C-byte fallback or explicitly skip an unavailable ISO locale; do not delete working printf coverage. The missing locale does not prove a test failure because printf falls back to the unsigned byte. Preserve explicitly historical 4.4BSD setup documentation and crunch examples, optionally labeling obsolete example manifests.
+
+B13 — Manual source/build metadata: TARGETED INERT METADATA ONLY.
+The stand/man parent traversal and inert Makefile can be retired without deleting loader source documentation. Preserve installed mdoc examples and standalone deshallify.sh; they remain independently useful. libpcap's named sed conversion targets remain manually callable even though ordinary builds don't install manuals, so retiring those targets is a developer-tooling decision, not proven orphan implementation. Keep vendor/public API documentation and obsolete installed-manual cleanup records.
+
+B14 — OFED-named LinuxKPI constant/diagnostics: KEEP USEFUL SURFACE; TINY METADATA CLEANUP.
+Keep generic _module_run diagnostics, MODINIT ordering and the externally visible PREINIT compatibility constant. The OFED name does not prove orphanhood. opt_ofed.h SRCS entries in carp, fwip, cxgbe/if_cxgbe, cxgbe/if_cxgbev and toecore generate unused headers: no source includes them and forced option inclusion uses opt_global.h. Those five unused generation entries are a safe small cleanup. Retiring/renaming the debug option or PREINIT constant is separate compatibility work.
+
+B15 — Stale DIRDEPS: TARGETED HANDWRITTEN CLEANUP; REGENERATE BROADER GRAPHS.
+Remove the obsolete GNU_GREP_COMPAT option fragment (current grep already depends on lib/libregex). Replace libproc's retired LIBCPLUSPLUS choice with an unconditional libcxxrt dependency while retaining CDDL selection. The entirely unsupported handwritten GCC/GNU pseudo targets and GNU-only edges in the mixed toolchain pseudo target can be retired, preserving functioning toolchain dependencies. Do not delete the entire toolchain target. For 121 old gnu/lib/csu graph edges, regenerate dependencies on a supported FreeBSD meta/DIRDEPS host with filemon. Resolve .host qualifiers and current startup-object paths; the earlier 404 raw missing-path candidates are not 404 verified orphans.
+
+Checking performed and limits
+- Repository-wide producer/caller/registration searches and build/install/generation tracing.
+- Supported native-target selection and upstream baseline comparisons.
+- Public ABI/layout, numeric reservations, symbol maps and upgrade-input analysis.
+- Cross-subsystem reconciliation: rpcbind/krpc, if_altq/ifq, optional ICL TCP proxy, current package template selection, LinuxKPI forced option headers.
+- etcupdate behavior harness using the actual extracted post_install_file function and stubbed external commands; no real installation writes.
+- No native build, actual FreeBSD module loading, physical-NIC test, ports/installed-system ownership inventory or authoritative DIRDEPS regeneration was available. Recommendations distinguish these limits rather than claiming universal external compatibility.
+
+Detailed investigators' source evidence follows. Their notes describe read-only investigation before this report was consolidated.
+
+
+========================================================================
+Kernel and driver evidence
+========================================================================
+
+READ-ONLY GROUP B KERNEL REVIEW
+HEAD: 0c30595d79ae. Repository status was clean before/after investigation. No repository files changed. Findings use static source/reference analysis; no compiler or hardware tests were run.
+
+B1. RDMA bridges in surviving ice/bnxt/qlnx Ethernet drivers
+Verdict: private RDMA peer support is now definitely orphaned in-tree, suitable for coordinated cleanup. Confidence high for dependency fact, medium for implementation boundaries because Ethernet resource accounting must be changed consistently. Do not delete NIC drivers or generic firmware APIs. Out-of-tree RDMA module compatibility would be withdrawn; these are private driver interfaces, not public libc/POSIX APIs.
+
+ICE producer/consumer evidence:
+- sys/dev/ice/ice_rdma.c:492 and :555 define ice_rdma_register/unregister; repository search finds definitions/declarations/comments only, no surviving registrant after deleting irdma.
+- sys/dev/ice/ice_rdma.h:380-381 declarations; irdma_if.m/irdma_di_if.m consume that header; ice_rdma_internal.h exposes lifecycle bridge.
+- sys/dev/ice/if_ice_iflib.c:877 calls attach, :2159 calls init; ice_lib.c:10025,10042 initialize/exit global bridge, :9083,:9128 notify DCB/QOS updates. These are remaining outbound calls to bridge infrastructure, not independent RDMA protocol consumers.
+- ice_rdma.c:627-665 still populates a peer and links state when capability exists, but callbacks require ice_rdma.registered (e.g. :662,:722,:767). Nothing sets registered true except orphan registration entrypoint.
+- ice_common_sysctls.h:54,114,136,139 retain hw.ice.irdma and rdma_max_msix variables/tunables. if_ice_iflib.c:1480-1500 allocates RDMA interrupt vectors when hardware capability exists, independently of a loaded peer. if_ice_iflib.c:2994 clears capability only for lack of hardware/tunable; default tunable true leaves reserved vectors active.
+Recommended exact cleanup chain: ice_rdma.c, ice_rdma.h, ice_rdma_internal.h, irdma_if.m, irdma_di_if.m; matching sys/modules/ice/Makefile SRCS/interface generation; all ice_rdma_* call sites, RDMA peer fields, tunables, and RDMA-only vector reservations. Preserve administrative vector, Ethernet queues, DCB/QOS implementation, hardware capability decoding, and shared AQ/scheduler primitives. Reconcile rdma_imap/irdma_vectors allocation/unwind and all feature bits before removal. Physical-NIC testing needed for implemented resource changes.
+
+BNXT evidence:
+- sys/dev/bnxt/bnxt_en/bnxt_ulp.c:54 and :426 retain registration callback implementation/table; no surviving upper layer calls en_ops->bnxt_register_device after bnxt_re deletion.
+- if_bnxt.c:1695,:2081,:2093,:2194,:5152 still calls ULP lifecycle/event dispatch. Callback arrays are empty without a registrant.
+- bnxt_ulp.c:482-527 initializes auxiliary device named "rdma"; :394-420 builds IRQ table including BNXT_ROCE_IRQ_COUNT. if_bnxt.c:2739/:2753 invokes auxiliary init/uninit during Ethernet attachment/detachment, :391 reserves ROCE administrative interrupts.
+- if_bnxt.c:2957-2963 auxiliary allocation includes a 2-second msleep; :3008 another 2-second delay before registering device. This is active unused RDMA setup, not merely harmless function declarations.
+Recommended cleanup chain: bnxt_ulp.c/h, corresponding bnxt_en module/source manifest selections, ULP lifecycle/event calls, private auxiliary init/uninit helpers and IDA, edev/aux_dev/IRQ table fields strictly owned by RDMA bridge, and ROCE-only interrupt reservation. Preserve shared interrupt handling, firmware async event handling, normal SR-IOV and reset logic. Check LinuxKPI pci_dev ownership and shared error unwinds before removing allocations. Do not blanket-remove hardware ROCE capability/firmware structure fields.
+
+QLNX evidence:
+- sys/dev/qlnx/qlnxe/qlnx_rdma.c:227,251 defines register/deregister; only declarations and implementations remain. qlnx_rdma_if initialized NULL (:92); add/open/close callbacks bail at :119,:295,:313 without interface.
+- qlnx_os.c:428,666,673,1076,1127 retain lifecycle bridge calls. :886 uses qlnx_rdma_get_num_irqs; qlnx_rdma.c:327 returns CNQ/status-block reservation based on ecore RDMA hardware.
+- sys/modules/qlnx/qlnxe/Makefile:49-57 explicitly lists RDMA files and documents ability to disable them; :85-89 enables CONFIG_ECORE_LL2/ROCE/IWARP/RDMA and QLNX_ENABLE_IWARP. This causes Ethernet resource reservation at qlnx_os.c:884-901 even without peer.
+Recommended safe subset: qlnx_rdma.c/h, its lifecycle calls/host list/private RDMA pointer state, QLNX_ENABLE_IWARP reservation/accounting. Vendor ecore RDMA/ROCE/IWARP/OOO/LL2 files are a second dependency pass: shared ecore_dev.c has LL2 lifecycle references (:1768,:2578,:2677), so disabling feature guards/build selection must be coherent. Do not remove LL2/shared helpers solely from filenames. Preserve Ethernet L2 and VF/SR-IOV behavior.
+
+B2. ICL_KERNEL_PROXY
+Verdict: safe RDMA-only subsets exist; entire kernel proxy is not demonstrated orphaned and should not be approved wholesale. Confidence high.
+- Cleanup already removed sys/modules/iscsi/Makefile OFED/ALL_MODULES enablement. sys/conf/files:1893 and module SRCS still compile icl_soft_proxy.c, but the entire file body is #ifdef ICL_KERNEL_PROXY at :65-335, empty in normal kernel builds.
+- Contrary to previous report's incomplete reachability claim, usr.sbin/iscsid/Makefile:8 actively defines ICL_KERNEL_PROXY. iscsid.c:259 uses kernel proxy only when isc_iser is true; :89/:123 static pdu_receive_proxy/send_proxy assert iSER. These are definite unsupported iSER private paths after provider removal. Removing this daemon macro/helpers and preserving its existing iSER-not-supported rejection (:290) is safe cleanup.
+- sys/dev/iscsi/iscsi_ioctl.h:161-173 describes original iWARP reason; however icl_soft_proxy.c:311-320 explicitly rejects rdma=true and calls functional TCP listen path for false. :104 implements ordinary kernel TCP connect. Thus the proxy can function independently for TCP.
+- sys/modules/ctl/Makefile:27, cfiscsi/Makefile:5, usr.sbin/ctld/Makefile:18 document optional manual enablement. ctld.cc:2683-2687 supports proxy mode in such builds; ctl_frontend_iscsi.c owns accept/login/timeouts and listening callbacks. These are latent functioning optional functionality, not proven deletion debris.
+Safe recommendations: remove iscsid iSER-only macro/private helpers, dead RDMA-only ICL branches/interfaces after tracing, obsolete build comments where exclusively OFED-specific, and empty icl_soft_proxy compilation selection if retaining optional feature through another proper conditional. Whole TCP kernel proxy retirement is separate design decision. Preserve public ioctl numbers/layouts/reserved padding (iscsi_ioctl.h and ctl_ioctl.h), even when no support is available. Shared ICL_CONN_CONNECT kobj method and ctl proxy interfaces require full coordinated userland/kernel review; not a file-only deletion.
+
+B3. Entire generic krpc runtime
+Verdict: NOT SAFE as orphan cleanup; reclassify live integration C. Confidence high. Only NFS-specific backchannel/TLS were appropriate previous deletions.
+- usr.sbin/rpcbind/rpcbind.c:161-164 explicitly modfind/kldload("krpc"). Failure warns "rpcbind services for kernel disabled"; it does not exit here. Do not claim whole rpcbind fails.
+- rpcbind.c:126 constructs private netlink_nconf, :226 explicitly calls init_transport(&netlink_nconf), :560 uses libc svc_nl_create("rpcbind"). This backend is NOT sourced from /etc/netconfig; lib/libc/rpc/netconfig contains UDP/TCP/raw/local entries only.
+- sys/rpc/rpcb_clnt.c:67 SYSINIT client_nl_create("rpcbind"), sys/rpc/svc.c:560/:575 rpcb_set/unset, svc_generic.c:107 unset are current generic registration chain. clnt_nl.c provides registered Netlink RPC family and multicast group; lib/libc/rpc/svc_nl.c and usr.bin/genl/parser_rpc.c consume public clnt_nl.h schema.
+- No in-tree filesystem protocol consumer of client/server runtime remains, but explicit daemon/module support is live and externally useful for kernel modules.
+Recommended retain generic krpc, Netlink binding integration, installed protocol header, XDR, and userland RPC. Removing unused transport families would require a deliberate supported-kernel-module/API policy, not zero-in-tree-client reasoning. No additional definitely safe private subset established in this pass.
+
+B4. WebNFS nfs_pub public-export state
+Verdict: internal public-export state implementation is safe cleanup candidate; preserve generic exports/file handles and ABI. Confidence high no protocol consumer, medium replacement behavior design.
+- sys/kern/vfs_subr.c:241 defines nfs_pub. Repository search shows all reads/writes in vfs_export.c:532-603 are state management itself, with no protocol consumer.
+- vfs_export.c:385 creates via vfs_setpublicfs; :343 tears down exports; vfs_mount.c:2302 clears on unmount. These providers/housekeeping retain allocation/file-handle generation/validation but no user of result.
+- struct nfs_public/sys/sys/mount.h:633, declaration :1033, object extern :1074; export_args ex_indexfile and MNT_EXPUBLIC reserved flag remain in public ABI. VFS mount conversion still copies ex_indexfile at vfs_mount.c:1450.
+Recommended remove nfs_pub object, WebNFS-only allocations/validation and creation/teardown branches. Handle requests using MNT_EXPUBLIC with explicit EOPNOTSUPP, rather than silently accepting public export semantics that cannot work. If keeping exported kernel vfs_setpublicfs API for compatibility, a NULL cleanup/no-op and non-NULL EOPNOTSUPP stub is possible. Preserve public export_args layouts/ex_indexfile/flag constants and generic vfs_export/vfs_checkexp/getfh/fhstat/VOP_VPTOFH. Those remain useful for ZFS/FUSE and external filesystem tools; do not delete framework.
+
+B5. MAC NFS credential association
+Verdict: orphan static policy callbacks are safe narrow subset; public framework dispatch/ops-slot withdrawal requires compatibility choice. Confidence high private callbacks never invoked in-tree.
+- Only mac_cred_associate_nfsd definition/declaration at sys/security/mac/mac_cred.c:124 and mac_framework.h:113 survive; no call sites.
+- Dispatch at mac_cred.c:127 uses cred_associate_nfsd operation. Static Biba callback at mac_biba.c:813 sets low/range labels, registered :3572; MLS :777/:3201 same; stub :192/:1703 empty. No alternate consumers directly call static functions.
+- mac_policy.h:139 defines callback typedef, :722 holds field in struct mac_policy_ops. MAC_VERSION at :1045 is 6 and :1031-1061 explicitly defines exact module ABI version matching. Deleting struct slot without version change shifts unrelated policy callbacks and can break externally built policies.
+Recommended safe narrow cleanup: remove static Biba/MLS/stub NFS callback bodies and initializer assignments, leaving ops-slot/typedef reserved and NULL. Keep exported mac_cred_associate_nfsd stub or dispatch interface for external module compatibility unless removal/version policy approved. Comments can label reserved unsupported NFS operation. Removing whole slot/type/framework declaration as ordinary dead code is not safe. No other MAC callbacks are justified for deletion by this evidence.
+
+B14. OFED_PREINIT and OFED_DEBUG_INIT
+Verdict: SI_SUB_OFED_PREINIT has zero in-tree uses, but removal offers negligible benefit and could break external LinuxKPI modules; diagnostics behavior is generic useful survivor, retain. Confidence high references; medium external compatibility certainty.
+- sys/compat/linuxkpi/common/include/linux/module.h:98 defines PREINIT; repository-wide exact symbol search returns only definition.
+- module.h:108 debug conditional wraps symbol-name lookup/printf in _module_run, then always calls requested function. This helper powers module_init/module_exit and ordered variants (:123-137), used by surviving ath10k/ath11k/ath12k source and external DRM.
+- sys/conf/options:853 defines OFED_DEBUG_INIT opt_ofed.h. No source includes opt_ofed.h currently; several module Makefiles still list opt_ofed.h generated input. Thus option plumbing deserves review, but general -DOFED_DEBUG_INIT diagnostics remain functional. Do not infer orphan implementation from OFED name.
+Recommended keep debug feature or rename to LinuxKPI diagnostics while preserving compatibility alias; retain MODINIT unchanged. PREINIT can be retired only with explicit external-LinuxKPI compatibility policy; otherwise leave inexpensive constant. Generated opt_ofed.h-only Makefile SRCS entries with zero corresponding includes are safe narrow metadata cleanup candidates, subject to confirming generated include/forced include rules. No behavior deletion recommended.
+
+Priorities for an approved next cleanup: coordinated RDMA peer/reservation chain (with NIC validation); iscsid iSER-only paths; WebNFS state with explicit unsupported semantics; static MAC policy callbacks retaining reserved ABI. Keep whole generic krpc and generic LinuxKPI module diagnostics. All recommendations are report-only, no cleanup applied.
+
+========================================================================
+Userland and public-interface evidence
+========================================================================
+
+Read-only B6-B9 deeper review, HEAD 0c30595d79ae, 2026-10-02
+No repository edits. Local producer/caller/build/install searches; no installed-system or ports inventory assumed. AUDIT.md no longer exists at current HEAD; earlier read instructions retained: public APIs do not become removable merely because local callers are absent.
+
+B6 ALTQ: split private definite dead scaffolding from public queue/ABI survivors.
+SAFE private cleanup (high confidence): sbin/ipfw/ipfw2.h:425 unconditionally defines NO_ALTQ; no build target undefines it. sbin/ipfw/Makefile builds ipfw2.c but no ALTQ support object/library. All remaining print_altq_cmd/altq_set_enabled/altq_name_to_qid references are ipfw2.c:2167/2827/4824, behind #ifndef NO_ALTQ, with no producer or declaration anywhere in tree. Remove those excluded blocks, private TOK_ALTQ (ipfw2.h:123), private _ipfw_insn_altq forward declaration (:392), token-map entry (ipfw2.c:302), main.c:59 unsupported help phrase, grammar comments ipfw2.c:4243/4749/5722, and have_altq variable/always-NULL writeback (4268,5729-5734). Keep log and tag grammar intact. Remove NO_ALTQ only AFTER removing every excluded branch, otherwise unresolved C calls become enabled.
+Private reserved keyword ipfw2.c:4033 is not an implementation: f_reserved_keywords is consumed by add_ports at4058 to stop ambiguous port parsing. Deleting it changes invalid legacy syntax error handling; keeping it as unsupported reserved word is harmless and narrowly safest. If removed, verify altq tokens still reject, never interpreted as valid rule actions.
+PRESERVE public O_ALTQ=63 (sys/netinet/ip_fw.h:258) and ipfw_insn_altq layout (518-521). Kernel sockopt validation ip_fw_sockopt.c:1550-1551 rejects O_ALTQ with EOPNOTSUPP; retain this numeric rejection. Display/modifier/copy handling ipfw2.c:2165,2425,5687 and kernel log scanner ip_fw_log.c:155-162 recognize legacy instruction encoding; deleting these is a distinct compatibility interpretation decision, not needed to remove impossible private implementation. Kernel modifier handling sockopt.c:1001 similarly not evidence of supported ALTQ rule acceptance.
+DANGLING header prototypes: sys/net/altq/if_altq.h:162-169 altq_attach/altq_detach/altq_enable/altq_disable have no definitions. attach/enable have no callers. detach/disable retain only excluded #ifdef ALTQ callers sys/net/if.c:1186-1191. Retiring these four declarations is source compatibility withdrawal from an installed header; detach/disable require coupled retirement of those callers. #if0 altq_etherclassify declaration at172 is dead text, safe to remove. This is narrower than deleting header/struct.
+REAL SURVIVORS: include/Makefile:62 installs net/altq through normal LSUBDIRS installation loops at324/360. sys/net/if_var.h:87 and sys/net/ifq.h:49 include this header. struct ifaltq (if_altq.h:40-69) contains ordinary network queue fields used throughout if.c and ifq.c; structure tail/callback fields affect kernel module layout. Preserve header installation and layout absent explicit ABI policy. In particular tbr_dequeue_ptr declaration at170 is NOT dangling: definition sys/net/if.c:266; actual macro calls sys/net/ifq.h:181,198. ALTQ_IS_ENABLED compiles false without ALTQ, but TBR macro pointer accesses still compile. No blanket deletion of fields/macros/pointer. Confidence high for private cleanup, policy-dependent for installed declarations, unequivocal preserve queue layout.
+
+B7 etcupdate mail special chain: reachable historical/custom-tree compatibility, not definite dead code.
+Producer absent: no base newaliases executable or aliases configuration installer remains. However etcupdate supports source roots and saved root tarballs (usr.sbin/etcupdate/etcupdate.sh:51-52,64-70,276-291,1518-1519). Generic merge/install calls post_install_file at691,712,848,878. Its /etc/mail/aliases case at636-646 remains reachable from those alternate inputs: on live root it executes newaliases at641 without command-existence guard; staged destinations set NEWALIAS_WARN at644. resolve/update emit warnings at1447-1454/1644-1647. All flag uses belong to this chain.
+Tests are real special-hook coverage: tests/conflicts_test.sh:94-132 creates aliases conflict; invocation260; checks262-294 cover warning outcomes. tests/tests_test.sh:603-631 creates aliases merge fixture, asserts merged file at927, merge status968 and special warning1005. _pflogd text in these fixtures is arbitrary merge data, not account demand.
+Exact optional remove boundary if user chooses base-only updater: delete aliases case636-646, both NEWALIAS_WARN message blocks, special-warning assertions. Preserve generic install/merge paths and other post-install hooks (certctl647, login database653, password database659, services666). Generic aliases content fixtures can remain or move to ordinary filename; do not discard whole merge tests. Recommended preserve current compatibility; guarding absent newaliases could improve behavior without withdrawing custom MTA support, but is a separate functional change. No safe pure-orphan promotion. High confidence reachability; external newaliases availability unknowable from source alone.
+
+B8 PF/manual identities: no surviving base consumer, but upgrade/third-party policy.
+Exact prospective source records: etc/group:10 man gid9,21 proxy gid62,22 authpf gid63,23 _pflogd gid64; etc/master.passwd:9 man uid9/gid9,13 proxy uid62/gid62,14 _pflogd uid64/gid64. No authpf passwd record exists. Searches found no live name lookup or ownership selector for these identities. Other references are aliases fixture text (etcupdate tests lines119/622 and usr.bin/diff3/tests/conflict2.txt:9/conflict-merge.out:24/conflict-Em.out:18) and historical obsolete manpage records; preserve fixture semantics/cleanup registry.
+Live producer and upgrade paths DO remain: lib/libc/gen/Makefile.inc:2 sources ${SRCTOP}/etc,4 installs group/master.passwd via CONFS; afterinstallconfig212 and install-passwd213 regenerate installed password databases. etcupdate.sh:1891 includes these files in pre-world updates and master.passwd post-install at659-663 runs pwd_mkdb. Thus removing default records is not confined to fresh image build; unchanged stock entries can be merged away on upgrades.
+Recommendation: eligible to delete only after explicit identity compatibility policy (fresh base has no consumer); do not call deletion universally upgrade-safe. Existing file ownership uses numeric IDs, and external packages/services may rely on names/IDs. Never reassign reserved uid/gid9/62/63/64. Preserve unrelated service identities and games (driver consumer), generic passwd/group installation/update tooling, and test fixtures. High confidence no source base consumers; intentionally cannot assert no external consumers or installed owned files.
+
+B9 Kerberos RPC: historical unusable KRB4 public scaffolding, not a fresh HalfBSD break.
+include/rpc/Makefile:24 unconditionally selects auth_kerb.h,28-29 installs it in /usr/include/rpc. auth_kerb.h:39 guards whole implementation under KERBEROS;41/43 require nonexistent kerberos/krb.h and sys/t_kuser.h. KTEXT_ST/ANAME_SZ/INST_SZ/REALM_SZ/C_Block depend on these missing KRB4 inputs. Five declarations133-138 have no definitions/callers/symbol-map exports. authkerb_seccreate/authkerb_getucred declarations remain include/rpc/auth.h:308-339 and sys/rpc/auth.h:302-333; no providers/callers. No build-selectable KERBEROS provider remains.
+Historical evidence: releng/15.1 already installs this header and lacks both required krb.h/t_kuser.h paths (git ls-tree); its include/rpc/auth.h already has stray comma under KERBEROS. Current include/rpc/auth.h:131 ends AUTH_FAILED=7 with comma;136 adds another standalone comma. Hence defining KERBEROS produces malformed enum even before exercising missing header. sys/rpc/auth.h corresponding conditional has no stray comma. This is pre-existing dormant API debt, not caused by current removal.
+Optional source-withdrawal boundary: auth_kerb.h plus its Makefile install entry, and callable KERBEROS authkerb declarations/comments in both auth.h copies can be retired together if withdrawing unprovided historical API. Removing installed header is a public source-compatibility choice; external code can include it without KERBEROS today, or supply historical external headers/library. For pure safe consistency work preserve installed surface, or retain inert compatibility header; do not infer authorization merely from missing local provider.
+PRESERVE wire/numeric definitions and decoding: AUTH_KERB=4 at include/rpc/auth.h:356 and sys/rpc/auth.h:350; auth_stat slots8-12 remain reserved historical values; RPCSEC_GSS_CREDPROBLEM=13 and CTXPROBLEM14 must not shift. lib/libc/rpc/clnt_perror.c:290-305 decodes these indexes, including Kerberos slots299-303 even without provider. Do not remove array elements or normal AUTH/DES/sec_data layout. KERBEROS typedef krb4_svcdata_t/des_svcdata_t at95-105 also public source declarations, not executable dangling call sites; removing is policy, no live runtime cleanup benefit. Secure RPC auth_des, publickey/secretkey interfaces and GSS numeric ABI are outside remove boundary.
+Verdict: private unsupported implementation prototypes are demonstrably unprovided, but public header retirement is B/policy, while numeric protocol/decoder survivors are C. High confidence.
+
+========================================================================
+Build, architecture and documentation evidence
+========================================================================
+
+Read-only Group B build/docs review
+HEAD: 0c30595d79ae. No repository edits or removals. Evidence is source/build-graph inspection; no FreeBSD compilation or DIRDEPS regeneration was executed.
+
+B10 — Unreachable native architecture source remnants
+Verdict: split into strong, narrowly removable native/generated remnants and preserved vendor sources. The public interfaces themselves remain useful.
+1. lib/libproc/proc_regs.c:64-65,77-78,111-112,124-125: four __riscv branches access regs.sepc/regs.sp for live native ptrace PT_GETREGS/PT_SETREGS. This is not a cross-architecture ELF inspector: proc_regget/proc_regset operate on the running system's struct reg. lib/libproc/Makefile:7 selects proc_regs.c for all remaining native libproc builds. The preprocessor branches cannot compile for any supported native target; removing only those four elif blocks is safe with high confidence. Preserve the file, functions and supported arm/aarch64/x86 cases; externally useful libproc APIs are not candidates.
+2. cddl/contrib/opensolaris/lib/libdtrace/powerpc/dt_isadep.c:42,61,137,160 implements architecture-private dt_pid_create_* probes. cddl/lib/libdtrace/Makefile:25 selects basename dt_isadep.c; :117-140 adds search paths only for aarch64, i386/x86 and arm, never the powerpc directory. These duplicate symbol implementations are not linked together and the PowerPC backend no longer has a selector. File is CDDL vendor-derived (Sun 2005 header), but a native FreeBSD-only architecture backend, not a public standalone API. Removing this one backend directory/file would not affect supported build behavior (high confidence). Record the local vendor deletion so future imports preserve it; do not delete common dt_pid headers or the supported backends.
+3. sys/crypto/openssl/powerpc contains 18 generated files, powerpc64 23, powerpc64le 23. sys/modules/ossl/Makefile:1-2 uses per-native-CPUARCH .PATH; its SRCS lists cover only arm/aarch64/amd64/i386. secure/lib/libcrypto/Makefile:631-638 buildasm/cleanasm loops explicitly over aarch64 amd64 arm i386; Makefile.asm:1-4 states these .S are generated assembly and its generation branches contain no PowerPC. Thus current native consumers AND generation both exclude all three directories. Removal of these 64 generated source files is strongly justified, with high runtime safety confidence. sys/crypto/openssl/ossl_aes.c:44 and ossl_aes_gcm.c:56 contain native-only __powerpc64__ glue; their PowerPC arms can likewise be pruned, checking associated header definitions for sole native consumers before removing them. Preserve common AES and GCM operations.
+4. Distinguish crypto/openssl/crypto/*/asm/*ppc*.pl, configuration targets and other upstream foreign architectures: these belong to the vendor OpenSSL source distribution, and crypto/openssl/FREEBSD-upgrade.md:152-186 explicitly describes imports/configuration/assembly regeneration. The kernel generated copies above are separate from imported perlasm generators. No evidence justifies deleting vendor generators or compiler support for cross-targets. Keep unless import policy explicitly changes. Note upgrade doc still generically mentions regenerating assembly; it does not require retaining no-longer-generated copies.
+
+B11 — RISC-V old-object dependency repairs
+Verdict: definite runtime dead branches, safely removable as a narrow source cleanup; not equivalent to deleting upgrade manifests.
+tools/build/depend-cleanup.sh:394-408 handles 2024 RISC-V libc_start1 old .depend/object cleanup only when MACHINE=riscv. :510-537 handles RISC-V libc strrchr/memchr/memset/strlen/memcpy/strchrnul/bcopy/bzero/strnlen transitions under the same condition. The main world build supplies native MACHINE/MACHINE_ARCH and no supported target can satisfy that condition. This script does not scan old RISC-V object directories during amd64/arm builds: even stale RISC-V objects cannot make the branch run when MACHINE differs. Remove just these two if blocks and associated explanatory comments; retain all generic repairs and aarch64/amd64/i386 repairs. High confidence native unreachability, low urgency.
+The script is a standalone admin maintenance helper and a user could manually provide MACHINE=riscv to clean a historical object directory, so this is a lost legacy maintenance capability rather than a broken build. No current supported build contract requires that use. ObsoleteFiles/OptionalObsoleteFiles are different: they intentionally remove installed retired files on upgrades and must remain.
+
+B12 — Historical docs / examples / locale test / package fragment
+Verdict: four distinct cases; do not mass-delete references to deleted names.
+1. usr.sbin/crunch/examples/really-big.conf:28 requests mountd/nfsd/nfsiod; later tool lists include unsupported command names. usr.sbin/crunch/Makefile selects crunchgen/crunchide, not examples. examples/Makefile:1 selects CRUNCHED=fixit and fixit.conf, not really-big.conf. really-big.conf is a demonstrative old platform manifest, never the current build manifest. usr.sbin/crunch/README:22-40 describes a 980K a.out binary on 1.2MB floppy including rcp/fdisk/ftp/rsh/telnet/rlogin. These markers establish historical content; its supported crunchgen utility survives. Preserve README history, optionally label manifest as historical/nonbuildable, or retire only individual examples by explicit documentation policy. Medium removal confidence, high historical classification.
+2. share/doc/smm/01.setup/0.t:31-32 identifies BSD 4.4 and BSD 4.3; :43 dates July 27, 1993. 3.t describes upgrading Tahoe-era systems, 4.t:242-252 getty and :391-392 LPR, :441 sendmail; 6.t:635 gettytab. This is intentionally historical 4.4BSD setup documentation, not a HalfBSD installation guide. It is still reachable: share/Makefile:62-63 selects doc with MK_SHAREDOCS (default yes in src.opts.mk:136), share/doc/smm/Makefile:12 selects 01.setup, whose Makefile includes bsd.doc.mk. The surviving document build requires external groff, and bsd.doc.mk:63,120-129 retains LPR= lpr / print targets; those default print targets refer to deleted base lpr but can be overridden to an external printer tool. Preserve historical troff sources. Any decision to retire historical installed documentation or change the generic print target requires explicit documentation/tooling policy, not deletion of quoted history.
+3. usr.bin/printf/tests/regress.sh:9 IS an active installed test case, not an unreachable fixture: tests/Makefile:3 TAP_TESTS_SH=legacy_test; :20 installs regress.sh and :8 installs regress.l1.out; legacy_test.sh:5 invokes shared regress.m4; usr.bin/tests/Makefile installs that parent regression library. It sets unavailable en_US.ISO8859-1 without a skip. However printf.c:101 ignores setlocale failure and :653-656 falls back to the unsigned input byte if mbrtowc fails; expected regress.l1.out is 228, which that fallback also produces. Therefore runtime failure is not demonstrated and may not occur: the test can silently pass while failing to exercise ISO locale decoding. Recommend explicitly label/rewrite this case as C locale byte fallback (same expected 228), or optional ISO-locale case with explicit skip detection and corrected TAP plan. Preserve active printf tests and UTF8 l2 coverage. High confidence test selection; medium/high confidence misleading coverage; no claim of verified failure.
+4. release/packages/ucl/rcmds.ucl:20-24 adds utilities dependency for RPC daemons. Repository searches of Makefile/package identifiers found no surviving PACKAGE=rcmds consumer or explicit include. Native remote command daemons are removed; public libc rcmd.c/rcmdsh.c are in libc package and do not select this fragment. Thus this small package fragment is a strong orphan candidate, likely safe to remove (high source evidence, medium packaging proof because arbitrary package generation takes a template path). No need to remove public libc APIs merely for matching rcmd terminology.
+
+B13 — Manual authoring examples / inert MAN metadata
+Verdict: preserve useful source documentation; first-party unused build metadata can be trimmed separately.
+1. share/examples/Makefile:151-158 explicitly installs POSIX-copyright, deshallify.sh and example.1/.3/.4/.9. These are active distributed examples, not unreachable source. deshallify.sh is a standalone sed transformation requiring only remaining sh/sed; mdoc documents can be rendered with externally installed mandoc/groff. Removing them would remove a currently offered source-authoring example, a product/documentation policy decision, not a consistency repair. Keep by default (C intentional survivor), optional retire by authorization.
+2. stand/man/Makefile:3-9 selects boot1.efi/loader/loader.efi/loader_lua/loader_simp and includes bsd.prog.mk. Common bsd.prog.mk and bsd.lib.mk no longer include manual build machinery. share/mk/bsd.man.mk:1-4 is explicitly a compatibility no-op for manual target names. stand/man directory consists of useful first-party source docs plus the inert Makefile; stand/Makefile still traverses man. Removing only stand/man Makefile and parent traversal is safe for supported build output, but don't conflate this with deleting useful loader source documentation. MAN vars in other first-party Makefiles are harmless inert metadata; deletion is optional cleanliness, not dangling executable functionality.
+3. lib/libpcap/Makefile:61-111 MAN list, :113-130 MLINKS, :133 CLEANFILES+=${MAN} ${MANNODEV}, :166-191 explicit sed conversion rules. Common make rules do not add them to all/install, but named generated .3/.5/.7 targets still exist and can be invoked manually, independent of a man viewer. Thus metadata is inert in supported normal build but generators are not strictly unreachable. Removing only these first-party metadata/manual conversion sections changes explicit developer targets, with no ordinary libpcap build/install effect. Keep imported contrib/libpcap .3pcap/.manfile/.manmisc source docs; they document surviving public libpcap API and external tools can use them. If cleanup is chosen remove MAN/MANNODEV/MLINKS, matching CLEANFILES, and loop together, preserving grammar.y/scanner.h/tokdefs.h CLEANFILES and parser-generation rules. Medium cleanup confidence; high no normal-build-output effect evidence.
+4. No obsolete-file additions needed simply for deleting inert MAN rules: installed manuals are already covered by intentional upgrade manifests. Do not strip those historical removal lists.
+
+B15 — Additional stale DIRDEPS predating HalfBSD removals
+Verdict: mixed verified stale references and raw scanner false positives; authoritative regeneration is preferred for generated graphs, and handwritten legacy graphs need manual decisions.
+1. 121 current Makefile.depend files contain gnu/lib/csu (e.g. lib/libproc/tests/Makefile.depend:5). gnu/lib/csu is absent now and git ls-tree releng/15.1 gnu/lib/csu returns no entry: this stale edge predates HalfBSD. Normal world build is separate, but Makefile:147-151 chooses targets/Makefile when MK_DIRDEPS_BUILD=yes, so alternate graph functionality remains supported code rather than disposable docs. Existing libc/csu/current startup object paths are the likely replacements, but don't blindly rewrite each edge: filemon regeneration under supported native target will capture correct current dependencies and qualifiers. High stale-edge confidence; medium exact replacement confidence.
+2. targets/pseudo/gcc/Makefile.depend:4-15 and targets/pseudo/userland/gnu/Makefile.depend:5-27 are hand-written, with explicit 'not autogenerated' header. All old gnu compiler/binutils/library directories are absent (also absent original baseline), and repository search finds no caller to these pseudo paths beyond their definitions. They remain manually addressable through DIRDEPS targets; targets/pseudo/Makefile.inc explains pseudo dirs trigger other builds. Safe narrow proposal: retire these two unsupported legacy pseudo-target directories, after checking targets discovery UI / local downstream configuration, rather than pretending regeneration will repair a nonexistent GCC subsystem. Medium confidence external invocation absence; high unsupported graph evidence.
+3. targets/pseudo/toolchain/Makefile.depend:8-9 also contains absent GNU as/ld but includes remaining elftoolchain tool deps and optional clang subtree at :25-27. Don't delete entire functioning pseudo toolchain target. Remove/reconcile obsolete GNU-only edges, retain supported native toolchain and regenerate/inspect its mixed graph. High stale-edge evidence.
+4. usr.bin/grep/Makefile.depend.options:3-5 lists GNU_GREP_COMPAT and gnu/lib/libregex. Current grep/Makefile:38 LIBADD+=regex links surviving lib/libregex, with no GNU_GREP_COMPAT decision; src.opts.mk has no such option. Remove this obsolete option fragment or replace with unconditional current libregex edge through regenerated graph. Evidence strong; no reason to remove GNU-compatible grep functionality itself.
+5. lib/libproc/Makefile.depend.options:3,7-8 lists LIBCPLUSPLUS and selects gnu/lib/libsupc++ for no; current libproc/Makefile:17 LIBADD+=cxxrt is unconditional, src.opts.mk has no MK_LIBCPLUSPLUS option. Preserve CDDL option and DIRDEPS.CDDL.yes=cddl/lib/libctf. Remove LIBCPLUSPLUS choice, stale .no GNU edge; represent unconditional lib/libcxxrt in regenerated main graph. High confidence narrow cleanup. LIBCPLUSPLUS library variable in bsd.libnames.mk:35 is a public make library pathname, distinct from absent build option and must not be deleted on spelling alone.
+6. share/mk/dirdeps.mk:216-263 explicitly models host/host32 TARGET_SPEC and qualifies dependency names; '.host' is not a literal directory suffix. The initial 404 missing raw candidates include qualified host edges, stale ncurses renames and already-fixed HalfBSD removals. Treat that count only as a search queue, not 404 confirmed orphaned directories. Resolve aliases/qualifiers, check actual surviving build selection and baseline before classifying each.
+7. share/mk/meta.autodep.mk:48-97 governs UPDATE_DEPENDFILE and disables regeneration without usable filemon. Need an actual supported FreeBSD meta/DIRDEPS build with filemon to regenerate trustworthy graphs; this Linux read-only pass cannot prove regenerated completeness. Handwritten 'not autogenerated' graphs should be reviewed manually and not overwritten wholesale by generated output.
+
+Summary of narrow safe candidates for a later authorized cleanup (no edits made here): four native libproc RISC-V elif arms; unreachable libdtrace PowerPC backend; 64 generated sys/crypto PowerPC files with no remaining generator selection plus native-only wrapper arms; two RISC-V dependency repair blocks; unselected rcmds UCL fragment; obsolete GNU_GREP_COMPAT DIRDEPS option fragment; libproc LIBCPLUSPLUS option arms (retain CDDL). Historical docs and installed authoring examples remain intentional survivors; generated native DIRDEPS require supported-host regeneration. Source-tree import scripts/public interfaces and upgrade deletion lists should remain.

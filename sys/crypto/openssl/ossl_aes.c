@@ -41,8 +41,6 @@
 #include <crypto/openssl/ossl_aarch64.h>
 #elif defined (__arm__)
 #include <crypto/openssl/ossl_arm.h>
-#elif defined (__powerpc64__)
-#include <crypto/openssl/ossl_ppc.h>
 #else
 #error "Unsupported architecture!"
 #endif

@@ -5,8 +5,6 @@
 .endif
 
 DIRDEPS= \
-	gnu/usr.bin/binutils/as \
-	gnu/usr.bin/binutils/ld \
 	usr.bin/addr2line \
 	usr.bin/ar \
 	usr.bin/cxxfilt \

@@ -56,7 +56,7 @@ help(void)
 "ACTION:	check-state | allow | count | deny | unreach{,6} CODE |\n"
 "               skipto N | {divert|tee} PORT | forward ADDR |\n"
 "               pipe N | queue N | nat N | setfib FIB | reass\n"
-"PARAMS: 	[log [logamount LOGLIMIT]] [altq QUEUE_NAME]\n"
+"PARAMS: 	[log [logamount LOGLIMIT]]\n"
 "ADDR:		[ MAC dst src ether_type ] \n"
 "		[ ip from IPADDR [ PORT ] to IPADDR [ PORTLIST ] ]\n"
 "		[ ipv6|ip6 from IP6ADDR [ PORT ] to IP6ADDR [ PORTLIST ] ]\n"

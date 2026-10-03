@@ -104,7 +104,6 @@ device		vt_vga
 device		vt_efifb
 device		vt_vbefb
 
-device		agp			# support several AGP chipsets
 
 # Serial (COM) ports
 device		uart			# Generic UART driver

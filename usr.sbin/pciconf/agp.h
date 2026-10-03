@@ -1,8 +1,7 @@
-/*
- * This module derived from code donated to the FreeBSD Project by
- * Matthew Dillon <dillon@backplane.com>
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 1998 The FreeBSD Project
+ * Copyright (c) 2000 Doug Rabson
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,55 +26,20 @@
  * SUCH DAMAGE.
  */
 
-/*
- * DEFS.H
- */
+#ifndef _PCICONF_AGP_H_
+#define _PCICONF_AGP_H_
 
-#ifndef _ZALLOC_DEFS_H
-#define	_ZALLOC_DEFS_H
+/* Read-only PCI AGP capability decoding; no driver or ioctl interfaces. */
+#define AGP_MODE_GET_SBA(x)		(((x) & 0x00000200U) >> 9)
+#define AGP_MODE_GET_AGP(x)		(((x) & 0x00000100U) >> 8)
+#define AGP_MODE_GET_MODE_3(x)		(((x) & 0x00000008U) >> 3)
+#define AGP_MODE_GET_RATE(x)		((x) & 0x00000007U)
+#define AGP_MODE_V2_RATE_1x		0x00000001
+#define AGP_MODE_V2_RATE_2x		0x00000002
+#define AGP_MODE_V2_RATE_4x		0x00000004
+#define AGP_MODE_V3_RATE_4x		0x00000001
+#define AGP_MODE_V3_RATE_8x		0x00000002
+#define AGP_CAPID		0x0
+#define AGP_STATUS		0x4
 
-#define	USEGUARD		/* use stard/end guard bytes */
-#define	USEENDGUARD
-#define	DMALLOCDEBUG		/* add debugging code to gather stats */
-#define	ZALLOCDEBUG
-
-#include <sys/stdint.h>
-#include "stand.h"
-#include "zalloc_mem.h"
-
-#define	Library extern
-
-/*
- * block extension for sbrk()
- */
-
-#define	BLKEXTEND	(4 * 1024)
-#define	BLKEXTENDMASK	(BLKEXTEND - 1)
-
-/*
- * Required malloc alignment.
- *
- * Embedded platforms may require that all I/O buffers
- * be on a cache line sized boundary.  The worst case size for that is 64 bytes.
- * For other platforms, 16 bytes works fine.  The alignment also must be at
- * least sizeof(struct MemNode); this is asserted in zalloc.c.
- */
-
-#if defined(__arm__)
-#define	MALLOCALIGN		64
-#else
-#define	MALLOCALIGN		16
-#endif
-#define	MALLOCALIGN_MASK	(MALLOCALIGN - 1)
-
-typedef struct Guard {
-	size_t	ga_Bytes;
-	size_t	ga_Magic;	/* must be at least 32 bits */
-} Guard;
-
-#define	GAMAGIC		0x55FF44FD
-#define	GAFREE		0x5F54F4DF
-
-#include "zalloc_protos.h"
-
-#endif	/* _ZALLOC_DEFS_H */
+#endif /* _PCICONF_AGP_H_ */

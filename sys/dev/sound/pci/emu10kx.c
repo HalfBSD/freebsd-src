@@ -69,8 +69,6 @@
 #define	BROKEN_DIGITAL	0x0100
 #define	DIGITAL_ONLY	0x0200
 
-#define	IS_CARDBUS	0x0400
-
 #define	MODE_ANALOG	1
 #define	MODE_DIGITAL	2
 #define	SPDIF_MODE_PCM	1
@@ -350,7 +348,7 @@ struct emu_sc_info {
 	uint32_t 	is_emu10k1:1, is_emu10k2, is_ca0102, is_ca0108:1,
 			has_ac97:1, has_51:1, has_71:1,
 			enable_ir:1,
-			broken_digital:1, is_cardbus:1;
+			broken_digital:1;
 
 	signed int	mch_disabled, mch_rec, dbg_level;
 	signed int 	num_inputs;
@@ -411,7 +409,6 @@ static void	emu_wrefx(struct emu_sc_info *sc, unsigned int pc, unsigned int data
 static void	emu_addefxop(struct emu_sc_info *sc, unsigned int op, unsigned int z, unsigned int w, unsigned int x, unsigned int y, uint32_t * pc);
 static void	emu_initefx(struct emu_sc_info *sc);
 
-static int	emu_cardbus_init(struct emu_sc_info *sc);
 static int	emu_init(struct emu_sc_info *sc);
 static int	emu_uninit(struct emu_sc_info *sc);
 
@@ -536,8 +533,6 @@ static struct emu_hwinfo emu_cards[] = {
 	{0x1102, 0x0008, 0x1102, 0x1000, "SB????", "Audigy 2 LS", HAS_AC97 | HAS_51 | IS_CA0108 | DIGITAL_ONLY},
 	{0x1102, 0x0008, 0x1102, 0x1001, "SB0400", "Audigy 2 Value", HAS_AC97 | HAS_71 | IS_CA0108 | DIGITAL_ONLY},
 	{0x1102, 0x0008, 0x1102, 0x1021, "SB0610", "Audigy 4", HAS_AC97 | HAS_71 | IS_CA0108 | DIGITAL_ONLY},
-
-	{0x1102, 0x0008, 0x1102, 0x2001, "SB0530", "Audigy 2 ZS CardBus", HAS_AC97 | HAS_71 | IS_CA0108 | IS_CARDBUS},
 
 	{0x1102, 0x0008, 0x0000, 0x0000, "SB????", "Audigy 2 Value (Unknown model)", HAS_AC97 | HAS_51 | IS_CA0108},
 };
@@ -723,25 +718,6 @@ emu_wr_p16vptr(struct emu_sc_info *sc, uint16_t chn, uint16_t reg, uint32_t data
 	emu_wr_nolock(sc, EMU_DATA2, data, 4);
 	EMU_RWUNLOCK();
 }
-/*
- * XXX CardBus interface. Not tested on any real hardware.
- */
-static void
-emu_wr_cbptr(struct emu_sc_info *sc, uint32_t data)
-{
-
-	/*
-	 * 0x38 is IPE3 (CD S/PDIF interrupt pending register) on CA0102. Seems
-	 * to be some reg/value accessible kind of config register on CardBus
-	 * CA0108, with value(?) in top 16 bit, address(?) in low 16
-	 */
-
-	emu_rd_nolock(sc, 0x38, 4);
-	emu_wr_nolock(sc, 0x38, data, 4);
-	emu_rd_nolock(sc, 0x38, 4);
-
-}
-
 /*
  * Direct hardware register access
  * Assume that it is never used to access EMU_PTR-based registers and can run unlocked.
@@ -2620,26 +2596,6 @@ emumix_get_volume(struct emu_sc_info *sc, int mixer_idx)
 	return (-1);
 }
 
-/* Init CardBus part */
-static int
-emu_cardbus_init(struct emu_sc_info *sc)
-{
-
-	/*
-	 * XXX May not need this if we have EMU_IPR3 handler.
-	 * Is it a real init calls, or EMU_IPR3 interrupt acknowledgments?
-	 * Looks much like "(data << 16) | register".
-	 */
-	emu_wr_cbptr(sc, (0x00d0 << 16) | 0x0000);
-	emu_wr_cbptr(sc, (0x00d0 << 16) | 0x0001);
-	emu_wr_cbptr(sc, (0x00d0 << 16) | 0x005f);
-	emu_wr_cbptr(sc, (0x00d0 << 16) | 0x007f);
-
-	emu_wr_cbptr(sc, (0x0090 << 16) | 0x007f);
-
-	return (0);
-}
-
 /* Probe and attach the card */
 static int
 emu_init(struct emu_sc_info *sc)
@@ -3061,7 +3017,6 @@ emu_pci_attach(device_t dev)
 	sc->is_emu10k2 = 0;
 	sc->is_ca0102 = 0;
 	sc->is_ca0108 = 0;
-	sc->is_cardbus = 0;
 
 	device_flags = emu_cards[emu_getcard(dev)].flags;
 	if (device_flags & HAS_51)
@@ -3082,9 +3037,6 @@ emu_pci_attach(device_t dev)
 		sc->is_emu10k2 = 0;
 		sc->is_ca0102 = 1;	/* for unknown Audigy 2 cards */
 	}
-	if ((sc->is_ca0102 == 1) || (sc->is_ca0108 == 1))
-		if (device_flags & IS_CARDBUS)
-			sc->is_cardbus = 1;
 
 	if ((sc->is_emu10k1 + sc->is_emu10k2 + sc->is_ca0102 + sc->is_ca0108) != 1) {
 		device_printf(sc->dev, "Unable to detect HW chipset\n");
@@ -3177,11 +3129,6 @@ emu_pci_attach(device_t dev)
 		device_printf(dev, "unable to create resource manager\n");
 		goto bad;
 	}
-	if (sc->is_cardbus)
-		if (emu_cardbus_init(sc) != 0) {
-			device_printf(dev, "unable to initialize CardBus interface\n");
-			goto bad;
-		}
 	if (emu_init(sc) != 0) {
 		device_printf(dev, "unable to initialize the card\n");
 		goto bad;

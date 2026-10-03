@@ -54,10 +54,6 @@ Configuring and Running CTL:
 
  - Add 'device ctl' to your kernel configuration file or load the module.
 
- - If you're running with a 8Gb or 4Gb Qlogic FC board, add
-   'options ISP_TARGET_MODE' to your kernel config file. 'device ispfw' or
-   loading the ispfw module is also recommended.
-
  - Rebuild and install a new kernel.
 
  - Reboot with the new kernel.
@@ -76,10 +72,6 @@ scbus6 on ctl2cam0 bus 0:
    This is visible through the CTL CAM SIM.  This allows using CTL without
    any physical hardware.  You should be able to issue any normal SCSI
    commands to the device via the pass(4)/da(4) devices.
-
-   If any target-capable HBAs are in the system (e.g. isp(4)), and have
-   target mode enabled, you should now also be able to see the CTL LUNs via
-   that target interface.
 
    Note that all CTL LUNs are presented to all frontends.  There is no
    LUN masking, or separate, per-port configuration.

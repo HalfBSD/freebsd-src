@@ -742,13 +742,11 @@ options 	NETGRAPH_BPF
 options 	NETGRAPH_BRIDGE
 options 	NETGRAPH_CAR
 options 	NETGRAPH_CHECKSUM
-options 	NETGRAPH_CISCO
 options 	NETGRAPH_DEFLATE
 options 	NETGRAPH_DEVICE
 options 	NETGRAPH_ECHO
 options 	NETGRAPH_EIFACE
 options 	NETGRAPH_ETHER
-options 	NETGRAPH_FRAME_RELAY
 options 	NETGRAPH_GIF
 options 	NETGRAPH_GIF_DEMUX
 options 	NETGRAPH_HOLE
@@ -757,7 +755,6 @@ options 	NETGRAPH_IP_INPUT
 options 	NETGRAPH_IPFW
 options 	NETGRAPH_KSOCKET
 options 	NETGRAPH_L2TP
-options 	NETGRAPH_LMI
 options 	NETGRAPH_MPPC_COMPRESSION
 options 	NETGRAPH_MPPC_ENCRYPTION
 options 	NETGRAPH_NETFLOW
@@ -767,7 +764,6 @@ options 	NETGRAPH_PATCH
 options 	NETGRAPH_PIPE
 options 	NETGRAPH_PPTPGRE
 options 	NETGRAPH_PRED1
-options 	NETGRAPH_RFC1490
 options 	NETGRAPH_SOCKET
 options 	NETGRAPH_SPLIT
 options 	NETGRAPH_TAG
@@ -1378,7 +1374,7 @@ options 	PCI_IOV			# PCI SR-IOV support
 # HARDWARE DEVICE CONFIGURATION
 
 # For ISA the required hints are listed.
-# PCI, CardBus, and SD/MMC are self identifying buses, so
+# PCI and SD/MMC are self identifying buses, so
 # no hints are needed.
 
 #
@@ -1424,110 +1420,17 @@ options 	TERMINAL_KERN_ATTR=(FG_LIGHTRED|BG_BLACK)
 #
 # SCSI host adapters:
 #
-# aacraid: Adaptec by PMC RAID controllers, Series 6/7/8 and upcoming
-#          families. Container interface, CAM required.
-# ahc: Adaptec 274x/284x/2910/293x/294x/394x/3950x/3960x/398X/4944/
-#      19160x/29160x, aic7770/aic78xx
-# ahd: Adaptec 29320/39320 Controllers.
-# isp: Qlogic ISP 1020, 1040 and 1040B PCI SCSI host adapters,
-#      ISP 1240 Dual Ultra SCSI, ISP 1080 and 1280 (Dual) Ultra2,
-#      ISP 12160 Ultra3 SCSI,
-#      Qlogic ISP 2100 and ISP 2200 1Gb Fibre Channel host adapters.
-#      Qlogic ISP 2300 and ISP 2312 2Gb Fibre Channel host adapters.
-#      Qlogic ISP 2322 and ISP 6322 2Gb Fibre Channel host adapters.
-# ispfw: Firmware module for Qlogic host adapters
 # mpr: LSI-Logic MPT/Fusion Gen 3
 # mps: LSI-Logic MPT/Fusion Gen 2
 # mpt: LSI-Logic MPT/Fusion 53c1020 or 53c1030 Ultra4
 #      or FC9x9 Fibre Channel host adapters.
-# sym: Symbios/Logic 53C8XX family of PCI-SCSI I/O processors:
-#      53C810, 53C810A, 53C815, 53C825,  53C825A, 53C860, 53C875,
-#      53C876, 53C885,  53C895, 53C895A, 53C896,  53C897, 53C1510D,
-#      53C1010-33, 53C1010-66.
 
-device		aacraid
-device		ahc
-device		ahd
-device		isp
-envvar		hint.isp.0.disable="1"
-envvar		hint.isp.0.role="3"
-envvar		hint.isp.0.prefer_iomap="1"
-envvar		hint.isp.0.prefer_memmap="1"
-envvar		hint.isp.0.fwload_disable="1"
-envvar		hint.isp.0.ignore_nvram="1"
-envvar		hint.isp.0.fullduplex="1"
-envvar		hint.isp.0.topology="lport"
-envvar		hint.isp.0.topology="nport"
-envvar		hint.isp.0.topology="lport-only"
-envvar		hint.isp.0.topology="nport-only"
-# we can't get u_int64_t types, nor can we get strings if it's got
-# a leading 0x, hence this silly dodge.
-envvar		hint.isp.0.portwnn="w50000000aaaa0000"
-envvar		hint.isp.0.nodewnn="w50000000aaaa0001"
-device		ispfw
+
 # Only works on aarch64 and amd64
 #device		mpi3mr			# LSI-Logic MPT-Fusion 4
 device		mpr			# LSI-Logic MPT-Fusion 3
 device		mps			# LSI-Logic MPT-Fusion 2
 device		mpt			# LSI-Logic MPT-Fusion
-device		sym
-
-# The aic7xxx driver will attempt to use memory mapped I/O for all PCI
-# controllers that have it configured only if this option is set. Unfortunately,
-# this doesn't work on some motherboards, which prevents it from being the
-# default.
-options 	AHC_ALLOW_MEMIO
-
-# Dump the contents of the ahc controller configuration PROM.
-options 	AHC_DUMP_EEPROM
-
-# Bitmap of units to enable targetmode operations.
-options 	AHC_TMODE_ENABLE
-
-# Compile in Aic7xxx Debugging code.
-options 	AHC_DEBUG
-
-# Aic7xxx driver debugging options. See sys/dev/aic7xxx/aic7xxx.h
-options 	AHC_DEBUG_OPTS
-
-# Print register bitfields in debug output.  Adds ~128k to driver
-# See ahc(4).
-options 	AHC_REG_PRETTY_PRINT
-
-# Compile in aic79xx debugging code.
-options 	AHD_DEBUG
-
-# Aic79xx driver debugging options.  Adds ~215k to driver.  See ahd(4).
-options 	AHD_DEBUG_OPTS=0xFFFFFFFF
-
-# Print human-readable register definitions when debugging
-options 	AHD_REG_PRETTY_PRINT
-
-# Bitmap of units to enable targetmode operations.
-options 	AHD_TMODE_ENABLE
-
-# Options used in dev/isp/ (Qlogic SCSI/FC driver).
-#
-#	ISP_TARGET_MODE		-	enable target mode operation
-#
-options 	ISP_TARGET_MODE=1
-#
-#	ISP_DEFAULT_ROLES	-	default role
-#		none=0
-#		target=1
-#		initiator=2
-#		both=3			(not supported currently)
-#
-#	ISP_INTERNAL_TARGET		(trivial internal disk target, for testing)
-#
-options 	ISP_DEFAULT_ROLES=0
-
-#options 	SYM_SETUP_SCSI_DIFF	#-HVD support for 825a, 875, 885
-					# disabled:0 (default), enabled:1
-#options 	SYM_SETUP_PCI_PARITY	#-PCI parity checking
-					# disabled:0, enabled:1 (default)
-#options 	SYM_SETUP_MAX_LUN	#-Number of LUNs supported
-					# default:8, range:[1..64]
 
 #
 # Compaq "CISS" RAID controllers (SmartRAID 5* series)
@@ -1537,12 +1440,8 @@ options 	ISP_DEFAULT_ROLES=0
 device		ciss
 
 #
-# Compaq Smart RAID, Mylex DAC960 and AMI MegaRAID controllers.  Only
-# one entry is needed; the code will find and configure all supported
-# controllers.
+# LSI MegaRAID SAS controllers.
 #
-device		ida		# Compaq Smart RAID
-device		mlx		# Mylex DAC960
 device		mfi		# LSI MegaRAID SAS
 device		mfip		# LSI MegaRAID SAS passthrough, requires CAM
 options 	MFI_DEBUG
@@ -1877,8 +1776,8 @@ device		oce		# Emulex 10 GbE (OneConnect Ethernet)
 device		ti		# Alteon Networks Tigon I/II gigabit Ethernet
 
 # PCI IEEE 802.11 Wireless NICs
-device		ath		# Atheros pci/cardbus NIC's
-device		ath_hal		# pci/cardbus chip support
+device		ath		# Atheros PCI NIC's
+device		ath_hal		# PCI chip support
 #device		ath_ar5210	# AR5210 chips
 #device		ath_ar5211	# AR5211 chips
 #device		ath_ar5212	# AR5212 chips
@@ -2040,14 +1939,6 @@ options 	SND_FEEDER_RATE_HP
 options 	SND_PCM_64
 
 #
-# Cardbus
-#
-# cbb: pci/CardBus bridge implementing YENTA interface
-# cardbus: CardBus slots
-device		cbb
-device		cardbus
-
-#
 # MMC/SD
 #
 # mmc 		MMC/SD bus
@@ -2113,7 +2004,7 @@ device		jedec_dimm
 # iicoc simple polling driver for OpenCores I2C controller
 #
 # Other:
-# iicbb	generic I2C bit-banging code (needed by lpbb)
+# iicbb	generic I2C bit-banging code
 #
 device		iicbus		# Bus support, required for ic/iic/iicsmb below.
 device		iicbb		# bitbang driver; implements i2c on a pair of gpio pins
@@ -2147,40 +2038,6 @@ device		sy8106a		# Silergy Corp. SY8106A buck regulator
 
 # Parallel-Port Bus
 #
-# Parallel port bus support is provided by the `ppbus' device.
-# Multiple devices may be attached to the parallel port, devices
-# are automatically probed and attached when found.
-#
-# Supported devices:
-# lpt	Parallel Printer
-# plip	Parallel network interface
-# ppi	General-purpose I/O ("Geek Port") + IEEE1284 I/O
-# pps	Pulse per second Timing Interface
-# lpbb	Philips official parallel port I2C bit-banging interface
-# pcfclock Parallel port clock driver.
-#
-# Supported interfaces:
-# ppc	ISA-bus parallel port interfaces.
-#
-
-options 	PPC_PROBE_CHIPSET # Enable chipset specific detection
-				  # (see flags in ppc(4))
-options 	DEBUG_1284	# IEEE1284 signaling protocol debug
-options 	PERIPH_1284	# Makes your computer act as an IEEE1284
-				# compliant peripheral
-options 	DONTPROBE_1284	# Avoid boot detection of PnP parallel devices
-options 	LPT_DEBUG	# Printer driver debug
-options 	PPC_DEBUG	# Parallel chipset level debug
-options 	PLIP_DEBUG	# Parallel network IP interface debug
-options 	PCFCLOCK_VERBOSE         # Verbose pcfclock driver
-options 	PCFCLOCK_MAX_RETRIES=5   # Maximum read tries (default 10)
-
-device		ppc
-envvar		hint.ppc.0.at="isa"
-envvar		hint.ppc.0.irq="7"
-device		ppbus
-device		lpt
-device		plip
 device  	gpiopps		# Pulse per second input from gpio pin
 device  	gpioregulator	# extres/regulator glue for gpio pin
 device  	gpiospi		# SPI via gpio bitbang
@@ -2601,14 +2458,6 @@ options 	VFS_BIO_DEBUG	# VFS buffer I/O debugging
 
 options 	KSTACK_MAX_PAGES=32 # Maximum pages to give the kernel stack
 options 	KSTACK_USAGE_PROF
-
-# Adaptec Array Controller driver options
-options 	AAC_DEBUG	# Debugging levels:
-				# 0 - quiet, only emit warnings
-				# 1 - noisy, emit major function
-				#     points and things done
-				# 2 - extremely noisy, emit trace
-				#     items in loops, etc.
 
 # Resource Accounting
 options 	RACCT

@@ -971,8 +971,6 @@
     usr.bin
         apply
         ..
-        asa
-        ..
         awk
             bugs-fixed
             ..

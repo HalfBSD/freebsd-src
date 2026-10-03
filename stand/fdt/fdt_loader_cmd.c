@@ -1041,7 +1041,7 @@ command_fdt_internal(int argc, char *argv[])
 
 	if (flags & CMD_REQUIRES_BLOB) {
 		/*
-		 * Check if uboot env vars were parsed already. If not, do it now.
+		 * Apply platform fixups to the device tree before using the blob.
 		 */
 		if (fdt_fixup() == 0)
 			return (CMD_ERROR);

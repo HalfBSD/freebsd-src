@@ -37,12 +37,8 @@
 #include <machine/metadata.h>
 #include <machine/psl.h>
 
-#ifdef EFI
 #include <efi.h>
 #include <efilib.h>
-#else
-#include "kboot.h"
-#endif
 
 #include "bootstrap.h"
 #include "modinfo.h"
@@ -51,10 +47,8 @@
 #include <machine/specialreg.h>
 #endif
 
-#ifdef EFI
 #include "loader_efi.h"
 #include "gfx_fb.h"
-#endif
 
 #if defined(LOADER_FDT_SUPPORT)
 #include <fdt_platform.h>
@@ -67,12 +61,10 @@
 static int
 bi_getboothowto(char *kargs)
 {
-#ifdef EFI
 	const char *sw, *tmp;
 	char *opts;
 	int speed, port;
 	char buf[50];
-#endif
 	char *console;
 	int howto;
 
@@ -85,7 +77,6 @@ bi_getboothowto(char *kargs)
 			howto |= RB_SERIAL;
 		if (strcmp(console, "nullconsole") == 0)
 			howto |= RB_MUTE;
-#ifdef EFI
 #if defined(__i386__) || defined(__amd64__)
 		if (strcmp(console, "efi") == 0 &&
 		    getenv("efi_8250_uid") != NULL &&
@@ -132,13 +123,11 @@ bi_getboothowto(char *kargs)
 			}
 		}
 #endif
-#endif
 	}
 
 	return (howto);
 }
 
-#ifdef EFI
 static EFI_STATUS
 efi_do_vmap(EFI_MEMORY_DESCRIPTOR *mm, UINTN sz, UINTN mmsz, UINT32 mmver)
 {
@@ -326,7 +315,6 @@ bi_load_efi_data(struct preloaded_file *kfp, bool exit_bs)
 
 	return (0);
 }
-#endif
 
 /*
  * Load the information expected by an amd64 kernel.
@@ -407,7 +395,6 @@ bi_load(char *args, vm_offset_t *modulep, vm_offset_t *kernendp, bool exit_bs)
 	/* Pad to a page boundary. */
 	addr = md_align(addr);
 
-#ifdef EFI
 	addr = build_font_module(addr);
 
 	/* Pad to a page boundary. */
@@ -422,7 +409,6 @@ bi_load(char *args, vm_offset_t *modulep, vm_offset_t *kernendp, bool exit_bs)
 
 	/* Pad to a page boundary. */
 	addr = md_align(addr);
-#endif
 
 	/* Copy our environment. */
 	envp = addr;
@@ -463,7 +449,6 @@ bi_load(char *args, vm_offset_t *modulep, vm_offset_t *kernendp, bool exit_bs)
 	module = *modulep;
 	file_addmetadata(kfp, MODINFOMD_MODULEP, sizeof(module), &module);
 #endif
-#ifdef EFI
 #ifndef __i386__
 	file_addmetadata(kfp, MODINFOMD_FW_HANDLE, sizeof(ST), &ST);
 #endif
@@ -471,15 +456,10 @@ bi_load(char *args, vm_offset_t *modulep, vm_offset_t *kernendp, bool exit_bs)
 	file_addmetadata(kfp, MODINFOMD_EFI_ARCH, sizeof(MACHINE_ARCH),
 	    MACHINE_ARCH);
 #endif
-#endif
 #ifdef LOADER_GELI_SUPPORT
 	geli_export_key_metadata(kfp);
 #endif
-#ifdef EFI
 	bi_load_efi_data(kfp, exit_bs);
-#else
-	bi_loadsmap(kfp);
-#endif
 
 	size = md_copymodules(0, is64);	/* Find the size of the modules */
 	kernend = md_align(addr + size);

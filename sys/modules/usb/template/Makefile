@@ -46,7 +46,6 @@ SRCS=	opt_bus.h opt_usb.h device_if.h bus_if.h usb_if.h vnode_if.h usbdevs.h \
 
 #
 # NOTE:
-# Keep source list above in sync with stand/usb/usbcore.mk
 #
 
 .include <bsd.kmod.mk>

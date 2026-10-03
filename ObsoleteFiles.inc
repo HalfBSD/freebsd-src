@@ -51,6 +51,101 @@
 #   xargs -n1 | sort | uniq -d;
 # done
 
+# 20261003: Retire Kboot, native U-Boot and standalone USB/kshim boot paths.
+OLD_FILES+=boot/loader.kboot
+OLD_FILES+=boot/loader.kboot.old
+OLD_FILES+=boot/loader.help.kboot
+OLD_FILES+=boot/uboot/ubldr
+OLD_FILES+=boot/uboot/ubldr.old
+OLD_FILES+=boot/uboot/ubldr.bin
+OLD_FILES+=boot/uboot/ubldr.bin.old
+OLD_FILES+=boot/uboot/loader.help.uboot
+OLD_DIRS+=boot/uboot
+
+# 20261003: Retire obsolete terminal and application utilities (revised A12).
+OLD_FILES+=usr/bin/asa
+OLD_FILES+=usr/bin/enigma
+OLD_FILES+=usr/bin/leave
+OLD_FILES+=usr/bin/lock
+OLD_FILES+=usr/bin/look
+OLD_FILES+=usr/bin/mesg
+OLD_FILES+=usr/bin/ul
+OLD_FILES+=usr/bin/crypt
+OLD_FILES+=usr/tests/usr.bin/asa/asa_test
+OLD_FILES+=usr/tests/usr.bin/asa/Kyuafile
+OLD_DIRS+=usr/tests/usr.bin/asa
+
+# 20261003: Retire in-tree DRM2 and AGP graphics implementations.
+OLD_FILES+=boot/kernel/agp.ko
+OLD_FILES+=boot/kernel/drm2.ko
+OLD_FILES+=usr/include/sys/agpio.h
+OLD_FILES+=usr/include/dev/agp/agpreg.h
+OLD_DIRS+=usr/include/dev/agp
+
+# 20261003: Retire Frame Relay and synchronous-WAN Netgraph leaf nodes.
+OLD_FILES+=boot/kernel/ng_cisco.ko
+OLD_FILES+=usr/include/netgraph/ng_cisco.h
+OLD_FILES+=boot/kernel/ng_frame_relay.ko
+OLD_FILES+=usr/include/netgraph/ng_frame_relay.h
+OLD_FILES+=boot/kernel/ng_lmi.ko
+OLD_FILES+=usr/include/netgraph/ng_lmi.h
+OLD_FILES+=boot/kernel/ng_rfc1490.ko
+OLD_FILES+=usr/include/netgraph/ng_rfc1490.h
+OLD_FILES+=usr/share/examples/netgraph/frame_relay
+
+# 20261003: Retire CardBus/PC Card and parallel-port support.
+OLD_FILES+=boot/kernel/cardbus.ko
+OLD_FILES+=boot/kernel/cbb.ko
+OLD_FILES+=boot/kernel/exca.ko
+OLD_FILES+=boot/kernel/ppbus.ko
+OLD_FILES+=boot/kernel/ppc.ko
+OLD_FILES+=boot/kernel/lpt.ko
+OLD_FILES+=boot/kernel/ppi.ko
+OLD_FILES+=boot/kernel/plip.ko
+OLD_FILES+=boot/kernel/pps.ko
+OLD_FILES+=boot/kernel/pcfclock.ko
+OLD_FILES+=boot/kernel/lpbb.ko
+OLD_FILES+=etc/pccard_ether
+OLD_FILES+=usr/sbin/dumpcis
+OLD_FILES+=usr/include/dev/ppbus/lpt.h
+OLD_FILES+=usr/include/dev/ppbus/lptio.h
+OLD_FILES+=usr/include/dev/ppbus/ppb_1284.h
+OLD_FILES+=usr/include/dev/ppbus/ppb_msq.h
+OLD_FILES+=usr/include/dev/ppbus/ppbconf.h
+OLD_FILES+=usr/include/dev/ppbus/ppbio.h
+OLD_FILES+=usr/include/dev/ppbus/ppi.h
+OLD_DIRS+=usr/include/dev/ppbus
+
+# 20261003: Retire legacy parallel SCSI and hardware RAID families.
+OLD_FILES+=boot/kernel/aac.ko
+OLD_FILES+=boot/kernel/aac_linux.ko
+OLD_FILES+=boot/kernel/aacraid.ko
+OLD_FILES+=boot/kernel/aacraid_linux.ko
+OLD_FILES+=boot/kernel/ahc.ko
+OLD_FILES+=boot/kernel/ahc_isa.ko
+OLD_FILES+=boot/kernel/ahc_pci.ko
+OLD_FILES+=boot/kernel/ahd.ko
+OLD_FILES+=boot/kernel/sym.ko
+OLD_FILES+=boot/kernel/ida.ko
+OLD_FILES+=boot/kernel/ips.ko
+OLD_FILES+=boot/kernel/mlx.ko
+OLD_FILES+=boot/kernel/hpt27xx.ko
+OLD_FILES+=boot/kernel/hptiop.ko
+OLD_FILES+=boot/kernel/hptmv.ko
+OLD_FILES+=boot/kernel/hptnr.ko
+OLD_FILES+=boot/kernel/hptrr.ko
+OLD_FILES+=usr/sbin/mlxcontrol
+
+# 20261003: Retire QLogic and Emulex Fibre Channel drivers and firmware.
+OLD_FILES+=boot/kernel/isp.ko
+OLD_FILES+=boot/kernel/ispfw.ko
+OLD_FILES+=boot/kernel/isp_2400.ko
+OLD_FILES+=boot/kernel/isp_2500.ko
+OLD_FILES+=boot/kernel/isp_2600.ko
+OLD_FILES+=boot/kernel/isp_2700.ko
+OLD_FILES+=boot/kernel/isp_2800.ko
+OLD_FILES+=boot/kernel/ocs_fc.ko
+
 # 20261003: Retire InfiniBand networking and Mellanox firmware support.
 OLD_FILES+=boot/kernel/if_infiniband.ko
 OLD_FILES+=boot/kernel/mlxfw.ko

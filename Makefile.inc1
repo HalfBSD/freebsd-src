@@ -2940,9 +2940,6 @@ _lld=		usr.bin/clang/lld
 .if ${MK_CLANG_BOOTSTRAP} != "no" || ${MK_LLD_BOOTSTRAP} != "no"
 _clang_libs=	lib/clang
 .endif
-.if ${MK_USB} != "no"
-_usb_tools=	stand/usb/tools
-.endif
 
 .if ${BUILD_WITH_STRICT_TMPPATH} != 0 || defined(BOOTSTRAP_ALL_TOOLS)
 _ar=usr.bin/ar
@@ -2957,8 +2954,7 @@ cross-tools: .MAKE .PHONY
     ${_lld} \
     ${_elftctools} \
     ${_dtrace_tools} \
-    ${_btxld} \
-    ${_usb_tools}
+    ${_btxld}
 	${_+_}@${ECHODIR} "===> ${_tool} (obj,all,install)"; \
 		cd ${.CURDIR}/${_tool}; \
 		if [ -z "${NO_OBJWALK}" ]; then ${MAKE} DIRPRFX=${_tool}/ obj; fi; \

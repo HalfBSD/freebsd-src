@@ -2,7 +2,6 @@
 
 DIRDEPS = \
 	stand/efi/loader \
-	stand/uboot \
 
 
 .include <dirdeps.mk>

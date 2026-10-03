@@ -113,7 +113,6 @@ DIRDEPS+= \
 	usr.bin/alias \
 	usr.bin/apply \
 	usr.bin/ar \
-	usr.bin/asa \
 	usr.bin/at \
 	usr.bin/atf/atf-config \
 	usr.bin/atf/atf-report \
@@ -164,7 +163,6 @@ DIRDEPS+= \
 	usr.bin/du \
 	usr.bin/elf2aout \
 	usr.bin/elfdump \
-	usr.bin/enigma \
 	usr.bin/env \
 	usr.bin/expand \
 	usr.bin/false \
@@ -208,7 +206,6 @@ DIRDEPS+= \
 	usr.bin/lastcomm \
 	usr.bin/lex \
 	usr.bin/ldd \
-	usr.bin/leave \
 	usr.bin/less \
 	usr.bin/lessecho \
 	usr.bin/lesskey \
@@ -216,18 +213,15 @@ DIRDEPS+= \
 	usr.bin/limits \
 	usr.bin/locale \
 	usr.bin/localedef \
-	usr.bin/lock \
 	usr.bin/lockf \
 	usr.bin/logger \
 	usr.bin/login \
 	usr.bin/logins \
 	usr.bin/logname \
-	usr.bin/look \
 	usr.bin/lorder \
 	usr.bin/lsvfs \
 	usr.bin/lzmainfo \
 	usr.bin/m4 \
-	usr.bin/mesg \
 	usr.bin/minigzip \
 	usr.bin/ministat \
 	usr.bin/mkcsmapper \
@@ -304,7 +298,6 @@ DIRDEPS+= \
 	usr.bin/tset \
 	usr.bin/tsort \
 	usr.bin/tty \
-	usr.bin/ul \
 	usr.bin/uname \
 	usr.bin/unexpand \
 	usr.bin/unifdef \
@@ -448,7 +441,6 @@ DIRDEPS+= \
 	usr.sbin/dnssec-revoke \
 	usr.sbin/dnssec-settime \
 	usr.sbin/dnssec-signzone \
-	usr.sbin/dumpcis \
 	usr.sbin/edquota \
 	usr.sbin/etcupdate \
 	usr.sbin/extattr \
@@ -488,7 +480,6 @@ DIRDEPS+= \
 	usr.sbin/mfiutil \
 	usr.sbin/mixer \
 	usr.sbin/mld6query \
-	usr.sbin/mlxcontrol \
 	usr.sbin/mpsutil \
 	usr.sbin/mptutil \
 	usr.sbin/mtest \

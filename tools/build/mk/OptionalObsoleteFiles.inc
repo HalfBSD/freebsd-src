@@ -1026,7 +1026,6 @@ OLD_FILES+=usr/share/examples/mdoc/example.3
 OLD_FILES+=usr/share/examples/mdoc/example.4
 OLD_FILES+=usr/share/examples/mdoc/example.9
 OLD_FILES+=usr/share/examples/netgraph/ether.bridge
-OLD_FILES+=usr/share/examples/netgraph/frame_relay
 OLD_FILES+=usr/share/examples/netgraph/ngctl
 OLD_FILES+=usr/share/examples/netgraph/raw
 OLD_FILES+=usr/share/examples/netgraph/udp.tunnel
@@ -2811,7 +2810,6 @@ OLD_FILES+=usr/tests/lib/atf/test-programs/srcdir_test
 .if ${MK_TEXTPROC} == no
 OLD_FILES+=usr/bin/checknr
 OLD_FILES+=usr/bin/colcrt
-OLD_FILES+=usr/bin/ul
 .endif
 
 .if ${MK_TOOLCHAIN} == no

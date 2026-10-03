@@ -27,8 +27,6 @@ INTERP_DEPENDS+=	lua
 .include <bsd.arch.inc.mk>
 
 S.${MK_EFI}+=		efi
-S.${MK_LOADER_KBOOT}+=	kboot
-S.${MK_LOADER_UBOOT}+=	uboot
 
 .if defined(LIB32LIST)
 LIB32DEPENDS=	${LIB32LIST:S/$/32/}
@@ -39,9 +37,6 @@ S.yes+=         ${MACHINE}
 SUBDIR_DEPEND_${MACHINE}+=	${INTERP_DEPENDS}
 .if ${MK_FDT} != "no"
 SUBDIR_DEPEND_${MACHINE}+=	fdt
-.endif
-.if ${MK_LOADER_UBOOT} != "no"
-SUBDIR_DEPEND_${MACHINE}+=	uboot
 .endif
 .endif
 
@@ -63,15 +58,8 @@ SUBDIR_DEPEND_${_x}32+=	libsa32
 SUBDIR_DEPEND_lua+=	liblua
 
 SUBDIR_DEPEND_efi+=	${INTERP_DEPENDS}
-SUBDIR_DEPEND_kboot+=	${INTERP_DEPENDS}
 .if ${MK_FDT} != "no"
 SUBDIR_DEPEND_efi+=	fdt
-SUBDIR_DEPEND_kboot+=	fdt
-.endif
-
-SUBDIR_DEPEND_uboot+=	${INTERP_DEPENDS}
-.if ${MK_FDT} != "no"
-SUBDIR_DEPEND_uboot+=	fdt
 .endif
 
 SUBDIR_PARALLEL=	yes

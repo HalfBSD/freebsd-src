@@ -42,7 +42,6 @@
  *     /  |  \
  *  iicbb pcf ...
  *    |
- *  lpbb
  */
 
 #include <sys/param.h>

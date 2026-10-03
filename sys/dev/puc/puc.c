@@ -275,6 +275,9 @@ puc_bfe_attach(device_t dev)
 		if (error)
 			goto fail;
 		port->p_type = res;
+		/* Preserve hardware port numbering on mixed serial/parallel cards. */
+		if (port->p_type != PUC_TYPE_SERIAL)
+			continue;
 		error = puc_config(sc, PUC_CFG_GET_RID, idx, &res);
 		if (error)
 			goto fail;

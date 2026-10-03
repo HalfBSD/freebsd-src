@@ -248,6 +248,84 @@ configurations must remove `SCHED_ULE` and `SCHED_4BSD` options. These changes
 are later than the fixed snapshots measured above and are not included in their
 size totals. Full FreeBSD builds and runtime scheduler testing remain required.
 
+## Fibre Channel removal after the measured snapshots
+
+On October 3, 2026, A2 removed the QLogic `isp` driver, `ispfw` firmware and
+modules, and Emulex `ocs_fc` driver and module. Adapter-specific target hooks,
+kernel options/configurations, source-index and documentation-generation entries,
+and CTL setup instructions were removed with them. Installed-module cleanup is
+unconditional. Shared CAM, PCI, CTL, and retained storage drivers remain. This
+removal is later than the fixed snapshots measured above and is not included
+in their size totals. FreeBSD build and storage/runtime testing remain required.
+
+## Legacy storage removal after the measured snapshots
+
+On October 3, 2026, A3 removed the `aic7xxx`/`ahc`/`ahd`, `sym`, `ida`, `ips`,
+`mlx`, `aac`/`aacraid`, and five HighPoint RAID families, their modules, private
+Linux ioctl shims, host blobs, assembler tooling, and `mlxcontrol`. Build/options,
+configuration, generated dependencies, and documentation-generation entries were
+removed, including the now-unused `SOURCELESS_HOST` switch. Installed cleanup
+is unconditional. Shared CAM/DMA/PCI/disk support and `mps`, `mpr`, and `mpi3mr`
+remain. This removal is excluded from the earlier measured snapshot totals;
+FreeBSD builds and storage/runtime validation remain required.
+
+## Legacy expansion and parallel-port removal after the measured snapshots
+
+On October 3, 2026, A4 removed CardBus/PC Card bus support and parallel-port
+controllers/peripherals, including printer, network, I/O, PPS/clock and I2C
+attachments. Driver/module/configuration/options, installed headers, `dumpcis`,
+and documentation-generation entries were removed. Retained driver CardBus
+hooks were removed and PUC now attaches serial ports only. Generic network
+hotplug remains as `netif_hotplug`, replacing the historical `pccard_ether`
+name in installation and devd configuration. Shared PCI/UART/USB/USB serial,
+GPIO PPS, and I2C remain. Installed cleanup is unconditional. These changes are
+excluded from the earlier measured totals; FreeBSD builds and hardware/network
+hotplug validation remain required.
+
+## Legacy Netgraph WAN-node removal after the measured snapshots
+
+On October 3, 2026, revised A7 removed only Frame Relay, LMI, RFC1490, and Cisco
+HDLC Netgraph nodes, dedicated modules/headers/build options, the Frame Relay
+example, and their `libnetgraph` debug-cookie entries. Installed module/header
+and example cleanup is unconditional. Generic Netgraph remains a programmable
+networking playground; shared APIs, other nodes, tools, examples/tests, and
+bhyve networking integration remain. Protocol classification identifiers are
+retained. These changes are excluded from earlier measured totals. Native
+FreeBSD Netgraph builds and representative node/bhyve networking tests remain
+required.
+
+## Old graphics-stack removal after the measured snapshots
+
+On October 3, 2026, A11 removed in-tree DRM2/TTM and its Tegra backend, AGP
+drivers/module/interfaces, old-DRM generation tools, build/configuration/debug
+options, and installed AGP headers. `pciconf` retains read-only AGP capability
+decoding with private definitions. LinuxKPI and shared framebuffer, backlight,
+video-mode and console support remain. Installed cleanup targets AGP and DRM2
+only; current external DRM/AMDGPU module names remain. This removal is excluded
+from earlier measured totals. External drm-kmod builds and AMDGPU/Wayland,
+display hotplug, console handoff and suspend/resume testing remain required.
+
+## Revised utility removal after the measured snapshots
+
+On October 3, 2026, revised A12 removed the remaining `asa`, `enigma`/`crypt`,
+`leave`, setuid `lock`, `look`, `mesg`, and `ul`, their build/dependency entries,
+and ASA tests. The other listed messaging/printing utilities and games had
+already been removed. Installed cleanup is unconditional. Shared libraries,
+dictionaries, service-name data and generally useful shell/development/admin
+utilities remain. These changes are excluded from earlier measured totals;
+FreeBSD world/install and retained workstation runtime validation remain required.
+
+## Alternate host boot-path removal after the measured snapshots
+
+On October 3, 2026, A10 removed Kboot/Linux-kexec, native U-Boot/ubldr, kshim,
+and its dependent standalone USB boot library/test/tool, including sysinit
+cross-tool integration. Loader knobs, dependencies, non-EFI metadata branches,
+and Kboot boot-test image/script paths were removed. Installed loader/help/backup
+cleanup is unconditional. `libsa`, Lua, FDT, EFI, bhyve userboot, kernel USB and
+EFI USB support remain; external guest/UEFI firmware references are separate.
+These changes are excluded from earlier measured totals. Native EFI builds,
+fresh installs, boot-environment and bhyve userboot tests remain required.
+
 ## Measurement method and limits
 
 - Count tracked blob entries and their uncompressed sizes with

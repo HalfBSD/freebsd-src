@@ -123,8 +123,6 @@
     dev
         acpica
         ..
-        agp
-        ..
         ciss
         ..
         evdev
@@ -162,8 +160,6 @@
         pci
         ..
         powermac_nvram
-        ..
-        ppbus
         ..
         pwm
         ..

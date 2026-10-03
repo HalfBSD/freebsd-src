@@ -160,7 +160,6 @@ SE_MDOC= \
 SE_DIRS+=	netgraph
 SE_NETGRAPH= \
 	ether.bridge \
-	frame_relay \
 	ngctl \
 	raw \
 	udp.tunnel \

@@ -2,7 +2,6 @@
 
 SUBDIR=	alias \
 	apply \
-	asa \
 	awk \
 	backlight \
 	basename \
@@ -32,7 +31,6 @@ SUBDIR=	alias \
 	du \
 	elfctl \
 	elfdump \
-	enigma \
 	env \
 	etdump \
 	expand \
@@ -64,25 +62,21 @@ SUBDIR=	alias \
 	ktrdump \
 	lam \
 	ldd \
-	leave \
 	less \
 	lessecho \
 	lesskey \
 	limits \
 	locale \
 	localedef \
-	lock \
 	lockf \
 	logger \
 	login \
 	logins \
 	logname \
-	look \
 	lsvfs \
 	lzmainfo \
 	m4 \
 	mdo \
-	mesg \
 	ministat \
 	mkdep \
 	mkfifo \
@@ -197,7 +191,6 @@ SUBDIR.${MK_SOUND}+=	beep
 SUBDIR.${MK_SOUND}+=	mididump
 SUBDIR.${MK_TESTS_SUPPORT}+=	kyua
 SUBDIR.${MK_TESTS}+=	tests
-SUBDIR.${MK_TEXTPROC}+=	ul
 .if ${MK_LLVM_BINUTILS} == "no"
 # Only build the elftoolchain tools if we aren't using the LLVM ones.
 SUBDIR.${MK_TOOLCHAIN}+=	addr2line

@@ -36,7 +36,7 @@
  *	 /  \ 
  *    iicbb pcf
  *     |  \
- *   bti2c lpbb
+ *   bti2c
  *
  * From Linux I2C generic interface
  * (c) 1998 Gerd Knorr <kraxel@cs.tu-berlin.de>

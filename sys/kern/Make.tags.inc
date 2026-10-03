@@ -11,8 +11,6 @@ SYS?=	${.CURDIR}/..
 COMM=	${SYS}/sys/vnode.h \
 	${SYS}/dev/alc/*.[ch] \
 	${SYS}/dev/iicbus/*.[ch] \
-	${SYS}/dev/isp/*.[ch] \
-	${SYS}/dev/ppbus/*.[ch] \
 	${SYS}/dev/smbus/*.[ch] \
 	${SYS}/fs/autofs/*.[ch] \
 	${SYS}/fs/cd9660/*.[ch] \
@@ -55,9 +53,7 @@ COMMDIR1= ${SYS}/conf \
 
 COMMDIR2= ${SYS}/dev/alc \
 	${SYS}/dev/iicbus \
-	${SYS}/dev/isp \
 	${SYS}/dev/md \
-	${SYS}/dev/ppbus \
 	${SYS}/dev/smbus \
 	${SYS}/fs/autofs \
 	${SYS}/fs/cd9660 \

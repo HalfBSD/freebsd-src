@@ -14,8 +14,6 @@ SUBDIR=${MODULES_OVERRIDE}
 SUBDIR=	\
 	${_3dfx} \
 	${_3dfx_linux} \
-	${_aac} \
-	${_aacraid} \
 	accf_data \
 	accf_dns \
 	accf_http \
@@ -26,9 +24,7 @@ SUBDIR=	\
 	ae \
 	${_aesni} \
 	age \
-	${_agp} \
 	ahci \
-	aic7xxx \
 	alc \
 	ale \
 	alq \
@@ -74,10 +70,8 @@ SUBDIR=	\
 	${_bytgpio} \
 	${_chvgpio} \
 	cam \
-	${_cardbus} \
 	${_carp} \
 	cas \
-	${_cbb} \
 	cc \
 	${_ccp} \
 	cd9660 \
@@ -113,7 +107,6 @@ SUBDIR=	\
 	${_et} \
 	etherswitch \
 	evdev \
-	${_exca} \
 	ext2fs \
 	fdescfs \
 	${_felix} \
@@ -135,11 +128,6 @@ SUBDIR=	\
 	${_gve} \
 	hid \
 	hifn \
-	${_hpt27xx} \
-	${_hptiop} \
-	${_hptmv} \
-	${_hptnr} \
-	${_hptrr} \
 	hwpmc \
 	${_hwt} \
 	i2c \
@@ -147,7 +135,6 @@ SUBDIR=	\
 	${_ichwd} \
 	${_ice} \
 	${_ice_ddp} \
-	${_ida} \
 	if_bridge \
 	${_if_cgem} \
 	if_disc \
@@ -181,13 +168,10 @@ SUBDIR=	\
 	${_ipmi} \
 	ip6_mroute_mod \
 	ip_mroute_mod \
-	${_ips} \
 	${_ipsec} \
 	${_ipw} \
 	${_ipwfw} \
 	${_isci} \
-	isp \
-	${_ispfw} \
 	${_itwd} \
 	${_iwi} \
 	${_iwifw} \
@@ -215,7 +199,6 @@ SUBDIR=	\
 	linuxkpi_video \
 	linuxkpi_wlan \
 	${_lio} \
-	lpt \
 	${_mac_biba} \
 	${_mac_bsdextended} \
 	${_mac_ddb} \
@@ -247,7 +230,6 @@ SUBDIR=	\
 	mfi \
 	mii \
 	miiproxy \
-	mlx \
 	mmc \
 	mmcsd \
 	${_mpi3mr} \
@@ -281,7 +263,6 @@ SUBDIR=	\
 	nvmf \
 	${_nvram} \
 	oce \
-	${_ocs_fc} \
 	${_ossl} \
 	otus \
 	${_otusfw} \
@@ -290,13 +271,7 @@ SUBDIR=	\
 	${_padlock} \
 	${_padlock_rng} \
 	${_pchtherm} \
-	${_pcfclock} \
-	plip \
 	${_pms} \
-	ppbus \
-	ppc \
-	ppi \
-	pps \
 	procfs \
 	proto \
 	pseudofs \
@@ -362,7 +337,6 @@ SUBDIR=	\
 	${_sume} \
 	${_superio} \
 	${_p2sb} \
-	sym \
 	sysvipc \
 	tarfs \
 	tcp \
@@ -580,7 +554,6 @@ _netgraph=	netgraph
 .if ${MK_SOURCELESS_UCODE} != "no"
 _bce=		bce
 _fxp=		fxp
-_ispfw=		ispfw
 _ti=		ti
 _mwlfw=		mwlfw
 _otusfw=	otusfw
@@ -663,7 +636,6 @@ _imx=		imx
 .endif
 
 .if ${MACHINE_CPUARCH} == "i386" || ${MACHINE_CPUARCH} == "amd64"
-_agp=		agp
 .if ${MACHINE_CPUARCH} == "i386" || !empty(COMPAT_FREEBSD32_ENABLED)
 _aout=		aout
 .endif
@@ -671,8 +643,6 @@ _bios=		bios
 .if ${MK_SOURCELESS_UCODE} != "no"
 _bxe=		bxe
 .endif
-_cardbus=	cardbus
-_cbb=		cbb
 _cpuctl=	cpuctl
 _cpufreq=	cpufreq
 _dpms=		dpms
@@ -680,7 +650,6 @@ _em=		em
 _et=		et
 _ftgpio=	ftgpio
 _ftwd=		ftwd
-_exca=		exca
 _io=		io
 _itwd=		itwd
 _ix=		ix
@@ -693,7 +662,6 @@ _mgb=		mgb
 _nctgpio=	nctgpio
 _ncthwm=	ncthwm
 _ntb=		ntb
-_ocs_fc=	ocs_fc
 _p2sb=		p2sb
 _qat_c2xxx=	qat_c2xxx
 _qat_c2xxxfw=	qat_c2xxxfw
@@ -702,8 +670,6 @@ _speaker=	speaker
 _wbwd=		wbwd
 _wdatwd=	wdatwd
 
-_aac=		aac
-_aacraid=	aacraid
 .if ${MK_CRYPT} != "no" || defined(ALL_MODULES)
 _aesni=		aesni
 .endif
@@ -721,19 +687,8 @@ _chvgpio=	chvgpio
 _ciss=		ciss
 _chromebook_platform=	chromebook_platform
 _coretemp=	coretemp
-.if ${MK_SOURCELESS_HOST} != "no" && empty(KCSAN_ENABLED)
-_hpt27xx=	hpt27xx
-.endif
-_hptiop=	hptiop
-.if ${MK_SOURCELESS_HOST} != "no" && empty(KCSAN_ENABLED)
-_hptmv=		hptmv
-_hptnr=		hptnr
-_hptrr=		hptrr
-.endif
 _ichwd=		ichwd
-_ida=		ida
 _intelspi=	intelspi
-_ips=		ips
 _isci=		isci
 _ipw=		ipw
 _iwi=		iwi
@@ -818,7 +773,6 @@ _3dfx=		3dfx
 _3dfx_linux=	3dfx_linux
 _glxiic=	glxiic
 _glxsb=		glxsb
-_pcfclock=	pcfclock
 _pst=		pst
 _sbni=		sbni
 .endif

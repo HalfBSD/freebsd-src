@@ -106,9 +106,7 @@ __DEFAULT_YES_OPTIONS = \
     LLVM_COV \
     LLVM_CXXFILT \
     LOADER_GELI \
-    LOADER_KBOOT \
     LOADER_LUA \
-    LOADER_UBOOT \
     LOADER_IA32 \
     LOCALES \
     LS_COLORS \
@@ -132,7 +130,6 @@ __DEFAULT_YES_OPTIONS = \
     SETUID_LOGIN \
     SOUND \
     SOURCELESS \
-    SOURCELESS_HOST \
     SOURCELESS_UCODE \
     STATS \
     SYSTEM_COMPILER \
@@ -262,14 +259,6 @@ BROKEN_OPTIONS+=LIB32
 .if ${__T} == "i386"
 BROKEN_OPTIONS+=EFI
 .endif
-# KBOOT is only for amd64 and aarch64
-.if ${__T} != "amd64" && ${__T} != "aarch64"
-BROKEN_OPTIONS+=LOADER_KBOOT
-.endif
-# UBOOT is only for arm
-.if ${__T:Marm*} == ""
-BROKEN_OPTIONS+=LOADER_UBOOT
-.endif
 # The 32-bit UEFI loader is only for amd64
 .if ${__T} != "amd64"
 BROKEN_OPTIONS+=LOADER_IA32
@@ -310,7 +299,6 @@ BROKEN_OPTIONS+=BHYVE_SNAPSHOT
 # Order is somewhat important.
 #
 .if ${MK_SOURCELESS} == "no"
-MK_SOURCELESS_HOST:=	no
 MK_SOURCELESS_UCODE:= no
 .endif
 

@@ -116,14 +116,9 @@ device		mvs			# Marvell 88SX50XX/88SX60XX/88SX70XX/SoC SATA
 device		siis			# SiliconImage SiI3124/SiI3132/SiI3531 SATA
 
 # SCSI Controllers
-device		ahc			# AHA2940 and onboard AIC7xxx devices
-device		hptiop			# Highpoint RocketRaid 3xxx series
-device		isp			# Qlogic family
-#device		ispfw			# Firmware for QLogic HBAs- normally a module
 device		mpt			# LSI-Logic MPT-Fusion
 device		mps			# LSI-Logic MPT-Fusion 2
 device		mpr			# LSI-Logic MPT-Fusion 3
-device		sym			# NCR/Symbios Logic
 device		isci			# Intel C600 SAS controller
 device		pvscsi			# VMware PVSCSI
 
@@ -140,16 +135,10 @@ device		ses			# Enclosure Services (SES and SAF-TE)
 # RAID controllers interfaced to the SCSI subsystem
 device		arcmsr			# Areca SATA II RAID
 device		ciss			# Compaq Smart RAID 5*
-device		ips			# IBM (Adaptec) ServeRAID
 device		tws			# LSI 3ware 9750 SATA+SAS 6Gb/s RAID controller
 
 # RAID controllers
-device		aac			# Adaptec FSA RAID
-device		aacp			# SCSI passthrough for aac (requires CAM)
-device		aacraid			# Adaptec by PMC RAID
-device		ida			# Compaq Smart RAID
 device		mfi			# LSI MegaRAID SAS
-device		mlx			# Mylex DAC960 family
 device		mrsas			# LSI/Avago MegaRAID SAS/SATA, 6Gb/s and 12Gb/s
 device		pst			# Promise Supertrak SX6000
 
@@ -172,23 +161,11 @@ device		splash			# vt splash screen support
 device		vt_vga
 device		vt_vbefb
 
-device		agp			# support several AGP chipsets
-
-# CardBus bridge support
-device		cbb			# CardBus (yenta) bridge
-device		cardbus			# CardBus (32-bit) bus
 
 # Serial (COM) ports
 device		uart			# Generic UART driver
 
-# Parallel port
-device		ppc
-device		ppbus			# Parallel port bus (required)
-device		lpt			# Printer
-device		ppi			# Parallel port interface device
-#device		vpo			# Requires scbus and da
-
-device		puc			# Multi I/O cards and multi-channel UARTs
+device		puc			# Multi-channel UARTs
 
 # PCI/PCI-X/PCIe Ethernet NICs that use iflib infrastructure
 device		iflib

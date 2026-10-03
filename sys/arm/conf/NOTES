@@ -73,7 +73,6 @@ nooptions	COMPAT_FREEBSD9
 nooptions	PPC_PROBE_CHIPSET
 nooptions	MAXCPU		# value is set in machine/param.h
 
-nodevice	sym
 
 nodevice	ccr
 nodevice	cxgbe

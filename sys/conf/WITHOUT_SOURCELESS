@@ -2,5 +2,4 @@
 # WITHOUT_SOURCELESS -- Disable drivers that include sourceless code.
 #
 
-include WITHOUT_SOURCELESS_HOST
 include WITHOUT_SOURCELESS_UCODE

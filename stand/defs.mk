@@ -55,7 +55,6 @@ LIBLUASRC=	${BOOTSRC}/liblua
 LUASRC=		${SRCTOP}/contrib/lua/src
 SASRC=		${BOOTSRC}/libsa
 SYSDIR=		${SRCTOP}/sys
-UBOOTSRC=	${BOOTSRC}/uboot
 ZFSSRC=		${SASRC}/zfs
 OZFS=		${SRCTOP}/sys/contrib/openzfs
 ZFSOSSRC=	${OZFS}/module/os/freebsd/
@@ -116,9 +115,7 @@ CFLAGS+=	-DLOADER_GELI_SUPPORT
 CFLAGS+=	-I${SASRC}/geli
 .endif # MK_LOADER_GELI
 
-# These should be confined to loader.mk, but can't because uboot/lib
-# also uses it. It's part of loader, but isn't a loader so we can't
-# just include loader.mk
+# Shared standalone library and loader disk-support flags.
 .if ${LOADER_DISK_SUPPORT:Uyes} == "yes"
 CFLAGS+= -DLOADER_DISK_SUPPORT
 .endif

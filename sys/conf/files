@@ -699,15 +699,6 @@ ddb/db_textdump.c		optional ddb
 ddb/db_variables.c		optional ddb
 ddb/db_watch.c			optional ddb
 ddb/db_write_cmd.c		optional ddb
-dev/aac/aac.c			optional aac
-dev/aac/aac_cam.c		optional aacp aac
-dev/aac/aac_debug.c		optional aac
-dev/aac/aac_disk.c		optional aac
-dev/aac/aac_pci.c		optional aac pci
-dev/aacraid/aacraid.c		optional aacraid
-dev/aacraid/aacraid_cam.c	optional aacraid scbus
-dev/aacraid/aacraid_debug.c	optional aacraid
-dev/aacraid/aacraid_pci.c	optional aacraid pci
 dev/acpi_support/acpi_wmi.c	optional acpi_wmi acpi
 dev/acpi_support/acpi_asus.c	optional acpi_asus acpi
 dev/acpi_support/acpi_asus_wmi.c	optional acpi_asus_wmi acpi
@@ -752,26 +743,9 @@ dev/acpica/acpi_dock.c		optional acpi_dock acpi
 dev/adlink/adlink.c		optional adlink
 dev/ae/if_ae.c			optional ae pci
 dev/age/if_age.c		optional age pci
-dev/agp/agp.c			optional agp pci
-dev/agp/agp_if.m		optional agp pci
 dev/ahci/ahci.c			optional ahci
 dev/ahci/ahciem.c		optional ahci
 dev/ahci/ahci_pci.c		optional ahci pci
-dev/aic7xxx/ahc_isa.c		optional ahc isa
-dev/aic7xxx/ahc_pci.c		optional ahc pci \
-	compile-with "${NORMAL_C} ${NO_WCONSTANT_CONVERSION}"
-dev/aic7xxx/ahd_pci.c		optional ahd pci \
-	compile-with "${NORMAL_C} ${NO_WCONSTANT_CONVERSION}"
-dev/aic7xxx/aic7770.c		optional ahc
-dev/aic7xxx/aic79xx.c		optional ahd pci
-dev/aic7xxx/aic79xx_osm.c	optional ahd pci
-dev/aic7xxx/aic79xx_pci.c	optional ahd pci
-dev/aic7xxx/aic79xx_reg_print.c	optional ahd pci ahd_reg_pretty_print
-dev/aic7xxx/aic7xxx.c		optional ahc
-dev/aic7xxx/aic7xxx_93cx6.c	optional ahc
-dev/aic7xxx/aic7xxx_osm.c	optional ahc
-dev/aic7xxx/aic7xxx_pci.c	optional ahc pci
-dev/aic7xxx/aic7xxx_reg_print.c	optional ahc ahc_reg_pretty_print
 dev/al_eth/al_eth.c				optional al_eth	fdt	\
 	no-depend	\
 	compile-with "${CC} -c -o ${.TARGET} ${CFLAGS} -I$S/contrib/alpine-hal -I$S/contrib/alpine-hal/eth ${.IMPSRC}"
@@ -1296,11 +1270,6 @@ dev/bwn/if_bwn_phy_lp.c		optional bwn bhnd
 dev/bwn/if_bwn_phy_n.c		optional bwn bhnd
 dev/bwn/if_bwn_util.c		optional bwn bhnd
 dev/cadence/if_cgem.c		optional cgem fdt
-dev/cardbus/card_if.m		standard
-dev/cardbus/cardbus.c		optional cardbus
-dev/cardbus/cardbus_cis.c	optional cardbus
-dev/cardbus/cardbus_device.c	optional cardbus
-dev/cardbus/power_if.m		standard
 dev/cas/if_cas.c		optional cas
 dev/cfi/cfi_bus_fdt.c		optional cfi fdt
 dev/cfi/cfi_bus_nexus.c		optional cfi
@@ -1532,49 +1501,6 @@ dev/dcons/dcons_os.c		optional dcons
 dev/dialog/da9063/da9063_if.m	optional da9063_pmic
 dev/dialog/da9063/da9063_iic.c	optional da9063_pmic iicbus fdt
 dev/dialog/da9063/da9063_rtc.c	optional da9063_rtc fdt
-dev/drm2/drm_agpsupport.c	optional drm2
-dev/drm2/drm_auth.c		optional drm2
-dev/drm2/drm_bufs.c		optional drm2
-dev/drm2/drm_buffer.c		optional drm2
-dev/drm2/drm_context.c		optional drm2
-dev/drm2/drm_crtc.c		optional drm2
-dev/drm2/drm_crtc_helper.c	optional drm2
-dev/drm2/drm_dma.c		optional drm2
-dev/drm2/drm_dp_helper.c	optional drm2
-dev/drm2/drm_dp_iic_helper.c	optional drm2
-dev/drm2/drm_drv.c		optional drm2
-dev/drm2/drm_edid.c		optional drm2
-dev/drm2/drm_fb_helper.c	optional drm2
-dev/drm2/drm_fops.c		optional drm2
-dev/drm2/drm_gem.c		optional drm2
-dev/drm2/drm_gem_names.c	optional drm2
-dev/drm2/drm_global.c		optional drm2
-dev/drm2/drm_hashtab.c		optional drm2
-dev/drm2/drm_ioctl.c		optional drm2
-dev/drm2/drm_irq.c		optional drm2
-dev/drm2/drm_linux_list_sort.c	optional drm2
-dev/drm2/drm_lock.c		optional drm2
-dev/drm2/drm_memory.c		optional drm2
-dev/drm2/drm_mm.c		optional drm2
-dev/drm2/drm_modes.c		optional drm2
-dev/drm2/drm_pci.c		optional drm2
-dev/drm2/drm_platform.c		optional drm2
-dev/drm2/drm_scatter.c		optional drm2
-dev/drm2/drm_stub.c		optional drm2
-dev/drm2/drm_sysctl.c		optional drm2
-dev/drm2/drm_vm.c		optional drm2
-dev/drm2/drm_os_freebsd.c	optional drm2
-dev/drm2/ttm/ttm_agp_backend.c	optional drm2
-dev/drm2/ttm/ttm_lock.c		optional drm2
-dev/drm2/ttm/ttm_object.c	optional drm2
-dev/drm2/ttm/ttm_tt.c		optional drm2
-dev/drm2/ttm/ttm_bo_util.c	optional drm2
-dev/drm2/ttm/ttm_bo.c		optional drm2
-dev/drm2/ttm/ttm_bo_manager.c	optional drm2
-dev/drm2/ttm/ttm_execbuf_util.c	optional drm2
-dev/drm2/ttm/ttm_memory.c	optional drm2
-dev/drm2/ttm/ttm_page_alloc.c	optional drm2
-dev/drm2/ttm/ttm_bo_vm.c	optional drm2
 dev/dwc/if_dwc.c		optional dwc fdt
 dev/dwc/if_dwc_if.m		optional dwc fdt
 dev/dwc/dwc1000_core.c		optional dwc fdt
@@ -1664,7 +1590,6 @@ dev/evdev/evdev.c			optional evdev
 dev/evdev/evdev_mt.c			optional evdev
 dev/evdev/evdev_utils.c			optional evdev
 dev/evdev/uinput.c			optional evdev uinput
-dev/exca/exca.c			optional cbb
 dev/fb/fbd.c			optional fbd | vt
 dev/fb/fb_if.m			standard
 dev/fdt/fdt_clock.c		optional fdt fdt_clock
@@ -1753,7 +1678,6 @@ dev/hid/ps4dshock.c		optional ps4dshock
 dev/hid/u2f.c			optional u2f
 dev/hid/xb360gp.c		optional xb360gp
 dev/hifn/hifn7751.c		optional hifn
-dev/hptiop/hptiop.c		optional hptiop scbus
 dev/hwpmc/hwpmc_logging.c	optional hwpmc
 dev/hwpmc/hwpmc_mod.c		optional hwpmc
 dev/hwpmc/hwpmc_soft.c		optional hwpmc
@@ -1778,9 +1702,6 @@ dev/ichiic/ig4_iic.c		optional ig4 iicbus
 dev/ichiic/ig4_pci.c		optional ig4 pci iicbus
 dev/ichsmb/ichsmb.c		optional ichsmb
 dev/ichsmb/ichsmb_pci.c		optional ichsmb pci
-dev/ida/ida.c			optional ida
-dev/ida/ida_disk.c		optional ida
-dev/ida/ida_pci.c		optional ida pci
 dev/iicbus/acpi_iicbus.c	optional acpi iicbus | acpi compat_linuxkpi
 dev/iicbus/icee.c		optional icee
 dev/iicbus/if_ic.c		optional ic
@@ -1835,13 +1756,6 @@ dev/igc/igc_nvm.c		optional igc iflib pci
 dev/igc/igc_phy.c		optional igc iflib pci
 dev/igc/igc_txrx.c		optional igc iflib pci
 dev/intpm/intpm.c		optional intpm pci
-# XXX Work around clang warning, until maintainer approves fix.
-dev/ips/ips.c			optional ips \
-	compile-with "${NORMAL_C} ${NO_WSOMETIMES_UNINITIALIZED}"
-dev/ips/ips_commands.c		optional ips
-dev/ips/ips_disk.c		optional ips
-dev/ips/ips_ioctl.c		optional ips
-dev/ips/ips_pci.c		optional ips pci
 dev/ipw/if_ipw.c		optional ipw
 ipwbssfw.c			optional ipwbssfw | ipwfw		\
 	compile-with	"${AWK} -f $S/tools/fw_stub.awk ipw_bss.fw:ipw_bss:130 -lintel_ipw -mipw_bss -c${.TARGET}" \
@@ -1892,12 +1806,6 @@ dev/iscsi/icl_soft_proxy.c	optional iscsi
 dev/iscsi/iscsi.c		optional iscsi scbus
 dev/ismt/ismt.c			optional ismt
 dev/isl/isl.c			optional isl iicbus
-dev/isp/isp.c			optional isp
-dev/isp/isp_freebsd.c		optional isp
-dev/isp/isp_library.c		optional isp
-dev/isp/isp_pci.c		optional isp pci
-dev/isp/isp_target.c		optional isp
-dev/ispfw/ispfw.c		optional ispfw
 dev/iwi/if_iwi.c		optional iwi
 iwibssfw.c			optional iwibssfw | iwifw		\
 	compile-with	"${AWK} -f $S/tools/fw_stub.awk iwi_bss.fw:iwi_bss:300 -lintel_iwi -miwi_bss -c${.TARGET}" \
@@ -2409,9 +2317,6 @@ dev/mii/ukphy.c			optional miibus | mii
 dev/mii/ukphy_subr.c		optional miibus | mii
 dev/mii/vscphy.c		optional miibus | vscphy
 dev/mii/xmphy.c			optional miibus | xmphy
-dev/mlx/mlx.c			optional mlx
-dev/mlx/mlx_disk.c		optional mlx
-dev/mlx/mlx_pci.c		optional mlx pci
 dev/mmc/host/dwmmc.c		optional dwmmc fdt
 dev/mmc/mmc_subr.c		optional mmc | mmcsd !mmccam
 dev/mmc/mmc.c			optional mmc !mmccam
@@ -2426,7 +2331,6 @@ dev/mmc/mmc_pwrseq_if.m		optional mmc clk regulator fdt | mmccam clk regulator f
 dev/mmcnull/mmcnull.c		optional mmcnull
 dev/mpr/mpr.c			optional mpr
 dev/mpr/mpr_config.c		optional mpr
-# XXX Work around clang warning, until maintainer approves fix.
 dev/mpr/mpr_mapping.c		optional mpr \
 	compile-with "${NORMAL_C} ${NO_WSOMETIMES_UNINITIALIZED}"
 dev/mpr/mpr_pci.c		optional mpr pci
@@ -2437,7 +2341,6 @@ dev/mpr/mpr_table.c		optional mpr
 dev/mpr/mpr_user.c		optional mpr
 dev/mps/mps.c			optional mps
 dev/mps/mps_config.c		optional mps
-# XXX Work around clang warning, until maintainer approves fix.
 dev/mps/mps_mapping.c		optional mps \
 	compile-with "${NORMAL_C} ${NO_WSOMETIMES_UNINITIALIZED}"
 dev/mps/mps_pci.c		optional mps pci
@@ -2551,28 +2454,6 @@ dev/oce/oce_mbox.c		optional oce pci
 dev/oce/oce_queue.c		optional oce pci
 dev/oce/oce_sysctl.c		optional oce pci
 dev/oce/oce_util.c		optional oce pci
-dev/ocs_fc/ocs_gendump.c	optional ocs_fc pci
-dev/ocs_fc/ocs_pci.c		optional ocs_fc pci
-dev/ocs_fc/ocs_ioctl.c		optional ocs_fc pci
-dev/ocs_fc/ocs_os.c		optional ocs_fc pci
-dev/ocs_fc/ocs_utils.c		optional ocs_fc pci
-dev/ocs_fc/ocs_hw.c		optional ocs_fc pci
-dev/ocs_fc/ocs_hw_queues.c	optional ocs_fc pci
-dev/ocs_fc/sli4.c		optional ocs_fc pci
-dev/ocs_fc/ocs_sm.c		optional ocs_fc pci
-dev/ocs_fc/ocs_device.c		optional ocs_fc pci
-dev/ocs_fc/ocs_xport.c		optional ocs_fc pci
-dev/ocs_fc/ocs_domain.c		optional ocs_fc pci
-dev/ocs_fc/ocs_sport.c		optional ocs_fc pci
-dev/ocs_fc/ocs_els.c		optional ocs_fc pci
-dev/ocs_fc/ocs_fabric.c		optional ocs_fc pci
-dev/ocs_fc/ocs_io.c		optional ocs_fc pci
-dev/ocs_fc/ocs_node.c		optional ocs_fc pci
-dev/ocs_fc/ocs_scsi.c		optional ocs_fc pci
-dev/ocs_fc/ocs_unsol.c		optional ocs_fc pci
-dev/ocs_fc/ocs_ddump.c		optional ocs_fc pci
-dev/ocs_fc/ocs_mgmt.c		optional ocs_fc pci
-dev/ocs_fc/ocs_cam.c		optional ocs_fc pci
 dev/ofw/ofw_bus_if.m		optional fdt
 dev/ofw/ofw_bus_subr.c		optional fdt
 dev/ofw/ofw_cpu.c		optional fdt
@@ -2592,8 +2473,6 @@ dev/ow/own_if.m			optional ow
 dev/ow/ow_temp.c		optional ow_temp
 dev/ow/owc_gpiobus.c		optional owc gpio
 dev/pbio/pbio.c			optional pbio isa
-dev/pccbb/pccbb.c		optional cbb
-dev/pccbb/pccbb_pci.c		optional cbb pci
 dev/pcf/pcf.c			optional pcf
 dev/pci/fixup_pci.c		optional pci
 dev/pci/hostb_pci.c		optional pci
@@ -2711,22 +2590,6 @@ dev/pms/RefTisa/tisa/sassata/sata/host/ossasat.c	optional pmspcv \
 	compile-with "${NORMAL_C} -Wunused-variable -Woverflow -Wparentheses -w"
 dev/pms/RefTisa/tisa/sassata/sata/host/sathw.c		optional pmspcv \
 	compile-with "${NORMAL_C} -Wunused-variable -Woverflow -Wparentheses -w"
-dev/ppbus/if_plip.c		optional plip
-dev/ppbus/lpbb.c		optional lpbb
-dev/ppbus/lpt.c			optional lpt
-dev/ppbus/pcfclock.c		optional pcfclock
-dev/ppbus/ppb_1284.c		optional ppbus
-dev/ppbus/ppb_base.c		optional ppbus
-dev/ppbus/ppb_msq.c		optional ppbus
-dev/ppbus/ppbconf.c		optional ppbus
-dev/ppbus/ppbus_if.m		optional ppbus
-dev/ppbus/ppi.c			optional ppi
-dev/ppbus/pps.c			optional pps
-dev/ppc/ppc.c			optional ppc
-dev/ppc/ppc_acpi.c		optional ppc acpi
-dev/ppc/ppc_isa.c		optional ppc isa
-dev/ppc/ppc_pci.c		optional ppc pci
-dev/ppc/ppc_puc.c		optional ppc puc
 dev/proto/proto_bus_isa.c	optional proto acpi | proto isa
 dev/proto/proto_bus_pci.c	optional proto pci
 dev/proto/proto_busdma.c	optional proto
@@ -3160,8 +3023,6 @@ dev/spibus/spigen.c		optional spigen
 dev/spibus/spibus_if.m		optional spibus
 dev/ste/if_ste.c		optional ste pci
 dev/stge/if_stge.c		optional stge
-dev/sym/sym_hipd.c		optional sym				\
-	dependency	"$S/dev/sym/sym_{conf,defs}.h"
 dev/syscon/syscon.c		optional syscon
 dev/syscon/syscon_generic.c	optional syscon fdt
 dev/syscon/syscon_if.m		optional syscon
@@ -4147,13 +4008,11 @@ netgraph/ng_bpf.c		optional netgraph_bpf
 netgraph/ng_bridge.c		optional netgraph_bridge
 netgraph/ng_car.c		optional netgraph_car
 netgraph/ng_checksum.c		optional netgraph_checksum
-netgraph/ng_cisco.c		optional netgraph_cisco
 netgraph/ng_device.c		optional netgraph_device
 netgraph/ng_echo.c		optional netgraph_echo
 netgraph/ng_eiface.c		optional netgraph_eiface
 netgraph/ng_ether.c		optional netgraph_ether
 netgraph/ng_ether_echo.c	optional netgraph_ether_echo
-netgraph/ng_frame_relay.c	optional netgraph_frame_relay
 netgraph/ng_gif.c		optional netgraph_gif inet6 | netgraph_gif inet
 netgraph/ng_gif_demux.c		optional netgraph_gif_demux
 netgraph/ng_hole.c		optional netgraph_hole
@@ -4161,14 +4020,12 @@ netgraph/ng_iface.c		optional netgraph_iface
 netgraph/ng_ip_input.c		optional netgraph_ip_input
 netgraph/ng_ipfw.c		optional netgraph_ipfw inet ipfirewall
 netgraph/ng_ksocket.c		optional netgraph_ksocket
-netgraph/ng_lmi.c		optional netgraph_lmi
 netgraph/ng_macfilter.c		optional netgraph_macfilter
 netgraph/ng_nat.c		optional netgraph_nat inet libalias
 netgraph/ng_one2many.c		optional netgraph_one2many
 netgraph/ng_parse.c		optional netgraph
 netgraph/ng_patch.c		optional netgraph_patch
 netgraph/ng_pipe.c		optional netgraph_pipe
-netgraph/ng_rfc1490.c		optional netgraph_rfc1490
 netgraph/ng_socket.c		optional netgraph_socket
 netgraph/ng_split.c		optional netgraph_split
 netgraph/ng_tag.c		optional netgraph_tag

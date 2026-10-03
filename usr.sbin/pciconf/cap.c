@@ -35,12 +35,11 @@
 #include <err.h>
 #include <stdio.h>
 #include <strings.h>
-#include <sys/agpio.h>
 #include <sys/pciio.h>
 
-#include <dev/agp/agpreg.h>
 #include <dev/pci/pcireg.h>
 
+#include "agp.h"
 #include "pciconf.h"
 
 static void	list_ecaps(int fd, struct pci_conf *p);

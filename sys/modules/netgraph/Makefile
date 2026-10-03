@@ -8,14 +8,12 @@ SUBDIR=	${_bluetooth} \
 	bridge \
 	car \
 	checksum \
-	cisco \
 	device \
 	echo \
 	eiface \
 	etf \
 	ether \
 	ether_echo \
-	frame_relay \
 	gif \
 	gif_demux \
 	hole \
@@ -24,7 +22,6 @@ SUBDIR=	${_bluetooth} \
 	ip_input \
 	ipfw \
 	ksocket \
-	lmi \
 	macfilter \
 	nat \
 	netflow \
@@ -32,7 +29,6 @@ SUBDIR=	${_bluetooth} \
 	one2many \
 	patch \
 	pipe \
-	rfc1490 \
 	socket \
 	source \
 	split \

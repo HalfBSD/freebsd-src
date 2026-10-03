@@ -135,13 +135,6 @@ options 	MAXMEM=(128*1024)
 #options 	BROKEN_KEYBOARD_RESET
 
 #
-# AGP GART support
-device		agp
-
-# AGP debugging.
-options 	AGP_DEBUG
-
-#
 # ACPI support using the Intel ACPI Component Architecture reference
 # implementation.
 #
@@ -280,37 +273,6 @@ device		s3pci
 # CAM is required.
 #
 device		arcmsr		# Areca SATA II RAID
-
-#
-# Adaptec FSA RAID controllers, including integrated DELL controllers,
-# the Dell PERC 2/QC and the HP NetRAID-4M
-device		aac
-device		aacp	# SCSI Passthrough interface (optional, CAM required)
-
-#
-# Highpoint RocketRAID 27xx.
-device		hpt27xx
-
-#
-# Highpoint RocketRAID 182x.
-device		hptmv
-
-#
-# Highpoint DC7280 and R750.
-device		hptnr
-
-#
-# Highpoint RocketRAID.  Supports RR172x, RR222x, RR2240, RR232x, RR2340,
-# RR2210, RR174x, RR2522, RR231x, RR230x.
-device		hptrr
-
-#
-# Highpoint RocketRaid 3xxx series SATA RAID
-device		hptiop
-
-#
-# IBM (now Adaptec) ServeRAID controllers
-device		ips
 
 #
 # Intel C600 (Patsburg) integrated SAS controller

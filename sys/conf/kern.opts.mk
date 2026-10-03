@@ -1,7 +1,7 @@
 
 # Options set in the build system which affect the building of kernel
 # modules. These select which parts to compile in or out (eg INET) or which
-# parts to omit (eg CDDL or SOURCELESS_HOST). Some of these will cause
+# parts to omit (eg CDDL or SOURCELESS_UCODE). Some of these will cause
 # config.mk to define symbols in various opt_*.h files.
 
 #
@@ -44,7 +44,6 @@ __DEFAULT_YES_OPTIONS = \
     KERNEL_SYMBOLS \
     NETGRAPH \
     SCTP_SUPPORT \
-    SOURCELESS_HOST \
     SOURCELESS_UCODE \
     SPLIT_KERNEL_DEBUG \
     TESTS \

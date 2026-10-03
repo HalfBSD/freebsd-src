@@ -20,7 +20,6 @@ SUBDIR=	adduser \
 	devctl \
 	devinfo \
 	diskinfo \
-	dumpcis \
 	etcupdate \
 	extattr \
 	extattrctl \
@@ -39,7 +38,6 @@ SUBDIR=	adduser \
 	makefs \
 	memcontrol \
 	mfiutil \
-	mlxcontrol \
 	mpsutil \
 	mptutil \
 	mtest \

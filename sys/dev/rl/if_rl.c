@@ -257,7 +257,6 @@ static driver_t rl_driver = {
 DRIVER_MODULE(rl, pci, rl_driver, 0, 0);
 MODULE_PNP_INFO("U16:vendor;U16:device", pci, rl, rl_devs,
     nitems(rl_devs) - 1);
-DRIVER_MODULE(rl, cardbus, rl_driver, 0, 0);
 DRIVER_MODULE(miibus, rl, miibus_driver, 0, 0);
 
 #define EE_SET(x)					\

@@ -59,9 +59,6 @@ dev/acpica/acpi_pcib_pci.c	optional	acpi pci
 dev/acpica/acpi_pxm.c		optional	acpi
 dev/acpica/acpi_timer.c		optional	acpi
 dev/acpi_support/acpi_wmi_if.m	standard
-dev/agp/agp_amd64.c		optional	agp
-dev/agp/agp_i810.c		optional	agp
-dev/agp/agp_via.c		optional	agp
 dev/amdsmu/amdsmu.c		optional	amdsmu pci
 dev/amdsbwd/amdsbwd.c		optional	amdsbwd
 dev/amdsmn/amdsmn.c		optional	amdsmn | amdtemp
@@ -92,24 +89,6 @@ dev/fb/vesa.c			optional	vga vesa
 dev/fb/vga.c			optional	vga
 dev/gpio/bytgpio.c		optional	bytgpio
 dev/gpio/chvgpio.c		optional	chvgpio
-dev/hpt27xx/hpt27xx_os_bsd.c	optional	hpt27xx
-dev/hpt27xx/hpt27xx_osm_bsd.c	optional	hpt27xx
-dev/hpt27xx/hpt27xx_config.c	optional	hpt27xx
-dev/hpt27xx/$M-elf.hpt27xx_lib.o optional	hpt27xx
-dev/hptmv/entry.c		optional	hptmv
-dev/hptmv/mv.c			optional	hptmv
-dev/hptmv/gui_lib.c		optional	hptmv
-dev/hptmv/hptproc.c		optional	hptmv
-dev/hptmv/ioctl.c		optional	hptmv
-dev/hptmv/$M-elf.hptmvraid.o	optional	hptmv
-dev/hptnr/hptnr_os_bsd.c	optional	hptnr
-dev/hptnr/hptnr_osm_bsd.c	optional	hptnr
-dev/hptnr/hptnr_config.c	optional	hptnr
-dev/hptnr/$M-elf.hptnr_lib.o	optional	hptnr
-dev/hptrr/hptrr_os_bsd.c	optional	hptrr
-dev/hptrr/hptrr_osm_bsd.c	optional	hptrr
-dev/hptrr/hptrr_config.c	optional	hptrr
-dev/hptrr/$M-elf.hptrr_lib.o	optional	hptrr
 dev/hwpmc/hwpmc_amd.c		optional	hwpmc
 dev/hwpmc/hwpmc_intel.c		optional	hwpmc
 dev/hwpmc/hwpmc_core.c		optional	hwpmc

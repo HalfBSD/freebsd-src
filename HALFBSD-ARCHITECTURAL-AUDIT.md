@@ -44,7 +44,12 @@ and should not be summed as a promised reduction.
 
 ## Implementation update — October 3, 2026
 
-The follow-up removals A1 (HAST), A13 (TACACS+, PAM RADIUS, and Hesiod),
+The follow-up removals A1 (HAST), A2 (QLogic/Emulex Fibre Channel),
+A3 (legacy parallel SCSI and RAID), A4 (CardBus/PC Card and parallel ports),
+A7 (the four legacy synchronous-WAN Netgraph leaf nodes per `A7.md`),
+A10 (Kboot/native U-Boot/standalone USB boot), A11 (in-tree DRM2 and AGP),
+A12 (the revised utility list per `A12.md`),
+A13 (TACACS+, PAM RADIUS, and Hesiod),
 B1 (remaining InfiniBand networking and Mellanox firmware support), and C3
 (the alternate scheduler and scheduler-selection machinery) are implemented.
 Their original assessments below remain as audit history; completed items are
@@ -63,11 +68,18 @@ structure, rc shell syntax, mtree structure, and whitespace checks. Preprocessor
 comparison verified that normal libc account/resolver paths remain unchanged
 with Hesiod disabled. Scheduler validation checks public entry-point coverage,
 retained ULE function bodies, initialization stages, and shared diagnostics.
+Follow-up checks verified obsolete-module/header/tool cleanup, retained storage
+and Netgraph implementation preservation, and unchanged `pciconf` PCI capability
+decoding. Mocked shell tests exercised the renamed network hotplug helper’s
+NOAUTO, already-up, DHCP, static-route, stop, Wi-Fi child and forced-start paths.
 This Linux host has no native FreeBSD compiler/build environment; world,
 kernel, and module builds and runtime/hardware validation remain outstanding.
 Before deployment, perform a clean world/kernel/module build and test Ethernet
 lagg/LACP, login/NSS/PAM, SMP scheduling, affinity and real-time priorities,
-latency under workstation load, suspend/resume, and bhyve CPU load.
+latency under workstation load, suspend/resume, and bhyve CPU load. Also test
+SATA/NVMe/USB disk discovery and ZFS, UART and network hotplug, representative
+retained Netgraph graphs/bhyve networking, and external AMDGPU compilation,
+module loading, accelerated Wayland, display hotplug and console handoff.
 
 ## A. Strong removal candidates
 
@@ -102,6 +114,15 @@ obsolete-file cleanup; confirm no HAST service or package remains.
 
 ### A2. Fibre Channel support
 
+**Implementation status:** Removed on October 3, 2026, at the user’s request.
+The `isp`, `ispfw`, and `ocs_fc` driver/firmware sources and modules, ISP-only
+options, kernel configuration entries, source-index/documentation-generation
+entries, and adapter-specific CTL setup instructions are removed. Installed
+kernel-module cleanup is unconditional. Shared CAM, PCI, CTL, and retained
+storage drivers remain. Static integration checks passed; kernel/module builds,
+SATA/NVMe/USB enumeration, ZFS import, and bhyve storage tests require FreeBSD.
+The original assessment below is retained as audit history.
+
 **Purpose and locations:** QLogic and Emulex FC adapters and firmware:
 `sys/dev/isp`, `sys/dev/ispfw`, `sys/dev/ocs_fc`, their modules, and kernel
 configuration entries.
@@ -126,6 +147,17 @@ confidence.
 enumeration, ZFS import, and bhyve storage tests.
 
 ### A3. Obsolete parallel SCSI and hardware RAID families
+
+**Implementation status:** Removed on October 3, 2026, at the user’s request.
+Removed `aic7xxx`/`ahc`/`ahd`, `sym`, `ida`, `ips`, `mlx`, `aac`/`aacraid`,
+and `hpt27xx`, `hptiop`, `hptmv`, `hptnr`, and `hptrr`, including driver-specific
+Linux ioctl shims, firmware/host binary blobs, assembler tooling, `mlxcontrol`,
+modules, options, configurations, generated dependency and documentation entries.
+The now-unused `SOURCELESS_HOST` option and kernel configuration fragment were
+removed. Installed module/tool cleanup is unconditional. CAM, DMA, PCI, disk
+interfaces, and modern `mps`, `mpr`, and `mpi3mr` SAS HBAs remain. Full FreeBSD
+build and storage validation remain outstanding; the original assessment below
+is retained as audit history.
 
 **Purpose and locations:** Candidates include `aic7xxx`/`ahc`/`ahd`, `sym`, `ida`,
 `ips`, `mlx`, `aac`/`aacraid`, older HighPoint drivers, and their administration
@@ -152,6 +184,19 @@ disk discovery, SMART/passthrough operations, and ZFS stress.
 direct-attached ZFS storage is a legitimate workstation use.
 
 ### A4. CardBus, PC Card, and parallel-port peripheral support
+
+**Implementation status:** Removed on October 3, 2026, at the user’s request.
+Removed CardBus/PC Card bridges, headers and bus interfaces; parallel-port
+controllers, bus, printer/network/I/O, parallel PPS/clock/I2C drivers; `dumpcis`;
+modules/options/configurations, header installation and documentation entries.
+The retained Realtek driver no longer registers on CardBus; CardBus-only Audigy
+initialization is removed. PUC retains serial ports and skips parallel ports
+without renumbering mixed-card ports. The generic Ethernet/Wi-Fi hotplug helper
+was renamed from `pccard_ether` to `netif_hotplug`, with matching devd/install
+updates, preserving network hotplug. Shared PCI/UART/USB/USB serial, GPIO PPS,
+and I2C remain. Installed cleanup is unconditional. Full FreeBSD builds and
+runtime/hardware checks remain outstanding; the original assessment below is
+retained as audit history.
 
 **Purpose and locations:** `sys/dev/cardbus`, `pccard`, `pccbb`, `exca`, `ppbus`,
 `ppc`; modules including `lpt`, `ppi`, `plip`; `usr.sbin/dumpcis`; startup helper
@@ -222,26 +267,42 @@ moderate device-coverage risk; medium-high confidence.
 **Validation:** HDA analog audio, AMD HDMI/DisplayPort audio, USB audio,
 recording, mixer controls, and suspend/resume.
 
-### A7. Frame Relay and historical Netgraph protocols
+### A7. Frame Relay and obsolete synchronous-WAN Netgraph protocols
 
-**Purpose and locations:** `sys/netgraph/ng_frame_relay*`, `ng_lmi*`,
-`ng_rfc1490*`, and associated modules; Cisco HDLC and related encapsulation
-deserve the same treatment.
+**Revised scope:** The user’s October 3, 2026 revision in `A7.md` takes precedence
+and explicitly preserves Netgraph as a programmable networking playground.
+Remove only Frame Relay, LMI signaling, RFC1490 Frame Relay encapsulation, and
+Cisco HDLC on synchronous WAN links.
 
-**FreeBSD rationale / HalfBSD fit:** WAN links, telecom equipment, and
-programmable network appliances. No identified workstation or VM/NAT requirement.
+**Implementation status:** Removed on October 3, 2026. Deleted
+`sys/netgraph/ng_frame_relay*`, `ng_lmi*`, `ng_rfc1490*`, and `ng_cisco*`, their
+four kernel module directories, build/options/configuration entries, dedicated
+headers, and the Frame Relay example. Removed their debug-cookie/include entries
+from `libnetgraph` and obsolete header-test exclusions. Installed module/header
+and example cleanup is unconditional. Manual pages had already been removed;
+there were no dedicated retained protocol tests to delete.
 
-**Dependencies:** These are leaf users of Netgraph. Removing them does not
-require removing Netgraph itself.
+**Dependencies and retained functionality:** Reverse-dependency review found no
+retained Netgraph node requiring these implementations. The only retained source
+consumer of the dedicated headers was `libnetgraph`’s debug-cookie table. Generic
+Netgraph infrastructure/APIs, all other node implementations, `libnetgraph`,
+`ngctl`/`nghook`, remaining examples/tests, and bhyve networking remain.
+Protocol identity constants used by packet capture/interface classification are
+not implementations of these removed nodes and remain.
 
-**Disposition and impact:** Delete protocol nodes, headers, modules, options,
-and dependent tests/examples. Loss of those node interfaces only; no core impact
-expected.
+**FreeBSD rationale / HalfBSD fit:** These nodes serve legacy telecom/router
+synchronous-WAN graphs, with no identified workstation, ordinary Ethernet/IP,
+VM/NAT, or experimental Netgraph requirement. Removal is limited to constructing
+those specific Frame Relay/Cisco-HDLC graphs.
 
-**Benefit / risk / confidence:** Modest source reduction, meaningful protocol
-simplification. Low risk; high confidence for Frame Relay/LMI/RFC1490.
+**Benefit / risk / confidence:** Modest source/module reduction and removal of
+obsolete protocol surface. Low expected risk; high confidence after checking
+reverse dependencies.
 
-**Validation:** Netgraph build/tests and any retained bhyve Netgraph networking.
+**Validation:** Static reference, build-integration, cleanup and preservation
+checks passed. This Linux host cannot build/run FreeBSD Netgraph modules.
+Before deployment, build retained modules and userland tools, create/use
+representative generic nodes, and verify retained bhyve networking paths.
 
 ### A8. RIP daemons and IPv6 router-renumbering service
 
@@ -289,6 +350,19 @@ retained virtual test environment.
 
 ### A10. Kboot, U-Boot, and nonstandard host boot paths
 
+**Implementation status:** Removed on October 3, 2026, at the user’s request.
+Deleted Kboot/Linux-kexec, native U-Boot/ubldr, kshim, and its dependent old
+standalone USB boot library/test/tool. Removed loader knobs/options/dependencies,
+USB sysinit cross-tool integration, native-U-Boot loader metadata examples,
+Kboot-only EFI metadata branches, and Linux/Kboot boot-test image/script paths.
+Installed loaders/help/backups cleanup is unconditional. Shared `libsa`, Lua,
+FDT, EFI and bhyve userboot remain. Kernel USB and EFI USB handling are unchanged.
+References to external U-Boot firmware implementing UEFI, hardware vendor names,
+and bhyve guest firmware are separate from native ubldr and remain. EFI
+compatibility handling for firmware quirks is preserved. Static checks passed;
+native EFI builds, fresh-install/boot-environment tests and bhyve userboot runtime
+checks remain outstanding. The original assessment below is retained as history.
+
 **Purpose and locations:** `stand/kboot`, `stand/kshim`, `stand/uboot`, related
 options and platform glue.
 
@@ -309,6 +383,21 @@ effect.
 bhyveload/userboot.
 
 ### A11. Old in-tree DRM2 and AGP graphics stack
+
+**Implementation status:** Removed on October 3, 2026, at the user’s request.
+Deleted in-tree DRM2/TTM, its Tegra backend, AGP drivers/module/interfaces and
+ioctl header, dedicated old-DRM generation tools, obsolete DRM2 build-option
+descriptions, build/configuration/debug options, header installation, and
+AGP documentation-generation/header-test entries. Installed AGP/DRM2 module
+and AGP header cleanup is unconditional. `pciconf` preserves read-only AGP
+capability decoding through a small private register-definition header;
+it no longer includes obsolete driver/ioctl headers. Only `drm2` was removed
+from the loader blacklist; current external graphics module policy remains.
+LinuxKPI (including its AGP type stub), framebuffer/backlight/video-mode/console
+support and external AMDGPU module names remain. Static checks passed; external
+drm-kmod is not present in this checkout, so actual AMDGPU compilation/loading,
+Wayland acceleration, display hotplug, console handoff and suspend/resume remain
+unverified. The original assessment below is retained as audit history.
 
 **Purpose and locations:** `sys/dev/drm2`, AGP drivers, related entries in
 `sys/conf/files`, legacy graphics modules/options.
@@ -331,28 +420,41 @@ confidence in retirement of the old implementation.
 **Validation:** External AMDGPU module compilation/loading, accelerated Wayland,
 display hotplug, console handoff, and suspend/resume.
 
-### A12. Historical terminal conveniences and obsolete application utilities
+### A12. Obsolete interactive Unix conveniences and non-system application utilities
 
-**Purpose and locations:** Strong initial candidates: `usr.bin/enigma`, `leave`,
-`mesg`, and the setuid terminal-lock program `usr.bin/lock`.
+**Revised scope:** The user’s October 3, 2026 revision in `A12.md` is authoritative.
+Audit the explicitly listed terminal/printing/recreational utilities and remove
+their remaining dedicated integration without broadening into useful shell,
+scripting, diagnostic, or text-processing tools.
 
-**FreeBSD rationale / HalfBSD fit:** Historical user convenience, terminal
-messaging permissions, and obsolete encryption. Terminal messaging services
-have already been removed; Wayland session locking is the relevant desktop
-capability.
+**Implementation status:** Completed on October 3, 2026. Removed the remaining
+`asa`, `enigma` (including its `crypt` command alias), `leave`, setuid `lock`,
+`look`, `mesg`, and `ul` sources/build/dependency entries. Removed ASA tests and
+mtree entries. Installed binaries/alias/tests cleanup is unconditional; `ul`
+is no longer conditional obsolete cleanup under `MK_TEXTPROC`.
 
-**Dependencies:** Their shared PAM/libcrypt/terminal facilities remain needed.
-No retained in-tree functional consumer was identified.
+**Already removed:** `banner`, `biff`, `msgs`, `talk`, `write`, and the listed
+`caesar`, `factor`, `fortune`, `grdc`, `morse`, `number`, `pom`, `primes`, and
+`random` utilities. Their dedicated daemons/startup/examples/data and game
+switches were already removed. No remaining exclusive comsat/talkd/inetd or
+PAM service configuration requires deletion. Historical obsolete-file cleanup
+entries remain so upgrades still remove those files.
 
-**Disposition and impact:** Delete programs and associated aliases/build
-metadata. `enigma` also installs the `crypt` command alias; that is separate from
-the cryptographic library/API. User scripts invoking these commands break.
+**Dependencies and retained functionality:** No retained build/tool consumer
+requires the seven removed programs. Preserve shared `libcrypt`, PAM, curses,
+termcap/terminfo, TTY permissions, dictionaries and service-name/protocol data.
+Dictionary files are shared data, not exclusive `look` infrastructure. Service
+names such as biff/comsat/talk do not enable the removed daemons. General shell,
+console, SSH, terminal, development, package-management and administrative tools
+remain; `lockf` and kernel locking/writing primitives are unrelated.
 
-**Benefit / risk / confidence:** Tiny size benefit, useful elimination of
-obsolete behavior and one setuid program. Low risk; high confidence.
+**Benefit / risk / confidence:** Low expected runtime impact for the explicitly
+listed utilities; high confidence after reference and dependency review.
 
-**Validation:** World/install manifests, removal of aliases, and retained
-login/PAM tests.
+**Validation:** Static source/build/configuration/test/cleanup and preservation
+checks passed. This Linux host cannot build/install FreeBSD world or verify
+retained runtime workflows; native world/install and normal workstation login,
+terminal, SSH and administrative checks remain required.
 
 ### A13. Enterprise login authentication backends
 

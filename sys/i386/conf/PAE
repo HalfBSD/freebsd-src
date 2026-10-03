@@ -12,10 +12,8 @@ ident		PAE-GENERIC
 options 	PAE			# Physical Address Extensions Kernel
 
 # The following drivers don't build with PAE enabled.
-makeoptions	WITHOUT_MODULES="ctl dpt hptmv ida"
+makeoptions	WITHOUT_MODULES="ctl dpt"
 nodevice	dpt
-nodevice	hptmv
-nodevice	ida
 
 # The following drivers don't work with PAE enabled.
 makeoptions	WITHOUT_MODULES+="pst"

@@ -25,7 +25,6 @@ FILES=	\
 	bsd.debug.mk \
 	bsd.dep.mk \
 	bsd.dirs.mk \
-	bsd.doc.mk \
 	bsd.dtb.mk \
 	bsd.endian.mk \
 	bsd.files.mk \

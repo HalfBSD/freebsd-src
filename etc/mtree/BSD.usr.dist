@@ -208,35 +208,7 @@
         dict
         ..
         doc
-            IPv6
-            ..
-            atf             tags=package=atf
-            ..
             kyua            tags=package=kyua
-            ..
-            legal
-            ..
-            llvm
-                clang
-                ..
-            ..
-            ntp
-                drivers
-                    icons
-                    ..
-                    scripts
-                    ..
-                ..
-                hints
-                ..
-                icons
-                ..
-                pic
-                ..
-                scripts
-                ..
-            ..
-            pjdfstest
             ..
         ..
         dtrace

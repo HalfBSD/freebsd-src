@@ -4,15 +4,6 @@ DIRDEPS = \
 	share/atf \
 	share/ctypedef \
 	share/dict \
-	share/doc/IPv6 \
-	share/doc/atf \
-	share/doc/legal/intel_ipw \
-	share/doc/legal/intel_iwi \
-	share/doc/legal/intel_iwn \
-	share/doc/legal/intel_wpi \
-	share/doc/legal/realtek \
-	share/doc/llvm/clang \
-	share/doc/pjdfstest \
 	share/dtrace \
 	share/dtrace/toolkit \
 	share/examples \

@@ -23,7 +23,6 @@ bsd.crunchgen.mk	- building crunched binaries using crunchgen(1)
 bsd.debug.mk		- handling debug options for bsd.{prog,lib}.mk
 bsd.dep.mk		- handle Makefile dependencies
 bsd.dirs.mk		- handle directory creation
-bsd.doc.mk		- building troff system documents
 bsd.endian.mk		- TARGET_ENDIAN=1234(little) or 4321 (big) for target
 bsd.files.mk		- install of general purpose files
 bsd.incs.mk		- install of include files
@@ -51,7 +50,7 @@ sys.mk			- default rules for all makes
 This file does not document bsd.port*.mk.  They are documented in ports(7).
 
 See also make(1), mkdep(1), style.Makefile(5) and `PMake - A
-Tutorial', located in /usr/share/doc/psd/12.make.
+Tutorial'.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 

@@ -1,7 +1,7 @@
 # $NetBSD: archive.mk,v 1.14 2025/01/10 23:00:38 rillig Exp $
 #
 # Very basic demonstration of handling archives, based on the description
-# in PSD.doc/tutorial.ms.
+# in the PMake tutorial.
 #
 # This test aims at covering the code, not at being an introduction to
 # archive handling. That's why it deviates from the tutorial style of

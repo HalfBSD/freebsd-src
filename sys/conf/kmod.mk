@@ -37,7 +37,7 @@
 #
 # FIRMWARE_LICENSE
 #		Set to the name of the license the user has to agree on in
-#		order to use this firmware. See /usr/share/doc/legal
+#		order to use this firmware. See the firmware source license.
 #
 # DESTDIR	The tree where the module gets installed. [not set]
 #

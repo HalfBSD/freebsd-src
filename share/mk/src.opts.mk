@@ -89,7 +89,6 @@ __DEFAULT_YES_OPTIONS = \
     GOOGLETEST \
     GPIO \
     HAST \
-    HTML \
     ICONV \
     INET \
     INET6 \
@@ -133,7 +132,6 @@ __DEFAULT_YES_OPTIONS = \
     ROUTED \
     SERVICESDB \
     SETUID_LOGIN \
-    SHAREDOCS \
     SOUND \
     SOURCELESS \
     SOURCELESS_HOST \

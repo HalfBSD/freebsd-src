@@ -172,6 +172,11 @@ they do not imply that equivalent third-party software cannot be installed.
 
 ### User tools, documentation, and locale data
 
+- Shared documentation (`share/doc`), historical BSD papers and manuals,
+  and NTP HTML documentation and assets, removed October 3, 2026. The
+  `HTML` and `SHAREDOCS` build options and troff document build support
+  are retired; licenses alongside retained third-party sources remain.
+
 - The tcsh shell (`csh`/`tcsh` in the base system).
 - The `ee` editor.
 - GNU diff sources. The base BSD diff implementation remains.

@@ -7,7 +7,6 @@ NULL=
 EXTRA_DIST =			\
 	check--help		\
 	checkChangeLog		\
-	checkHtmlFileDates	\
 	fixautomakedepsmagic	\
 	genCommitLog		\
 	genver			\

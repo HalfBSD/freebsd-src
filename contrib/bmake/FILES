@@ -3,8 +3,6 @@ FILES
 LICENSE
 Makefile
 Makefile.config.in
-PSD.doc/Makefile
-PSD.doc/tutorial.ms
 README
 VERSION
 _strtol.h

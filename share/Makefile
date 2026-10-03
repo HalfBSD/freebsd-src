@@ -5,7 +5,6 @@
 SUBDIR=	${_colldef} \
 	ctypedef \
 	${_dict} \
-	${_doc} \
 	${_dtrace} \
 	${_examples} \
 	${_firmwares} \
@@ -57,10 +56,6 @@ _timedef=	timedef
 
 .if ${MK_MAKE} != "no"
 _mk=		mk
-.endif
-
-.if ${MK_SHAREDOCS} != "no"
-_doc=		doc
 .endif
 
 SUBDIR.${MK_TESTS}+= tests

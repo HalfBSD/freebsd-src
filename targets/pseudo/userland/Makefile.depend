@@ -507,13 +507,6 @@ DIRDEPS+= \
 	usr.sbin/nscd \
 	usr.sbin/nsec3hash \
 	usr.sbin/ntp/doc \
-	usr.sbin/ntp/doc/drivers/icons \
-	usr.sbin/ntp/doc/drivers/scripts \
-	usr.sbin/ntp/doc/drivers \
-	usr.sbin/ntp/doc/hints \
-	usr.sbin/ntp/doc/icons \
-	usr.sbin/ntp/doc/pic \
-	usr.sbin/ntp/doc/scripts \
 	usr.sbin/ntp/libntp \
 	usr.sbin/ntp/libopts \
 	usr.sbin/ntp/libparse \

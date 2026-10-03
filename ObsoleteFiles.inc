@@ -51,6 +51,10 @@
 #   xargs -n1 | sort | uniq -d;
 # done
 
+# 20261003: Remove mail configuration from the user skeleton.
+OLD_FILES+=usr/share/skel/dot.mail_aliases
+OLD_FILES+=usr/share/skel/dot.mailrc
+
 # 20261003: Retire shared documentation and NTP HTML documentation.
 OLD_FILES+=usr/share/doc/IPv6/IMPLEMENTATION
 OLD_FILES+=usr/share/doc/atf/AUTHORS

@@ -42,6 +42,15 @@ def main():
             return result.stdout.splitlines(), result.stderr
 
         opts = "share/mk/src.opts.mk"
+        llvm_targets = ["MK_LLVM_TARGET_" + target for target in
+                        ["ALL", "X86", "AARCH64", "ARM", "RISCV", "BPF", "MIPS"]]
+        values, _ = evaluate(opts, llvm_targets)
+        assert values == ["no", "yes", "no", "no", "no", "no", "no"], values
+        values, _ = evaluate(opts, llvm_targets, ["WITH_LLVM_TARGET_ALL=yes"])
+        assert values == ["yes", "yes", "yes", "yes", "yes", "no", "no"], values
+        values, _ = evaluate(opts, llvm_targets, ["WITH_LLVM_TARGET_RISCV=yes"])
+        assert values == ["no", "yes", "no", "no", "yes", "no", "no"], values
+        print("PASS: native LLVM backend default and explicit target overrides")
         required = ["BHYVE", "BOOT", "CDDL", "CRYPT", "EFI", "INET", "INET6",
                     "IPFW", "JAIL", "OPENSSH", "OPENSSL", "PAM", "SOUND", "USB",
                     "WIRELESS", "ZFS", "LOADER_LUA", "LOADER_ZFS"]

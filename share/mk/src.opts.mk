@@ -161,6 +161,7 @@ __DEFAULT_NO_OPTIONS = \
     LLVM_ASSERTIONS \
     LLVM_FULL_DEBUGINFO \
     LLVM_LINK_STATIC_LIBRARIES \
+    LLVM_TARGET_ALL \
     OPENLDAP \
     PTHREADS_ASSERTIONS \
     SORT_THREADS \
@@ -173,7 +174,6 @@ __REQUIRED_OPTIONS = \
 # RIGHT option is disabled.
 __DEFAULT_DEPENDENT_OPTIONS= \
 	CLANG_FULL/CLANG \
-	LLVM_TARGET_ALL/CLANG \
 	LOADER_VERIEXEC/BEARSSL \
 	LOADER_EFI_SECUREBOOT/LOADER_VERIEXEC \
 	LOADER_VERIEXEC_VECTX/LOADER_VERIEXEC \
@@ -216,6 +216,8 @@ __T=${MACHINE_ARCH}
 .endif
 
 # All supported backends for LLVM_TARGET_XXX
+# HalfBSD defaults to the native backend only. Keep the vendored LLVM sources
+# intact for upstream upgrades; WITH_LLVM_TARGET_ALL restores other backends.
 __LLVM_TARGETS= \
 		aarch64 \
 		arm \

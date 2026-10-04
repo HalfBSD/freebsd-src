@@ -81,8 +81,17 @@ struct ogetsockname_args {
 };
 int	ocreat(struct thread *, struct ocreat_args *);
 int	osigprocmask(struct thread *, struct osigprocmask_args *);
+struct osigpending_args {
+	syscallarg_t dummy;
+};
 int	osigpending(struct thread *, struct osigpending_args *);
+struct ogetpagesize_args {
+	syscallarg_t dummy;
+};
 int	ogetpagesize(struct thread *, struct ogetpagesize_args *);
+struct owait_args {
+	syscallarg_t dummy;
+};
 int	owait(struct thread *, struct owait_args *);
 int	ogethostname(struct thread *, struct ogethostname_args *);
 int	osethostname(struct thread *, struct osethostname_args *);
@@ -94,10 +103,16 @@ int	osigsetmask(struct thread *, struct osigsetmask_args *);
 int	osigsuspend(struct thread *, struct osigsuspend_args *);
 int	orecvfrom(struct thread *, struct orecvfrom_args *);
 int	ogetpeername(struct thread *, struct ogetpeername_args *);
+struct ogethostid_args {
+	syscallarg_t dummy;
+};
 int	ogethostid(struct thread *, struct ogethostid_args *);
 int	ogetrlimit(struct thread *, struct ogetrlimit_args *);
 int	osetrlimit(struct thread *, struct osetrlimit_args *);
 int	okillpg(struct thread *, struct okillpg_args *);
+struct oquota_args {
+	syscallarg_t dummy;
+};
 int	oquota(struct thread *, struct oquota_args *);
 int	ogetsockname(struct thread *, struct ogetsockname_args *);
 
@@ -143,6 +158,9 @@ int	freebsd7_msgctl(struct thread *, struct freebsd7_msgctl_args *);
 int	freebsd7_shmctl(struct thread *, struct freebsd7_shmctl_args *);
 
 
+struct freebsd10_pipe_args {
+	syscallarg_t dummy;
+};
 int	freebsd10_pipe(struct thread *, struct freebsd10_pipe_args *);
 
 

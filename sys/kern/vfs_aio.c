@@ -175,18 +175,6 @@ SYSCTL_INT(_p1003_1b, CTL_P1003_1B_AIO_LISTIO_MAX, aio_listio_max,
     CTLFLAG_RD | CTLFLAG_CAPRD, &max_aio_queue_per_proc,
     0, "Maximum aio requests for a single lio_listio call");
 
-#ifdef COMPAT_FREEBSD32
-typedef struct oaiocb {
-	int	aio_fildes;		/* File descriptor */
-	off_t	aio_offset;		/* File offset for I/O */
-	volatile void *aio_buf;         /* I/O buffer in process space */
-	size_t	aio_nbytes;		/* Number of bytes for I/O */
-	struct	osigevent aio_sigevent;	/* Signal to deliver */
-	int	aio_lio_opcode;		/* LIO opcode */
-	int	aio_reqprio;		/* Request priority -- ignored */
-	struct	__aiocb_private	_aiocb_private;
-} oaiocb_t;
-#endif
 
 /*
  * Below is a key of locks used to protect each member of struct kaiocb
@@ -1374,50 +1362,6 @@ unref:
 	return (error);
 }
 
-#ifdef COMPAT_FREEBSD32
-static int
-convert_old_sigevent(struct osigevent *osig, struct sigevent *nsig)
-{
-
-	/*
-	 * Only SIGEV_NONE, SIGEV_SIGNAL, and SIGEV_KEVENT are
-	 * supported by AIO with the old sigevent structure.
-	 */
-	nsig->sigev_notify = osig->sigev_notify;
-	switch (nsig->sigev_notify) {
-	case SIGEV_NONE:
-		break;
-	case SIGEV_SIGNAL:
-		nsig->sigev_signo = osig->__sigev_u.__sigev_signo;
-		break;
-	case SIGEV_KEVENT:
-		nsig->sigev_notify_kqueue =
-		    osig->__sigev_u.__sigev_notify_kqueue;
-		nsig->sigev_value.sival_ptr = osig->sigev_value.sival_ptr;
-		break;
-	default:
-		return (EINVAL);
-	}
-	return (0);
-}
-
-static int
-aiocb_copyin_old_sigevent(struct aiocb *ujob, struct kaiocb *kjob,
-    int type __unused)
-{
-	struct oaiocb *ojob;
-	struct aiocb *kcb = &kjob->uaiocb;
-	int error;
-
-	bzero(kcb, sizeof(struct aiocb));
-	error = copyin(ujob, kcb, sizeof(struct oaiocb));
-	if (error)
-		return (error);
-	/* No need to copyin aio_iov, because it did not exist in FreeBSD 6 */
-	ojob = (struct oaiocb *)kcb;
-	return (convert_old_sigevent(&ojob->aio_sigevent, &kcb->aio_sigevent));
-}
-#endif
 
 static int
 aiocb_copyin(struct aiocb *ujob, struct kaiocb *kjob, int type)
@@ -1483,16 +1427,6 @@ static struct aiocb_ops aiocb_ops = {
 	.store_aiocb = aiocb_store_aiocb,
 };
 
-#ifdef COMPAT_FREEBSD32
-static struct aiocb_ops aiocb_ops_osigevent = {
-	.aio_copyin = aiocb_copyin_old_sigevent,
-	.fetch_status = aiocb_fetch_status,
-	.fetch_error = aiocb_fetch_error,
-	.store_status = aiocb_store_status,
-	.store_error = aiocb_store_error,
-	.store_aiocb = aiocb_store_aiocb,
-};
-#endif
 
 /*
  * Queue a new AIO request.  Choosing either the threaded or direct bio VCHR

@@ -360,12 +360,6 @@ CHANGER_MAX_BUSY_SECONDS	opt_cd.h
 # Options used only in cam/scsi/scsi_da.c
 DA_TRACK_REFS		opt_da.h
 
-# Options used only in cam/scsi/scsi_sa.c.
-SA_IO_TIMEOUT		opt_sa.h
-SA_SPACE_TIMEOUT	opt_sa.h
-SA_REWIND_TIMEOUT	opt_sa.h
-SA_ERASE_TIMEOUT	opt_sa.h
-SA_1FM_AT_EOD		opt_sa.h
 
 # Options used only in cam/scsi/scsi_pt.c
 SCSI_PT_DEFAULT_TIMEOUT	opt_pt.h
@@ -569,7 +563,6 @@ BUS_DEBUG		opt_bus.h
 USB_DEBUG		opt_usb.h
 USB_HOST_ALIGN		opt_usb.h
 USB_REQ_DEBUG		opt_usb.h
-USB_TEMPLATE		opt_usb.h
 USB_VERBOSE		opt_usb.h
 USB_DMA_SINGLE_ALLOC	opt_usb.h
 USB_EHCI_BIG_ENDIAN_DESC	opt_usb.h

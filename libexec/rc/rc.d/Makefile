@@ -13,7 +13,6 @@ CONFS=	DAEMON \
 	adjkerntz \
 	bgfsck \
 	bridge \
-	cfumass \
 	cleanvar \
 	cleartmp \
 	ddb \

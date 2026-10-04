@@ -123,9 +123,7 @@ device		isci			# Intel C600 SAS controller
 
 # ATA/SCSI peripherals
 device		scbus			# SCSI bus (required for ATA/SCSI)
-device		ch			# SCSI media changers
 device		da			# Direct Access (disks)
-device		sa			# Sequential Access (tape etc)
 device		cd			# CD
 device		pass			# Passthrough device (direct ATA/SCSI access)
 device		ses			# Enclosure Services (SES and SAF-TE)
@@ -257,8 +255,6 @@ device		snd_csa			# Crystal Semiconductor CS461x/428x
 device		snd_emu10kx		# Creative SoundBlaster Live! and Audigy
 device		snd_es137x		# Ensoniq AudioPCI ES137x
 device		snd_hda			# Intel High Definition Audio
-device		snd_ich			# Intel, NVidia and other ICH AC'97 Audio
-device		snd_via8233		# VIA VT8233x Audio
 
 # MMC/SD
 device		mmc			# MMC/SD bus

@@ -107,12 +107,6 @@ typedef struct {
 /*
  * default device names
  */
-#define	DEV_0		"/dev/rmt0"
-#define	DEV_1		"/dev/rmt1"
-#define	DEV_4		"/dev/rmt4"
-#define	DEV_5		"/dev/rmt5"
-#define	DEV_7		"/dev/rmt7"
-#define	DEV_8		"/dev/rmt8"
 #endif /* _PAX_ */
 
 /*

@@ -43,9 +43,7 @@ typedef struct {
 
 #define	ISCHR		0x01		/* character device (warn on short) */
 #define	ISPIPE		0x02		/* pipe-like (see position.c) */
-#define	ISTAPE		0x04		/* tape */
 #define	ISSEEK		0x08		/* valid to seek on */
-#define	NOREAD		0x10		/* not readable */
 #define	ISTRUNC		0x20		/* valid to ftruncate() */
 	u_int		flags;
 

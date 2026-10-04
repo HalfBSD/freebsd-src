@@ -103,11 +103,3 @@ void	 	 treescan(char *, ino_t, long (*)(char *, ino_t, int));
 ino_t		 upperbnd(ino_t);
 long		 verifyfile(char *, ino_t, int);
 void		 xtrnull(char *, size_t);
-
-/* From ../dump/dumprmt.c */
-void		rmtclose(void);
-int		rmthost(char *);
-int		rmtioctl(int, int);
-int		rmtopen(char *, int);
-int		rmtread(char *, int);
-int		rmtseek(int, int);

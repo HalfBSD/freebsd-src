@@ -51,7 +51,6 @@ SUBDIR=	adduser \
 	pwd_mkdb \
 	pwm \
 	quot \
-	rmt \
 	rtprio \
 	service \
 	services_mkdb \

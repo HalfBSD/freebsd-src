@@ -3019,7 +3019,6 @@ NXBDIRS+= \
     usr.bin/lex \
     usr.bin/limits \
     usr.bin/mktemp \
-    usr.bin/mt \
     usr.bin/nm \
     usr.bin/patch \
     usr.bin/readelf \

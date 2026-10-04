@@ -1208,20 +1208,14 @@ envvar		hint.da.1.at="scbus3"
 envvar		hint.da.1.target="1"
 envvar		hint.da.2.at="scbus2"
 envvar		hint.da.2.target="3"
-envvar		hint.sa.1.at="scbus1"
-envvar		hint.sa.1.target="6"
 
 # "units" (SCSI logical unit number) that are not specified are
 # treated as if specified as LUN 0.
 
 # All SCSI devices allocate as many units as are required.
 
-# The ch driver drives SCSI Media Changer ("jukebox") devices.
-#
 # The da driver drives SCSI Direct Access ("disk") and Optical Media
 # ("WORM") devices.
-#
-# The sa driver drives SCSI Sequential Access ("tape") devices.
 #
 # The cd driver drives SCSI Read Only Direct Access ("cd") devices.
 #
@@ -1250,9 +1244,7 @@ envvar		hint.sa.1.target="6"
 # The pass driver provides a passthrough API to access the CAM subsystem.
 
 device		scbus		#base SCSI code
-device		ch		#SCSI media changers
 device		da		#SCSI direct access devices (aka disks)
-device		sa		#SCSI tapes
 device		cd		#SCSI CD-ROMs
 device		ses		#Enclosure Services (SES and SAF-TE)
 device		pt		#SCSI processor
@@ -1309,18 +1301,6 @@ options 	CAM_TEST_FAILURE
 #
 options 	CHANGER_MIN_BUSY_SECONDS=2
 options 	CHANGER_MAX_BUSY_SECONDS=10
-
-# Options for the CAM sequential access driver:
-# SA_IO_TIMEOUT: Timeout for read/write/wfm  operations, in minutes
-# SA_SPACE_TIMEOUT: Timeout for space operations, in minutes
-# SA_REWIND_TIMEOUT: Timeout for rewind operations, in minutes
-# SA_ERASE_TIMEOUT: Timeout for erase operations, in minutes
-# SA_1FM_AT_EOD: Default to model which only has a default one filemark at EOT.
-options 	SA_IO_TIMEOUT=4
-options 	SA_SPACE_TIMEOUT=60
-options 	SA_REWIND_TIMEOUT=(2*60)
-options 	SA_ERASE_TIMEOUT=(4*60)
-options 	SA_1FM_AT_EOD
 
 # Optional timeout for the CAM processor target (pt) device
 # This is specified in seconds.  The default is 60 seconds.
@@ -1807,19 +1787,9 @@ device		sound
 #			compatible.
 # snd_hdsp:		RME HDSP 9632 and HDSP 9652
 # snd_hdspe:		RME HDSPe AIO and RayDAT.
-# snd_ich:		Intel ICH AC'97 and some more audio controllers
-#			embedded in a chipset, for example nVidia
-#			nForce controllers.
 # snd_maestro3:		ESS Technology Maestro-3/Allegro PCI.
-# snd_neomagic:		Neomagic 256 AV/ZX PCI.
-# snd_solo:		ESS Solo-1x PCI.
 # snd_spicds:		SPI codec driver, needed by Envy24/Envy24HT drivers.
-# snd_t4dwave:		Trident 4DWave DX/NX PCI, Sis 7018 PCI and Acer Labs
-#			M5451 PCI.
 # snd_uaudio:		USB audio.
-# snd_via8233:		VIA VT8233x PCI.
-# snd_via82c686:	VIA VT82C686A PCI.
-# snd_vibes:		S3 Sonicvibes PCI.
 
 device		snd_als4000
 device		snd_atiixp
@@ -1836,16 +1806,9 @@ device		snd_fm801
 device		snd_hda
 device		snd_hdsp
 device		snd_hdspe
-device		snd_ich
 device		snd_maestro3
-device		snd_neomagic
-device		snd_solo
 device		snd_spicds
-device		snd_t4dwave
 device		snd_uaudio
-device		snd_via8233
-device		snd_via82c686
-device		snd_vibes
 
 # For non-PnP sound cards:
 envvar		hint.pcm.0.at="isa"
@@ -2109,8 +2072,6 @@ device		ukbd
 device		ulpt
 # USB mass storage driver (Requires scbus and da)
 device		umass
-# USB mass storage driver for device-side mode
-device		usfs
 # USB support for Belkin F5U109 and Magic Control Technology serial adapters
 device		umct
 # USB modem support
@@ -2122,8 +2083,6 @@ device		atp
 device		wsp
 # eGalax USB touch screen
 device		uep
-# Diamond Rio 500 MP3 player
-device		urio
 # HID-over-USB driver
 device		usbhid
 
@@ -2138,14 +2097,10 @@ device		uark
 device		ubsa
 # USB support for serial adapters based on the FT8U100AX and FT8U232AM
 device		uftdi
-# USB support for some Windows CE based serial communication.
-device		uipaq
 # USB support for Prolific PL-2303 serial adapters
 device		uplcom
 # USB support for Silicon Laboratories CP2101/CP2102 based USB serial adapters
 device		uslcom
-# USB Visor and Palm devices
-device		uvisor
 # USB serial support for DDI pocket's PHS
 device		uvscom
 #

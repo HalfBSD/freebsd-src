@@ -83,7 +83,6 @@ SUBDIR=	alias \
 	mkimg \
 	mktemp \
 	mkuzip \
-	mt \
 	ncurses \
 	netstat \
 	newgrp \
@@ -126,7 +125,6 @@ SUBDIR=	alias \
 	systat \
 	tail \
 	tar \
-	tcopy \
 	tee \
 	time \
 	top \

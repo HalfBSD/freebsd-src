@@ -36,9 +36,9 @@ HALFBSD_MODULES.sound= \
 HALFBSD_MODULES.usb= \
 	usb ehci ohci uhci xhci mtw rum run runfw rsu rsufw uath upgt ural zyd urtw \
 	atp uhid uhid_snes ukbd ums uep wmt wsp ugold uled usbhid ucom u3g uark ubsa \
-	ubser uchcom ucycom udbc ufoma uftdi ugensa uipaq ulpt umb umct umcs umodem \
-	umoscom uplcom uslcom uvisor uvscom i2ctinyusb cp2112 udl uether axe axge cdce \
-	cdceem mos smsc udav ipheth muge ure urndis usfs umass uacpi quirk
+	ubser uchcom ucycom udbc ufoma uftdi ugensa ulpt umb umct umcs umodem \
+	umoscom uplcom uslcom uvscom i2ctinyusb cp2112 udl uether axe axge cdce \
+	cdceem mos smsc udav ipheth muge ure urndis umass uacpi quirk
 
 .if ${MACHINE_CPUARCH} == "amd64" && !defined(ALL_MODULES) && \
     !defined(MODULES_OVERRIDE)

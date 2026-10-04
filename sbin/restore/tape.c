@@ -36,7 +36,6 @@
 
 #include <sys/param.h>
 #include <sys/file.h>
-#include <sys/mtio.h>
 #include <sys/queue.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -78,7 +77,6 @@ static int64_t	tapeaddr = 0;		/* current TP_BSIZE tape record */
 static long	tapesread;
 static jmp_buf	restart;
 static int	gettingfile = 0;	/* restart has a valid frame */
-static char	*host = NULL;
 static int	readmapflag;
 
 static int	ofile;
@@ -132,15 +130,6 @@ setinput(char *source, int ispipecommand)
 	if (ispipecommand)
 		pipecmdin++;
 	else
-#ifdef RRESTORE
-	if (strchr(source, ':')) {
-		host = source;
-		source = strchr(host, ':');
-		*source++ = '\0';
-		if (rmthost(host) == 0)
-			done(1);
-	} else
-#endif
 	if (strcmp(source, "-") == 0) {
 		/*
 		 * Since input is coming from a pipe we must establish
@@ -210,11 +199,6 @@ setup(void)
 		popenfp = popen(magtape, "r");
 		mt = popenfp ? fileno(popenfp) : -1;
 	} else
-#ifdef RRESTORE
-	if (host)
-		mt = rmtopen(magtape, 0);
-	else
-#endif
 	if (pipein)
 		mt = 0;
 	else
@@ -407,11 +391,6 @@ again:
 		popenfp = popen(magtape, "r");
 		mt = popenfp ? fileno(popenfp) : -1;
 	} else
-#ifdef RRESTORE
-	if (host)
-		mt = rmtopen(magtape, 0);
-	else
-#endif
 		mt = open(magtape, O_RDONLY, 0);
 
 	if (mt == -1) {
@@ -516,29 +495,16 @@ terminateinput(void)
 }
 
 /*
- * handle multiple dumps per tape by skipping forward to the
- * appropriate one.
+ * Reject the retired tape-file positioning operation.
  */
 static void
 setdumpnum(void)
 {
-	struct mtop tcom;
 
-	if (dumpnum == 1 || volno != 1)
-		return;
-	if (pipein) {
-		fprintf(stderr, "Cannot have multiple dumps on pipe input\n");
+	if (dumpnum != 1) {
+		fprintf(stderr, "Multiple tape dumps are not supported\n");
 		done(1);
 	}
-	tcom.mt_op = MTFSF;
-	tcom.mt_count = dumpnum - 1;
-#ifdef RRESTORE
-	if (host)
-		rmtioctl(MTFSF, dumpnum - 1);
-	else
-#endif
-		if (!pipecmdin && ioctl(mt, MTIOCTOP, (char *)&tcom) < 0)
-			fprintf(stderr, "ioctl MTFSF: %s\n", strerror(errno));
 }
 
 void
@@ -1139,12 +1105,7 @@ readtape(char *buf)
 	cnt = ntrec * TP_BSIZE;
 	rd = 0;
 getmore:
-#ifdef RRESTORE
-	if (host)
-		i = rmtread(&tapebuf[rd], cnt);
-	else
-#endif
-		i = read(mt, &tapebuf[rd], cnt);
+	i = read(mt, &tapebuf[rd], cnt);
 	/*
 	 * Check for mid-tape short read error.
 	 * If found, skip rest of buffer and start with the next.
@@ -1200,12 +1161,7 @@ getmore:
 			done(1);
 		i = ntrec * TP_BSIZE;
 		memset(tapebuf, 0, i);
-#ifdef RRESTORE
-		if (host)
-			seek_failed = (rmtseek(i, 1) < 0);
-		else
-#endif
-			seek_failed = (lseek(mt, i, SEEK_CUR) == (off_t)-1);
+		seek_failed = (lseek(mt, i, SEEK_CUR) == (off_t)-1);
 
 		if (seek_failed) {
 			fprintf(stderr,
@@ -1250,12 +1206,7 @@ findtapeblksize(void)
 	for (i = 0; i < ntrec; i++)
 		((struct s_spcl *)&tapebuf[i * TP_BSIZE])->c_magic = 0;
 	blkcnt = 0;
-#ifdef RRESTORE
-	if (host)
-		i = rmtread(tapebuf, ntrec * TP_BSIZE);
-	else
-#endif
-		i = read(mt, tapebuf, ntrec * TP_BSIZE);
+	i = read(mt, tapebuf, ntrec * TP_BSIZE);
 
 	if (i <= 0) {
 		fprintf(stderr, "tape read error: %s\n", strerror(errno));
@@ -1281,11 +1232,6 @@ closemt(void)
 		pclose(popenfp);
 		popenfp = NULL;
 	} else
-#ifdef RRESTORE
-	if (host)
-		rmtclose();
-	else
-#endif
 		(void) close(mt);
 }
 
@@ -1587,19 +1533,6 @@ checksum(int *buf)
 	}
 	return(GOOD);
 }
-
-#ifdef RRESTORE
-#include <stdarg.h>
-
-void
-msg(const char *fmt, ...)
-{
-	va_list ap;
-	va_start(ap, fmt);
-	(void)vfprintf(stderr, fmt, ap);
-	va_end(ap);
-}
-#endif /* RRESTORE */
 
 static u_char *
 swabshort(u_char *sp, int n)

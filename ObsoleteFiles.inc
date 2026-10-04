@@ -51,6 +51,69 @@
 #   xargs -n1 | sort | uniq -d;
 # done
 
+# 20261003: Retire tape, media changers and remote tape.
+OLD_FILES+=usr/bin/mt
+OLD_FILES+=usr/bin/tcopy
+OLD_FILES+=usr/sbin/rmt
+OLD_FILES+=etc/rmt
+OLD_FILES+=sbin/rdump
+OLD_FILES+=sbin/rrestore
+OLD_FILES+=usr/include/mtlib.h
+OLD_FILES+=usr/include/cam/scsi/scsi_sa.h
+OLD_FILES+=usr/include/cam/scsi/scsi_ch.h
+OLD_FILES+=usr/include/sys/chio.h
+OLD_FILES+=usr/lib/libmt.a
+OLD_FILES+=usr/lib/libmt_p.a
+OLD_FILES+=usr/lib32/libmt.a
+OLD_FILES+=usr/lib32/libmt_p.a
+OLD_FILES+=usr/share/man/man1/mt.1.gz
+OLD_FILES+=usr/share/man/man1/tcopy.1.gz
+OLD_FILES+=usr/share/man/man8/rmt.8.gz
+OLD_FILES+=usr/share/man/man8/rdump.8.gz
+OLD_FILES+=usr/share/man/man8/rrestore.8.gz
+OLD_FILES+=usr/share/man/man4/sa.4.gz
+OLD_FILES+=usr/share/man/man4/ch.4.gz
+OLD_FILES+=usr/share/man/man3/mt.3.gz
+OLD_FILES+=usr/share/man/man4/mtio.4.gz
+OLD_FILES+=usr/share/man/man4/chio.4.gz
+# 20261003: Retire USB gadgets and obsolete handheld leaves.
+OLD_FILES+=boot/kernel/g_audio.ko
+OLD_FILES+=boot/kernel/g_keyboard.ko
+OLD_FILES+=boot/kernel/g_modem.ko
+OLD_FILES+=boot/kernel/g_mouse.ko
+OLD_FILES+=boot/kernel/usb_template.ko
+OLD_FILES+=boot/kernel/cfumass.ko
+OLD_FILES+=boot/kernel/usfs.ko
+OLD_FILES+=boot/kernel/uipaq.ko
+OLD_FILES+=boot/kernel/uvisor.ko
+OLD_FILES+=boot/kernel/urio.ko
+OLD_FILES+=usr/share/man/man4/g_audio.4.gz
+OLD_FILES+=usr/share/man/man4/g_keyboard.4.gz
+OLD_FILES+=usr/share/man/man4/g_modem.4.gz
+OLD_FILES+=usr/share/man/man4/g_mouse.4.gz
+OLD_FILES+=usr/share/man/man4/usb_template.4.gz
+OLD_FILES+=usr/share/man/man4/cfumass.4.gz
+OLD_FILES+=usr/share/man/man4/usfs.4.gz
+OLD_FILES+=usr/share/man/man4/uipaq.4.gz
+OLD_FILES+=usr/share/man/man4/uvisor.4.gz
+OLD_FILES+=usr/share/man/man4/urio.4.gz
+OLD_FILES+=etc/rc.d/cfumass
+# 20261003: Retire seven reviewed non-HDA audio-controller families (A6).
+OLD_FILES+=boot/kernel/snd_ich.ko
+OLD_FILES+=usr/share/man/man4/snd_ich.4.gz
+OLD_FILES+=boot/kernel/snd_via82c686.ko
+OLD_FILES+=usr/share/man/man4/snd_via82c686.4.gz
+OLD_FILES+=boot/kernel/snd_via8233.ko
+OLD_FILES+=usr/share/man/man4/snd_via8233.4.gz
+OLD_FILES+=boot/kernel/snd_neomagic.ko
+OLD_FILES+=usr/share/man/man4/snd_neomagic.4.gz
+OLD_FILES+=boot/kernel/snd_solo.ko
+OLD_FILES+=usr/share/man/man4/snd_solo.4.gz
+OLD_FILES+=boot/kernel/snd_t4dwave.ko
+OLD_FILES+=usr/share/man/man4/snd_t4dwave.4.gz
+OLD_FILES+=boot/kernel/snd_vibes.ko
+OLD_FILES+=usr/share/man/man4/snd_vibes.4.gz
+
 # 20261003: Retire SunRPC, RPC service definitions, and NFS export machinery.
 OLD_FILES+=usr/tests/lib/libc/rpc/rpc_test
 OLD_FILES+=usr/tests/lib/libc/rpc/xdr_test

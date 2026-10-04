@@ -50,7 +50,6 @@ __DEFAULT_YES_OPTIONS = \
     ZFS
 
 __DEFAULT_NO_OPTIONS = \
-    USB_GADGET_EXAMPLES \
     BHYVE_SNAPSHOT \
     KERNEL_BIN \
     KERNEL_RETPOLINE \
@@ -199,10 +198,6 @@ MK_KERNEL_SYMBOLS:=	no
 
 .if ${MK_CDDL} == "no"
 MK_DTRACE:=	no
-.endif
-
-.if ${MK_USB} == "no"
-MK_USB_GADGET_EXAMPLES:= no
 .endif
 
 # Some modules only compile successfully if option FDT is set, due to #ifdef FDT

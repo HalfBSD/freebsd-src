@@ -39,7 +39,6 @@
 #include <sys/conf.h>
 #include <sys/disklabel.h>
 #include <sys/filio.h>
-#include <sys/mtio.h>
 #include <sys/time.h>
 
 #include <assert.h>
@@ -134,7 +133,7 @@ setup(void)
 	u_int cnt;
 	int iflags, oflags;
 	cap_rights_t rights;
-	unsigned long cmds[] = { FIODTYPE, MTIOCTOP };
+	unsigned long cmds[] = { FIODTYPE };
 
 	if (in.name == NULL) {
 		in.name = "stdin";
@@ -156,8 +155,8 @@ setup(void)
 	if (caph_rights_limit(in.fd, &rights) == -1)
 		err(1, "unable to limit capability rights");
 
-	if (files_cnt > 1 && !(in.flags & ISTAPE))
-		errx(1, "files is not supported for non-tape devices");
+	if (files_cnt > 1)
+		errx(1, "files greater than 1 is not supported");
 
 	cap_rights_set(&rights, CAP_FTRUNCATE, CAP_IOCTL, CAP_WRITE);
 	if (ddflags & (C_FDATASYNC | C_FSYNC))
@@ -194,7 +193,6 @@ setup(void)
 			before_io();
 			out.fd = open(out.name, O_WRONLY | oflags, DEFFILEMODE);
 			after_io();
-			out.flags |= NOREAD;
 			cap_rights_clear(&rights, CAP_READ);
 		}
 		if (out.fd == -1)
@@ -322,10 +320,10 @@ getfdtype(IO *io)
 			err(1, "%s", io->name);
 		} else {
 			if (type & D_TAPE)
-				io->flags |= ISTAPE;
-			else if (type & (D_DISK | D_MEM))
+				errx(1, "%s: tape devices are not supported", io->name);
+			if (type & (D_DISK | D_MEM))
 				io->flags |= ISSEEK;
-			if (S_ISCHR(sb.st_mode) && (type & D_TAPE) == 0)
+			if (S_ISCHR(sb.st_mode))
 				io->flags |= ISCHR;
 		}
 		return;
@@ -619,9 +617,6 @@ dd_out(int force)
 				++st.out_part;
 
 			if ((size_t) nw != cnt) {
-				if (out.flags & ISTAPE)
-					errx(1, "%s: short write on tape device",
-				    	out.name);
 				if (out.flags & ISCHR && !warned) {
 					warned = 1;
 					warnx("%s: short write on character device",

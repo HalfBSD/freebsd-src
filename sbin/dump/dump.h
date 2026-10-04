@@ -77,7 +77,6 @@ extern	int tapeno;		/* current tape number */
 extern	int ntrec;		/* blocking factor on tape */
 extern	long blocksperfile;	/* number of blocks per output file */
 extern	int cartridge;		/* assume non-cartridge tape */
-extern	char *host;		/* remote host (if any) */
 extern	time_t tstart_writing;	/* when started writing the first tape block */
 extern	time_t tend_writing;	/* after writing the last tape block */
 extern	int passno;		/* current dump pass number */
@@ -125,12 +124,6 @@ char	*rawname(char *cp);
 union	dinode *getino(ino_t inum, int *mode);
 
 /* rdump routines */
-#ifdef RDUMP
-void	rmtclose(void);
-int	rmthost(const char *host);
-int	rmtopen(const char *tape, int mode);
-int	rmtwrite(const char *buf, int count);
-#endif /* RDUMP */
 
 void	interrupt(int signo);	/* in case operator bangs on console */
 

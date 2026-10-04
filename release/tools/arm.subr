@@ -105,34 +105,6 @@ arm_create_user() {
 	return 0
 }
 
-arm_setup_usb_otg() {
-	# Set up virtual serial port over USB OTG / device mode.
-	echo >> ${CHROOTDIR}/${DESTDIR}/etc/devd.conf
-	echo '# Required for USB OTG virtual serial port.' \
-		>> ${CHROOTDIR}/${DESTDIR}/etc/devd.conf
-	echo 'notify 100 {' \
-		>> ${CHROOTDIR}/${DESTDIR}/etc/devd.conf
-	echo '	match "system"		"DEVFS";' \
-		>> ${CHROOTDIR}/${DESTDIR}/etc/devd.conf
-	echo '	match "subsystem"	"CDEV";' \
-		>> ${CHROOTDIR}/${DESTDIR}/etc/devd.conf
-	echo '	match "type"		"CREATE";' \
-		>> ${CHROOTDIR}/${DESTDIR}/etc/devd.conf
-	echo '	match "cdev"		"ttyU[0-9]+";' \
-		>> ${CHROOTDIR}/${DESTDIR}/etc/devd.conf
-	echo '	action "/sbin/init q";' \
-		>> ${CHROOTDIR}/${DESTDIR}/etc/devd.conf
-	echo '};' \
-		>> ${CHROOTDIR}/${DESTDIR}/etc/devd.conf
-
-	echo '# Configure USB OTG; see usb_template(4).' \
-		>> ${CHROOTDIR}/${DESTDIR}/boot/loader.conf
-	echo 'hw.usb.template=3' \
-		>> ${CHROOTDIR}/${DESTDIR}/boot/loader.conf
-	echo 'umodem_load="YES"' \
-	     >> ${CHROOTDIR}/${DESTDIR}/boot/loader.conf
-}
-
 arm64_setup_multicons() {
 	if [ "${EMBEDDED_TARGET_ARCH}" != "aarch64" ]; then
 		return
@@ -182,7 +154,6 @@ arm_install_base() {
 	chroot ${CHROOTDIR} ln -s efi ${DESTDIR}/boot/msdos
 
 	arm_create_user
-	arm_setup_usb_otg
 	arm64_setup_multicons
 	arm_setup_fdt_overlays
 	arm_setup_minimal_loader

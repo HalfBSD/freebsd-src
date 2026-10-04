@@ -69,7 +69,6 @@ SUBDIR=	${SUBDIR_BOOTSTRAP} \
 	liblzma \
 	libmemstat \
 	libmd \
-	libmt \
 	lib80211 \
 	libnetbsd \
 	libnetmap \

@@ -65,7 +65,6 @@ DIRDEPS = \
 	lib/libmemstat \
 	lib/libmixer \
 	lib/libmp \
-	lib/libmt \
 	lib/libnetgraph \
 	lib/libpam/libpam \
 	lib/libpathconv \

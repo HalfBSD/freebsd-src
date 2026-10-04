@@ -86,7 +86,6 @@ int	tapeno = 0;	/* current tape number */
 int	ntrec = NTREC;	/* # tape blocks in each tape record */
 long	blocksperfile;	/* number of blocks per output file */
 int	cartridge = 0;	/* Assume non-cartridge tape */
-char	*host = NULL;	/* remote host (if any) */
 time_t	tstart_writing;	/* when started writing the first tape block */
 time_t	tend_writing;	/* after writing the last tape block */
 int	passno;		/* current dump pass number */
@@ -267,8 +266,8 @@ main(int argc, char *argv[])
 	}
 	if (popenout) {
 		tape = "child pipeline process";
-	} else if (tape == NULL && (tape = getenv("TAPE")) == NULL)
-		tape = _PATH_DEFTAPE;
+	} else if (tape == NULL)
+		tape = "-";
 	if (strcmp(tape, "-") == 0) {
 		pipeout++;
 		tape = "standard output";
@@ -294,22 +293,10 @@ main(int argc, char *argv[])
 	}
 
 	if (strchr(tape, ':')) {
-		host = tape;
-		tape = strchr(host, ':');
-		*tape++ = '\0';
-#ifdef RDUMP
-		if (strchr(tape, '\n')) {
-		    (void)fprintf(stderr, "invalid characters in tape\n");
-		    exit(X_STARTUP);
-		}
-		if (rmthost(host) == 0)
-			exit(X_STARTUP);
-#else
 		(void)fprintf(stderr, "remote dump not enabled\n");
 		exit(X_STARTUP);
-#endif
 	}
-	(void)setuid(getuid()); /* rmthost() is the only reason to be setuid */
+	(void)setuid(getuid());
 
 	if (signal(SIGHUP, SIG_IGN) != SIG_IGN)
 		signal(SIGHUP, sig);
@@ -437,10 +424,7 @@ main(int argc, char *argv[])
 	msg("Dumping %s%s ", snapdump ? "snapshot of ": "", disk);
 	if (dt != NULL)
 		msgtail("(%s) ", dt->fs_file);
-	if (host)
-		msgtail("to %s on host %s\n", tape, host);
-	else
-		msgtail("to %s\n", tape);
+	msgtail("to %s\n", tape);
 
 	sync();
 	if ((ret = sbget(diskfd, &sblock, UFS_STDSB, UFS_NOCSUM)) != 0) {

@@ -208,7 +208,6 @@ DIRDEPS+= \
 	usr.bin/mkstr \
 	usr.bin/mktemp \
 	usr.bin/mkuzip \
-	usr.bin/mt \
 	usr.bin/nc \
 	usr.bin/netstat \
 	usr.bin/newgrp \
@@ -250,7 +249,6 @@ DIRDEPS+= \
 	usr.bin/tabs \
 	usr.bin/tail \
 	usr.bin/tar \
-	usr.bin/tcopy \
 	usr.bin/tee \
 	usr.bin/time \
 	usr.bin/top \
@@ -444,7 +442,6 @@ DIRDEPS+= \
 	usr.sbin/quot \
 	usr.sbin/quotaon \
 	usr.sbin/repquota \
-	usr.sbin/rmt \
 	usr.sbin/rtadvctl \
 	usr.sbin/rtadvd \
 	usr.sbin/rtprio \

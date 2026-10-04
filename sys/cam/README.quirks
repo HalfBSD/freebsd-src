@@ -76,27 +76,6 @@ help. The types of things a quirk can fix are:
 
   o CD_Q_CHANGER - always treat as a changer 
 
- * cam/scsi/scsi_ch.c quirks 
-  o CH_Q_NO_DBD - disable block descriptors in mode sense 
-
- * cam/scsi/scsi_sa.c quirks 
-
-  o SA_QUIRK_NOCOMP - Can't deal with compression at all 
-
-  o SA_QUIRK_FIXED - Force fixed mode 
-
-  o SA_QUIRK_VARIABLE - Force variable mode 
-
-  o SA_QUIRK_2FM - Needs Two File Marks at EOD 
-
-  o SA_QUIRK_1FM - No more than 1 File Mark at EOD 
-
-  o SA_QUIRK_NODREAD - Don't try and dummy read density 
-
-  o SA_QUIRK_NO_MODESEL - Don't do mode select at all 
-
-  o SA_QUIRK_NO_CPAGE - Don't use DEVICE COMPRESSION page 
-
  * dev/usb/umass.c quirks 
 
   o NO_TEST_UNIT_READY - The drive does not support Test Unit Ready.

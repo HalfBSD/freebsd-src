@@ -51,7 +51,6 @@
 #include <vm/vm.h>
 #include <sys/bus.h>
 #include <sys/bus_dma.h>
-#include <sys/mtio.h>
 #include <sys/conf.h>
 #include <sys/disk.h>
 
@@ -80,7 +79,6 @@
 #include <cam/scsi/smp_all.h>
 #include <cam/nvme/nvme_all.h>
 #include <camlib.h>
-#include <mtlib.h>
 #include <zlib.h>
 
 typedef enum {
@@ -264,7 +262,6 @@ typedef enum {
 	CAMDD_FILE_STD,
 	CAMDD_FILE_PIPE,
 	CAMDD_FILE_DISK,
-	CAMDD_FILE_TAPE,
 	CAMDD_FILE_TTY,
 	CAMDD_FILE_MEM
 } camdd_file_type;
@@ -449,8 +446,6 @@ int camdd_buf_sg_create(struct camdd_buf *buf, int iovec,
 			int *double_buf_needed);
 uint32_t camdd_buf_get_len(struct camdd_buf *buf);
 void camdd_buf_add_child(struct camdd_buf *buf, struct camdd_buf *child_buf);
-int camdd_probe_tape(int fd, char *filename, uint64_t *max_iosize,
-		     uint64_t *max_blk, uint64_t *min_blk, uint64_t *blk_gran);
 int camdd_probe_pass_scsi(struct cam_device *cam_dev, union ccb *ccb,
          camdd_argmask arglist, int probe_retry_count,
          int probe_timeout, uint64_t *maxsector, uint32_t *block_len);
@@ -949,74 +944,6 @@ camdd_buf_add_child(struct camdd_buf *buf, struct camdd_buf *child_buf)
 	data->fill_len += camdd_buf_get_len(child_buf);
 }
 
-typedef enum {
-	CAMDD_TS_MAX_BLK,
-	CAMDD_TS_MIN_BLK,
-	CAMDD_TS_BLK_GRAN,
-	CAMDD_TS_EFF_IOSIZE
-} camdd_status_item_index;
-
-static struct camdd_status_items {
-	const char *name;
-	struct mt_status_entry *entry;
-} req_status_items[] = {
-	{ "max_blk", NULL },
-	{ "min_blk", NULL },
-	{ "blk_gran", NULL },
-	{ "max_effective_iosize", NULL }
-};
-
-int
-camdd_probe_tape(int fd, char *filename, uint64_t *max_iosize,
-		 uint64_t *max_blk, uint64_t *min_blk, uint64_t *blk_gran)
-{
-	struct mt_status_data status_data;
-	char *xml_str = NULL;
-	unsigned int i;
-	int retval = 0;
-	
-	retval = mt_get_xml_str(fd, MTIOCEXTGET, &xml_str);
-	if (retval != 0)
-		err(1, "Couldn't get XML string from %s", filename);
-
-	retval = mt_get_status(xml_str, &status_data);
-	if (retval != XML_STATUS_OK) {
-		warn("couldn't get status for %s", filename);
-		retval = 1;
-		goto bailout;
-	} else
-		retval = 0;
-
-	if (status_data.error != 0) {
-		warnx("%s", status_data.error_str);
-		retval = 1;
-		goto bailout;
-	}
-
-	for (i = 0; i < nitems(req_status_items); i++) {
-                char *name;
-
-		name = __DECONST(char *, req_status_items[i].name);
-		req_status_items[i].entry = mt_status_entry_find(&status_data,
-		    name);
-		if (req_status_items[i].entry == NULL) {
-			errx(1, "Cannot find status entry %s",
-			    req_status_items[i].name);
-		}
-	}
-
-	*max_iosize = req_status_items[CAMDD_TS_EFF_IOSIZE].entry->value_unsigned;
-	*max_blk= req_status_items[CAMDD_TS_MAX_BLK].entry->value_unsigned;
-	*min_blk= req_status_items[CAMDD_TS_MIN_BLK].entry->value_unsigned;
-	*blk_gran = req_status_items[CAMDD_TS_BLK_GRAN].entry->value_unsigned;
-bailout:
-
-	free(xml_str);
-	mt_status_free(&status_data);
-
-	return (retval);
-}
-
 struct camdd_dev *
 camdd_probe_file(int fd, struct camdd_io_opts *io_opts, int retry_count,
     int timeout)
@@ -1075,8 +1002,8 @@ camdd_probe_file(int fd, struct camdd_io_opts *io_opts, int retry_count,
 				    dev->device_name);
 			else {
 				if (type & D_TAPE)
-					file_dev->file_type = CAMDD_FILE_TAPE;
-				else if (type & D_DISK)
+					errx(1, "Tape devices are not supported");
+				if (type & D_DISK)
 					file_dev->file_type = CAMDD_FILE_DISK;
 				else if (type & D_MEM)
 					file_dev->file_type = CAMDD_FILE_MEM;
@@ -1100,70 +1027,6 @@ camdd_probe_file(int fd, struct camdd_io_opts *io_opts, int retry_count,
 				dev->max_sector = 0;
 			file_dev->file_flags |= CAMDD_FF_CAN_SEEK;
 			break;
-		case CAMDD_FILE_TAPE: {
-			uint64_t max_iosize, max_blk, min_blk, blk_gran;
-			/*
-			 * Check block limits and maximum effective iosize.
-			 * Make sure the blocksize is within the block
-			 * limits (and a multiple of the minimum blocksize)
-			 * and that the blocksize is <= maximum effective
-			 * iosize.
-			 */
-			retval = camdd_probe_tape(fd, dev->device_name,
-			    &max_iosize, &max_blk, &min_blk, &blk_gran);
-			if (retval != 0)
-				errx(1, "Unable to probe tape %s",
-				    dev->device_name);
-
-			/*
-			 * The blocksize needs to be <= the maximum
-			 * effective I/O size of the tape device.  Note
-			 * that this also takes into account the maximum
-			 * blocksize reported by READ BLOCK LIMITS.
-			 */
-			if (dev->blocksize > max_iosize) {
-				warnx("Blocksize %u too big for %s, limiting "
-				    "to %ju", dev->blocksize, dev->device_name,
-				    max_iosize);
-				dev->blocksize = max_iosize;
-			}
-
-			/*
-			 * The blocksize needs to be at least min_blk;
-			 */
-			if (dev->blocksize < min_blk) {
-				warnx("Blocksize %u too small for %s, "
-				    "increasing to %ju", dev->blocksize,
-				    dev->device_name, min_blk);
-				dev->blocksize = min_blk;
-			}
-
-			/*
-			 * And the blocksize needs to be a multiple of
-			 * the block granularity.
-			 */
-			if ((blk_gran != 0)
-			 && (dev->blocksize % (1 << blk_gran))) {
-				warnx("Blocksize %u for %s not a multiple of "
-				    "%d, adjusting to %d", dev->blocksize,
-				    dev->device_name, (1 << blk_gran),
-				    dev->blocksize & ~((1 << blk_gran) - 1));
-				dev->blocksize &= ~((1 << blk_gran) - 1);
-			}
-
-			if (dev->blocksize == 0) {
-				errx(1, "Unable to derive valid blocksize for "
-				    "%s", dev->device_name);
-			}
-
-			/*
-			 * For tape drives, set the sector size to the
-			 * blocksize so that we make sure not to write
-			 * less than the blocksize out to the drive.
-			 */
-			dev->sector_size = dev->blocksize;
-			break;
-		}
 		case CAMDD_FILE_DISK: {
 			off_t media_size;
 			unsigned int sector_size;
@@ -3408,7 +3271,7 @@ usage(void)
 "              or - for stdin/stdout\n"
 "bs=blocksize  Specify blocksize in bytes, or using K, M, G, etc. suffix\n"
 "offset=len    Specify starting offset in bytes or using K, M, G suffix\n"
-"              NOTE: offset cannot be specified on tapes, pipes, stdin/out\n"
+"              NOTE: offset cannot be specified on pipes or stdin/out\n"
 "depth=N       Specify a numeric queue depth.  This only applies to pass(4)\n"
 "mcs=N         Specify a minimum cmd size for pass(4) read/write commands\n"
 "Optional arguments\n"

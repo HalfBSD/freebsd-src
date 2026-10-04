@@ -40,7 +40,6 @@
 #include <sys/endian.h>
 #include <sys/sbuf.h>
 #include <sys/queue.h>
-#include <sys/chio.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,7 +58,6 @@
 #include <cam/cam_ccb.h>
 #include <cam/scsi/scsi_all.h>
 #include <cam/scsi/scsi_pass.h>
-#include <cam/scsi/scsi_ch.h>
 #include <cam/scsi/scsi_message.h>
 #include <camlib.h>
 #include "camcontrol.h"

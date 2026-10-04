@@ -132,7 +132,6 @@ CAMNVMEDIR=	${INCLUDEDIR}/cam/nvme
 .PATH: ${SRCTOP}/sys/cam/scsi
 CAMSCSI=	scsi_all.h \
 		scsi_cd.h \
-		scsi_ch.h \
 		scsi_da.h \
 		scsi_enc.h \
 		scsi_enc_internal.h \
@@ -140,7 +139,6 @@ CAMSCSI=	scsi_all.h \
 		scsi_message.h \
 		scsi_pass.h \
 		scsi_pt.h \
-		scsi_sa.h \
 		scsi_ses.h \
 		scsi_sg.h \
 		scsi_targetio.h \

@@ -65,7 +65,8 @@ def main():
         values, _ = evaluate(top, ["SUBDIR"], smp)
         selected = set(" ".join(values).split())
         essential = {"vmm", "ctl", "zfs", "nvme", "if_epair", "if_bridge",
-                     "linuxkpi", "linuxkpi_wlan", "linuxkpi_video", "usb", "sound"}
+                     "linuxkpi", "linuxkpi_wlan", "linuxkpi_video", "usb", "sound",
+                     "cam", "mps", "mpr", "mpi3mr"}
         assert essential <= selected, essential - selected
         retired = {"ena", "gve", "mana", "vmware", "iscsi", "cfiscsi", "nvmf", "krpc",
                    "le", "dc", "fxp", "rl", "sis", "ste", "xl", "ipw", "iwi",
@@ -92,9 +93,43 @@ def main():
             names = set(" ".join(values).split())
             assert includes <= names, (group, includes - names)
             assert all((root / "sys/modules" / group / name / "Makefile").is_file() for name in names)
+        retired_audio = {"ich", "via82c686", "via8233", "neomagic", "solo",
+                         "t4dwave", "vibes"}
+        for controls in [[], ["ALL_MODULES=yes"],
+                         ["ALL_MODULES=yes", "MK_SOURCELESS_UCODE=no"]]:
+            values, _ = evaluate("sys/modules/sound/driver/Makefile", ["SUBDIR"], controls)
+            audio = set(" ".join(values).split())
+            assert {"hda", "uaudio", "dummy", "hdsp", "hdspe"} <= audio
+            assert not audio & retired_audio
+            assert all((root / "sys/modules/sound/driver" / name / "Makefile").is_file()
+                       for name in audio)
+        retired_usb = {"g_audio", "g_keyboard", "g_modem", "g_mouse", "template",
+                       "cfumass", "usfs", "uipaq", "uvisor", "urio"}
+        for controls in [[], ["ALL_MODULES=yes"],
+                         ["ALL_MODULES=yes", "MK_SOURCELESS_UCODE=no"]]:
+            values, _ = evaluate("sys/modules/usb/Makefile", ["SUBDIR"], controls)
+            usb = set(" ".join(values).split())
+            assert {"xhci", "umass", "ukbd", "ums", "ucom", "uftdi", "umodem",
+                    "ugensa", "ufoma", "uvscom", "ipheth", "ure"} <= usb
+            assert not usb & retired_usb
+            assert all((root / "sys/modules/usb" / name / "Makefile").is_file()
+                       for name in usb)
         values, _ = evaluate("sys/modules/usb/Makefile", ["SUBDIR"], ["MK_SOURCELESS_UCODE=no"])
         assert not {"runfw", "rsufw"} & set(" ".join(values).split())
         assert all((root / "sys/modules" / name / "Makefile").is_file() for name in selected)
+        for makefile, retained, removed in [
+            ("sys/modules/cam/Makefile",
+             {"scsi_da.c", "scsi_cd.c", "scsi_pass.c", "scsi_enc_ses.c", "nvme_da.c"},
+             {"scsi_sa.c", "scsi_ch.c", "opt_sa.h"}),
+            ("lib/libcam/Makefile", {"camlib.c", "scsi_all.c", "scsi_da.c", "nvme_all.c"},
+             {"scsi_sa.c"}),
+        ]:
+            values, _ = evaluate(makefile, ["SRCS"], ["CC=clang", "LD=ld"])
+            sources = set(" ".join(values).split())
+            assert retained <= sources, (makefile, retained - sources)
+            assert not sources & removed, (makefile, sources & removed)
+        values, _ = evaluate("usr.sbin/camdd/Makefile", ["LIBADD"], ["CC=clang", "LD=ld"])
+        assert "mt" not in " ".join(values).split()
         print("PASS: workstation modules, bhyve/CTL/ZFS, firmware selection and module overrides")
 
     for path in root.rglob("Makefile.depend*"):

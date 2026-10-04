@@ -64,7 +64,6 @@
 #define ISREG		0	/* regular file */
 #define ISCHR		1	/* character device */
 #define ISBLK		2	/* block device */
-#define ISTAPE		3	/* tape drive */
 #define ISPIPE		4	/* pipe/socket */
 
 typedef struct archd ARCHD;

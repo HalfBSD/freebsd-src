@@ -2,7 +2,6 @@
 #	itime.c			reads /etc/dumpdates
 #	main.c			driver
 #	optr.c			operator interface
-#	dumprmt.c		handles remote tape via rmt(8)
 #	tape.c			handles the mag tape and opening/closing
 #	traverse.c		traverses the file system
 #	unctime.c		undo ctime
@@ -16,9 +15,7 @@ CONFS=	/dev/null
 CONFSGRP=	operator
 CONFSMODE=	664
 CONFSNAME_/dev/null=	dumpdates
-LINKS=	${BINDIR}/dump ${BINDIR}/rdump
-CFLAGS+=-DRDUMP
-SRCS=	itime.c main.c optr.c dumprmt.c tape.c traverse.c unctime.c cache.c
+SRCS=	itime.c main.c optr.c tape.c traverse.c unctime.c cache.c
 LIBADD=	ufs
 WARNS?=	2
 

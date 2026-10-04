@@ -166,8 +166,8 @@ main(int argc, char *argv[])
 		(void) signal(SIGTERM, SIG_IGN);
 	setlinebuf(stderr);
 
-	if (inputdev == NULL && (inputdev = getenv("TAPE")) == NULL)
-		inputdev = _PATH_DEFTAPE;
+	if (inputdev == NULL)
+		inputdev = "-";
 	setinput(inputdev, pipecmd);
 
 	if (argc == 0) {

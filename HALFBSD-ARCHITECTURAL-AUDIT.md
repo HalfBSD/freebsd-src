@@ -12,7 +12,7 @@ Original recommendations in processed groups are retained as audit history.
 HalfBSD does not want NFS in the source tree at all. This audit follows that
 correction.
 
-Remaining work includes historical audio, CTL high availability, storage and
+Remaining work includes CTL high availability, storage and
 platform simplification and ABI-sensitive reductions. UFS,
 Netgraph, RPC, and compatibility layers require explicit dependency boundaries.
 
@@ -45,31 +45,6 @@ and should not be summed as a promised reduction.
 ## Open groups
 
 Stable audit IDs are preserved for discussion and follow-up work.
-
-### A. Strong removal candidates
-
-#### A6. Historical audio-controller backends
-
-**Purpose and locations:** Legacy PCM implementations under `sys/dev/sound/pci`
-and module selections in `sys/modules/sound/driver`. Candidates include
-AC’97-era and older controllers such as `ich`, `via82c686`, `via8233`,
-`neomagic`, `solo`, `t4dwave`, and `vibes`.
-
-**FreeBSD rationale / HalfBSD fit:** Older integrated audio and sound cards.
-Modern HDA/HDMI and USB audio should be the primary baseline.
-
-**Dependencies:** Keep the sound/PCM framework, mixers, HDA, USB audio, and
-virtual audio facilities. Professional audio cards require a separate hardware
-policy rather than automatic deletion.
-
-**Disposition and impact:** Delete selected hardware backends. Audio support
-disappears only for those devices; no expected effect on retained desktop audio.
-
-**Benefit / risk / confidence:** Moderate reduction. Low architectural risk,
-moderate device-coverage risk; medium-high confidence.
-
-**Validation:** HDA analog audio, AMD HDMI/DisplayPort audio, USB audio,
-recording, mixer controls, and suspend/resume.
 
 ### B. Likely removal candidates requiring dependency cleanup
 
@@ -436,25 +411,6 @@ The measured Linux ABI subset is approximately **2.36 MB**.
 **Validation:** Package dependency inventory, executable interpreter/ELF-class
 inspection, current application tests, and compatibility ABI tests.
 
-#### E2. Modern SAS HBAs, enclosure services, and tape support
-
-**Locations:** `mps`, `mpr`, `mpi3mr`, `ses`, `sa`, `ch`, `sesutil`, `mt`,
-`tcopy`, `rmt`, `libmt`.
-
-SAS HBAs can expose disks directly to ZFS. Tape and changers are stronger removal
-candidates, but backup/recovery policy should decide them.
-
-**Dependencies / disposition:** `camdd` links `libmt`, so deleting that library
-requires cleanup even if tape devices disappear. Remove `rmt` if its
-remote-backup use is excluded; preserve CAM and applicable direct-storage
-drivers.
-
-**Benefit / risk / confidence:** Moderate reduction, potentially lost
-backup/storage capability. Medium confidence.
-
-**Validation:** Supported storage inventory, `camdd`, CAM tests, backup/restore
-workflow, and ZFS disks.
-
 #### E3. GELI and encrypted swap
 
 **Locations:** `sys/geom/eli`, userland GEOM ELI, loader GELI support, installer
@@ -594,25 +550,6 @@ wholesale utility pruning.
 **Validation:** Base/package build scripts, archive handling, test fixtures, and
 install aliases.
 
-#### E10. USB gadget, obsolete handheld/modem devices, and FireWire
-
-**Locations:** USB gadget/template modules, `cfumass`, `uipaq`, `uvisor`, `urio`,
-modem-specific drivers; `sys/dev/firewire`, `fwcontrol`, dcons.
-
-USB device-mode implementations and historical handheld protocols are poor fits.
-But USB serial is essential for embedded development, modern USB networking can
-provide tethering, and FireWire has niche audio/debugging uses.
-
-**Dependencies / disposition:** Remove gadget examples, obsolete device
-families, and `cfumass` service where hardware policy excludes device mode.
-Preserve USB host infrastructure, ucom and common serial bridges, tethering, and
-diagnostic facilities actually used.
-
-**Benefit / risk / confidence:** Moderate driver reduction;
-peripheral/development risk. Medium confidence.
-
-**Validation:** USB storage, serial development boards, phone tethering, audio,
-HID, suspend/resume, and any retained remote debugging.
 
 ## Retained architecture — D. Keep
 
@@ -641,7 +578,7 @@ common validation baseline.
 
 Prioritize remaining work as follows:
 
-1. **Bounded cleanup:** A6 audio backends, B3 CTL HA/network remnants and B5
+1. **Bounded cleanup:** B3 CTL HA/network remnants and B5
    GEOM Gate, with shared interfaces traced first.
 2. **Supported deployment architecture:** B8 platform scope and C1 installation,
    release and recovery paths, building on the implemented C2 policy.
@@ -680,6 +617,7 @@ Unix/network/storage infrastructure beneath the capabilities being removed.**
 The follow-up removals A1 (HAST), A2 (QLogic/Emulex Fibre Channel),
 A3 (legacy parallel SCSI and RAID), A4 (CardBus/PC Card and parallel ports),
 A5 (the eleven reviewed legacy Ethernet/Wi-Fi families),
+A6 (the seven reviewed non-HDA audio-controller families per `A6.md`),
 A7 (the four legacy synchronous-WAN Netgraph leaf nodes per `A7.md`),
 A10 (Kboot/native U-Boot/standalone USB boot), A11 (in-tree DRM2 and AGP),
 A12 (the revised utility list per `A12.md`),
@@ -688,7 +626,8 @@ B1 (remaining InfiniBand networking and Mellanox firmware support),
 B9–B12 (kernel/userland RPC, service definitions, and NFS export/GSS remnants),
 A8 (RIP/IPv4 router discovery), A9 (VMware/cloud drivers), B2 (SAN protocols),
 C2 (maintained workstation build/kernel/module policy), and C3
-(the alternate scheduler and scheduler-selection machinery) are implemented.
+(the alternate scheduler and scheduler-selection machinery), E2 (tape, changer
+and remote tape), and E10 (reviewed USB gadget/handheld leaves) are implemented.
 Their original assessments below remain as audit history. Processed means the
 authorized source changes are implemented; native build and hardware validation
 is still outstanding where recorded. NFS remains removed.
@@ -897,6 +836,51 @@ MII, net80211, iflib, firmware loading, LinuxKPI, `em`, and `ath` remain.
 Added unconditional installed module/manual cleanup. Repository policy and
 reference checks cover the removal; full FreeBSD builds and retained-adapter
 throughput, DHCP, suspend/resume, association and roaming need native testing.
+
+#### A6. Historical non-HDA audio-controller backends
+
+**Implementation status:** Removed on October 3, 2026, after the detailed
+`A6.md` hardware review and explicit user approval of all seven families.
+Removed `snd_ich`, `snd_via82c686`, `snd_via8233`, `snd_neomagic`, `snd_solo`,
+`snd_t4dwave`, and `snd_vibes`, their private headers, NeoMagic coefficient
+blob, modules, kernel selections and `snd_driver` dependency entries.
+Installed module/manual cleanup is unconditional.
+
+The approved hardware boundary includes early-amd64 AC’97 coverage: ICH7,
+nForce4/410, AMD-8111 and VIA controllers through the explicitly named VT8251.
+This is a controller-family retirement, not a blanket AC’97 removal.
+Shared PCM, mixers and AC’97 helpers remain for retained drivers. HDA controller
+and codec support, onboard analog/headphone/microphone/line audio, GPU
+HDMI/DisplayPort, USB Audio Class, virtual audio and professional audio drivers
+remain. No optical storage, CAM/SCSI, SATA/PATA or USB-drive implementation is
+changed; digital CD/DVD/Blu-ray access and software playback use retained paths.
+
+Policy/default/ALL_MODULES, source-reference, retained-source and whitespace
+checks passed. Native FreeBSD builds and the requested analog output/input,
+mixer/mute, AMD/Intel/NVIDIA HDMI/DisplayPort, USB playback/recording,
+browser/media-player/Wayland, suspend/resume and optical-drive detection/playback
+tests remain outstanding. The original assessment below is retained as history.
+
+**Purpose and locations:** Legacy PCM implementations under `sys/dev/sound/pci`
+and module selections in `sys/modules/sound/driver`. Candidates include
+AC’97-era and older controllers such as `ich`, `via82c686`, `via8233`,
+`neomagic`, `solo`, `t4dwave`, and `vibes`.
+
+**FreeBSD rationale / HalfBSD fit:** Older integrated audio and sound cards.
+Modern HDA/HDMI and USB audio should be the primary baseline.
+
+**Dependencies:** Keep the sound/PCM framework, mixers, HDA, USB audio, and
+virtual audio facilities. Professional audio cards require a separate hardware
+policy rather than automatic deletion.
+
+**Disposition and impact:** Delete selected hardware backends. Audio support
+disappears only for those devices; no expected effect on retained desktop audio.
+
+**Benefit / risk / confidence:** Moderate reduction. Low architectural risk,
+moderate device-coverage risk; medium-high confidence.
+
+**Validation:** HDA analog audio, AMD HDMI/DisplayPort audio, USB audio,
+recording, mixer controls, and suspend/resume.
 
 #### A7. Frame Relay and obsolete synchronous-WAN Netgraph protocols
 
@@ -1474,3 +1458,224 @@ execution paths. Kernel/module interface risk; medium-high confidence.
 
 **Validation:** SMP stress, latency under build/browser load, affinity,
 real-time priorities, suspend/resume, and bhyve CPU load.
+
+### E. Processed investigations
+
+#### E2. Tape, media-changer, and remote-tape support
+
+**Implementation status:** Completed according to the revised `E2.md`.
+Removed the class-specific `sa` and `ch` CAM peripherals, their private SCSI
+headers and changer ioctl header, kernel selections and tape options, `mt`,
+`tcopy`, `rmt`, and `libmt`. CAM aggregates and libcam no longer compile the
+tape/changer sources. Removed remote tape clients from dump/restore, the
+rdump/rrestore aliases, distribution symlink, and obsolete dependency metadata.
+Added cleanup for installed programs, libraries, private headers and manuals.
+
+**Hardware/dependency audit:** `sa` accepts only `T_SEQUENTIAL`; `ch` accepts
+only `T_CHANGER`. Neither attaches disks, optical drives or SES enclosures.
+`camdd` used libmt exclusively for XML tape block-limit probing. That branch
+and library dependency are removed; disk geometry/probing, CAM SCSI/NVMe I/O,
+regular files, pipes and threaded copy paths remain. Tape positioning/record
+handling is also removed from dd/pax/restore. File and archive operations and
+local UFS dump/restore remain. These utilities default to standard streams
+instead of `/dev/sa0` and no longer use the tape-specific `TAPE` setting.
+Generic SCSI command definitions and passthrough remain available to retained disk and diagnostic consumers.
+
+**Preserved boundaries:** mps, mpr, mpi3mr, SAS disks, CAM core/da/ada/nda/pass,
+SES and sesutil, camcontrol, bhyve, ZFS, USB mass storage and SATA/USB optical
+support remain. Optical changer scheduling in scsi_cd is preserved; it is
+separate from robotic tape-library support. `sys/mtio.h` remains as compatibility
+definitions required by retained compiler-rt sanitizer consumers; it supplies
+no driver or tape service. `_PATH_DEFTAPE` remains in the shared compatibility
+header for retained libarchive and header tests. NetBSD/Solaris/Linux
+compatibility code in contributed software remains untouched. External consumers of retired libcam tape APIs
+must adapt; the retained disk APIs are unchanged.
+
+**Validation:** Build-selection, dependency/source-reference, preserved-storage
+source comparisons and whitespace checks pass. Native world/kernel/module
+builds, disk-copy/archive runtime tests, SAS/SES/optical discovery, ZFS and bhyve
+hardware/runtime validation require FreeBSD and remain outstanding.
+
+#### E10. Obsolete USB gadget and handheld support
+
+**Implementation status:** Completed according to `E10.md`. Removed gadget
+examples, all descriptor templates, `cfumass`, device-side RAM storage `usfs`,
+and the fixed-ID `uipaq`, `uvisor`, and `urio` families after the device review
+below. Removed modules, kernel selections, gadget build options, cfumass rc
+configuration, and release OTG setup; added installed-artifact cleanup.
+`usbtest` retains host storage, modem, and control-endpoint diagnostics.
+
+**Preserved boundaries:** All FireWire code, modules, fwcontrol, dcons and
+integration remain unchanged. Shared USB host/core, dual-role framework and
+libusb ABI hooks remain; the retired template provider is absent. Host modem
+drivers, ucom, bridges, tethering, HID, audio, optical and mass storage remain.
+No additional modem leaves were removed: ufoma is class-based, ugensa covers
+Google interfaces/calculators/GPS, and uvscom relevance needs separate review.
+
+**Validation:** BSD make selection checks and source-preservation checks pass.
+Native world/kernel/module builds and USB/FireWire hardware tests require a
+FreeBSD environment and remain outstanding.
+
+<details>
+<summary>Pre-removal USB identity and dependency review</summary>
+
+##### E10 device-ID inventory and dependency review
+
+Prepared before source removal. IDs are `vendor:product` hexadecimal.
+
+The bounded removal set is USB templates, four gadget examples, cfumass,
+uipaq, uvisor and urio. Other host modem/serial drivers are retained.
+
+
+##### uipaq — 454 exact IDs
+
+| Vendor | Products (every listed ID) |
+|---|---|
+| `0104` | `00be` |
+| `03f0` | `1016`, `1116`, `1216`, `2016`, `2116`, `2216`, `3016`, `3116`, `3216`, `4016`, `4116`, `4216`, `5016`, `5116`, `5216` |
+| `0409` | `00d5`, `00d6`, `00d7`, `8024`, `8025` |
+| `043e` | `9c01` |
+| `045e` | `00ce`, `0400`, `0401`, `0402`, `0403`, `0404`, `0405`, `0406`, `0407`, `0408`, `0409`, `040a`, `040b`, `040c`, `040d`, `040e`, `040f`, `0410`, `0411`, `0412`, `0413`, `0414`, `0415`, `0416`, `0417`, `0432`, `0433`, `0434`, `0435`, `0436`, `0437`, `0438`, `0439`, `043a`, `043b`, `043c`, `043d`, `043e`, `043f`, `0440`, `0441`, `0442`, `0443`, `0444`, `0445`, `0446`, `0447`, `0448`, `0449`, `044a`, `044b`, `044c`, `044d`, `044e`, `044f`, `0450`, `0451`, `0452`, `0453`, `0454`, `0455`, `0456`, `0457`, `0458`, `0459`, `045a`, `045b`, `045c`, `045d`, `045e`, `045f`, `0460`, `0461`, `0462`, `0463`, `0464`, `0465`, `0466`, `0467`, `0468`, `0469`, `046a`, `046b`, `046c`, `046d`, `046e`, `046f`, `0470`, `0471`, `0472`, `0473`, `0474`, `0475`, `0476`, `0477`, `0478`, `0479`, `047a`, `047b`, `04c8`, `04c9`, `04ca`, `04cb`, `04cc`, `04cd`, `04ce`, `04d7`, `04d8`, `04d9`, `04da`, `04db`, `04dc`, `04dd`, `04de`, `04df`, `04e0`, `04e1`, `04e2`, `04e3`, `04e4`, `04e5`, `04e6`, `04e7`, `04e8`, `04e9`, `04ea` |
+| `049f` | `0003`, `0032` |
+| `04a4` | `0014` |
+| `04ad` | `0301`, `0302`, `0303`, `0306` |
+| `04b7` | `0531` |
+| `04c5` | `1058`, `1079` |
+| `04da` | `2500` |
+| `04dd` | `9102`, `9121`, `9123`, `9151`, `91ac`, `9242` |
+| `04e8` | `5f00`, `5f01`, `5f02`, `5f03`, `5f04`, `6611`, `6613`, `6615`, `6617`, `6619`, `661b`, `662e`, `6630`, `6632` |
+| `04f1` | `3011`, `3012` |
+| `0502` | `1631`, `1632`, `16e1`, `16e2`, `16e3` |
+| `0536` | `01a0` |
+| `0543` | `0ed9`, `1527`, `1529`, `152b`, `152e`, `1921`, `1922`, `1923` |
+| `05e0` | `2000`, `2001`, `2002`, `2003`, `2004`, `2005`, `2006`, `2007`, `2008`, `2009`, `200a` |
+| `067e` | `1001` |
+| `07cf` | `2001`, `2002`, `2003` |
+| `0930` | `0700`, `0705`, `0706`, `0707`, `0708`, `0709`, `070a`, `070b` |
+| `094b` | `0001` |
+| `0960` | `0065`, `0066`, `0067` |
+| `0961` | `0010` |
+| `099e` | `0052`, `4000` |
+| `0b05` | `4200`, `4201`, `4202`, `420f`, `9200`, `9202` |
+| `0bb4` | `00ce`, `00cf`, `0a01`, `0a02`, `0a03`, `0a04`, `0a05`, `0a06`, `0a07`, `0a08`, `0a09`, `0a0a`, `0a0b`, `0a0c`, `0a0d`, `0a0e`, `0a0f`, `0a10`, `0a11`, `0a12`, `0a13`, `0a14`, `0a15`, `0a16`, `0a17`, `0a18`, `0a19`, `0a1a`, `0a1b`, `0a1c`, `0a1d`, `0a1e`, `0a1f`, `0a20`, `0a21`, `0a22`, `0a23`, `0a24`, `0a25`, `0a26`, `0a27`, `0a28`, `0a29`, `0a2a`, `0a2b`, `0a2c`, `0a2d`, `0a2e`, `0a2f`, `0a30`, `0a31`, `0a32`, `0a33`, `0a34`, `0a35`, `0a36`, `0a37`, `0a38`, `0a39`, `0a3a`, `0a3b`, `0a3c`, `0a3d`, `0a3e`, `0a3f`, `0a40`, `0a41`, `0a42`, `0a43`, `0a44`, `0a45`, `0a46`, `0a47`, `0a48`, `0a49`, `0a4a`, `0a4b`, `0a4c`, `0a4d`, `0a4e`, `0a4f`, `0a50`, `0a51`, `0a52`, `0a53`, `0a54`, `0a55`, `0a56`, `0a57`, `0a58`, `0a59`, `0a5a`, `0a5b`, `0a5c`, `0a5d`, `0a5e`, `0a5f`, `0a60`, `0a61`, `0a62`, `0a63`, `0a64`, `0a65`, `0a66`, `0a67`, `0a68`, `0a69`, `0a6a`, `0a6b`, `0a6c`, `0a6d`, `0a6e`, `0a6f`, `0a70`, `0a71`, `0a72`, `0a73`, `0a74`, `0a75`, `0a76`, `0a77`, `0a78`, `0a79`, `0a7a`, `0a7b`, `0a7c`, `0a7d`, `0a7e`, `0a7f`, `0a80`, `0a81`, `0a82`, `0a83`, `0a84`, `0a85`, `0a86`, `0a87`, `0a88`, `0a89`, `0a8a`, `0a8b`, `0a8c`, `0a8d`, `0a8e`, `0a8f`, `0a90`, `0a91`, `0a92`, `0a93`, `0a94`, `0a95`, `0a96`, `0a97`, `0a98`, `0a99`, `0a9a`, `0a9b`, `0a9c`, `0a9d`, `0a9e`, `0a9f`, `0bce` |
+| `0bf8` | `1001` |
+| `0c44` | `03a2` |
+| `0c8e` | `6000` |
+| `0cad` | `9001` |
+| `0f4e` | `0200` |
+| `0f98` | `0201` |
+| `0fb8` | `3001`, `3002`, `3003`, `4001` |
+| `1066` | `00ce`, `0300`, `0500`, `0600`, `0700` |
+| `1114` | `0001`, `0004`, `0006` |
+| `1182` | `1388` |
+| `11d9` | `1002`, `1003` |
+| `1231` | `ce01`, `ce02` |
+| `1690` | `0601` |
+| `22b8` | `4204`, `4214`, `4224`, `4234`, `4244` |
+| `3340` | `011c`, `0326`, `0426`, `043a`, `051c`, `053a`, `071c`, `0b1c`, `0e3a`, `0f1c`, `0f3a`, `1326`, `191c`, `2326`, `3326` |
+| `3708` | `20ce`, `21ce` |
+| `4113` | `0210`, `0211`, `0400`, `0410` |
+| `413c` | `4001`, `4002`, `4003`, `4004`, `4005`, `4006`, `4007`, `4008`, `4009` |
+| `4505` | `0010` |
+| `5e04` | `ce00` |
+
+Host-side fixed-ID Windows CE/Pocket PC/Windows Mobile synchronization,
+including Compaq/HP iPAQ, Dell Axim, Casio, Acer/ASUS, HTC, Mio/MiTAC,
+Psion and other handheld/data-collector USB Sync products. The table names
+Pocket PC 2002/2003 and legacy smartphone/GPS/industrial handheld families;
+approximate generation is late 1990s through 2000s. It is not a USB serial
+bridge or generic CDC matcher. Removal loses these products’ serial sync and
+legacy HTC modem mode, not contemporary CDC/RNDIS/NCM/MBIM/iPhone tethering.
+
+##### uvisor — 25 exact IDs
+
+| Vendor | Products (every listed ID) |
+|---|---|
+| `04e8` | `6601` |
+| `054c` | `0038`, `0066`, `0095`, `009a`, `00da`, `0169` |
+| `081e` | `df00` |
+| `082d` | `0100`, `0200`, `0300` |
+| `0830` | `0001`, `0002`, `0003`, `0020`, `0031`, `0040`, `0050`, `0060`, `0061`, `0070` |
+| `091e` | `0004` |
+| `0e67` | `0002` |
+| `12ef` | `0100` |
+| `4766` | `0001` |
+
+Host-side Palm/Visor/Treo, Sony CLIE, Garmin iQue, Fossil WristPDA,
+AlphaSmart Dana, Aceeca MEZ1000 and Tapwave Zodiac sync interfaces.
+Approximate generation: late 1990s/2000s. Fixed product-ID protocol, not
+generic serial or contemporary phone tethering. Removal loses Palm OS sync.
+
+##### urio — 3 exact IDs
+
+| Vendor | Products (every listed ID) |
+|---|---|
+| `045a` | `5001`, `5002` |
+| `0841` | `0001` |
+
+Host-side Diamond Rio 500/600/800 portable music players (around 2000).
+Fixed product-ID proprietary transfer/control interface, not generic storage
+or USB Audio Class. Removal loses the Rio-specific device/ioctl interface.
+
+##### uvscom — 5 exact IDs
+
+| Vendor | Products (every listed ID) |
+|---|---|
+| `05db` | `0003`, `0005`, `0009`, `000a`, `0011` |
+
+Retained pending a separate hardware relevance decision: SUNTAC U-Cable
+A4/D2/P1, Ir-Trinity and Slipper U. The source identifies particular legacy
+products, but this review does not establish whether a useful serial/modem
+application remains. No uvscom IDs or implementation will be removed.
+
+##### Gadget/device-mode targets
+
+Gadget audio, keyboard, mouse and modem examples match device-mode interface
+classes rather than physical peripheral VIDs/PIDs. Templates supply configurable
+identities; the defaults below describe the HalfBSD machine as a USB peripheral.
+These do not match attached USB host peripherals. cfumass likewise matches a
+device-mode SCSI bulk-only mass-storage interface; it depends on USB, template
+descriptors and CTL, and is not umass or an optical-storage driver.
+
+| Template | Default vendor:product |
+|---|---|
+| audio | `16c0:27e0` |
+| cdce | `16c0:27e1` |
+| cdceem | `16c0:27df` |
+| kbd | `16c0:27db` |
+| midi | `16c0:27de` |
+| modem | `16c0:27dd` |
+| mouse | `16c0:27da` |
+| msc | `16c0:27df` |
+| mtp | `16c0:27e2` |
+| multi | `16c0:05dc` |
+| phone | `16c0:05dc` |
+| serialnet | `16c0:05dc` |
+
+Shared dependencies retained: USB host controllers/core, ucom/tty, PCI/DMA,
+CAM/CTL, host storage, HID/input, audio, networking, hotplug and power management.
+No retained driver includes the handheld implementations. uipaq/uvisor depend
+on ucom; urio depends on USB; these are consumers, not shared providers.
+
+Reverse integration needing cleanup: module/conf selectors, usb_serial.c
+selection alternatives, private handheld ioctl header installation, gadget
+option descriptions, ARM gadget release setup and usbtest’s device-side menus.
+usbtest’s host storage/modem/control tests and USB diagnostics remain.
+
+All host modem families remain: u3g/umb/umodem/ufoma/ugensa/usie/uvscom and
+serial bridges. ugensa includes a Google vendor-class match and an HP calculator;
+ufoma matches an interface protocol instead of fixed obsolete IDs. No generic
+modem/serial driver is inferred removable from its name or age.
+
+FireWire, fwcontrol, dcons and all their source/build/configuration integration
+are expressly outside this removal; preservation will be checked against HEAD.
+
+
+**Additional device-mode leaf:** `usfs` / `ustorage_fs.c` matches only
+`USB_MODE_DEVICE` and generic mass-storage BBB interfaces; it has no physical
+VID/PID table. It exposes RAM-backed storage as a peripheral and depends only
+on the USB framework/template descriptors. Its module, NOTES entry, and source
+record are the only reverse consumers. Remove this gadget while retaining
+host `umass` and host mass-storage diagnostics.
+
+</details>

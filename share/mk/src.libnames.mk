@@ -143,7 +143,6 @@ _LIBRARIES=	\
 		md \
 		memstat \
 		mp \
-		mt \
 		ncursesw \
 		netgraph \
 		netmap \
@@ -270,7 +269,6 @@ _DP_proc+=	elf procstat rtld_db util z
 _DP_mp=	crypto
 _DP_memstat=	kvm
 _DP_magic=	z
-_DP_mt=		sbuf bsdxml
 _DP_ldns=	ssl crypto
 _DP_lua=	m
 _DP_lutok=	lua

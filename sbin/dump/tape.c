@@ -343,15 +343,6 @@ trewind(void)
 		popenfp = NULL;
 		return;
 	}
-#ifdef RDUMP
-	if (host) {
-		rmtclose();
-		while (rmtopen(tape, 0) < 0)
-			sleep(10);
-		rmtclose();
-		return;
-	}
-#endif
 	if (fstat(tapefd, &sb) == 0 && S_ISFIFO(sb.st_mode)) {
 		(void)close(tapefd);
 		return;
@@ -613,13 +604,8 @@ restore_check_point:
 			}
 			tapefd = fileno(popenfp);
 		} else {
-#ifdef RDUMP
-			while ((tapefd = (host ? rmtopen(tape, 2) :
-				open(tape, O_WRONLY|O_CREAT, 0666))) < 0)
-#else
 			while ((tapefd =
 			    open(tape, O_WRONLY|O_CREAT, 0666)) < 0)
-#endif
 			    {
 				msg("Cannot open output \"%s\".\n", tape);
 				if (!query("Do you want to retry the open?"))
@@ -662,9 +648,6 @@ dumpabort(int signo __unused)
 		killall();
 		msg("The ENTIRE dump is aborted.\n");
 	}
-#ifdef RDUMP
-	rmtclose();
-#endif
 	Exit(X_ABORT);
 }
 
@@ -806,14 +789,8 @@ worker(int cmd, int worker_number)
 
 		wrote = 0;
 		while (eot_count < 10 && size < writesize) {
-#ifdef RDUMP
-			if (host)
-				wrote = rmtwrite(wp->tblock[0]+size,
-				    writesize-size);
-			else
-#endif
-				wrote = write(tapefd, wp->tblock[0]+size,
-				    writesize-size);
+			wrote = write(tapefd, wp->tblock[0]+size,
+			    writesize-size);
 #ifdef WRITEDEBUG
 			printf("worker %d wrote %d\n", worker_number, wrote);
 #endif

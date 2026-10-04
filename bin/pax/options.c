@@ -35,14 +35,12 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/mtio.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <limits.h>
-#include <paths.h>
 #include "pax.h"
 #include "options.h"
 #include "cpio.h"
@@ -602,7 +600,7 @@ tar_options(int argc, char **argv)
 	 * process option flags
 	 */
 	while ((c = getoldopt(argc, argv,
-	    "b:cef:hjmopqruts:vwxyzBC:HI:LOPXZ014578")) != -1) {
+	    "b:cef:hjmopqruts:vwxyzBC:HI:LOPXZ")) != -1) {
 		switch(c) {
 		case 'b':
 			/*
@@ -779,24 +777,6 @@ tar_options(int argc, char **argv)
 			 */
 			gzip_program = COMPRESS_CMD;
 			break;
-		case '0':
-			arcname = DEV_0;
-			break;
-		case '1':
-			arcname = DEV_1;
-			break;
-		case '4':
-			arcname = DEV_4;
-			break;
-		case '5':
-			arcname = DEV_5;
-			break;
-		case '7':
-			arcname = DEV_7;
-			break;
-		case '8':
-			arcname = DEV_8;
-			break;
 		default:
 			tar_usage();
 			break;
@@ -965,11 +945,8 @@ tar_options(int argc, char **argv)
 		maxflt = 0;
 		break;
 	}
-	if (!fstdin && ((arcname == NULL) || (*arcname == '\0'))) {
-		arcname = getenv("TAPE");
-		if ((arcname == NULL) || (*arcname == '\0'))
-			arcname = _PATH_DEFTAPE;
-	}
+	if (arcname != NULL && *arcname == '\0')
+		arcname = NULL;
 }
 
 static int
@@ -1555,7 +1532,7 @@ pax_usage(void)
 void
 tar_usage(void)
 {
-	(void)fputs("usage: tar [-]{crtux}[-befhjmopqsvwyzHLOPXZ014578] [blocksize] ",
+	(void)fputs("usage: tar [-]{crtux}[-befhjmopqsvwyzHLOPXZ] [blocksize] ",
 		 stderr);
 	(void)fputs("[archive] [replstr] [-C directory] [-I file] [file ...]\n",
 	    stderr);

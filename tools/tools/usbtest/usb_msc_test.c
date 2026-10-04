@@ -103,9 +103,8 @@ static uint8_t usb_iface;
 static int sense_recurse;
 
 /*
- * SCSI commands sniffed off the wire - LUN maybe needs to be
- * adjusted!  Refer to "dev/usb/storage/ustorage_fs.c" for more
- * information.
+ * SCSI commands sniffed off the wire; adjust the LUN for the device
+ * under test.
  */
 static uint8_t mode_sense_6[0x6] = {0x1a, 0, 0x3f, 0, 0x0c};
 static uint8_t read_capacity[0xA] = {0x25,};

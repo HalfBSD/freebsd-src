@@ -913,11 +913,9 @@ static struct syscall_helper_data shm_syscalls[] = {
 	SYSCALL_INIT_HELPER(shmctl),
 	SYSCALL_INIT_HELPER(shmdt),
 	SYSCALL_INIT_HELPER(shmget),
-#if defined(COMPAT_FREEBSD4) || defined(COMPAT_FREEBSD5) || \
-    defined(COMPAT_FREEBSD6) || defined(COMPAT_FREEBSD7)
-	SYSCALL_INIT_HELPER_COMPAT(freebsd7_shmctl),
+#if defined(COMPAT_FREEBSD32)
 #endif
-#if defined(__i386__) && (defined(COMPAT_FREEBSD4) || defined(COMPAT_43))
+#if defined(__i386__) && (defined(COMPAT_FREEBSD32) || defined(COMPAT_FREEBSD32_43))
 	SYSCALL_INIT_HELPER(shmsys),
 #endif
 	SYSCALL_INIT_LAST
@@ -937,8 +935,7 @@ static struct syscall_helper_data shm32_syscalls[] = {
 	SYSCALL32_INIT_HELPER_COMPAT(shmget),
 	SYSCALL32_INIT_HELPER(freebsd32_shmsys),
 	SYSCALL32_INIT_HELPER(freebsd32_shmctl),
-#if defined(COMPAT_FREEBSD4) || defined(COMPAT_FREEBSD5) || \
-    defined(COMPAT_FREEBSD6) || defined(COMPAT_FREEBSD7)
+#if defined(COMPAT_FREEBSD32)
 	SYSCALL32_INIT_HELPER(freebsd7_freebsd32_shmctl),
 #endif
 	SYSCALL_INIT_LAST
@@ -1332,7 +1329,7 @@ shm_prison_cleanup(struct prison *pr)
 
 SYSCTL_JAIL_PARAM_SYS_NODE(sysvshm, CTLFLAG_RW, "SYSV shared memory");
 
-#if defined(__i386__) && (defined(COMPAT_FREEBSD4) || defined(COMPAT_43))
+#if defined(__i386__) && (defined(COMPAT_FREEBSD32) || defined(COMPAT_FREEBSD32_43))
 struct oshmid_ds {
 	struct	ipc_perm_old shm_perm;	/* operation perms */
 	int	shm_segsz;		/* size of segment (bytes) */
@@ -1354,7 +1351,7 @@ struct oshmctl_args {
 static int
 oshmctl(struct thread *td, struct oshmctl_args *uap)
 {
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 	int error = 0;
 	struct prison *rpr;
 	struct shmid_kernel *shmseg;
@@ -1427,7 +1424,7 @@ sys_shmsys(struct thread *td, struct shmsys_args *uap)
 	return ((*shmcalls[uap->which])(td, &uap->a2));
 }
 
-#endif	/* i386 && (COMPAT_FREEBSD4 || COMPAT_43) */
+#endif	/* i386 && (COMPAT_FREEBSD32 || COMPAT_FREEBSD32_43) */
 
 #ifdef COMPAT_FREEBSD32
 
@@ -1435,8 +1432,7 @@ int
 freebsd32_shmsys(struct thread *td, struct freebsd32_shmsys_args *uap)
 {
 
-#if defined(COMPAT_FREEBSD4) || defined(COMPAT_FREEBSD5) || \
-    defined(COMPAT_FREEBSD6) || defined(COMPAT_FREEBSD7)
+#if defined(COMPAT_FREEBSD32)
 	AUDIT_ARG_SVIPC_WHICH(uap->which);
 	switch (uap->which) {
 	case 0:	{	/* shmat */
@@ -1478,8 +1474,7 @@ freebsd32_shmsys(struct thread *td, struct freebsd32_shmsys_args *uap)
 #endif
 }
 
-#if defined(COMPAT_FREEBSD4) || defined(COMPAT_FREEBSD5) || \
-    defined(COMPAT_FREEBSD6) || defined(COMPAT_FREEBSD7)
+#if defined(COMPAT_FREEBSD32)
 int
 freebsd7_freebsd32_shmctl(struct thread *td,
     struct freebsd7_freebsd32_shmctl_args *uap)
@@ -1651,8 +1646,7 @@ done:
 }
 #endif
 
-#if defined(COMPAT_FREEBSD4) || defined(COMPAT_FREEBSD5) || \
-    defined(COMPAT_FREEBSD6) || defined(COMPAT_FREEBSD7)
+#if defined(COMPAT_FREEBSD32)
 
 #ifndef _SYS_SYSPROTO_H_
 struct freebsd7_shmctl_args {
@@ -1727,8 +1721,8 @@ done:
 	return (error);
 }
 
-#endif	/* COMPAT_FREEBSD4 || COMPAT_FREEBSD5 || COMPAT_FREEBSD6 ||
-	   COMPAT_FREEBSD7 */
+#endif	/* COMPAT_FREEBSD32 || COMPAT_FREEBSD32 || COMPAT_FREEBSD32 ||
+	   COMPAT_FREEBSD32 */
 
 static int
 sysvshm_modload(struct module *module, int cmd, void *arg)

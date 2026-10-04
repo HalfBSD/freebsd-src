@@ -576,165 +576,6 @@ out:
 	return (0);
 }
 
-#ifdef COMPAT_FREEBSD4
-/*
- * Get old format filesystem statistics.
- */
-static void freebsd4_cvtstatfs(struct statfs *, struct ostatfs *);
-
-#ifndef _SYS_SYSPROTO_H_
-struct freebsd4_statfs_args {
-	char *path;
-	struct ostatfs *buf;
-};
-#endif
-int
-freebsd4_statfs(struct thread *td, struct freebsd4_statfs_args *uap)
-{
-	struct ostatfs osb;
-	struct statfs *sfp;
-	int error;
-
-	sfp = malloc(sizeof(struct statfs), M_STATFS, M_WAITOK);
-	error = kern_statfs(td, uap->path, UIO_USERSPACE, sfp);
-	if (error == 0) {
-		freebsd4_cvtstatfs(sfp, &osb);
-		error = copyout(&osb, uap->buf, sizeof(osb));
-	}
-	free(sfp, M_STATFS);
-	return (error);
-}
-
-/*
- * Get filesystem statistics.
- */
-#ifndef _SYS_SYSPROTO_H_
-struct freebsd4_fstatfs_args {
-	int fd;
-	struct ostatfs *buf;
-};
-#endif
-int
-freebsd4_fstatfs(struct thread *td, struct freebsd4_fstatfs_args *uap)
-{
-	struct ostatfs osb;
-	struct statfs *sfp;
-	int error;
-
-	sfp = malloc(sizeof(struct statfs), M_STATFS, M_WAITOK);
-	error = kern_fstatfs(td, uap->fd, sfp);
-	if (error == 0) {
-		freebsd4_cvtstatfs(sfp, &osb);
-		error = copyout(&osb, uap->buf, sizeof(osb));
-	}
-	free(sfp, M_STATFS);
-	return (error);
-}
-
-/*
- * Get statistics on all filesystems.
- */
-#ifndef _SYS_SYSPROTO_H_
-struct freebsd4_getfsstat_args {
-	struct ostatfs *buf;
-	long bufsize;
-	int mode;
-};
-#endif
-int
-freebsd4_getfsstat(struct thread *td, struct freebsd4_getfsstat_args *uap)
-{
-	struct statfs *buf, *sp;
-	struct ostatfs osb;
-	size_t count, size;
-	int error;
-
-	if (uap->bufsize < 0)
-		return (EINVAL);
-	count = uap->bufsize / sizeof(struct ostatfs);
-	if (count > SIZE_MAX / sizeof(struct statfs))
-		return (EINVAL);
-	size = count * sizeof(struct statfs);
-	error = kern_getfsstat(td, &buf, size, &count, UIO_SYSSPACE,
-	    uap->mode);
-	if (error == 0)
-		td->td_retval[0] = count;
-	if (size != 0) {
-		sp = buf;
-		while (count != 0 && error == 0) {
-			freebsd4_cvtstatfs(sp, &osb);
-			error = copyout(&osb, uap->buf, sizeof(osb));
-			sp++;
-			uap->buf++;
-			count--;
-		}
-		free(buf, M_STATFS);
-	}
-	return (error);
-}
-
-/*
- * Implement fstatfs() for (NFS) file handles.
- */
-#ifndef _SYS_SYSPROTO_H_
-struct freebsd4_fhstatfs_args {
-	struct fhandle *u_fhp;
-	struct ostatfs *buf;
-};
-#endif
-int
-freebsd4_fhstatfs(struct thread *td, struct freebsd4_fhstatfs_args *uap)
-{
-	struct ostatfs osb;
-	struct statfs *sfp;
-	fhandle_t fh;
-	int error;
-
-	error = copyin(uap->u_fhp, &fh, sizeof(fhandle_t));
-	if (error != 0)
-		return (error);
-	sfp = malloc(sizeof(struct statfs), M_STATFS, M_WAITOK);
-	error = kern_fhstatfs(td, fh, sfp);
-	if (error == 0) {
-		freebsd4_cvtstatfs(sfp, &osb);
-		error = copyout(&osb, uap->buf, sizeof(osb));
-	}
-	free(sfp, M_STATFS);
-	return (error);
-}
-
-/*
- * Convert a new format statfs structure to an old format statfs structure.
- */
-static void
-freebsd4_cvtstatfs(struct statfs *nsp, struct ostatfs *osp)
-{
-
-	statfs_scale_blocks(nsp, LONG_MAX);
-	bzero(osp, sizeof(*osp));
-	osp->f_bsize = nsp->f_bsize;
-	osp->f_iosize = MIN(nsp->f_iosize, LONG_MAX);
-	osp->f_blocks = nsp->f_blocks;
-	osp->f_bfree = nsp->f_bfree;
-	osp->f_bavail = nsp->f_bavail;
-	osp->f_files = MIN(nsp->f_files, LONG_MAX);
-	osp->f_ffree = MIN(nsp->f_ffree, LONG_MAX);
-	osp->f_owner = nsp->f_owner;
-	osp->f_type = nsp->f_type;
-	osp->f_flags = nsp->f_flags;
-	osp->f_syncwrites = MIN(nsp->f_syncwrites, LONG_MAX);
-	osp->f_asyncwrites = MIN(nsp->f_asyncwrites, LONG_MAX);
-	osp->f_syncreads = MIN(nsp->f_syncreads, LONG_MAX);
-	osp->f_asyncreads = MIN(nsp->f_asyncreads, LONG_MAX);
-	strlcpy(osp->f_fstypename, nsp->f_fstypename,
-	    MIN(MFSNAMELEN, OMFSNAMELEN));
-	strlcpy(osp->f_mntonname, nsp->f_mntonname,
-	    MIN(MNAMELEN, OMNAMELEN));
-	strlcpy(osp->f_mntfromname, nsp->f_mntfromname,
-	    MIN(MNAMELEN, OMNAMELEN));
-	osp->f_fsid = nsp->f_fsid;
-}
-#endif /* COMPAT_FREEBSD4 */
 
 #if defined(COMPAT_FREEBSD11)
 /*
@@ -1367,7 +1208,7 @@ kern_openatfp(struct thread *td, int dirfd, const char *path,
 	return (error);
 }
 
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 /*
  * Create a file.
  */
@@ -1384,7 +1225,7 @@ ocreat(struct thread *td, struct ocreat_args *uap)
 	return (kern_openat(td, AT_FDCWD, uap->path, UIO_USERSPACE,
 	    O_WRONLY | O_CREAT | O_TRUNC, uap->mode));
 }
-#endif /* COMPAT_43 */
+#endif /* COMPAT_FREEBSD32_43 */
 
 /*
  * Create a special file.
@@ -2144,34 +1985,6 @@ kern_lseek(struct thread *td, int fd, off_t offset, int whence)
 	return (error);
 }
 
-#if defined(COMPAT_43)
-/*
- * Reposition read/write file offset.
- */
-#ifndef _SYS_SYSPROTO_H_
-struct olseek_args {
-	int	fd;
-	long	offset;
-	int	whence;
-};
-#endif
-int
-olseek(struct thread *td, struct olseek_args *uap)
-{
-
-	return (kern_lseek(td, uap->fd, uap->offset, uap->whence));
-}
-#endif /* COMPAT_43 */
-
-#if defined(COMPAT_FREEBSD6)
-/* Version with the 'pad' argument */
-int
-freebsd6_lseek(struct thread *td, struct freebsd6_lseek_args *uap)
-{
-
-	return (kern_lseek(td, uap->fd, uap->offset, uap->whence));
-}
-#endif
 
 /*
  * Check access permissions using passed credentials.
@@ -2302,82 +2115,8 @@ sys_eaccess(struct thread *td, struct eaccess_args *uap)
 	    AT_EACCESS, uap->amode));
 }
 
-#if defined(COMPAT_43)
-/*
- * Get file status; this version follows links.
- */
-#ifndef _SYS_SYSPROTO_H_
-struct ostat_args {
-	char	*path;
-	struct ostat *ub;
-};
-#endif
-int
-ostat(struct thread *td, struct ostat_args *uap)
-{
-	struct stat sb;
-	struct ostat osb;
-	int error;
 
-	error = kern_statat(td, 0, AT_FDCWD, uap->path, UIO_USERSPACE, &sb);
-	if (error != 0)
-		return (error);
-	cvtstat(&sb, &osb);
-	return (copyout(&osb, uap->ub, sizeof (osb)));
-}
-
-/*
- * Get file status; this version does not follow links.
- */
-#ifndef _SYS_SYSPROTO_H_
-struct olstat_args {
-	char	*path;
-	struct ostat *ub;
-};
-#endif
-int
-olstat(struct thread *td, struct olstat_args *uap)
-{
-	struct stat sb;
-	struct ostat osb;
-	int error;
-
-	error = kern_statat(td, AT_SYMLINK_NOFOLLOW, AT_FDCWD, uap->path,
-	    UIO_USERSPACE, &sb);
-	if (error != 0)
-		return (error);
-	cvtstat(&sb, &osb);
-	return (copyout(&osb, uap->ub, sizeof (osb)));
-}
-
-/*
- * Convert from an old to a new stat structure.
- * XXX: many values are blindly truncated.
- */
-void
-cvtstat(struct stat *st, struct ostat *ost)
-{
-
-	bzero(ost, sizeof(*ost));
-	ost->st_dev = st->st_dev;
-	ost->st_ino = st->st_ino;
-	ost->st_mode = st->st_mode;
-	ost->st_nlink = st->st_nlink;
-	ost->st_uid = st->st_uid;
-	ost->st_gid = st->st_gid;
-	ost->st_rdev = st->st_rdev;
-	ost->st_size = MIN(st->st_size, INT32_MAX);
-	ost->st_atim = st->st_atim;
-	ost->st_mtim = st->st_mtim;
-	ost->st_ctim = st->st_ctim;
-	ost->st_blksize = st->st_blksize;
-	ost->st_blocks = st->st_blocks;
-	ost->st_flags = st->st_flags;
-	ost->st_gen = st->st_gen;
-}
-#endif /* COMPAT_43 */
-
-#if defined(COMPAT_43) || defined(COMPAT_FREEBSD11)
+#if defined(COMPAT_FREEBSD32_43) || defined(COMPAT_FREEBSD11)
 int ino64_trunc_error;
 SYSCTL_INT(_vfs, OID_AUTO, ino64_trunc_error, CTLFLAG_RW,
     &ino64_trunc_error, 0,
@@ -3618,40 +3357,6 @@ out:
 	return (error);
 }
 
-#if defined(COMPAT_43)
-/*
- * Truncate a file given its path name.
- */
-#ifndef _SYS_SYSPROTO_H_
-struct otruncate_args {
-	char	*path;
-	long	length;
-};
-#endif
-int
-otruncate(struct thread *td, struct otruncate_args *uap)
-{
-
-	return (kern_truncate(td, uap->path, UIO_USERSPACE, uap->length));
-}
-#endif /* COMPAT_43 */
-
-#if defined(COMPAT_FREEBSD6)
-/* Versions with the pad argument */
-int
-freebsd6_truncate(struct thread *td, struct freebsd6_truncate_args *uap)
-{
-
-	return (kern_truncate(td, uap->path, UIO_USERSPACE, uap->length));
-}
-
-int
-freebsd6_ftruncate(struct thread *td, struct freebsd6_ftruncate_args *uap)
-{
-
-	return (kern_ftruncate(td, uap->fd, uap->length));
-}
-#endif
 
 int
 kern_fsync(struct thread *td, int fd, bool fullsync)
@@ -4136,7 +3841,7 @@ fdout:
 	return (error);
 }
 
-#if defined(COMPAT_43) || defined(COMPAT_FREEBSD11)
+#if defined(COMPAT_FREEBSD32_43) || defined(COMPAT_FREEBSD11)
 int
 freebsd11_kern_getdirentries(struct thread *td, int fd, char *ubuf, u_int count,
     long *basep, void (*func)(struct freebsd11_dirent *))
@@ -4210,7 +3915,7 @@ done:
 }
 #endif /* COMPAT */
 
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 static void
 ogetdirentries_cvt(struct freebsd11_dirent *dp)
 {
@@ -4233,25 +3938,7 @@ ogetdirentries_cvt(struct freebsd11_dirent *dp)
 /*
  * Read a block of directory entries in a filesystem independent format.
  */
-#ifndef _SYS_SYSPROTO_H_
-struct ogetdirentries_args {
-	int	fd;
-	char	*buf;
-	u_int	count;
-	long	*basep;
-};
-#endif
-int
-ogetdirentries(struct thread *td, struct ogetdirentries_args *uap)
-{
-	long loff;
-	int error;
 
-	error = kern_ogetdirentries(td, uap, &loff);
-	if (error == 0)
-		error = copyout(&loff, uap->basep, sizeof(long));
-	return (error);
-}
 
 int
 kern_ogetdirentries(struct thread *td, struct ogetdirentries_args *uap,
@@ -4272,7 +3959,7 @@ kern_ogetdirentries(struct thread *td, struct ogetdirentries_args *uap,
 
 	return (error);
 }
-#endif /* COMPAT_43 */
+#endif /* COMPAT_FREEBSD32_43 */
 
 #if defined(COMPAT_FREEBSD11)
 #ifndef _SYS_SYSPROTO_H_

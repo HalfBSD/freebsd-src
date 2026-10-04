@@ -65,11 +65,6 @@ options 	EARLY_PRINTF=pl011
 
 # Undo options from sys/conf/NOTES that we do not want...
 
-nooptions	COMPAT_FREEBSD4
-nooptions	COMPAT_FREEBSD5
-nooptions	COMPAT_FREEBSD6
-nooptions	COMPAT_FREEBSD7
-nooptions	COMPAT_FREEBSD9
 nooptions	PPC_PROBE_CHIPSET
 nooptions	MAXCPU		# value is set in machine/param.h
 

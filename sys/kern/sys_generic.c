@@ -245,14 +245,6 @@ kern_pread(struct thread *td, int fd, void *buf, size_t nbyte, off_t offset)
 	return (error);
 }
 
-#if defined(COMPAT_FREEBSD6)
-int
-freebsd6_pread(struct thread *td, struct freebsd6_pread_args *uap)
-{
-
-	return (kern_pread(td, uap->fd, uap->buf, uap->nbyte, uap->offset));
-}
-#endif
 
 /*
  * Scatter read system call.
@@ -447,14 +439,6 @@ kern_pwrite(struct thread *td, int fd, const void *buf, size_t nbyte,
 	return (error);
 }
 
-#if defined(COMPAT_FREEBSD6)
-int
-freebsd6_pwrite(struct thread *td, struct freebsd6_pwrite_args *uap)
-{
-
-	return (kern_pwrite(td, uap->fd, uap->buf, uap->nbyte, uap->offset));
-}
-#endif
 
 /*
  * Gather write system call.
@@ -631,20 +615,6 @@ sys_ftruncate(struct thread *td, struct ftruncate_args *uap)
 	return (kern_ftruncate(td, uap->fd, uap->length));
 }
 
-#if defined(COMPAT_43)
-#ifndef _SYS_SYSPROTO_H_
-struct oftruncate_args {
-	int	fd;
-	long	length;
-};
-#endif
-int
-oftruncate(struct thread *td, struct oftruncate_args *uap)
-{
-
-	return (kern_ftruncate(td, uap->fd, uap->length));
-}
-#endif /* COMPAT_43 */
 
 #ifndef _SYS_SYSPROTO_H_
 struct ioctl_args {
@@ -679,7 +649,7 @@ sys_ioctl(struct thread *td, struct ioctl_args *uap)
 	size = IOCPARM_LEN(com);
 	if ((size > IOCPARM_MAX) ||
 	    ((com & (IOC_VOID  | IOC_IN | IOC_OUT)) == 0) ||
-#if defined(COMPAT_FREEBSD5) || defined(COMPAT_FREEBSD4) || defined(COMPAT_43)
+#if defined(COMPAT_FREEBSD32) || defined(COMPAT_FREEBSD32_43)
 	    ((com & IOC_OUT) && size == 0) ||
 #else
 	    ((com & (IOC_IN | IOC_OUT)) && size == 0) ||

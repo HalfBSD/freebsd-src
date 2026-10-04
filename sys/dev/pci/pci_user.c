@@ -287,8 +287,7 @@ pci_conf_match32(struct pci_match_conf32 *matches, int num_matches,
 }
 #endif	/* COMPAT_FREEBSD32 */
 
-#if defined(COMPAT_FREEBSD4) || defined(COMPAT_FREEBSD5) || \
-    defined(COMPAT_FREEBSD6)
+#if defined(COMPAT_FREEBSD32)
 #define PRE7_COMPAT
 
 typedef enum {
@@ -1464,7 +1463,7 @@ getconfexit:
 							  io->pi_width);
 				error = 0;
 			} else {
-#ifdef COMPAT_FREEBSD4
+#ifdef COMPAT_FREEBSD32
 				if (cmd == PCIOCREAD_FREEBSD6) {
 					io_freebsd6->pi_data = -1;
 					error = 0;

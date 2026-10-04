@@ -29,8 +29,7 @@ typedef	__time_t	time_t;
 #define	_TIME_T_DECLARED
 #endif
 
-#if defined(COMPAT_FREEBSD4) || defined(COMPAT_FREEBSD5) || \
-    defined(COMPAT_FREEBSD6) || defined(COMPAT_FREEBSD7)
+#if defined(COMPAT_FREEBSD32)
 struct semid_ds_old {
 	struct ipc_perm_old sem_perm;	/* operation permission struct */
 	struct sem	*__sem_base;	/* pointer to first semaphore in set */
@@ -65,8 +64,7 @@ struct sembuf {
 };
 #define SEM_UNDO	010000
 
-#if defined(COMPAT_FREEBSD4) || defined(COMPAT_FREEBSD5) || \
-    defined(COMPAT_FREEBSD6) || defined(COMPAT_FREEBSD7) || \
+#if defined(COMPAT_FREEBSD32) || \
     defined(_WANT_SEMUN_OLD)
 union semun_old {
 	int		val;		/* value for SETVAL */

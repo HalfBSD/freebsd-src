@@ -312,7 +312,7 @@ freebsd32_pdwait(struct thread *td, struct freebsd32_pdwait_args *uap)
 	return (error);
 }
 
-#ifdef COMPAT_FREEBSD4
+#ifdef COMPAT_FREEBSD32
 static void
 copy_statfs(struct statfs *in, struct ostatfs32 *out)
 {
@@ -358,7 +358,7 @@ freebsd32_getfsstat(struct thread *td, struct freebsd32_getfsstat_args *uap)
 	return (error);
 }
 
-#ifdef COMPAT_FREEBSD4
+#ifdef COMPAT_FREEBSD32
 int
 freebsd4_freebsd32_getfsstat(struct thread *td,
     struct freebsd4_freebsd32_getfsstat_args *uap)
@@ -581,7 +581,7 @@ freebsd32_mmap(struct thread *td, struct freebsd32_mmap_args *uap)
 	    }));
 }
 
-#ifdef COMPAT_FREEBSD6
+#ifdef COMPAT_FREEBSD32
 int
 freebsd6_freebsd32_mmap(struct thread *td,
     struct freebsd6_freebsd32_mmap_args *uap)
@@ -605,7 +605,7 @@ freebsd6_freebsd32_mmap(struct thread *td,
 }
 #endif
 
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 int
 ofreebsd32_mmap(struct thread *td, struct ofreebsd32_mmap_args *uap)
 {
@@ -1585,7 +1585,7 @@ freebsd32_recvmsg(struct thread *td, struct freebsd32_recvmsg_args *uap)
 	return (error);
 }
 
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 int
 ofreebsd32_recvmsg(struct thread *td, struct ofreebsd32_recvmsg_args *uap)
 {
@@ -1746,7 +1746,7 @@ out:
 	return (error);
 }
 
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 int
 ofreebsd32_sendmsg(struct thread *td, struct ofreebsd32_sendmsg_args *uap)
 {
@@ -1937,7 +1937,7 @@ freebsd32_adjtime(struct thread *td, struct freebsd32_adjtime_args *uap)
 	return (error);
 }
 
-#ifdef COMPAT_FREEBSD4
+#ifdef COMPAT_FREEBSD32
 int
 freebsd4_freebsd32_statfs(struct thread *td, struct freebsd4_freebsd32_statfs_args *uap)
 {
@@ -1956,7 +1956,7 @@ freebsd4_freebsd32_statfs(struct thread *td, struct freebsd4_freebsd32_statfs_ar
 }
 #endif
 
-#ifdef COMPAT_FREEBSD4
+#ifdef COMPAT_FREEBSD32
 int
 freebsd4_freebsd32_fstatfs(struct thread *td, struct freebsd4_freebsd32_fstatfs_args *uap)
 {
@@ -1975,7 +1975,7 @@ freebsd4_freebsd32_fstatfs(struct thread *td, struct freebsd4_freebsd32_fstatfs_
 }
 #endif
 
-#ifdef COMPAT_FREEBSD4
+#ifdef COMPAT_FREEBSD32
 int
 freebsd4_freebsd32_fhstatfs(struct thread *td, struct freebsd4_freebsd32_fhstatfs_args *uap)
 {
@@ -2013,7 +2013,7 @@ freebsd32_pwrite(struct thread *td, struct freebsd32_pwrite_args *uap)
 	    PAIR32TO64(off_t, uap->offset)));
 }
 
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 int
 ofreebsd32_lseek(struct thread *td, struct ofreebsd32_lseek_args *uap)
 {
@@ -2045,7 +2045,7 @@ freebsd32_truncate(struct thread *td, struct freebsd32_truncate_args *uap)
 	    PAIR32TO64(off_t, uap->length)));
 }
 
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 int
 ofreebsd32_truncate(struct thread *td, struct ofreebsd32_truncate_args *uap)
 {
@@ -2060,7 +2060,7 @@ freebsd32_ftruncate(struct thread *td, struct freebsd32_ftruncate_args *uap)
 	return (kern_ftruncate(td, uap->fd, PAIR32TO64(off_t, uap->length)));
 }
 
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 int
 ofreebsd32_ftruncate(struct thread *td, struct ofreebsd32_ftruncate_args *uap)
 {
@@ -2110,7 +2110,7 @@ freebsd11_freebsd32_getdirentries(struct thread *td,
 }
 #endif /* COMPAT_FREEBSD11 */
 
-#ifdef COMPAT_FREEBSD6
+#ifdef COMPAT_FREEBSD32
 /* versions with the 'int pad' argument */
 int
 freebsd6_freebsd32_pread(struct thread *td, struct freebsd6_freebsd32_pread_args *uap)
@@ -2157,7 +2157,7 @@ freebsd6_freebsd32_ftruncate(struct thread *td, struct freebsd6_freebsd32_ftrunc
 
 	return (kern_ftruncate(td, uap->fd, PAIR32TO64(off_t, uap->length)));
 }
-#endif /* COMPAT_FREEBSD6 */
+#endif /* COMPAT_FREEBSD32 */
 
 struct sf_hdtr32 {
 	uint32_t headers;
@@ -2200,7 +2200,7 @@ freebsd32_do_sendfile(struct thread *td,
 			    hdtr32.hdr_cnt, &hdr_uio);
 			if (error)
 				goto out;
-#ifdef COMPAT_FREEBSD4
+#ifdef COMPAT_FREEBSD32
 			/*
 			 * In FreeBSD < 5.0 the nbytes to send also included
 			 * the header.  If compat is specified subtract the
@@ -2244,7 +2244,7 @@ out:
 	return (error);
 }
 
-#ifdef COMPAT_FREEBSD4
+#ifdef COMPAT_FREEBSD32
 int
 freebsd4_freebsd32_sendfile(struct thread *td,
     struct freebsd4_freebsd32_sendfile_args *uap)
@@ -2304,7 +2304,7 @@ copy_stat(struct stat *in, struct stat32 *out)
 	bzero(out->st_spare, sizeof(out->st_spare));
 }
 
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 static void
 copy_ostat(struct stat *in, struct ostat32 *out)
 {
@@ -2328,7 +2328,7 @@ copy_ostat(struct stat *in, struct ostat32 *out)
 }
 #endif
 
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 int
 ofreebsd32_stat(struct thread *td, struct ofreebsd32_stat_args *uap)
 {
@@ -2360,7 +2360,7 @@ freebsd32_fstat(struct thread *td, struct freebsd32_fstat_args *uap)
 	return (error);
 }
 
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 int
 ofreebsd32_fstat(struct thread *td, struct ofreebsd32_fstat_args *uap)
 {
@@ -2393,7 +2393,7 @@ freebsd32_fstatat(struct thread *td, struct freebsd32_fstatat_args *uap)
 	return (error);
 }
 
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 int
 ofreebsd32_lstat(struct thread *td, struct ofreebsd32_lstat_args *uap)
 {
@@ -2878,7 +2878,7 @@ freebsd32_sigaction(struct thread *td, struct freebsd32_sigaction_args *uap)
 	return (error);
 }
 
-#ifdef COMPAT_FREEBSD4
+#ifdef COMPAT_FREEBSD32
 int
 freebsd4_freebsd32_sigaction(struct thread *td,
 			     struct freebsd4_freebsd32_sigaction_args *uap)
@@ -2908,7 +2908,7 @@ freebsd4_freebsd32_sigaction(struct thread *td,
 }
 #endif
 
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 struct osigaction32 {
 	uint32_t	sa_u;
 	osigset_t	sa_mask;
@@ -4205,7 +4205,7 @@ freebsd32_ffclock_getestimate(struct thread *td,
 }
 #endif /* FFCLOCK */
 
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 int
 ofreebsd32_sethostid(struct thread *td, struct ofreebsd32_sethostid_args *uap)
 {

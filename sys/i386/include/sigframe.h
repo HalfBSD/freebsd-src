@@ -35,7 +35,7 @@
  * Signal frames, arguments passed to application signal handlers.
  */
 #ifdef _KERNEL
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 struct osigframe {
 	/*
 	 * The first four members may be used by applications.
@@ -71,7 +71,7 @@ struct osigframe {
 	osiginfo_t	sf_siginfo;
 };
 #endif
-#ifdef COMPAT_FREEBSD4
+#ifdef COMPAT_FREEBSD32
 /* FreeBSD 4.x */
 struct freebsd4_sigframe {
 	register_t	sf_signum;

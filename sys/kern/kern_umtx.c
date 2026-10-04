@@ -912,7 +912,7 @@ umtx_key_release(struct umtx_key *key)
 		vm_object_deallocate(key->info.shared.object);
 }
 
-#ifdef COMPAT_FREEBSD10
+#ifdef COMPAT_FREEBSD32
 /*
  * Lock a umtx object.
  */
@@ -1273,7 +1273,7 @@ do_unlock_umtx32(struct thread *td, uint32_t *m, uint32_t id)
 	return (0);
 }
 #endif	/* COMPAT_FREEBSD32 */
-#endif	/* COMPAT_FREEBSD10 */
+#endif	/* COMPAT_FREEBSD32 */
 
 /*
  * Fetch and compare value, sleep on the address if value is not changed.
@@ -3574,7 +3574,7 @@ out:
 	return (error);
 }
 
-#if defined(COMPAT_FREEBSD9) || defined(COMPAT_FREEBSD10)
+#if defined(COMPAT_FREEBSD32)
 static int
 do_sem_wait(struct thread *td, struct _usem *sem, struct _umtx_time *timeout)
 {
@@ -3817,20 +3817,6 @@ do_sem2_wake(struct thread *td, struct _usem2 *sem)
 	return (error);
 }
 
-#ifdef COMPAT_FREEBSD10
-int
-freebsd10__umtx_lock(struct thread *td, struct freebsd10__umtx_lock_args *uap)
-{
-	return (do_lock_umtx(td, uap->umtx, td->td_tid, 0));
-}
-
-int
-freebsd10__umtx_unlock(struct thread *td,
-    struct freebsd10__umtx_unlock_args *uap)
-{
-	return (do_unlock_umtx(td, uap->umtx, td->td_tid));
-}
-#endif
 
 inline int
 umtx_copyin_timeout(const void *uaddr, struct timespec *tsp)
@@ -3888,7 +3874,7 @@ umtx_copyout_timeout(void *uaddr, size_t sz, struct timespec *tsp)
 	return (copyout(tsp, uaddr, sizeof(*tsp)));
 }
 
-#ifdef COMPAT_FREEBSD10
+#ifdef COMPAT_FREEBSD32
 static int
 __umtx_op_lock_umtx(struct thread *td, struct _umtx_op_args *uap,
     const struct umtx_copyops *ops)
@@ -3922,16 +3908,16 @@ __umtx_op_unlock_umtx(struct thread *td, struct _umtx_op_args *uap,
 #endif
 	return (do_unlock_umtx(td, uap->obj, uap->val));
 }
-#endif	/* COMPAT_FREEBSD10 */
+#endif	/* COMPAT_FREEBSD32 */
 
-#if !defined(COMPAT_FREEBSD10)
+#if !defined(COMPAT_FREEBSD32)
 static int
 __umtx_op_unimpl(struct thread *td __unused, struct _umtx_op_args *uap __unused,
     const struct umtx_copyops *ops __unused)
 {
 	return (EOPNOTSUPP);
 }
-#endif	/* COMPAT_FREEBSD10 */
+#endif	/* COMPAT_FREEBSD32 */
 
 static int
 __umtx_op_wait(struct thread *td, struct _umtx_op_args *uap,
@@ -4218,7 +4204,7 @@ __umtx_op_rw_unlock(struct thread *td, struct _umtx_op_args *uap,
 	return (do_rw_unlock(td, uap->obj));
 }
 
-#if defined(COMPAT_FREEBSD9) || defined(COMPAT_FREEBSD10)
+#if defined(COMPAT_FREEBSD32)
 static int
 __umtx_op_sem_wait(struct thread *td, struct _umtx_op_args *uap,
     const struct umtx_copyops *ops)
@@ -4897,7 +4883,7 @@ typedef int (*_umtx_op_func)(struct thread *td, struct _umtx_op_args *uap,
     const struct umtx_copyops *umtx_ops);
 
 static const _umtx_op_func op_table[] = {
-#ifdef COMPAT_FREEBSD10
+#ifdef COMPAT_FREEBSD32
 	[UMTX_OP_LOCK]		= __umtx_op_lock_umtx,
 	[UMTX_OP_UNLOCK]	= __umtx_op_unlock_umtx,
 #else
@@ -4921,7 +4907,7 @@ static const _umtx_op_func op_table[] = {
 	[UMTX_OP_WAKE_PRIVATE]	= __umtx_op_wake_private,
 	[UMTX_OP_MUTEX_WAIT]	= __umtx_op_wait_umutex,
 	[UMTX_OP_MUTEX_WAKE]	= __umtx_op_wake_umutex,
-#if defined(COMPAT_FREEBSD9) || defined(COMPAT_FREEBSD10)
+#if defined(COMPAT_FREEBSD32)
 	[UMTX_OP_SEM_WAIT]	= __umtx_op_sem_wait,
 	[UMTX_OP_SEM_WAKE]	= __umtx_op_sem_wake,
 #else
@@ -5004,6 +4990,15 @@ sys__umtx_op(struct thread *td, struct _umtx_op_args *uap)
 {
 	static const struct umtx_copyops *umtx_ops;
 
+	/* Pre-11 operations are retained only by freebsd32__umtx_op(). */
+	switch (uap->op & ~UMTX_OP__FLAGS) {
+	case UMTX_OP_LOCK:
+	case UMTX_OP_UNLOCK:
+	case UMTX_OP_SEM_WAIT:
+	case UMTX_OP_SEM_WAKE:
+		return (EOPNOTSUPP);
+	}
+
 	umtx_ops = &umtx_native_ops;
 #ifdef __LP64__
 	if ((uap->op & (UMTX_OP__32BIT | UMTX_OP__I386)) != 0) {
@@ -5026,7 +5021,7 @@ sys__umtx_op(struct thread *td, struct _umtx_op_args *uap)
 }
 
 #ifdef COMPAT_FREEBSD32
-#ifdef COMPAT_FREEBSD10
+#ifdef COMPAT_FREEBSD32
 int
 freebsd10_freebsd32__umtx_lock(struct thread *td,
     struct freebsd10_freebsd32__umtx_lock_args *uap)
@@ -5040,7 +5035,7 @@ freebsd10_freebsd32__umtx_unlock(struct thread *td,
 {
 	return (do_unlock_umtx32(td, (uint32_t *)uap->umtx, td->td_tid));
 }
-#endif /* COMPAT_FREEBSD10 */
+#endif /* COMPAT_FREEBSD32 */
 
 int
 freebsd32__umtx_op(struct thread *td, struct freebsd32__umtx_op_args *uap)

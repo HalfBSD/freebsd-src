@@ -235,10 +235,8 @@ static struct syscall_helper_data sem_syscalls[] = {
 	SYSCALL_INIT_HELPER(__semctl),
 	SYSCALL_INIT_HELPER(semget),
 	SYSCALL_INIT_HELPER(semop),
-#if defined(COMPAT_FREEBSD4) || defined(COMPAT_FREEBSD5) || \
-    defined(COMPAT_FREEBSD6) || defined(COMPAT_FREEBSD7)
+#if defined(COMPAT_FREEBSD32)
 	SYSCALL_INIT_HELPER(semsys),
-	SYSCALL_INIT_HELPER_COMPAT(freebsd7___semctl),
 #endif
 	SYSCALL_INIT_LAST
 };
@@ -256,8 +254,7 @@ static struct syscall_helper_data sem32_syscalls[] = {
 	SYSCALL32_INIT_HELPER_COMPAT(semget),
 	SYSCALL32_INIT_HELPER_COMPAT(semop),
 	SYSCALL32_INIT_HELPER(freebsd32_semsys),
-#if defined(COMPAT_FREEBSD4) || defined(COMPAT_FREEBSD5) || \
-    defined(COMPAT_FREEBSD6) || defined(COMPAT_FREEBSD7)
+#if defined(COMPAT_FREEBSD32)
 	SYSCALL32_INIT_HELPER(freebsd7_freebsd32___semctl),
 #endif
 	SYSCALL_INIT_LAST
@@ -1786,8 +1783,7 @@ sem_prison_cleanup(struct prison *pr)
 
 SYSCTL_JAIL_PARAM_SYS_NODE(sysvsem, CTLFLAG_RW, "SYSV semaphores");
 
-#if defined(COMPAT_FREEBSD4) || defined(COMPAT_FREEBSD5) || \
-    defined(COMPAT_FREEBSD6) || defined(COMPAT_FREEBSD7)
+#if defined(COMPAT_FREEBSD32)
 
 /* XXX casting to (sy_call_t *) is bogus, as usual. */
 static sy_call_t *semcalls[] = {
@@ -1897,8 +1893,7 @@ int
 freebsd32_semsys(struct thread *td, struct freebsd32_semsys_args *uap)
 {
 
-#if defined(COMPAT_FREEBSD4) || defined(COMPAT_FREEBSD5) || \
-    defined(COMPAT_FREEBSD6) || defined(COMPAT_FREEBSD7)
+#if defined(COMPAT_FREEBSD32)
 	AUDIT_ARG_SVIPC_WHICH(uap->which);
 	switch (uap->which) {
 	case 0:
@@ -1912,8 +1907,7 @@ freebsd32_semsys(struct thread *td, struct freebsd32_semsys_args *uap)
 #endif
 }
 
-#if defined(COMPAT_FREEBSD4) || defined(COMPAT_FREEBSD5) || \
-    defined(COMPAT_FREEBSD6) || defined(COMPAT_FREEBSD7)
+#if defined(COMPAT_FREEBSD32)
 int
 freebsd7_freebsd32___semctl(struct thread *td,
     struct freebsd7_freebsd32___semctl_args *uap)

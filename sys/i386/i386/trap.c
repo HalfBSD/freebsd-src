@@ -1032,39 +1032,11 @@ cpu_fetch_syscall_args(struct thread *td)
 	caddr_t params;
 	long tmp;
 	int error;
-#ifdef COMPAT_43
-	u_int32_t eip;
-	int cs;
-#endif
 
 	p = td->td_proc;
 	frame = td->td_frame;
 	sa = &td->td_sa;
 
-#ifdef COMPAT_43
-	if (__predict_false(frame->tf_cs == 7 && frame->tf_eip == 2)) {
-		/*
-		 * In lcall $7,$0 after int $0x80.  Convert the user
-		 * frame to what it would be for a direct int 0x80 instead
-		 * of lcall $7,$0, by popping the lcall return address.
-		 */
-		error = fueword32((void *)frame->tf_esp, &eip);
-		if (error == -1)
-			return (EFAULT);
-		cs = fuword16((void *)(frame->tf_esp + sizeof(u_int32_t)));
-		if (cs == -1)
-			return (EFAULT);
-
-		/*
-		 * Unwind in-kernel frame after all stack frame pieces
-		 * were successfully read.
-		 */
-		frame->tf_eip = eip;
-		frame->tf_cs = cs;
-		frame->tf_esp += 2 * sizeof(u_int32_t);
-		frame->tf_err = 7;	/* size of lcall $7,$0 */
-	}
-#endif
 
 	sa->code = frame->tf_eax;
 	sa->original_code = sa->code;

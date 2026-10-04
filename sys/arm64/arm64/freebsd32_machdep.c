@@ -375,7 +375,7 @@ freebsd32_sendsig(sig_t catcher, ksiginfo_t *ksi, sigset_t *mask)
 	    SIGISMEMBER(psp->ps_sigonstack, sig)) {
 		fp = (struct sigframe32 *)((uintptr_t)td->td_sigstk.ss_sp +
 		    td->td_sigstk.ss_size);
-#if defined(COMPAT_43)
+#if defined(COMPAT_FREEBSD32_43)
 		td->td_sigstk.ss_flags |= SS_ONSTACK;
 #endif
 	} else
@@ -457,7 +457,7 @@ freebsd32_sendsig(sig_t catcher, ksiginfo_t *ksi, sigset_t *mask)
 
 }
 
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 /*
  * Mirror the osigreturn definition in kern_sig.c for !i386 platforms. This
  * mirrors what's connected to the FreeBSD/arm syscall.

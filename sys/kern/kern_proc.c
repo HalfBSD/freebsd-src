@@ -2412,7 +2412,7 @@ sysctl_kern_proc_sv_name(SYSCTL_HANDLER_ARGS)
 CTASSERT(sizeof(struct kinfo_ovmentry) == KINFO_OVMENTRY_SIZE);
 #endif
 
-#ifdef COMPAT_FREEBSD7
+#ifdef COMPAT_FREEBSD32
 static int
 sysctl_kern_proc_ovmmap(SYSCTL_HANDLER_ARGS)
 {
@@ -2556,7 +2556,7 @@ sysctl_kern_proc_ovmmap(SYSCTL_HANDLER_ARGS)
 	free(kve, M_TEMP);
 	return (error);
 }
-#endif	/* COMPAT_FREEBSD7 */
+#endif	/* COMPAT_FREEBSD32 */
 
 #ifdef KINFO_VMENTRY_SIZE
 CTASSERT(sizeof(struct kinfo_vmentry) == KINFO_VMENTRY_SIZE);
@@ -3462,7 +3462,7 @@ static SYSCTL_NODE(_kern_proc, (KERN_PROC_PROC | KERN_PROC_INC_THREAD), proc_td,
 	CTLFLAG_RD | CTLFLAG_MPSAFE, sysctl_kern_proc,
 	"Return process table, including threads");
 
-#ifdef COMPAT_FREEBSD7
+#ifdef COMPAT_FREEBSD32
 static SYSCTL_NODE(_kern_proc, KERN_PROC_OVMMAP, ovmmap, CTLFLAG_RD |
 	CTLFLAG_MPSAFE, sysctl_kern_proc_ovmmap, "Old Process vm map entries");
 #endif

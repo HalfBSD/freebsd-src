@@ -3063,8 +3063,7 @@ vn_mmap(struct file *fp, vm_map_t map, vm_offset_t *addr, vm_size_t size,
 	boolean_t writecounted;
 	int error;
 
-#if defined(COMPAT_FREEBSD7) || defined(COMPAT_FREEBSD6) || \
-    defined(COMPAT_FREEBSD5) || defined(COMPAT_FREEBSD4)
+#if defined(COMPAT_FREEBSD32)
 	/*
 	 * POSIX shared-memory objects are defined to have
 	 * kernel persistence, and are not defined to support

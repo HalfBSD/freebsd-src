@@ -826,7 +826,7 @@ int	freebsd32_timerfd_settime(struct thread *, struct freebsd32_timerfd_settime_
 int	freebsd32_setcred(struct thread *, struct freebsd32_setcred_args *);
 int	freebsd32_pdwait(struct thread *, struct freebsd32_pdwait_args *);
 
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 
 struct ofreebsd32_lseek_args {
 	char fd_l_[PADL_(int)]; int fd; char fd_r_[PADR_(int)];
@@ -913,10 +913,10 @@ int	ofreebsd32_ftruncate(struct thread *, struct ofreebsd32_ftruncate_args *);
 int	ofreebsd32_sethostid(struct thread *, struct ofreebsd32_sethostid_args *);
 int	ofreebsd32_getdirentries(struct thread *, struct ofreebsd32_getdirentries_args *);
 
-#endif /* COMPAT_43 */
+#endif /* COMPAT_FREEBSD32_43 */
 
 
-#ifdef COMPAT_FREEBSD4
+#ifdef COMPAT_FREEBSD32
 
 struct freebsd4_freebsd32_getfsstat_args {
 	char buf_l_[PADL_(struct ostatfs32 *)]; struct ostatfs32 * buf; char buf_r_[PADR_(struct ostatfs32 *)];
@@ -961,10 +961,10 @@ int	freebsd4_freebsd32_sendfile(struct thread *, struct freebsd4_freebsd32_sendf
 int	freebsd4_freebsd32_sigaction(struct thread *, struct freebsd4_freebsd32_sigaction_args *);
 int	freebsd4_freebsd32_sigreturn(struct thread *, struct freebsd4_freebsd32_sigreturn_args *);
 
-#endif /* COMPAT_FREEBSD4 */
+#endif /* COMPAT_FREEBSD32 */
 
 
-#ifdef COMPAT_FREEBSD6
+#ifdef COMPAT_FREEBSD32
 
 struct freebsd6_freebsd32_pread_args {
 	char fd_l_[PADL_(int)]; int fd; char fd_r_[PADR_(int)];
@@ -1033,10 +1033,10 @@ int	freebsd6_freebsd32_aio_read(struct thread *, struct freebsd6_freebsd32_aio_r
 int	freebsd6_freebsd32_aio_write(struct thread *, struct freebsd6_freebsd32_aio_write_args *);
 int	freebsd6_freebsd32_lio_listio(struct thread *, struct freebsd6_freebsd32_lio_listio_args *);
 
-#endif /* COMPAT_FREEBSD6 */
+#endif /* COMPAT_FREEBSD32 */
 
 
-#ifdef COMPAT_FREEBSD7
+#ifdef COMPAT_FREEBSD32
 
 struct freebsd7_freebsd32___semctl_args {
 	char semid_l_[PADL_(int)]; int semid; char semid_r_[PADR_(int)];
@@ -1058,10 +1058,10 @@ int	freebsd7_freebsd32___semctl(struct thread *, struct freebsd7_freebsd32___sem
 int	freebsd7_freebsd32_msgctl(struct thread *, struct freebsd7_freebsd32_msgctl_args *);
 int	freebsd7_freebsd32_shmctl(struct thread *, struct freebsd7_freebsd32_shmctl_args *);
 
-#endif /* COMPAT_FREEBSD7 */
+#endif /* COMPAT_FREEBSD32 */
 
 
-#ifdef COMPAT_FREEBSD10
+#ifdef COMPAT_FREEBSD32
 
 struct freebsd10_freebsd32__umtx_lock_args {
 	char umtx_l_[PADL_(struct umtx *)]; struct umtx * umtx; char umtx_r_[PADR_(struct umtx *)];
@@ -1072,7 +1072,7 @@ struct freebsd10_freebsd32__umtx_unlock_args {
 int	freebsd10_freebsd32__umtx_lock(struct thread *, struct freebsd10_freebsd32__umtx_lock_args *);
 int	freebsd10_freebsd32__umtx_unlock(struct thread *, struct freebsd10_freebsd32__umtx_unlock_args *);
 
-#endif /* COMPAT_FREEBSD10 */
+#endif /* COMPAT_FREEBSD32 */
 
 
 #ifdef COMPAT_FREEBSD11

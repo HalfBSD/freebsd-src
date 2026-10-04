@@ -43,7 +43,7 @@
 
 #include <vm/vm_param.h>
 
-#if defined(COMPAT_43)
+#if defined(COMPAT_FREEBSD32_43)
 
 int
 ogethostname(struct thread *td, struct ogethostname_args *uap)
@@ -86,16 +86,6 @@ ogethostid(struct thread *td, struct ogethostid_args *uap)
 	    NULL, 0, NULL, 0));
 }
 
-int
-osethostid(struct thread *td, struct osethostid_args *uap)
-{
-	int name[2];
-
-	name[0] = CTL_KERN;
-	name[1] = KERN_HOSTID;
-	return (kernel_sysctl(td, name, 2, NULL, NULL, &uap->hostid,
-	    sizeof(uap->hostid), NULL, 0));
-}
 
 int
 oquota(struct thread *td, struct oquota_args *uap)
@@ -160,142 +150,10 @@ static struct {
  */
 static char bsdi_strings[80];	/* It had better be less than this! */
 
-int
-ogetkerninfo(struct thread *td, struct ogetkerninfo_args *uap)
-{
-	int error, name[6];
-	size_t size;
-	u_int needed = 0;
 
-	switch (uap->op & 0xff00) {
-	case KINFO_RT:
-		name[0] = CTL_NET;
-		name[1] = PF_ROUTE;
-		name[2] = 0;
-		name[3] = (uap->op & 0xff0000) >> 16;
-		name[4] = uap->op & 0xff;
-		name[5] = uap->arg;
-		error = userland_sysctl(td, name, 6, uap->where, uap->size,
-			0, 0, 0, &size, 0);
-		break;
+#endif /* COMPAT_FREEBSD32_43 */
 
-	case KINFO_PROC:
-		name[0] = CTL_KERN;
-		name[1] = KERN_PROC;
-		name[2] = uap->op & 0xff;
-		name[3] = uap->arg;
-		error = userland_sysctl(td, name, 4, uap->where, uap->size,
-			0, 0, 0, &size, 0);
-		break;
-
-	case KINFO_FILE:
-		name[0] = CTL_KERN;
-		name[1] = KERN_FILE;
-		error = userland_sysctl(td, name, 2, uap->where, uap->size,
-			0, 0, 0, &size, 0);
-		break;
-
-	case KINFO_METER:
-		name[0] = CTL_VM;
-		name[1] = VM_TOTAL;
-		error = userland_sysctl(td, name, 2, uap->where, uap->size,
-			0, 0, 0, &size, 0);
-		break;
-
-	case KINFO_LOADAVG:
-		name[0] = CTL_VM;
-		name[1] = VM_LOADAVG;
-		error = userland_sysctl(td, name, 2, uap->where, uap->size,
-			0, 0, 0, &size, 0);
-		break;
-
-	case KINFO_CLOCKRATE:
-		name[0] = CTL_KERN;
-		name[1] = KERN_CLOCKRATE;
-		error = userland_sysctl(td, name, 2, uap->where, uap->size,
-			0, 0, 0, &size, 0);
-		break;
-
-	case KINFO_BSDI_SYSINFO: {
-		/*
-		 * this is pretty crude, but it's just enough for uname()
-		 * from BSDI's 1.x libc to work.
-		 *
-		 * *size gives the size of the buffer before the call, and
-		 * the amount of data copied after a successful call.
-		 * If successful, the return value is the amount of data
-		 * available, which can be larger than *size.
-		 *
-		 * BSDI's 2.x product apparently fails with ENOMEM if *size
-		 * is too small.
-		 */
-
-		u_int left;
-		char *s;
-
-		bzero((char *)&bsdi_si, sizeof(bsdi_si));
-		bzero(bsdi_strings, sizeof(bsdi_strings));
-
-		s = bsdi_strings;
-
-		bsdi_si.bsdi_ostype = (s - bsdi_strings) + sizeof(bsdi_si);
-		strcpy(s, ostype);
-		s += strlen(s) + 1;
-
-		bsdi_si.bsdi_osrelease = (s - bsdi_strings) + sizeof(bsdi_si);
-		strcpy(s, osrelease);
-		s += strlen(s) + 1;
-
-		bsdi_si.bsdi_machine = (s - bsdi_strings) + sizeof(bsdi_si);
-		strcpy(s, machine);
-		s += strlen(s) + 1;
-
-		needed = sizeof(bsdi_si) + (s - bsdi_strings);
-
-		if ((uap->where == NULL) || (uap->size == NULL)) {
-			/* process is asking how much buffer to supply.. */
-			size = needed;
-			error = 0;
-			break;
-		}
-
-		if ((error = copyin(uap->size, &size, sizeof(size))) != 0)
-			break;
-
-		/* if too much buffer supplied, trim it down */
-		if (size > needed)
-			size = needed;
-
-		/* how much of the buffer is remaining */
-		left = size;
-
-		if ((error = copyout((char *)&bsdi_si, uap->where, left)) != 0)
-			break;
-
-		/* is there any point in continuing? */
-		if (left > sizeof(bsdi_si)) {
-			left -= sizeof(bsdi_si);
-			error = copyout(&bsdi_strings,
-					uap->where + sizeof(bsdi_si), left);
-		}
-		break;
-	}
-
-	default:
-		error = EOPNOTSUPP;
-		break;
-	}
-	if (error == 0) {
-		td->td_retval[0] = needed ? needed : size;
-		if (uap->size) {
-			error = copyout(&size, uap->size, sizeof(size));
-		}
-	}
-	return (error);
-}
-#endif /* COMPAT_43 */
-
-#ifdef COMPAT_FREEBSD4
+#ifdef COMPAT_FREEBSD32
 /*
  * This is the FreeBSD-1.1 compatible uname(2) interface.  These days it is
  * done in libc as a wrapper around a bunch of sysctl's.  This must maintain
@@ -422,4 +280,4 @@ freebsd4_setdomainname(struct thread *td,
 	return (userland_sysctl(td, name, 2, 0, 0, 0, uap->domainname,
 	    uap->len, 0, 0));
 }
-#endif /* COMPAT_FREEBSD4 */
+#endif /* COMPAT_FREEBSD32 */

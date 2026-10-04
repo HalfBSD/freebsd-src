@@ -297,9 +297,6 @@ sendsig(sig_t catcher, ksiginfo_t *ksi, sigset_t *mask)
 	    SIGISMEMBER(psp->ps_sigonstack, sig)) {
 		fp = (struct sigframe *)((uintptr_t)td->td_sigstk.ss_sp +
 		    td->td_sigstk.ss_size);
-#if defined(COMPAT_43)
-		td->td_sigstk.ss_flags |= SS_ONSTACK;
-#endif
 	} else
 		fp = (struct sigframe *)td->td_frame->tf_usr_sp;
 

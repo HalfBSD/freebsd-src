@@ -196,7 +196,6 @@ struct sysentvec {
 #define	SVP_INTERP	0x00000002
 
 #ifdef _KERNEL
-extern struct sysentvec aout_sysvec;
 extern struct sysent sysent[];
 extern const char *syscallnames[];
 extern struct sysent nosys_sysent;

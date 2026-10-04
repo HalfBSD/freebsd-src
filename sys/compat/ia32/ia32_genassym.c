@@ -27,10 +27,10 @@ ASSYM(IA32_UC_ESP, offsetof(struct ia32_ucontext, uc_mcontext.mc_esp));
 ASSYM(IA32_UC_SS, offsetof(struct ia32_ucontext, uc_mcontext.mc_ss));
 ASSYM(IA32_UC_FSBASE, offsetof(struct ia32_ucontext, uc_mcontext.mc_fsbase));
 ASSYM(IA32_UC_GSBASE, offsetof(struct ia32_ucontext, uc_mcontext.mc_gsbase));
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 ASSYM(IA32_SIGF_SC, offsetof(struct ia32_osigframe, sf_siginfo.si_sc));
 #endif
-#ifdef COMPAT_FREEBSD4
+#ifdef COMPAT_FREEBSD32
 ASSYM(IA32_SIGF_UC4, offsetof(struct ia32_freebsd4_sigframe, sf_uc));
 ASSYM(IA32_UC4_GS, offsetof(struct ia32_freebsd4_ucontext, uc_mcontext.mc_gs));
 ASSYM(IA32_UC4_FS, offsetof(struct ia32_freebsd4_ucontext, uc_mcontext.mc_fs));

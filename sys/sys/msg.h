@@ -59,8 +59,7 @@ typedef	__time_t	time_t;
 #define	_TIME_T_DECLARED
 #endif
 
-#if defined(COMPAT_FREEBSD4) || defined(COMPAT_FREEBSD5) || \
-    defined(COMPAT_FREEBSD6) || defined(COMPAT_FREEBSD7)
+#if defined(COMPAT_FREEBSD32)
 struct msqid_ds_old {
 	struct	ipc_perm_old msg_perm;	/* msg queue permission bits */
 	struct	msg *__msg_first;	/* first message in the queue */

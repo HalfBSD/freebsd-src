@@ -1685,31 +1685,6 @@ machdep_init_trampoline(void *dummy __unused)
 }
 SYSINIT(vm_mem, SI_SUB_VM, SI_ORDER_SECOND, machdep_init_trampoline, NULL);
 
-#ifdef COMPAT_43
-static void
-i386_setup_lcall_gate(void)
-{
-	struct sysentvec *sv;
-	struct user_segment_descriptor desc;
-	u_int lcall_addr;
-
-	sv = &elf32_freebsd_sysvec;
-	lcall_addr = (uintptr_t)sv->sv_psstrings - sz_lcall_tramp;
-
-	bzero(&desc, sizeof(desc));
-	desc.sd_type = SDT_MEMERA;
-	desc.sd_dpl = SEL_UPL;
-	desc.sd_p = 1;
-	desc.sd_def32 = 1;
-	desc.sd_gran = 1;
-	desc.sd_lolimit = 0xffff;
-	desc.sd_hilimit = 0xf;
-	desc.sd_lobase = lcall_addr;
-	desc.sd_hibase = lcall_addr >> 24;
-	bcopy(&desc, &ldt[LSYS5CALLS_SEL], sizeof(desc));
-}
-SYSINIT(elf32, SI_SUB_EXEC, SI_ORDER_ANY, i386_setup_lcall_gate, NULL);
-#endif
 
 void
 cpu_pcpu_init(struct pcpu *pcpu, int cpuid, size_t size)

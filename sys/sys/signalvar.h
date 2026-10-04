@@ -72,7 +72,7 @@ struct sigacts {
 
 #ifdef _KERNEL
 
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 typedef struct {
 	struct osigcontext si_sc;
 	int		si_signo;
@@ -90,7 +90,7 @@ struct osigaction {
 };
 
 typedef void __osiginfohandler_t(int, osiginfo_t *, void *);
-#endif /* COMPAT_43 */
+#endif /* COMPAT_FREEBSD32_43 */
 
 /* additional signal action values, used only temporarily/internally */
 #define	SIG_CATCH	((__sighandler_t *)2)
@@ -198,7 +198,7 @@ __sigseteq(sigset_t *set1, sigset_t *set2)
 	return (1);
 }
 
-#ifdef COMPAT_FREEBSD6
+#ifdef COMPAT_FREEBSD32
 struct osigevent {
 	int	sigev_notify;		/* Notification type */
 	union {

@@ -1283,7 +1283,7 @@ out:
 }
 
 static int
-sendfile(struct thread *td, struct sendfile_args *uap, int compat)
+sendfile(struct thread *td, struct sendfile_args *uap)
 {
 	struct sf_hdtr hdtr;
 	struct uio *hdr_uio, *trl_uio;
@@ -1310,19 +1310,6 @@ sendfile(struct thread *td, struct sendfile_args *uap, int compat)
 			    &hdr_uio);
 			if (error != 0)
 				goto out;
-#ifdef COMPAT_FREEBSD4
-			/*
-			 * In FreeBSD < 5.0 the nbytes to send also included
-			 * the header.  If compat is specified subtract the
-			 * header size from nbytes.
-			 */
-			if (compat) {
-				if (uap->nbytes > hdr_uio->uio_resid)
-					uap->nbytes -= hdr_uio->uio_resid;
-				else
-					uap->nbytes = 0;
-			}
-#endif
 		}
 		if (hdtr.trailers != NULL) {
 			error = copyinuio(hdtr.trailers, hdtr.trl_cnt,
@@ -1369,23 +1356,5 @@ int
 sys_sendfile(struct thread *td, struct sendfile_args *uap)
 {
 
-	return (sendfile(td, uap, 0));
+	return (sendfile(td, uap));
 }
-
-#ifdef COMPAT_FREEBSD4
-int
-freebsd4_sendfile(struct thread *td, struct freebsd4_sendfile_args *uap)
-{
-	struct sendfile_args args;
-
-	args.fd = uap->fd;
-	args.s = uap->s;
-	args.offset = uap->offset;
-	args.nbytes = uap->nbytes;
-	args.hdtr = uap->hdtr;
-	args.sbytes = uap->sbytes;
-	args.flags = uap->flags;
-
-	return (sendfile(td, &args, 1));
-}
-#endif /* COMPAT_FREEBSD4 */

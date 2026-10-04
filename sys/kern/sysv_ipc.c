@@ -156,8 +156,7 @@ ipcperm(struct thread *td, struct ipc_perm *perm, int acc_mode)
 		return (EACCES);
 }
 
-#if defined(COMPAT_FREEBSD4) || defined(COMPAT_FREEBSD5) || \
-    defined(COMPAT_FREEBSD6) || defined(COMPAT_FREEBSD7)
+#if defined(COMPAT_FREEBSD32)
 void
 ipcperm_old2new(struct ipc_perm_old *old, struct ipc_perm *new)
 {
@@ -196,8 +195,7 @@ ipcperm_new2old(struct ipc_perm *new, struct ipc_perm_old *old)
 #include <compat/freebsd32/freebsd32_syscall.h>
 #include <compat/freebsd32/freebsd32_util.h>
 
-#if defined(COMPAT_FREEBSD4) || defined(COMPAT_FREEBSD5) || \
-    defined(COMPAT_FREEBSD6) || defined(COMPAT_FREEBSD7)
+#if defined(COMPAT_FREEBSD32)
 void
 freebsd32_ipcperm_old_in(struct ipc_perm_old32 *ip32, struct ipc_perm *ip)
 {

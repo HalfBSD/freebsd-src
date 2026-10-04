@@ -119,7 +119,7 @@ ia32_fetch_syscall_args(struct thread *td)
 	caddr_t params;
 	u_int32_t args[8], tmp;
 	int error, i;
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 	u_int32_t eip;
 	int cs;
 #endif
@@ -128,7 +128,7 @@ ia32_fetch_syscall_args(struct thread *td)
 	frame = td->td_frame;
 	sa = &td->td_sa;
 
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 	if (__predict_false(frame->tf_cs == 7 && frame->tf_rip == 2)) {
 		/*
 		 * In lcall $7,$0 after int $0x80.  Convert the user
@@ -256,7 +256,7 @@ ia32_syscall_disable(void *dummy)
 SYSINIT(ia32_syscall, SI_SUB_EXEC, SI_ORDER_ANY, ia32_syscall_enable, NULL);
 SYSUNINIT(ia32_syscall, SI_SUB_EXEC, SI_ORDER_ANY, ia32_syscall_disable, NULL);
 
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 int
 setup_lcall_gate(void)
 {

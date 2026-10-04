@@ -152,6 +152,8 @@
 #define	FREEBSD32_SYS_quotactl	148
 				/* 149 is old quota */
 				/* 150 is old getsockname */
+				/* 154 is obsolete nlm_syscall */
+				/* 155 is obsolete nfssvc */
 				/* 156 is old freebsd32_getdirentries */
 				/* 157 is freebsd4 freebsd32_statfs */
 				/* 158 is freebsd4 freebsd32_fstatfs */

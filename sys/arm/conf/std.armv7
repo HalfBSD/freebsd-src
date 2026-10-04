@@ -27,7 +27,6 @@ options 	GEOM_PART_GPT		# GUID Partition Tables
 options 	GEOM_PART_BSD		# BSD partition scheme
 options 	GEOM_PART_MBR		# MBR partition scheme
 options 	GEOM_LABEL		# Provides labelization
-options 	COMPAT_43		# Compatible with BSD 4.3 [KEEP THIS!]
 options 	SCSI_DELAY=5000		# Delay (in ms) before probing SCSI
 options 	KTRACE			# ktrace(1) support
 options 	STACK			# stack(9) support
@@ -44,7 +43,6 @@ options 	FREEBSD_BOOT_LOADER	# Process metadata passed from loader(8)
 options 	VFP			# Enable floating point hardware support
 options 	MAC			# Support for Mandatory Access Control (MAC)
 
-options 	COMPAT_FREEBSD10	# Compatible with FreeBSD10
 options 	COMPAT_FREEBSD11	# Compatible with FreeBSD11
 options 	COMPAT_FREEBSD12	# Compatible with FreeBSD12
 options 	COMPAT_FREEBSD13	# Compatible with FreeBSD13

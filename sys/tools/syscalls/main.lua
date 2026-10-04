@@ -43,6 +43,15 @@ config.mergeCompat()
 
 local tbl = FreeBSDSyscall:new{sysfile = sysfile, config = config}
 
+-- Preserve published constants and exports despite the native dispatch floor.
+local published_tbl = tbl
+if config.abi_func_prefix == "" and tonumber(config.mincompat) > 0 then
+	local floor = config.mincompat
+	config.mincompat = 0
+	published_tbl = FreeBSDSyscall:new{sysfile = sysfile, config = config}
+	config.mincompat = floor
+end
+
 -- Output files:
 init_sysent.file = config.syssw
 libsys_h.file = config.libsys_h
@@ -54,10 +63,10 @@ sysproto_h.file = config.sysproto
 systrace_args.file = config.systrace
 
 init_sysent.generate(tbl, config, init_sysent.file)
-libsys_h.generate(tbl, config, libsys_h.file)
-syscall_h.generate(tbl, config, syscall_h.file)
-syscall_mk.generate(tbl, config, syscall_mk.file)
+libsys_h.generate(published_tbl, config, libsys_h.file)
+syscall_h.generate(published_tbl, config, syscall_h.file)
+syscall_mk.generate(published_tbl, config, syscall_mk.file)
 syscalls.generate(tbl, config, syscalls.file)
-syscalls_map.generate(tbl, config, syscalls_map.file)
+syscalls_map.generate(published_tbl, config, syscalls_map.file)
 sysproto_h.generate(tbl, config, sysproto_h.file)
 systrace_args.generate(tbl, config, systrace_args.file)

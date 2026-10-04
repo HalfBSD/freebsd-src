@@ -326,6 +326,39 @@ EFI USB support remain; external guest/UEFI firmware references are separate.
 These changes are excluded from earlier measured totals. Native EFI builds,
 fresh installs, boot-environment and bhyve userboot tests remain required.
 
+## Additional reviewed removals after the measured snapshots
+
+The fixed size estimates above exclude these subsequent removals. They have
+not been recomputed for the current working tree.
+
+- A8 removed RIP and IPv4 router discovery (`routed`, `rtquery`, `rdisc`),
+  including dedicated startup/build integration. B2 removed reviewed SAN
+  protocols; A9 removed reviewed VMware/cloud drivers. C2 established the
+  maintained HALFBSD workstation kernel and build/module policy.
+- A5 removed the eleven user-reviewed legacy Ethernet/Wi-Fi families and their
+  dedicated firmware/integration, preserving shared networking frameworks and
+  retained NIC/PHY drivers.
+- B9–B12 removed kernel/userland RPC, service definitions and remaining
+  NFS export/GSS-only integration, preserving shared VFS and local ACL behavior.
+- A6 removed the seven reviewed non-HDA audio-controller families; E10 removed
+  reviewed USB gadget/handheld leaves; E2 removed tape, changer and remote-tape
+  functionality. These changes were committed as `56e7b627b60b`. Retained audio,
+  USB host/controller infrastructure and ordinary storage remain.
+- B14 implements a native FreeBSD ABI floor of 11: retired native compatibility
+  options, dispatch and exclusive wrappers below 11 are removed, with historical
+  syscall slots reserved. Native a.out execution/module/build integration is
+  removed. FreeBSD32/IA32 keep their independent historical interfaces and
+  shared helpers; optional 4.3BSD support within FreeBSD32 remains disabled by
+  default. COMPAT_FREEBSD11 and newer, published syscall constants, current
+  libc/libsys exports, Linux compatibility, ELF and object-format tooling remain.
+
+B14 is being committed at the user’s explicit request with native validation
+still pending. Source-level ABI comparisons and build-policy checks do not
+replace its required clean FreeBSD builds, staged install, package/Firefox and
+runtime checks. Those checks remain outstanding on this Linux host. See
+`HALFBSD-ARCHITECTURAL-AUDIT.md` for individual implementation boundaries and
+`B14-compatibility-review.md` for the pre-removal compatibility inventory.
+
 ## Measurement method and limits
 
 - Count tracked blob entries and their uncompressed sizes with

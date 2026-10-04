@@ -51,6 +51,8 @@
 #   xargs -n1 | sort | uniq -d;
 # done
 
+# 20261003: Retire native a.out execution.
+OLD_FILES+=boot/kernel/aout.ko
 # 20261003: Retire tape, media changers and remote tape.
 OLD_FILES+=usr/bin/mt
 OLD_FILES+=usr/bin/tcopy

@@ -832,7 +832,7 @@ out:
 	/* NOTREACHED */
 }
 
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 /*
  * The dirty work is handled by kern_wait().
  */
@@ -846,7 +846,7 @@ owait(struct thread *td, struct owait_args *uap __unused)
 		td->td_retval[1] = status;
 	return (error);
 }
-#endif /* COMPAT_43 */
+#endif /* COMPAT_FREEBSD32_43 */
 
 /*
  * The dirty work is handled by kern_wait().

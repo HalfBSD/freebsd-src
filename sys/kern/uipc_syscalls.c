@@ -53,7 +53,7 @@
 #include <sys/socket.h>
 #include <sys/socketvar.h>
 #include <sys/syscallsubr.h>
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 #include <sys/sysent.h>
 #endif
 #include <sys/uio.h>
@@ -125,7 +125,7 @@ getsock(struct thread *td, int fd, const cap_rights_t *rightsp,
 /*
  * System call interface to the socket abstraction.
  */
-#if defined(COMPAT_43)
+#if defined(COMPAT_FREEBSD32_43)
 #define COMPAT_OLDSOCK
 #endif
 
@@ -841,25 +841,7 @@ osend(struct thread *td, struct osend_args *uap)
 	return (sendit(td, uap->s, &msg, uap->flags));
 }
 
-int
-osendmsg(struct thread *td, struct osendmsg_args *uap)
-{
-	struct msghdr msg;
-	struct iovec *iov;
-	int error;
 
-	error = copyin(uap->msg, &msg, sizeof (struct omsghdr));
-	if (error != 0)
-		return (error);
-	error = copyiniov(msg.msg_iov, msg.msg_iovlen, &iov, EMSGSIZE);
-	if (error != 0)
-		return (error);
-	msg.msg_iov = iov;
-	msg.msg_flags = MSG_COMPAT;
-	error = sendit(td, uap->s, &msg, uap->flags);
-	free(iov, M_IOV);
-	return (error);
-}
 #endif
 
 int
@@ -1127,28 +1109,7 @@ orecv(struct thread *td, struct orecv_args *uap)
  * overlays the new one, missing only the flags, and with the (old) access
  * rights where the control fields are now.
  */
-int
-orecvmsg(struct thread *td, struct orecvmsg_args *uap)
-{
-	struct msghdr msg;
-	struct iovec *iov;
-	int error;
 
-	error = copyin(uap->msg, &msg, sizeof (struct omsghdr));
-	if (error != 0)
-		return (error);
-	error = copyiniov(msg.msg_iov, msg.msg_iovlen, &iov, EMSGSIZE);
-	if (error != 0)
-		return (error);
-	msg.msg_flags = uap->flags | MSG_COMPAT;
-	msg.msg_iov = iov;
-	error = recvit(td, uap->s, &msg, &uap->msg->msg_namelen);
-	if (msg.msg_controllen && error == 0)
-		error = copyout(&msg.msg_controllen,
-		    &uap->msg->msg_accrightslen, sizeof (int));
-	free(iov, M_IOV);
-	return (error);
-}
 #endif
 
 int

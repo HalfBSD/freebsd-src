@@ -84,7 +84,7 @@ extern const char _binary_elf_vdso32_so_1_start[];
 extern const char _binary_elf_vdso32_so_1_end[];
 extern char _binary_elf_vdso32_so_1_size;
 
-#ifdef COMPAT_FREEBSD4
+#ifdef COMPAT_FREEBSD32
 static void freebsd4_ia32_sendsig(sig_t, ksiginfo_t *, sigset_t *);
 #endif
 
@@ -343,7 +343,7 @@ freebsd32_swapcontext(struct thread *td, struct freebsd32_swapcontext_args *uap)
  * specified pc, psl.
  */
 
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 static void
 ia32_osendsig(sig_t catcher, ksiginfo_t *ksi, sigset_t *mask)
 {
@@ -445,7 +445,7 @@ ia32_osendsig(sig_t catcher, ksiginfo_t *ksi, sigset_t *mask)
 }
 #endif
 
-#ifdef COMPAT_FREEBSD4
+#ifdef COMPAT_FREEBSD32
 static void
 freebsd4_ia32_sendsig(sig_t catcher, ksiginfo_t *ksi, sigset_t *mask)
 {
@@ -555,7 +555,7 @@ freebsd4_ia32_sendsig(sig_t catcher, ksiginfo_t *ksi, sigset_t *mask)
 	PROC_LOCK(p);
 	mtx_lock(&psp->ps_mtx);
 }
-#endif	/* COMPAT_FREEBSD4 */
+#endif	/* COMPAT_FREEBSD32 */
 
 void
 ia32_sendsig(sig_t catcher, ksiginfo_t *ksi, sigset_t *mask)
@@ -578,13 +578,13 @@ ia32_sendsig(sig_t catcher, ksiginfo_t *ksi, sigset_t *mask)
 	PROC_LOCK_ASSERT(p, MA_OWNED);
 	sig = siginfo.si_signo;
 	psp = p->p_sigacts;
-#ifdef COMPAT_FREEBSD4
+#ifdef COMPAT_FREEBSD32
 	if (SIGISMEMBER(psp->ps_freebsd4, sig)) {
 		freebsd4_ia32_sendsig(catcher, ksi, mask);
 		return;
 	}
 #endif
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 	if (SIGISMEMBER(psp->ps_osigset, sig)) {
 		ia32_osendsig(catcher, ksi, mask);
 		return;
@@ -700,7 +700,7 @@ ia32_sendsig(sig_t catcher, ksiginfo_t *ksi, sigset_t *mask)
  * state to gain improper privileges.
  */
 
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 int
 ofreebsd32_sigreturn(struct thread *td, struct ofreebsd32_sigreturn_args *uap)
 {
@@ -759,7 +759,7 @@ ofreebsd32_sigreturn(struct thread *td, struct ofreebsd32_sigreturn_args *uap)
 }
 #endif
 
-#ifdef COMPAT_FREEBSD4
+#ifdef COMPAT_FREEBSD32
 int
 freebsd4_freebsd32_sigreturn(struct thread *td,
     struct freebsd4_freebsd32_sigreturn_args *uap)
@@ -833,7 +833,7 @@ freebsd4_freebsd32_sigreturn(struct thread *td,
 	set_pcb_flags(td->td_pcb, PCB_FULL_IRET);
 	return (EJUSTRETURN);
 }
-#endif	/* COMPAT_FREEBSD4 */
+#endif	/* COMPAT_FREEBSD32 */
 
 int
 freebsd32_sigreturn(struct thread *td, struct freebsd32_sigreturn_args *uap)
@@ -958,7 +958,7 @@ ia32_setregs(struct thread *td, struct image_params *imgp, uintptr_t stack)
 
 	if (td->td_proc->p_md.md_ldt != NULL)
 		user_ldt_free(td);
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 	setup_lcall_gate();
 #endif
 

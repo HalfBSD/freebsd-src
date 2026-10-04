@@ -24,6 +24,13 @@ local generator = require("tools.generator")
 init_sysent.file = "/dev/null"
 
 function init_sysent.generate(tbl, config, fh)
+	local active_compat_options = {}
+	for _, option in ipairs(config.compat_options) do
+		if option.compatlevel >= tonumber(config.mincompat) then
+			table.insert(active_compat_options, option)
+		end
+	end
+
 	-- Grab the master system calls table.
 	local s = tbl.syscalls
 
@@ -40,7 +47,7 @@ function init_sysent.generate(tbl, config, fh)
 	    "\n#define AS(name) (sizeof(struct name) / sizeof(syscallarg_t))\n")
 
 	-- Write out all the compat directives from compat_options.
-	for _, v in pairs(config.compat_options) do
+	for _, v in pairs(active_compat_options) do
 		gen:write(string.format([[
 
 #ifdef %s
@@ -112,7 +119,7 @@ struct sysent %s[] = {
 		elseif c >= 3 then
 			-- Lookup the info for this specific compat option.
 			local flag, descr
-			for _, opt in pairs(config.compat_options) do
+			for _, opt in pairs(active_compat_options) do
 				if opt.compatlevel == c then
 					flag = opt.flag
 					flag = flag:lower()

@@ -62,7 +62,7 @@
 #include <sys/sx.h>
 #include <sys/priv.h>
 #include <sys/proc.h>
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 #include <sys/sysent.h>
 #endif
 #include <sys/sysproto.h>
@@ -127,7 +127,7 @@ sys_getpid(struct thread *td, struct getpid_args *uap)
 	struct proc *p = td->td_proc;
 
 	td->td_retval[0] = p->p_pid;
-#if defined(COMPAT_43)
+#if defined(COMPAT_FREEBSD32_43)
 	if (SV_PROC_FLAG(p, SV_AOUT))
 		td->td_retval[1] = kern_getppid(td);
 #endif
@@ -255,7 +255,7 @@ sys_getuid(struct thread *td, struct getuid_args *uap)
 {
 
 	td->td_retval[0] = td->td_ucred->cr_ruid;
-#if defined(COMPAT_43)
+#if defined(COMPAT_FREEBSD32_43)
 	td->td_retval[1] = td->td_ucred->cr_uid;
 #endif
 	return (0);
@@ -286,7 +286,7 @@ sys_getgid(struct thread *td, struct getgid_args *uap)
 {
 
 	td->td_retval[0] = td->td_ucred->cr_rgid;
-#if defined(COMPAT_43)
+#if defined(COMPAT_FREEBSD32_43)
 	td->td_retval[1] = td->td_ucred->cr_gid;
 #endif
 	return (0);

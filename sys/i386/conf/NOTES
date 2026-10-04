@@ -292,10 +292,6 @@ device		glxsb		# AMD Geode LX Security Block
 #####################################################################
 # ABI Emulation
 
-# Enable (32-bit) a.out binary support
-options 	COMPAT_AOUT
-
-#####################################################################
 # VM OPTIONS
 
 #

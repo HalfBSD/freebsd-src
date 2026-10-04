@@ -126,8 +126,7 @@ struct shminfo32 {
 	uint32_t	shmall;
 };
 
-#if defined(COMPAT_FREEBSD4) || defined(COMPAT_FREEBSD5) || \
-    defined(COMPAT_FREEBSD6) || defined(COMPAT_FREEBSD7)
+#if defined(COMPAT_FREEBSD32)
 struct ipc_perm_old32 {
 	uint16_t	cuid;
 	uint16_t	cgid;

@@ -11,31 +11,31 @@
 
 #define AS(name) (sizeof(struct name) / sizeof(syscallarg_t))
 
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 #define compat(n, name) .sy_narg = n, .sy_call = (sy_call_t *)__CONCAT(o, name)
 #else
 #define compat(n, name) .sy_narg = 0, .sy_call = (sy_call_t *)nosys
 #endif
 
-#ifdef COMPAT_FREEBSD4
+#ifdef COMPAT_FREEBSD32
 #define compat4(n, name) .sy_narg = n, .sy_call = (sy_call_t *)__CONCAT(freebsd4_, name)
 #else
 #define compat4(n, name) .sy_narg = 0, .sy_call = (sy_call_t *)nosys
 #endif
 
-#ifdef COMPAT_FREEBSD6
+#ifdef COMPAT_FREEBSD32
 #define compat6(n, name) .sy_narg = n, .sy_call = (sy_call_t *)__CONCAT(freebsd6_, name)
 #else
 #define compat6(n, name) .sy_narg = 0, .sy_call = (sy_call_t *)nosys
 #endif
 
-#ifdef COMPAT_FREEBSD7
+#ifdef COMPAT_FREEBSD32
 #define compat7(n, name) .sy_narg = n, .sy_call = (sy_call_t *)__CONCAT(freebsd7_, name)
 #else
 #define compat7(n, name) .sy_narg = 0, .sy_call = (sy_call_t *)nosys
 #endif
 
-#ifdef COMPAT_FREEBSD10
+#ifdef COMPAT_FREEBSD32
 #define compat10(n, name) .sy_narg = n, .sy_call = (sy_call_t *)__CONCAT(freebsd10_, name)
 #else
 #define compat10(n, name) .sy_narg = 0, .sy_call = (sy_call_t *)nosys

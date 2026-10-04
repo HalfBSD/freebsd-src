@@ -102,12 +102,6 @@ static void get_fpcontext(struct thread *td, mcontext_t *mcp,
     char *xfpusave, size_t xfpusave_len);
 static int  set_fpcontext(struct thread *td, mcontext_t *mcp,
     char *xfpustate, size_t xfpustate_len);
-#ifdef COMPAT_43
-static void osendsig(sig_t catcher, ksiginfo_t *, sigset_t *mask);
-#endif
-#ifdef COMPAT_FREEBSD4
-static void freebsd4_sendsig(sig_t catcher, ksiginfo_t *, sigset_t *mask);
-#endif
 
 extern struct sysentvec elf32_freebsd_sysvec;
 
@@ -123,254 +117,7 @@ _Static_assert(sizeof(siginfo_t) == 64, "siginfo_t size incorrect");
  * resets the signal mask, the stack, and the frame pointer, it
  * returns to the user specified pc, psl.
  */
-#ifdef COMPAT_43
-static void
-osendsig(sig_t catcher, ksiginfo_t *ksi, sigset_t *mask)
-{
-	struct osigframe sf, *fp;
-	struct proc *p;
-	struct thread *td;
-	struct sigacts *psp;
-	struct trapframe *regs;
-	int sig;
-	int oonstack;
 
-	td = curthread;
-	p = td->td_proc;
-	PROC_LOCK_ASSERT(p, MA_OWNED);
-	sig = ksi->ksi_signo;
-	psp = p->p_sigacts;
-	mtx_assert(&psp->ps_mtx, MA_OWNED);
-	regs = td->td_frame;
-	oonstack = sigonstack(regs->tf_esp);
-
-	/* Allocate space for the signal handler context. */
-	if ((td->td_pflags & TDP_ALTSTACK) && !oonstack &&
-	    SIGISMEMBER(psp->ps_sigonstack, sig)) {
-		fp = (struct osigframe *)((uintptr_t)td->td_sigstk.ss_sp +
-		    td->td_sigstk.ss_size - sizeof(struct osigframe));
-#if defined(COMPAT_43)
-		td->td_sigstk.ss_flags |= SS_ONSTACK;
-#endif
-	} else
-		fp = (struct osigframe *)regs->tf_esp - 1;
-
-	/* Build the argument list for the signal handler. */
-	sf.sf_signum = sig;
-	sf.sf_scp = (register_t)&fp->sf_siginfo.si_sc;
-	bzero(&sf.sf_siginfo, sizeof(sf.sf_siginfo));
-	if (SIGISMEMBER(psp->ps_siginfo, sig)) {
-		/* Signal handler installed with SA_SIGINFO. */
-		sf.sf_arg2 = (register_t)&fp->sf_siginfo;
-		sf.sf_siginfo.si_signo = sig;
-		sf.sf_siginfo.si_code = ksi->ksi_code;
-		sf.sf_ahu.sf_action = (__osiginfohandler_t *)catcher;
-		sf.sf_addr = 0;
-	} else {
-		/* Old FreeBSD-style arguments. */
-		sf.sf_arg2 = ksi->ksi_code;
-		sf.sf_addr = (register_t)ksi->ksi_addr;
-		sf.sf_ahu.sf_handler = catcher;
-	}
-	mtx_unlock(&psp->ps_mtx);
-	PROC_UNLOCK(p);
-
-	/* Save most if not all of trap frame. */
-	sf.sf_siginfo.si_sc.sc_eax = regs->tf_eax;
-	sf.sf_siginfo.si_sc.sc_ebx = regs->tf_ebx;
-	sf.sf_siginfo.si_sc.sc_ecx = regs->tf_ecx;
-	sf.sf_siginfo.si_sc.sc_edx = regs->tf_edx;
-	sf.sf_siginfo.si_sc.sc_esi = regs->tf_esi;
-	sf.sf_siginfo.si_sc.sc_edi = regs->tf_edi;
-	sf.sf_siginfo.si_sc.sc_cs = regs->tf_cs;
-	sf.sf_siginfo.si_sc.sc_ds = regs->tf_ds;
-	sf.sf_siginfo.si_sc.sc_ss = regs->tf_ss;
-	sf.sf_siginfo.si_sc.sc_es = regs->tf_es;
-	sf.sf_siginfo.si_sc.sc_fs = regs->tf_fs;
-	sf.sf_siginfo.si_sc.sc_gs = rgs();
-	sf.sf_siginfo.si_sc.sc_isp = regs->tf_isp;
-
-	/* Build the signal context to be used by osigreturn(). */
-	sf.sf_siginfo.si_sc.sc_onstack = (oonstack) ? 1 : 0;
-	SIG2OSIG(*mask, sf.sf_siginfo.si_sc.sc_mask);
-	sf.sf_siginfo.si_sc.sc_sp = regs->tf_esp;
-	sf.sf_siginfo.si_sc.sc_fp = regs->tf_ebp;
-	sf.sf_siginfo.si_sc.sc_pc = regs->tf_eip;
-	sf.sf_siginfo.si_sc.sc_ps = regs->tf_eflags;
-	sf.sf_siginfo.si_sc.sc_trapno = regs->tf_trapno;
-	sf.sf_siginfo.si_sc.sc_err = regs->tf_err;
-
-	/*
-	 * If we're a vm86 process, we want to save the segment registers.
-	 * We also change eflags to be our emulated eflags, not the actual
-	 * eflags.
-	 */
-	if (regs->tf_eflags & PSL_VM) {
-		/* XXX confusing names: `tf' isn't a trapframe; `regs' is. */
-		struct trapframe_vm86 *tf = (struct trapframe_vm86 *)regs;
-		struct vm86_kernel *vm86 = &td->td_pcb->pcb_ext->ext_vm86;
-
-		sf.sf_siginfo.si_sc.sc_gs = tf->tf_vm86_gs;
-		sf.sf_siginfo.si_sc.sc_fs = tf->tf_vm86_fs;
-		sf.sf_siginfo.si_sc.sc_es = tf->tf_vm86_es;
-		sf.sf_siginfo.si_sc.sc_ds = tf->tf_vm86_ds;
-
-		if (vm86->vm86_has_vme == 0)
-			sf.sf_siginfo.si_sc.sc_ps =
-			    (tf->tf_eflags & ~(PSL_VIF | PSL_VIP)) |
-			    (vm86->vm86_eflags & (PSL_VIF | PSL_VIP));
-
-		/* See sendsig() for comments. */
-		tf->tf_eflags &= ~(PSL_VM | PSL_NT | PSL_VIF | PSL_VIP);
-	}
-
-	/*
-	 * Copy the sigframe out to the user's stack.
-	 */
-	if (copyout(&sf, fp, sizeof(*fp)) != 0) {
-		PROC_LOCK(p);
-		sigexit(td, SIGILL);
-	}
-
-	regs->tf_esp = (int)fp;
-	if (PROC_HAS_SHP(p)) {
-		regs->tf_eip = PROC_SIGCODE(p) + szsigcode -
-		    szosigcode;
-	} else {
-		/* a.out sysentvec does not use shared page */
-		regs->tf_eip = PROC_PS_STRINGS(p) - szosigcode;
-	}
-	regs->tf_eflags &= ~(PSL_T | PSL_D);
-	regs->tf_cs = _ucodesel;
-	regs->tf_ds = _udatasel;
-	regs->tf_es = _udatasel;
-	regs->tf_fs = _udatasel;
-	load_gs(_udatasel);
-	regs->tf_ss = _udatasel;
-	PROC_LOCK(p);
-	mtx_lock(&psp->ps_mtx);
-}
-#endif /* COMPAT_43 */
-
-#ifdef COMPAT_FREEBSD4
-static void
-freebsd4_sendsig(sig_t catcher, ksiginfo_t *ksi, sigset_t *mask)
-{
-	struct freebsd4_sigframe sf, *sfp;
-	struct proc *p;
-	struct thread *td;
-	struct sigacts *psp;
-	struct trapframe *regs;
-	int sig;
-	int oonstack;
-
-	td = curthread;
-	p = td->td_proc;
-	PROC_LOCK_ASSERT(p, MA_OWNED);
-	sig = ksi->ksi_signo;
-	psp = p->p_sigacts;
-	mtx_assert(&psp->ps_mtx, MA_OWNED);
-	regs = td->td_frame;
-	oonstack = sigonstack(regs->tf_esp);
-
-	/* Save user context. */
-	bzero(&sf, sizeof(sf));
-	sf.sf_uc.uc_sigmask = *mask;
-	sf.sf_uc.uc_stack = td->td_sigstk;
-	sf.sf_uc.uc_stack.ss_flags = (td->td_pflags & TDP_ALTSTACK)
-	    ? ((oonstack) ? SS_ONSTACK : 0) : SS_DISABLE;
-	sf.sf_uc.uc_mcontext.mc_onstack = (oonstack) ? 1 : 0;
-	sf.sf_uc.uc_mcontext.mc_gs = rgs();
-	bcopy(regs, &sf.sf_uc.uc_mcontext.mc_fs, sizeof(*regs));
-	bzero(sf.sf_uc.uc_mcontext.mc_fpregs,
-	    sizeof(sf.sf_uc.uc_mcontext.mc_fpregs));
-	bzero(sf.sf_uc.uc_mcontext.__spare__,
-	    sizeof(sf.sf_uc.uc_mcontext.__spare__));
-	bzero(sf.sf_uc.__spare__, sizeof(sf.sf_uc.__spare__));
-
-	/* Allocate space for the signal handler context. */
-	if ((td->td_pflags & TDP_ALTSTACK) != 0 && !oonstack &&
-	    SIGISMEMBER(psp->ps_sigonstack, sig)) {
-		sfp = (struct freebsd4_sigframe *)((uintptr_t)td->td_sigstk.ss_sp +
-		    td->td_sigstk.ss_size - sizeof(struct freebsd4_sigframe));
-#if defined(COMPAT_43)
-		td->td_sigstk.ss_flags |= SS_ONSTACK;
-#endif
-	} else
-		sfp = (struct freebsd4_sigframe *)regs->tf_esp - 1;
-
-	/* Build the argument list for the signal handler. */
-	sf.sf_signum = sig;
-	sf.sf_ucontext = (register_t)&sfp->sf_uc;
-	bzero(&sf.sf_si, sizeof(sf.sf_si));
-	if (SIGISMEMBER(psp->ps_siginfo, sig)) {
-		/* Signal handler installed with SA_SIGINFO. */
-		sf.sf_siginfo = (register_t)&sfp->sf_si;
-		sf.sf_ahu.sf_action = (__siginfohandler_t *)catcher;
-
-		/* Fill in POSIX parts */
-		sf.sf_si.si_signo = sig;
-		sf.sf_si.si_code = ksi->ksi_code;
-		sf.sf_si.si_addr = ksi->ksi_addr;
-	} else {
-		/* Old FreeBSD-style arguments. */
-		sf.sf_siginfo = ksi->ksi_code;
-		sf.sf_addr = (register_t)ksi->ksi_addr;
-		sf.sf_ahu.sf_handler = catcher;
-	}
-	mtx_unlock(&psp->ps_mtx);
-	PROC_UNLOCK(p);
-
-	/*
-	 * If we're a vm86 process, we want to save the segment registers.
-	 * We also change eflags to be our emulated eflags, not the actual
-	 * eflags.
-	 */
-	if (regs->tf_eflags & PSL_VM) {
-		struct trapframe_vm86 *tf = (struct trapframe_vm86 *)regs;
-		struct vm86_kernel *vm86 = &td->td_pcb->pcb_ext->ext_vm86;
-
-		sf.sf_uc.uc_mcontext.mc_gs = tf->tf_vm86_gs;
-		sf.sf_uc.uc_mcontext.mc_fs = tf->tf_vm86_fs;
-		sf.sf_uc.uc_mcontext.mc_es = tf->tf_vm86_es;
-		sf.sf_uc.uc_mcontext.mc_ds = tf->tf_vm86_ds;
-
-		if (vm86->vm86_has_vme == 0)
-			sf.sf_uc.uc_mcontext.mc_eflags =
-			    (tf->tf_eflags & ~(PSL_VIF | PSL_VIP)) |
-			    (vm86->vm86_eflags & (PSL_VIF | PSL_VIP));
-
-		/*
-		 * Clear PSL_NT to inhibit T_TSSFLT faults on return from
-		 * syscalls made by the signal handler.  This just avoids
-		 * wasting time for our lazy fixup of such faults.  PSL_NT
-		 * does nothing in vm86 mode, but vm86 programs can set it
-		 * almost legitimately in probes for old cpu types.
-		 */
-		tf->tf_eflags &= ~(PSL_VM | PSL_NT | PSL_VIF | PSL_VIP);
-	}
-
-	/*
-	 * Copy the sigframe out to the user's stack.
-	 */
-	if (copyout(&sf, sfp, sizeof(*sfp)) != 0) {
-		PROC_LOCK(p);
-		sigexit(td, SIGILL);
-	}
-
-	regs->tf_esp = (int)sfp;
-	regs->tf_eip = PROC_SIGCODE(p) + szsigcode -
-	    szfreebsd4_sigcode;
-	regs->tf_eflags &= ~(PSL_T | PSL_D);
-	regs->tf_cs = _ucodesel;
-	regs->tf_ds = _udatasel;
-	regs->tf_es = _udatasel;
-	regs->tf_fs = _udatasel;
-	regs->tf_ss = _udatasel;
-	PROC_LOCK(p);
-	mtx_lock(&psp->ps_mtx);
-}
-#endif	/* COMPAT_FREEBSD4 */
 
 void
 sendsig(sig_t catcher, ksiginfo_t *ksi, sigset_t *mask)
@@ -393,18 +140,6 @@ sendsig(sig_t catcher, ksiginfo_t *ksi, sigset_t *mask)
 	sig = ksi->ksi_signo;
 	psp = p->p_sigacts;
 	mtx_assert(&psp->ps_mtx, MA_OWNED);
-#ifdef COMPAT_FREEBSD4
-	if (SIGISMEMBER(psp->ps_freebsd4, sig)) {
-		freebsd4_sendsig(catcher, ksi, mask);
-		return;
-	}
-#endif
-#ifdef COMPAT_43
-	if (SIGISMEMBER(psp->ps_osigset, sig)) {
-		osendsig(catcher, ksi, mask);
-		return;
-	}
-#endif
 	regs = td->td_frame;
 	oonstack = sigonstack(regs->tf_esp);
 
@@ -444,9 +179,6 @@ sendsig(sig_t catcher, ksiginfo_t *ksi, sigset_t *mask)
 	if ((td->td_pflags & TDP_ALTSTACK) != 0 && !oonstack &&
 	    SIGISMEMBER(psp->ps_sigonstack, sig)) {
 		sp = (char *)td->td_sigstk.ss_sp + td->td_sigstk.ss_size;
-#if defined(COMPAT_43)
-		td->td_sigstk.ss_flags |= SS_ONSTACK;
-#endif
 	} else
 		sp = (char *)regs->tf_esp - 128;
 	if (xfpusave != NULL) {
@@ -541,213 +273,7 @@ sendsig(sig_t catcher, ksiginfo_t *ksi, sigset_t *mask)
  * sendsig. Check carefully to make sure that the user has not
  * modified the state to gain improper privileges.
  */
-#ifdef COMPAT_43
-int
-osigreturn(struct thread *td, struct osigreturn_args *uap)
-{
-	struct osigcontext sc;
-	struct trapframe *regs;
-	struct osigcontext *scp;
-	int eflags, error;
-	ksiginfo_t ksi;
 
-	regs = td->td_frame;
-	error = copyin(uap->sigcntxp, &sc, sizeof(sc));
-	if (error != 0)
-		return (error);
-	scp = &sc;
-	eflags = scp->sc_ps;
-	if (eflags & PSL_VM) {
-		struct trapframe_vm86 *tf = (struct trapframe_vm86 *)regs;
-		struct vm86_kernel *vm86;
-
-		/*
-		 * if pcb_ext == 0 or vm86_inited == 0, the user hasn't
-		 * set up the vm86 area, and we can't enter vm86 mode.
-		 */
-		if (td->td_pcb->pcb_ext == 0)
-			return (EINVAL);
-		vm86 = &td->td_pcb->pcb_ext->ext_vm86;
-		if (vm86->vm86_inited == 0)
-			return (EINVAL);
-
-		/* Go back to user mode if both flags are set. */
-		if ((eflags & PSL_VIP) && (eflags & PSL_VIF)) {
-			ksiginfo_init_trap(&ksi);
-			ksi.ksi_signo = SIGBUS;
-			ksi.ksi_code = BUS_OBJERR;
-			ksi.ksi_addr = (void *)regs->tf_eip;
-			trapsignal(td, &ksi);
-		}
-
-		if (vm86->vm86_has_vme) {
-			eflags = (tf->tf_eflags & ~VME_USERCHANGE) |
-			    (eflags & VME_USERCHANGE) | PSL_VM;
-		} else {
-			vm86->vm86_eflags = eflags;	/* save VIF, VIP */
-			eflags = (tf->tf_eflags & ~VM_USERCHANGE) |
-			    (eflags & VM_USERCHANGE) | PSL_VM;
-		}
-		tf->tf_vm86_ds = scp->sc_ds;
-		tf->tf_vm86_es = scp->sc_es;
-		tf->tf_vm86_fs = scp->sc_fs;
-		tf->tf_vm86_gs = scp->sc_gs;
-		tf->tf_ds = _udatasel;
-		tf->tf_es = _udatasel;
-		tf->tf_fs = _udatasel;
-	} else {
-		/*
-		 * Don't allow users to change privileged or reserved flags.
-		 */
-		if (!EFL_SECURE(eflags, regs->tf_eflags)) {
-			return (EINVAL);
-		}
-
-		/*
-		 * Don't allow users to load a valid privileged %cs.  Let the
-		 * hardware check for invalid selectors, excess privilege in
-		 * other selectors, invalid %eip's and invalid %esp's.
-		 */
-		if (!CS_SECURE(scp->sc_cs)) {
-			ksiginfo_init_trap(&ksi);
-			ksi.ksi_signo = SIGBUS;
-			ksi.ksi_code = BUS_OBJERR;
-			ksi.ksi_trapno = T_PROTFLT;
-			ksi.ksi_addr = (void *)regs->tf_eip;
-			trapsignal(td, &ksi);
-			return (EINVAL);
-		}
-		regs->tf_ds = scp->sc_ds;
-		regs->tf_es = scp->sc_es;
-		regs->tf_fs = scp->sc_fs;
-	}
-
-	/* Restore remaining registers. */
-	regs->tf_eax = scp->sc_eax;
-	regs->tf_ebx = scp->sc_ebx;
-	regs->tf_ecx = scp->sc_ecx;
-	regs->tf_edx = scp->sc_edx;
-	regs->tf_esi = scp->sc_esi;
-	regs->tf_edi = scp->sc_edi;
-	regs->tf_cs = scp->sc_cs;
-	regs->tf_ss = scp->sc_ss;
-	regs->tf_isp = scp->sc_isp;
-	regs->tf_ebp = scp->sc_fp;
-	regs->tf_esp = scp->sc_sp;
-	regs->tf_eip = scp->sc_pc;
-	regs->tf_eflags = eflags;
-	regs->tf_trapno = T_RESERVED;
-
-#if defined(COMPAT_43)
-	if (scp->sc_onstack & 1)
-		td->td_sigstk.ss_flags |= SS_ONSTACK;
-	else
-		td->td_sigstk.ss_flags &= ~SS_ONSTACK;
-#endif
-	kern_sigprocmask(td, SIG_SETMASK, (sigset_t *)&scp->sc_mask, NULL,
-	    SIGPROCMASK_OLD);
-	return (EJUSTRETURN);
-}
-#endif /* COMPAT_43 */
-
-#ifdef COMPAT_FREEBSD4
-int
-freebsd4_sigreturn(struct thread *td, struct freebsd4_sigreturn_args *uap)
-{
-	struct freebsd4_ucontext uc;
-	struct trapframe *regs;
-	struct freebsd4_ucontext *ucp;
-	int cs, eflags, error;
-	ksiginfo_t ksi;
-
-	error = copyin(uap->sigcntxp, &uc, sizeof(uc));
-	if (error != 0)
-		return (error);
-	ucp = &uc;
-	regs = td->td_frame;
-	eflags = ucp->uc_mcontext.mc_eflags;
-	if (eflags & PSL_VM) {
-		struct trapframe_vm86 *tf = (struct trapframe_vm86 *)regs;
-		struct vm86_kernel *vm86;
-
-		/*
-		 * if pcb_ext == 0 or vm86_inited == 0, the user hasn't
-		 * set up the vm86 area, and we can't enter vm86 mode.
-		 */
-		if (td->td_pcb->pcb_ext == 0)
-			return (EINVAL);
-		vm86 = &td->td_pcb->pcb_ext->ext_vm86;
-		if (vm86->vm86_inited == 0)
-			return (EINVAL);
-
-		/* Go back to user mode if both flags are set. */
-		if ((eflags & PSL_VIP) && (eflags & PSL_VIF)) {
-			ksiginfo_init_trap(&ksi);
-			ksi.ksi_signo = SIGBUS;
-			ksi.ksi_code = BUS_OBJERR;
-			ksi.ksi_addr = (void *)regs->tf_eip;
-			trapsignal(td, &ksi);
-		}
-		if (vm86->vm86_has_vme) {
-			eflags = (tf->tf_eflags & ~VME_USERCHANGE) |
-			    (eflags & VME_USERCHANGE) | PSL_VM;
-		} else {
-			vm86->vm86_eflags = eflags;	/* save VIF, VIP */
-			eflags = (tf->tf_eflags & ~VM_USERCHANGE) |
-			    (eflags & VM_USERCHANGE) | PSL_VM;
-		}
-		bcopy(&ucp->uc_mcontext.mc_fs, tf, sizeof(struct trapframe));
-		tf->tf_eflags = eflags;
-		tf->tf_vm86_ds = tf->tf_ds;
-		tf->tf_vm86_es = tf->tf_es;
-		tf->tf_vm86_fs = tf->tf_fs;
-		tf->tf_vm86_gs = ucp->uc_mcontext.mc_gs;
-		tf->tf_ds = _udatasel;
-		tf->tf_es = _udatasel;
-		tf->tf_fs = _udatasel;
-	} else {
-		/*
-		 * Don't allow users to change privileged or reserved flags.
-		 */
-		if (!EFL_SECURE(eflags, regs->tf_eflags)) {
-			uprintf(
-			    "pid %d (%s): freebsd4_sigreturn eflags = 0x%x\n",
-			    td->td_proc->p_pid, td->td_name, eflags);
-			return (EINVAL);
-		}
-
-		/*
-		 * Don't allow users to load a valid privileged %cs.  Let the
-		 * hardware check for invalid selectors, excess privilege in
-		 * other selectors, invalid %eip's and invalid %esp's.
-		 */
-		cs = ucp->uc_mcontext.mc_cs;
-		if (!CS_SECURE(cs)) {
-			uprintf("pid %d (%s): freebsd4_sigreturn cs = 0x%x\n",
-			    td->td_proc->p_pid, td->td_name, cs);
-			ksiginfo_init_trap(&ksi);
-			ksi.ksi_signo = SIGBUS;
-			ksi.ksi_code = BUS_OBJERR;
-			ksi.ksi_trapno = T_PROTFLT;
-			ksi.ksi_addr = (void *)regs->tf_eip;
-			trapsignal(td, &ksi);
-			return (EINVAL);
-		}
-
-		bcopy(&ucp->uc_mcontext.mc_fs, regs, sizeof(*regs));
-	}
-	regs->tf_trapno = T_RESERVED;
-
-#if defined(COMPAT_43)
-	if (ucp->uc_mcontext.mc_onstack & 1)
-		td->td_sigstk.ss_flags |= SS_ONSTACK;
-	else
-		td->td_sigstk.ss_flags &= ~SS_ONSTACK;
-#endif
-	kern_sigprocmask(td, SIG_SETMASK, &ucp->uc_sigmask, NULL, 0);
-	return (EJUSTRETURN);
-}
-#endif	/* COMPAT_FREEBSD4 */
 
 int
 sys_sigreturn(struct thread *td, struct sigreturn_args *uap)
@@ -873,12 +399,6 @@ sys_sigreturn(struct thread *td, struct sigreturn_args *uap)
 	}
 	regs->tf_trapno = T_RESERVED;
 
-#if defined(COMPAT_43)
-	if (ucp->uc_mcontext.mc_onstack & 1)
-		td->td_sigstk.ss_flags |= SS_ONSTACK;
-	else
-		td->td_sigstk.ss_flags &= ~SS_ONSTACK;
-#endif
 
 	kern_sigprocmask(td, SIG_SETMASK, &ucp->uc_sigmask, NULL, 0);
 	return (EJUSTRETURN);
@@ -912,31 +432,6 @@ x86_clear_dbregs(struct pcb *pcb)
 	pcb->pcb_flags &= ~PCB_DBREGS;
 }
 
-#ifdef COMPAT_43
-static void
-setup_priv_lcall_gate(struct proc *p)
-{
-	struct i386_ldt_args uap;
-	union descriptor desc;
-	u_int lcall_addr;
-
-	bzero(&uap, sizeof(uap));
-	uap.start = 0;
-	uap.num = 1;
-	lcall_addr = p->p_sysent->sv_psstrings - sz_lcall_tramp;
-	bzero(&desc, sizeof(desc));
-	desc.sd.sd_type = SDT_MEMERA;
-	desc.sd.sd_dpl = SEL_UPL;
-	desc.sd.sd_p = 1;
-	desc.sd.sd_def32 = 1;
-	desc.sd.sd_gran = 1;
-	desc.sd.sd_lolimit = 0xffff;
-	desc.sd.sd_hilimit = 0xf;
-	desc.sd.sd_lobase = lcall_addr;
-	desc.sd.sd_hibase = lcall_addr >> 24;
-	i386_set_ldt(curthread, &uap, &desc);
-}
-#endif
 
 /*
  * Reset registers to default values on exec.
@@ -961,11 +456,6 @@ exec_setregs(struct thread *td, struct image_params *imgp, uintptr_t stack)
 	else
 		mtx_unlock_spin(&dt_lock);
 
-#ifdef COMPAT_43
-	if (td->td_proc->p_sysent->sv_psstrings !=
-	    elf32_freebsd_sysvec.sv_psstrings)
-		setup_priv_lcall_gate(td->td_proc);
-#endif
 
 	/*
 	 * Reset the fs and gs bases.  The values from the old address

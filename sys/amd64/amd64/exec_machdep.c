@@ -183,9 +183,6 @@ sendsig(sig_t catcher, ksiginfo_t *ksi, sigset_t *mask)
 	if ((td->td_pflags & TDP_ALTSTACK) != 0 && !oonstack &&
 	    SIGISMEMBER(psp->ps_sigonstack, sig)) {
 		sp = (char *)td->td_sigstk.ss_sp + td->td_sigstk.ss_size;
-#if defined(COMPAT_43)
-		td->td_sigstk.ss_flags |= SS_ONSTACK;
-#endif
 	} else
 		sp = (char *)regs->tf_rsp - 128;
 	if (xfpusave != NULL) {
@@ -358,25 +355,11 @@ sys_sigreturn(struct thread *td, struct sigreturn_args *uap)
 	pcb->pcb_fsbase = ucp->uc_mcontext.mc_fsbase;
 	pcb->pcb_gsbase = ucp->uc_mcontext.mc_gsbase;
 
-#if defined(COMPAT_43)
-	if (ucp->uc_mcontext.mc_onstack & 1)
-		td->td_sigstk.ss_flags |= SS_ONSTACK;
-	else
-		td->td_sigstk.ss_flags &= ~SS_ONSTACK;
-#endif
 
 	kern_sigprocmask(td, SIG_SETMASK, &ucp->uc_sigmask, NULL, 0);
 	return (EJUSTRETURN);
 }
 
-#ifdef COMPAT_FREEBSD4
-int
-freebsd4_sigreturn(struct thread *td, struct freebsd4_sigreturn_args *uap)
-{
-
-	return sys_sigreturn(td, (struct sigreturn_args *)uap);
-}
-#endif
 
 /*
  * Reset the hardware debug registers if they were in use.

@@ -213,31 +213,6 @@ collection, medium for complete removal.
 **Validation:** Login/su/sshd/PAM, clean world/kernel, syscall generation, and
 package consumers of `libbsm`.
 
-#### B14. Historical FreeBSD ABIs and a.out executables
-
-**Purpose and locations:** `COMPAT_FREEBSD4` through older compatibility
-options, compatibility syscall implementations, libc symbol maps,
-`sys/modules/aout`, and executable-format support.
-
-**Why present / fit:** Running older binaries. Compatibility with very old
-applications is outside HalfBSD’s purpose, but current package compatibility
-is useful.
-
-**Dependencies:** Newer compatibility entry points may still support retained
-libc symbols and packages. Native amd64 compatibility is separate from
-FreeBSD32.
-
-**Disposition and impact:** Remove ancient compatibility tiers and a.out first.
-Keep syscall slots reserved; do not renumber APIs or indiscriminately remove
-symbol versions.
-
-**Benefit / risk / confidence:** Moderate-to-high simplification. Low risk for
-ancient formats, high risk for recent ABI tiers; high/medium confidence.
-
-**Validation:** libc/libsys symbol and syscall checks, clean world, current
-packages, debugger/core handling, and compatibility tests appropriate to the
-retained contract.
-
 #### B15. VirtIO guest framework and guest-only filesystems
 
 **Purpose and locations:** `sys/dev/virtio`, `sys/fs/p9fs`, guest clocks and
@@ -584,7 +559,7 @@ Prioritize remaining work as follows:
    release and recovery paths, building on the implemented C2 policy.
 3. **Storage simplification:** B4 unwanted GEOM classes and B6–B7 UFS after
    recovery media, encryption and required local storage consumers are resolved.
-4. **ABI-sensitive and framework decisions:** B13–B16, the remaining C groups,
+4. **ABI-sensitive and framework decisions:** B13, B15–B16, the remaining C groups,
    and E investigations, with explicit hardware/package/runtime requirements.
 
 Every removal should include its build entries, generated inputs, headers,
@@ -627,10 +602,14 @@ B9–B12 (kernel/userland RPC, service definitions, and NFS export/GSS remnants)
 A8 (RIP/IPv4 router discovery), A9 (VMware/cloud drivers), B2 (SAN protocols),
 C2 (maintained workstation build/kernel/module policy), and C3
 (the alternate scheduler and scheduler-selection machinery), E2 (tape, changer
-and remote tape), and E10 (reviewed USB gadget/handheld leaves) are implemented.
+and remote tape), and E10 (reviewed USB gadget/handheld leaves), and B14 (native pre-11
+FreeBSD ABI tiers and a.out execution) are implemented.
 Their original assessments below remain as audit history. Processed means the
 authorized source changes are implemented; native build and hardware validation
 is still outstanding where recorded. NFS remains removed.
+
+A6/E10/E2 were committed as `56e7b627b60b`. The user explicitly requested committing and pushing B14 with native
+validation still outstanding.
 
 A8/B2/A9/C2 were committed as `569873ccb4c3`; A5 and the audit
 reorganization were committed as `94d9b81249ef`. A5 removes all eleven
@@ -1372,6 +1351,57 @@ fully resolved.
 
 **Validation:** ZFS mounting, permissions/ACLs, VFS/file tests, external modules,
 and file-handle API consumers.
+
+#### B14. Historical FreeBSD ABIs and a.out executables
+
+**Implementation status:** Source removal implemented on October 3, 2026,
+according to `B14.md`; committed at the user’s explicit request; native validation remains pending. The native ABI
+floor is FreeBSD 11. Retired COMPAT_43 and COMPAT_FREEBSD4/5/6/7/9/10 options,
+native dispatch and exclusive wrappers are removed; FreeBSD 8 had only feature
+advertising, and FreeBSD 15 is the current ABI rather than a separate option.
+Historical syscall slots remain reserved. COMPAT_FREEBSD11/12/13/14 remain.
+
+FreeBSD32/IA32 retain their historical dispatch, layouts and shared helpers
+under COMPAT_FREEBSD32. Optional 4.3BSD interfaces use COMPAT_FREEBSD32_43,
+disabled by default. Private legacy declarations serve those retained callers;
+shared FreeBSD-7 SysV wrappers remain without their retired native slot
+registrations. Native pre-11 umtx operations are rejected while their 32-bit
+implementations remain. COMPAT_43TTY remains a separate terminal interface.
+
+Native a.out activation, module, kernel options and build integration are
+removed, with unconditional installed-module cleanup. Object-format headers,
+readers and generic exec tests remain for retained consumers. Linux/Linux32,
+ELF, toolchain, EFI, debugging and bhyve implementation are preserved.
+Published syscall numbers, libc/libsys sources and exported symbol maps remain
+unchanged. The pre-removal boundary review is in `B14-compatibility-review.md`.
+
+Source checks cover generated tables, published ABI artifacts and HalfBSD build
+policy. Clean FreeBSD world/kernel/modules, staged installation, exported binary
+symbol comparisons, current packages/Firefox, retained ABI execution and the
+other runtime checks required by B14 remain outstanding on this Linux host.
+
+**Purpose and locations:** `COMPAT_FREEBSD4` through older compatibility
+options, compatibility syscall implementations, libc symbol maps,
+`sys/modules/aout`, and executable-format support.
+
+**Why present / fit:** Running older binaries. Compatibility with very old
+applications is outside HalfBSD’s purpose, but current package compatibility
+is useful.
+
+**Dependencies:** Newer compatibility entry points may still support retained
+libc symbols and packages. Native amd64 compatibility is separate from
+FreeBSD32.
+
+**Disposition and impact:** Remove ancient compatibility tiers and a.out first.
+Keep syscall slots reserved; do not renumber APIs or indiscriminately remove
+symbol versions.
+
+**Benefit / risk / confidence:** Moderate-to-high simplification. Low risk for
+ancient formats, high risk for recent ABI tiers; high/medium confidence.
+
+**Validation:** libc/libsys symbol and syscall checks, clean world, current
+packages, debugger/core handling, and compatibility tests appropriate to the
+retained contract.
 
 ### C. Processed simplification/refactoring candidates
 

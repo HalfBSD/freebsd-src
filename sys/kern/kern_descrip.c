@@ -1646,32 +1646,6 @@ freebsd12_closefrom(struct thread *td, struct freebsd12_closefrom_args *uap)
 }
 #endif	/* COMPAT_FREEBSD12 */
 
-#if defined(COMPAT_43)
-/*
- * Return status information about a file descriptor.
- */
-#ifndef _SYS_SYSPROTO_H_
-struct ofstat_args {
-	int	fd;
-	struct	ostat *sb;
-};
-#endif
-/* ARGSUSED */
-int
-ofstat(struct thread *td, struct ofstat_args *uap)
-{
-	struct ostat oub;
-	struct stat ub;
-	int error;
-
-	error = kern_fstat(td, uap->fd, &ub);
-	if (error == 0) {
-		cvtstat(&ub, &oub);
-		error = copyout(&oub, uap->sb, sizeof(oub));
-	}
-	return (error);
-}
-#endif /* COMPAT_43 */
 
 #if defined(COMPAT_FREEBSD11)
 int
@@ -5077,7 +5051,7 @@ sysctl_kern_proc_filedesc(SYSCTL_HANDLER_ARGS)
 	return (error != 0 ? error : error2);
 }
 
-#ifdef COMPAT_FREEBSD7
+#ifdef COMPAT_FREEBSD32
 #ifdef KINFO_OFILE_SIZE
 CTASSERT(sizeof(struct kinfo_ofile) == KINFO_OFILE_SIZE);
 #endif
@@ -5202,7 +5176,7 @@ skip:
 static SYSCTL_NODE(_kern_proc, KERN_PROC_OFILEDESC, ofiledesc,
     CTLFLAG_RD|CTLFLAG_MPSAFE, sysctl_kern_proc_ofiledesc,
     "Process ofiledesc entries");
-#endif	/* COMPAT_FREEBSD7 */
+#endif	/* COMPAT_FREEBSD32 */
 
 int
 vntype_to_kinfo(int vtype)

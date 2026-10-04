@@ -535,7 +535,7 @@ pri_to_rtp(struct thread *td, struct rtprio *rtp)
 	thread_unlock(td);
 }
 
-#if defined(COMPAT_43)
+#if defined(COMPAT_FREEBSD32_43)
 #ifndef _SYS_SYSPROTO_H_
 struct osetrlimit_args {
 	u_int	which;
@@ -588,7 +588,7 @@ ogetrlimit(struct thread *td, struct ogetrlimit_args *uap)
 	error = copyout(&olim, uap->rlp, sizeof(olim));
 	return (error);
 }
-#endif /* COMPAT_43 */
+#endif /* COMPAT_FREEBSD32_43 */
 
 #ifndef _SYS_SYSPROTO_H_
 struct setrlimit_args {

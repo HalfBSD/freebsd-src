@@ -82,8 +82,7 @@ typedef	__size_t	size_t;
 #define	_SIZE_T_DECLARED
 #endif
 
-#if defined(COMPAT_FREEBSD4) || defined(COMPAT_FREEBSD5) || \
-    defined(COMPAT_FREEBSD6) || defined(COMPAT_FREEBSD7)
+#if defined(COMPAT_FREEBSD32)
 struct shmid_ds_old {
 	struct ipc_perm_old shm_perm;	/* operation permission structure */
 	int             shm_segsz;	/* size of segment in bytes */

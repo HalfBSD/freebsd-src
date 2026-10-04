@@ -320,26 +320,10 @@ options 	EPOCH_TRACE
 # Old tty interface.
 options 	COMPAT_43TTY
 
-# Note that as a general rule, COMPAT_FREEBSD<n> depends on
-# COMPAT_FREEBSD<n+1>, COMPAT_FREEBSD<n+2>, etc.
-
-# Enable FreeBSD4 compatibility syscalls
-options 	COMPAT_FREEBSD4
-
-# Enable FreeBSD5 compatibility syscalls
-options 	COMPAT_FREEBSD5
-
-# Enable FreeBSD6 compatibility syscalls
-options 	COMPAT_FREEBSD6
-
-# Enable FreeBSD7 compatibility syscalls
-options 	COMPAT_FREEBSD7
-
-# Enable FreeBSD9 compatibility syscalls
-options 	COMPAT_FREEBSD9
-
-# Enable FreeBSD10 compatibility syscalls
-options 	COMPAT_FREEBSD10
+# Native ABI compatibility starts at FreeBSD 11. FreeBSD32 retains its
+# independent historical interfaces through COMPAT_FREEBSD32.
+# Optional 4.3BSD interfaces within that ABI require COMPAT_FREEBSD32_43
+# together with COMPAT_FREEBSD32; they remain disabled by default.
 
 # Enable FreeBSD11 compatibility syscalls
 options 	COMPAT_FREEBSD11

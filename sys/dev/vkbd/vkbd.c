@@ -1089,7 +1089,7 @@ vkbd_ioctl(keyboard_t *kbd, u_long cmd, caddr_t arg)
 {
 	vkbd_state_t	*state = (vkbd_state_t *) kbd->kb_data;
 	int		 i;
-#ifdef COMPAT_FREEBSD6
+#ifdef COMPAT_FREEBSD32
 	int		 ival;
 #endif
 
@@ -1100,7 +1100,7 @@ vkbd_ioctl(keyboard_t *kbd, u_long cmd, caddr_t arg)
 		*(int *)arg = state->ks_mode;
 		break;
 
-#ifdef COMPAT_FREEBSD6
+#ifdef COMPAT_FREEBSD32
 	case _IO('K', 7):
 		ival = IOCPARM_IVAL(arg);
 		arg = (caddr_t)&ival;
@@ -1136,7 +1136,7 @@ vkbd_ioctl(keyboard_t *kbd, u_long cmd, caddr_t arg)
 		*(int *)arg = KBD_LED_VAL(kbd);
 		break;
 
-#ifdef COMPAT_FREEBSD6
+#ifdef COMPAT_FREEBSD32
 	case _IO('K', 66):
 		ival = IOCPARM_IVAL(arg);
 		arg = (caddr_t)&ival;
@@ -1167,7 +1167,7 @@ vkbd_ioctl(keyboard_t *kbd, u_long cmd, caddr_t arg)
 		*(int *)arg = state->ks_state & LOCK_MASK;
 		break;
 
-#ifdef COMPAT_FREEBSD6
+#ifdef COMPAT_FREEBSD32
 	case _IO('K', 20):
 		ival = IOCPARM_IVAL(arg);
 		arg = (caddr_t)&ival;
@@ -1192,7 +1192,7 @@ vkbd_ioctl(keyboard_t *kbd, u_long cmd, caddr_t arg)
 		vkbd_status_changed(state);
 		break;
 
-#ifdef COMPAT_FREEBSD6
+#ifdef COMPAT_FREEBSD32
 	case _IO('K', 67):
 		ival = IOCPARM_IVAL(arg);
 		arg = (caddr_t)&ival;

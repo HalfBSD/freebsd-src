@@ -112,7 +112,7 @@ SYSCTL_INT(_vm, OID_AUTO, imply_prot_max, CTLFLAG_RWTUN, &imply_prot_max, 0,
 
 _Static_assert(MAXPAGESIZES <= 4, "MINCORE_SUPER too narrow");
 
-#if defined(COMPAT_43)
+#if defined(COMPAT_FREEBSD32_43)
 int
 ogetpagesize(struct thread *td, struct ogetpagesize_args *uap)
 {
@@ -120,7 +120,7 @@ ogetpagesize(struct thread *td, struct ogetpagesize_args *uap)
 	td->td_retval[0] = PAGE_SIZE;
 	return (0);
 }
-#endif				/* COMPAT_43 */
+#endif				/* COMPAT_FREEBSD32_43 */
 
 /*
  * Memory Map (mmap) system call.  Note that the file offset
@@ -427,38 +427,9 @@ done:
 	return (error);
 }
 
-#if defined(COMPAT_FREEBSD6)
-int
-freebsd6_mmap(struct thread *td, struct freebsd6_mmap_args *uap)
-{
-	return (kern_mmap(td, &(struct mmap_req){
-		.mr_hint = (uintptr_t)uap->addr,
-		.mr_len = uap->len,
-		.mr_prot = uap->prot,
-		.mr_flags = uap->flags,
-		.mr_fd = uap->fd,
-		.mr_pos = uap->pos,
-	    }));
-}
-#endif
 
-#ifdef COMPAT_43
-#ifndef _SYS_SYSPROTO_H_
-struct ommap_args {
-	caddr_t addr;
-	int len;
-	int prot;
-	int flags;
-	int fd;
-	long pos;
-};
-#endif
-int
-ommap(struct thread *td, struct ommap_args *uap)
-{
-	return (kern_ommap(td, (uintptr_t)uap->addr, uap->len, uap->prot,
-	    uap->flags, uap->fd, uap->pos));
-}
+#ifdef COMPAT_FREEBSD32_43
+
 
 int
 kern_ommap(struct thread *td, uintptr_t hint, int len, int oprot,
@@ -510,7 +481,7 @@ kern_ommap(struct thread *td, uintptr_t hint, int len, int oprot,
 		.mr_pos = pos,
 	    }));
 }
-#endif				/* COMPAT_43 */
+#endif				/* COMPAT_FREEBSD32_43 */
 
 #ifndef _SYS_SYSPROTO_H_
 struct msync_args {

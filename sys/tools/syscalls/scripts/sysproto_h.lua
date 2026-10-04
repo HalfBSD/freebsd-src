@@ -23,6 +23,13 @@ local generator = require("tools.generator")
 sysproto_h.file = "/dev/null"
 
 function sysproto_h.generate(tbl, config, fh)
+	local active_compat_options = {}
+	for _, option in ipairs(config.compat_options) do
+		if option.compatlevel >= tonumber(config.mincompat) then
+			table.insert(active_compat_options, option)
+		end
+	end
+
 	-- Grab the master system calls table.
 	local s = tbl.syscalls
 
@@ -77,7 +84,7 @@ struct thread;
 	--
 
 	-- Store all the compat #ifdef from compat_options at their zero index.
-	for _, v in pairs(config.compat_options) do
+	for _, v in pairs(active_compat_options) do
 		-- Tag an extra newline to the end, so it doesn't have to be
 		-- worried about later.
 		gen:store(string.format("\n#ifdef %s\n\n", v.definition),
@@ -95,7 +102,7 @@ struct thread;
 
 		gen:write(v.prolog)
 		gen:store(v.prolog, 1)
-		for _, w in pairs(config.compat_options) do
+		for _, w in pairs(active_compat_options) do
 			gen:store(v.prolog, w.compatlevel * 10)
 		end
 
@@ -200,7 +207,7 @@ struct %s {
 	end
 
 	-- Append #endif to the end of each compat option.
-	for _, v in pairs(config.compat_options) do
+	for _, v in pairs(active_compat_options) do
 		-- Based on how they're indexed, 9 is the last index.
 		local end_idx = (v.compatlevel * 10) + 9
 		-- Need an extra newline after #endif.
@@ -210,12 +217,16 @@ struct %s {
 
 	gen:write(tbl.epilog)
 	gen:store(tbl.epilog, 1)
-	for _, w in pairs(config.compat_options) do
+	for _, w in pairs(active_compat_options) do
 		gen:store(tbl.epilog, w.compatlevel * 10)
 	end
 
 	if gen.storage_levels ~= nil then
 		gen:writeStorage()
+	end
+
+	if config.sysproto_shared ~= "" then
+		gen:write("\n" .. config.sysproto_shared:gsub("\\n", "\n") .. "\n")
 	end
 
 	-- After storage has been unrolled, tag on the ending bits.

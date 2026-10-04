@@ -966,7 +966,7 @@ kbdmux_ioctl(keyboard_t *kbd, u_long cmd, caddr_t arg)
 	kbdmux_kbd_t	*k;
 	keyboard_info_t	*ki;
 	int		 error = 0, mode;
-#ifdef COMPAT_FREEBSD6
+#ifdef COMPAT_FREEBSD32
 	int		 ival;
 #endif
 
@@ -1077,7 +1077,7 @@ kbdmux_ioctl(keyboard_t *kbd, u_long cmd, caddr_t arg)
 		KBDMUX_UNLOCK(state);
 		break;
 
-#ifdef COMPAT_FREEBSD6
+#ifdef COMPAT_FREEBSD32
 	case _IO('K', 7):
 		ival = IOCPARM_IVAL(arg);
 		arg = (caddr_t)&ival;
@@ -1117,7 +1117,7 @@ kbdmux_ioctl(keyboard_t *kbd, u_long cmd, caddr_t arg)
 		KBDMUX_UNLOCK(state);
 		break;
 
-#ifdef COMPAT_FREEBSD6
+#ifdef COMPAT_FREEBSD32
 	case _IO('K', 66):
 		ival = IOCPARM_IVAL(arg);
 		arg = (caddr_t)&ival;
@@ -1152,7 +1152,7 @@ kbdmux_ioctl(keyboard_t *kbd, u_long cmd, caddr_t arg)
 		KBDMUX_UNLOCK(state);
 		break;
 
-#ifdef COMPAT_FREEBSD6
+#ifdef COMPAT_FREEBSD32
 	case _IO('K', 20):
 		ival = IOCPARM_IVAL(arg);
 		arg = (caddr_t)&ival;
@@ -1179,7 +1179,7 @@ kbdmux_ioctl(keyboard_t *kbd, u_long cmd, caddr_t arg)
 		return (kbdmux_ioctl(kbd, KDSETLED, arg));
 		/* NOT REACHED */
 
-#ifdef COMPAT_FREEBSD6
+#ifdef COMPAT_FREEBSD32
 	case _IO('K', 67):
 		cmd = KDSETRAD;
 		ival = IOCPARM_IVAL(arg);

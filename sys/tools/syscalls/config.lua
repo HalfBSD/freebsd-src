@@ -32,6 +32,7 @@ local config = {
 	libsysmap = "/dev/null",
 	libsys_h = "/dev/null",
 	sysproto_h = "_SYS_SYSPROTO_H_",
+	sysproto_shared = "",
 	syscallprefix = "SYS_",
 	switchname = "sysent",
 	namesname = "syscallnames",
@@ -128,6 +129,29 @@ local compat_option_sets = {
 		{ stdcompat = "FREEBSD14" },
 	},
 }
+
+-- FreeBSD32 keeps its full independent ABI rather than native tier options.
+compat_option_sets.freebsd32 = {}
+for _, entry in ipairs(compat_option_sets.native) do
+	local copy = {}
+	for k, v in pairs(entry) do copy[k] = v end
+	local level = entry.compatlevel or
+	    tonumber((entry.stdcompat or ""):match("FREEBSD(%d+)"))
+	if level and level < 11 then
+		if entry.stdcompat then
+			copy = {
+				definition = "COMPAT_FREEBSD32",
+				compatlevel = level,
+				flag = "COMPAT" .. level,
+				prefix = "freebsd" .. level .. "_",
+				descr = "freebsd" .. level,
+			}
+		else
+			copy.definition = "COMPAT_FREEBSD32_43"
+		end
+	end
+	table.insert(compat_option_sets.freebsd32, copy)
+end
 
 --
 -- config looks like a shell script; in fact, the previous makesyscalls.sh

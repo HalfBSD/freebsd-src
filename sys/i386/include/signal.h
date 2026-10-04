@@ -34,7 +34,7 @@
 
 #include <x86/signal.h>
 
-#if defined(_KERNEL) && defined(COMPAT_43)
+#if defined(_KERNEL) && defined(COMPAT_FREEBSD32_43)
 /*
  * Only the kernel should need these old type definitions.
  */

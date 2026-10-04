@@ -176,10 +176,8 @@ static struct syscall_helper_data msg_syscalls[] = {
 	SYSCALL_INIT_HELPER(msgget),
 	SYSCALL_INIT_HELPER(msgsnd),
 	SYSCALL_INIT_HELPER(msgrcv),
-#if defined(COMPAT_FREEBSD4) || defined(COMPAT_FREEBSD5) || \
-    defined(COMPAT_FREEBSD6) || defined(COMPAT_FREEBSD7)
+#if defined(COMPAT_FREEBSD32)
 	SYSCALL_INIT_HELPER(msgsys),
-	SYSCALL_INIT_HELPER_COMPAT(freebsd7_msgctl),
 #endif
 	SYSCALL_INIT_LAST
 };
@@ -198,8 +196,7 @@ static struct syscall_helper_data msg32_syscalls[] = {
 	SYSCALL32_INIT_HELPER(freebsd32_msgrcv),
 	SYSCALL32_INIT_HELPER_COMPAT(msgget),
 	SYSCALL32_INIT_HELPER(freebsd32_msgsys),
-#if defined(COMPAT_FREEBSD4) || defined(COMPAT_FREEBSD5) || \
-    defined(COMPAT_FREEBSD6) || defined(COMPAT_FREEBSD7)
+#if defined(COMPAT_FREEBSD32)
 	SYSCALL32_INIT_HELPER(freebsd7_freebsd32_msgctl),
 #endif
 	SYSCALL_INIT_LAST
@@ -1707,8 +1704,7 @@ int
 freebsd32_msgsys(struct thread *td, struct freebsd32_msgsys_args *uap)
 {
 
-#if defined(COMPAT_FREEBSD4) || defined(COMPAT_FREEBSD5) || \
-    defined(COMPAT_FREEBSD6) || defined(COMPAT_FREEBSD7)
+#if defined(COMPAT_FREEBSD32)
 	AUDIT_ARG_SVIPC_WHICH(uap->which);
 	switch (uap->which) {
 	case 0:
@@ -1728,8 +1724,7 @@ freebsd32_msgsys(struct thread *td, struct freebsd32_msgsys_args *uap)
 #endif
 }
 
-#if defined(COMPAT_FREEBSD4) || defined(COMPAT_FREEBSD5) || \
-    defined(COMPAT_FREEBSD6) || defined(COMPAT_FREEBSD7)
+#if defined(COMPAT_FREEBSD32)
 int
 freebsd7_freebsd32_msgctl(struct thread *td,
     struct freebsd7_freebsd32_msgctl_args *uap)
@@ -1854,8 +1849,7 @@ freebsd32_msgrcv(struct thread *td, struct freebsd32_msgrcv_args *uap)
 }
 #endif
 
-#if defined(COMPAT_FREEBSD4) || defined(COMPAT_FREEBSD5) || \
-    defined(COMPAT_FREEBSD6) || defined(COMPAT_FREEBSD7)
+#if defined(COMPAT_FREEBSD32)
 
 /* XXX casting to (sy_call_t *) is bogus, as usual. */
 static sy_call_t *msgcalls[] = {
@@ -1947,5 +1941,5 @@ freebsd7_msgctl(struct thread *td, struct freebsd7_msgctl_args *uap)
 
 #undef CP
 
-#endif	/* COMPAT_FREEBSD4 || COMPAT_FREEBSD5 || COMPAT_FREEBSD6 ||
-	   COMPAT_FREEBSD7 */
+#endif	/* COMPAT_FREEBSD32 || COMPAT_FREEBSD32 || COMPAT_FREEBSD32 ||
+	   COMPAT_FREEBSD32 */

@@ -85,7 +85,7 @@ __vdso_ia32_sigcode:
 	ALIGN_TEXT
 	.globl	__vdso_freebsd4_ia32_sigcode
 __vdso_freebsd4_ia32_sigcode:
-#ifdef COMPAT_FREEBSD4
+#ifdef COMPAT_FREEBSD32
 	calll	*IA32_SIGF_HANDLER(%esp)
 	leal	IA32_SIGF_UC4(%esp),%eax/* get ucontext */
 	pushl	%eax
@@ -102,7 +102,7 @@ __vdso_freebsd4_ia32_sigcode:
 	ALIGN_TEXT
 	.globl	__vdso_ia32_osigcode
 __vdso_ia32_osigcode:
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 	calll	*IA32_SIGF_HANDLER(%esp)/* call signal handler */
 	leal	IA32_SIGF_SC(%esp),%eax	/* get sigcontext */
 	pushl	%eax
@@ -131,7 +131,7 @@ __vdso_ia32_osigcode:
 	ALIGN_TEXT
 	.globl	__vdso_lcall_tramp
 __vdso_lcall_tramp:
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 	int	$0x80
 1:	jmp	1b
 #else

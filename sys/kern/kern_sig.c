@@ -743,7 +743,7 @@ sigonstack(size_t sp)
 	td = curthread;
 	if ((td->td_pflags & TDP_ALTSTACK) == 0)
 		return (0);
-#if defined(COMPAT_43)
+#if defined(COMPAT_FREEBSD32_43)
 	if (SV_PROC_FLAG(td->td_proc, SV_AOUT) && td->td_sigstk.ss_size == 0)
 		return ((td->td_sigstk.ss_flags & SS_ONSTACK) != 0);
 #endif
@@ -910,7 +910,7 @@ kern_sigaction(struct thread *td, int sig, const struct sigaction *act,
 			else
 				SIGADDSET(ps->ps_sigcatch, sig);
 		}
-#ifdef COMPAT_FREEBSD4
+#ifdef COMPAT_FREEBSD32
 		if (ps->ps_sigact[_SIG_IDX(sig)] == SIG_IGN ||
 		    ps->ps_sigact[_SIG_IDX(sig)] == SIG_DFL ||
 		    (flags & KSA_FREEBSD4) == 0)
@@ -918,7 +918,7 @@ kern_sigaction(struct thread *td, int sig, const struct sigaction *act,
 		else
 			SIGADDSET(ps->ps_freebsd4, sig);
 #endif
-#ifdef COMPAT_43
+#ifdef COMPAT_FREEBSD32_43
 		if (ps->ps_sigact[_SIG_IDX(sig)] == SIG_IGN ||
 		    ps->ps_sigact[_SIG_IDX(sig)] == SIG_DFL ||
 		    (flags & KSA_OSIGSET) == 0)
@@ -959,84 +959,15 @@ sys_sigaction(struct thread *td, struct sigaction_args *uap)
 	return (error);
 }
 
-#ifdef COMPAT_FREEBSD4
-#ifndef _SYS_SYSPROTO_H_
-struct freebsd4_sigaction_args {
-	int	sig;
-	struct	sigaction *act;
-	struct	sigaction *oact;
-};
-#endif
-int
-freebsd4_sigaction(struct thread *td, struct freebsd4_sigaction_args *uap)
-{
-	struct sigaction act, oact;
-	struct sigaction *actp, *oactp;
-	int error;
 
-	actp = (uap->act != NULL) ? &act : NULL;
-	oactp = (uap->oact != NULL) ? &oact : NULL;
-	if (actp) {
-		error = copyin(uap->act, actp, sizeof(act));
-		if (error)
-			return (error);
-	}
-	error = kern_sigaction(td, uap->sig, actp, oactp, KSA_FREEBSD4);
-	if (oactp && !error)
-		error = copyout(oactp, uap->oact, sizeof(oact));
-	return (error);
-}
-#endif	/* COMAPT_FREEBSD4 */
+#ifdef COMPAT_FREEBSD32_43	/* XXX - COMPAT_FBSD3 */
 
-#ifdef COMPAT_43	/* XXX - COMPAT_FBSD3 */
-#ifndef _SYS_SYSPROTO_H_
-struct osigaction_args {
-	int	signum;
-	struct	osigaction *nsa;
-	struct	osigaction *osa;
-};
-#endif
-int
-osigaction(struct thread *td, struct osigaction_args *uap)
-{
-	struct osigaction sa;
-	struct sigaction nsa, osa;
-	struct sigaction *nsap, *osap;
-	int error;
-
-	if (uap->signum <= 0 || uap->signum >= ONSIG)
-		return (EINVAL);
-
-	nsap = (uap->nsa != NULL) ? &nsa : NULL;
-	osap = (uap->osa != NULL) ? &osa : NULL;
-
-	if (nsap) {
-		error = copyin(uap->nsa, &sa, sizeof(sa));
-		if (error)
-			return (error);
-		nsap->sa_handler = sa.sa_handler;
-		nsap->sa_flags = sa.sa_flags;
-		OSIG2SIG(sa.sa_mask, nsap->sa_mask);
-	}
-	error = kern_sigaction(td, uap->signum, nsap, osap, KSA_OSIGSET);
-	if (osap && !error) {
-		sa.sa_handler = osap->sa_handler;
-		sa.sa_flags = osap->sa_flags;
-		SIG2OSIG(osap->sa_mask, sa.sa_mask);
-		error = copyout(&sa, uap->osa, sizeof(sa));
-	}
-	return (error);
-}
 
 #if !defined(__i386__)
 /* Avoid replicating the same stub everywhere */
-int
-osigreturn(struct thread *td, struct osigreturn_args *uap)
-{
-	return (kern_nosys(td, 0));
-}
+
 #endif
-#endif /* COMPAT_43 */
+#endif /* COMPAT_FREEBSD32_43 */
 
 /*
  * Initialize signal state for process 0;
@@ -1213,7 +1144,7 @@ sys_sigprocmask(struct thread *td, struct sigprocmask_args *uap)
 	return (error);
 }
 
-#ifdef COMPAT_43	/* XXX - COMPAT_FBSD3 */
+#ifdef COMPAT_FREEBSD32_43	/* XXX - COMPAT_FBSD3 */
 #ifndef _SYS_SYSPROTO_H_
 struct osigprocmask_args {
 	int	how;
@@ -1231,7 +1162,7 @@ osigprocmask(struct thread *td, struct osigprocmask_args *uap)
 	SIG2OSIG(oset, td->td_retval[0]);
 	return (error);
 }
-#endif /* COMPAT_43 */
+#endif /* COMPAT_FREEBSD32_43 */
 
 int
 sys_sigwait(struct thread *td, struct sigwait_args *uap)
@@ -1488,7 +1419,7 @@ sys_sigpending(struct thread *td, struct sigpending_args *uap)
 	return (copyout(&pending, uap->set, sizeof(sigset_t)));
 }
 
-#ifdef COMPAT_43	/* XXX - COMPAT_FBSD3 */
+#ifdef COMPAT_FREEBSD32_43	/* XXX - COMPAT_FBSD3 */
 #ifndef _SYS_SYSPROTO_H_
 struct osigpending_args {
 	int	dummy;
@@ -1507,52 +1438,14 @@ osigpending(struct thread *td, struct osigpending_args *uap)
 	SIG2OSIG(pending, td->td_retval[0]);
 	return (0);
 }
-#endif /* COMPAT_43 */
+#endif /* COMPAT_FREEBSD32_43 */
 
-#if defined(COMPAT_43)
+#if defined(COMPAT_FREEBSD32_43)
 /*
  * Generalized interface signal handler, 4.3-compatible.
  */
-#ifndef _SYS_SYSPROTO_H_
-struct osigvec_args {
-	int	signum;
-	struct	sigvec *nsv;
-	struct	sigvec *osv;
-};
-#endif
 /* ARGSUSED */
-int
-osigvec(struct thread *td, struct osigvec_args *uap)
-{
-	struct sigvec vec;
-	struct sigaction nsa, osa;
-	struct sigaction *nsap, *osap;
-	int error;
 
-	if (uap->signum <= 0 || uap->signum >= ONSIG)
-		return (EINVAL);
-	nsap = (uap->nsv != NULL) ? &nsa : NULL;
-	osap = (uap->osv != NULL) ? &osa : NULL;
-	if (nsap) {
-		error = copyin(uap->nsv, &vec, sizeof(vec));
-		if (error)
-			return (error);
-		nsap->sa_handler = vec.sv_handler;
-		OSIG2SIG(vec.sv_mask, nsap->sa_mask);
-		nsap->sa_flags = vec.sv_flags;
-		nsap->sa_flags ^= SA_RESTART;	/* opposite of SV_INTERRUPT */
-	}
-	error = kern_sigaction(td, uap->signum, nsap, osap, KSA_OSIGSET);
-	if (osap && !error) {
-		vec.sv_handler = osap->sa_handler;
-		SIG2OSIG(osap->sa_mask, vec.sv_mask);
-		vec.sv_flags = osap->sa_flags;
-		vec.sv_flags &= ~SA_NOCLDWAIT;
-		vec.sv_flags ^= SA_RESTART;
-		error = copyout(&vec, uap->osv, sizeof(vec));
-	}
-	return (error);
-}
 
 #ifndef _SYS_SYSPROTO_H_
 struct osigblock_args {
@@ -1585,7 +1478,7 @@ osigsetmask(struct thread *td, struct osigsetmask_args *uap)
 	SIG2OSIG(oset, td->td_retval[0]);
 	return (0);
 }
-#endif /* COMPAT_43 */
+#endif /* COMPAT_FREEBSD32_43 */
 
 /*
  * Suspend calling thread until signal, providing mask to be set in the
@@ -1664,7 +1557,7 @@ kern_sigsuspend(struct thread *td, sigset_t mask)
 	return (EJUSTRETURN);
 }
 
-#ifdef COMPAT_43	/* XXX - COMPAT_FBSD3 */
+#ifdef COMPAT_FREEBSD32_43	/* XXX - COMPAT_FBSD3 */
 /*
  * Compatibility sigsuspend call for old binaries.  Note nonstandard calling
  * convention: libc stub passes mask, not pointer, to save a copyin.
@@ -1683,41 +1576,8 @@ osigsuspend(struct thread *td, struct osigsuspend_args *uap)
 	OSIG2SIG(uap->mask, mask);
 	return (kern_sigsuspend(td, mask));
 }
-#endif /* COMPAT_43 */
+#endif /* COMPAT_FREEBSD32_43 */
 
-#if defined(COMPAT_43)
-#ifndef _SYS_SYSPROTO_H_
-struct osigstack_args {
-	struct	sigstack *nss;
-	struct	sigstack *oss;
-};
-#endif
-/* ARGSUSED */
-int
-osigstack(struct thread *td, struct osigstack_args *uap)
-{
-	struct sigstack nss, oss;
-	int error = 0;
-
-	if (uap->nss != NULL) {
-		error = copyin(uap->nss, &nss, sizeof(nss));
-		if (error)
-			return (error);
-	}
-	oss.ss_sp = td->td_sigstk.ss_sp;
-	oss.ss_onstack = sigonstack(cpu_getstack(td));
-	if (uap->nss != NULL) {
-		td->td_sigstk.ss_sp = nss.ss_sp;
-		td->td_sigstk.ss_size = 0;
-		td->td_sigstk.ss_flags |= nss.ss_onstack & SS_ONSTACK;
-		td->td_pflags |= TDP_ALTSTACK;
-	}
-	if (uap->oss != NULL)
-		error = copyout(&oss, uap->oss, sizeof(oss));
-
-	return (error);
-}
-#endif /* COMPAT_43 */
 
 #ifndef _SYS_SYSPROTO_H_
 struct sigaltstack_args {
@@ -1974,7 +1834,7 @@ sys_pdkill(struct thread *td, struct pdkill_args *uap)
 	return (error);
 }
 
-#if defined(COMPAT_43)
+#if defined(COMPAT_FREEBSD32_43)
 #ifndef _SYS_SYSPROTO_H_
 struct okillpg_args {
 	int	pgid;
@@ -1999,7 +1859,7 @@ okillpg(struct thread *td, struct okillpg_args *uap)
 	ksi.ksi_uid = td->td_ucred->cr_ruid;
 	return (killpg1(td, uap->signum, uap->pgid, 0, &ksi));
 }
-#endif /* COMPAT_43 */
+#endif /* COMPAT_FREEBSD32_43 */
 
 #ifndef _SYS_SYSPROTO_H_
 struct sigqueue_args {

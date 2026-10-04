@@ -630,33 +630,12 @@ SYSCTL_PROC(_kern, OID_AUTO, build_id,
 SYSCTL_NODE(_kern, OID_AUTO, features, CTLFLAG_RD | CTLFLAG_MPSAFE, 0,
     "Kernel Features");
 
-#ifdef COMPAT_FREEBSD4
-FEATURE(compat_freebsd4, "Compatible with FreeBSD 4");
-#endif
 
-#ifdef COMPAT_FREEBSD5
-FEATURE(compat_freebsd5, "Compatible with FreeBSD 5");
-#endif
 
-#ifdef COMPAT_FREEBSD6
-FEATURE(compat_freebsd6, "Compatible with FreeBSD 6");
-#endif
 
-#ifdef COMPAT_FREEBSD7
-FEATURE(compat_freebsd7, "Compatible with FreeBSD 7");
-#endif
 
-#ifdef COMPAT_FREEBSD8
-FEATURE(compat_freebsd8, "Compatible with FreeBSD 8");
-#endif
 
-#ifdef COMPAT_FREEBSD9
-FEATURE(compat_freebsd9, "Compatible with FreeBSD 9");
-#endif
 
-#ifdef COMPAT_FREEBSD10
-FEATURE(compat_freebsd10, "Compatible with FreeBSD 10");
-#endif
 
 #ifdef COMPAT_FREEBSD11
 FEATURE(compat_freebsd11, "Compatible with FreeBSD 11");

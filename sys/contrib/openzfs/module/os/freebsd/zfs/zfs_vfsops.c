@@ -127,8 +127,6 @@ static int zfs_root(vfs_t *vfsp, int flags, vnode_t **vpp);
 static int zfs_statfs(vfs_t *vfsp, struct statfs *statp);
 static int zfs_vget(vfs_t *vfsp, ino_t ino, int flags, vnode_t **vpp);
 static int zfs_sync(vfs_t *vfsp, int waitfor);
-static int zfs_checkexp(vfs_t *vfsp, struct sockaddr *nam, uint64_t *extflagsp,
-    struct ucred **credanonp, int *numsecflavors, int *secflavors);
 static int zfs_fhtovp(vfs_t *vfsp, fid_t *fidp, int flags, vnode_t **vpp);
 static void zfs_freevfs(vfs_t *vfsp);
 
@@ -140,7 +138,6 @@ struct vfsops zfs_vfsops = {
 	.vfs_statfs =		zfs_statfs,
 	.vfs_vget =		zfs_vget,
 	.vfs_sync =		zfs_sync,
-	.vfs_checkexp =		zfs_checkexp,
 	.vfs_fhtovp =		zfs_fhtovp,
 	.vfs_quotactl =		zfs_quotactl,
 };
@@ -1841,23 +1838,6 @@ zfs_vget(vfs_t *vfsp, ino_t ino, int flags, vnode_t **vpp)
 	if (err != 0)
 		*vpp = NULL;
 	return (err);
-}
-
-static int
-zfs_checkexp(vfs_t *vfsp, struct sockaddr *nam, uint64_t *extflagsp,
-    struct ucred **credanonp, int *numsecflavors, int *secflavors)
-{
-	zfsvfs_t *zfsvfs = vfsp->vfs_data;
-
-	/*
-	 * If this is regular file system vfsp is the same as
-	 * zfsvfs->z_parent->z_vfs, but if it is snapshot,
-	 * zfsvfs->z_parent->z_vfs represents parent file system
-	 * which we have to use here, because only this file system
-	 * has mnt_export configured.
-	 */
-	return (vfs_stdcheckexp(zfsvfs->z_parent->z_vfs, nam, extflagsp,
-	    credanonp, numsecflavors, secflavors));
 }
 
 _Static_assert(sizeof (struct fid) >= SHORT_FID_LEN,

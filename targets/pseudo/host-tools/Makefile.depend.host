@@ -6,7 +6,6 @@ DIRDEPS= \
 	usr.bin/lex \
 	usr.bin/mkdep \
 	usr.bin/mkimg \
-	usr.bin/rpcgen \
 	usr.bin/sed \
 	usr.bin/tar \
 	usr.bin/yacc \

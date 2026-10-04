@@ -47,7 +47,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <rpc/rpc.h>
+#include <netdb.h>
 
 #include <string.h>
 #include "un-namespace.h"

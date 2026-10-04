@@ -81,7 +81,6 @@
 #define NSDB_SERVICES_COMPAT	"services_compat"
 #define NSDB_SSH_HOSTKEYS	"ssh_hostkeys"
 #define NSDB_PROTOCOLS		"protocols"
-#define NSDB_RPC		"rpc"
 
 /*
  * suggested databases to implement

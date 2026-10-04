@@ -47,7 +47,6 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
-#include <rpc/rpc.h>
 #include <arpa/nameser.h>
 #include "un-namespace.h"
 #include "libc_private.h"

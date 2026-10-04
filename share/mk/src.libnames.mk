@@ -162,7 +162,6 @@ _LIBRARIES=	\
 		procstat \
 		pthread \
 		regex \
-		rpcsvc \
 		rt \
 		rtld_db \
 		sbuf \

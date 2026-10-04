@@ -52,7 +52,6 @@ CONFS=	DAEMON \
 	rctl \
 	root \
 	routing \
-	rpcbind \
 	rtadvd \
 	rtsold \
 	savecore \

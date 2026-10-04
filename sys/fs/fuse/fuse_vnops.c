@@ -1886,7 +1886,7 @@ fuse_vnop_read(struct vop_read_args *ap)
 	pid_t pid = curthread->td_proc->p_pid;
 	struct fuse_filehandle *fufh;
 	int err;
-	bool closefufh = false, directio;
+	bool directio;
 
 	MPASS(vp->v_type == VREG || vp->v_type == VDIR);
 
@@ -1904,14 +1904,6 @@ fuse_vnop_read(struct vop_read_args *ap)
 	}
 
 	err = fuse_filehandle_getrw(vp, FREAD, &fufh, cred, pid);
-	if (err == EBADF && vnode_mount(vp)->mnt_flag & MNT_EXPORTED) {
-		/*
-		 * nfsd will do I/O without first doing VOP_OPEN.  We
-		 * must implicitly open the file here
-		 */
-		err = fuse_filehandle_open(vp, FREAD, &fufh, curthread, cred);
-		closefufh = true;
-	}
 	if (err) {
 		SDT_PROBE3(fusefs, , vnops, filehandles_closed, vp, uio, cred);
 		return err;
@@ -1938,8 +1930,6 @@ fuse_vnop_read(struct vop_read_args *ap)
 		err = fuse_read_biobackend(vp, uio, ioflag, cred, fufh, pid);
 	}
 
-	if (closefufh)
-		fuse_filehandle_close(vp, fufh, curthread, cred);
 
 	return (err);
 }
@@ -1967,7 +1957,6 @@ fuse_vnop_readdir(struct vop_readdir_args *ap)
 	uint64_t *cookies;
 	ssize_t tresid;
 	int ncookies;
-	bool closefufh = false;
 	pid_t pid = curthread->td_proc->p_pid;
 
 	if (ap->a_eofflag)
@@ -1981,17 +1970,6 @@ fuse_vnop_readdir(struct vop_readdir_args *ap)
 
 	tresid = uio->uio_resid;
 	err = fuse_filehandle_get_dir(vp, &fufh, cred, pid);
-	if (err == EBADF && mp->mnt_flag & MNT_EXPORTED) {
-		KASSERT(!fsess_is_impl(mp, FUSE_OPENDIR),
-			("FUSE file systems that implement "
-			 "FUSE_OPENDIR should not be exported"));
-		/* 
-		 * nfsd will do VOP_READDIR without first doing VOP_OPEN.  We
-		 * must implicitly open the directory here.
-		 */
-		err = fuse_filehandle_open(vp, FREAD, &fufh, curthread, cred);
-		closefufh = true;
-	}
 	if (err)
 		return (err);
 	if (ap->a_ncookies != NULL) {
@@ -2011,8 +1989,6 @@ fuse_vnop_readdir(struct vop_readdir_args *ap)
 		&ncookies, cookies);
 
 	fiov_teardown(&cookediov);
-	if (closefufh)
-		fuse_filehandle_close(vp, fufh, curthread, cred);
 
 	if (ap->a_ncookies != NULL) {
 		if (err == 0) {
@@ -2540,7 +2516,7 @@ fuse_vnop_write(struct vop_write_args *ap)
 	pid_t pid = curthread->td_proc->p_pid;
 	struct fuse_filehandle *fufh;
 	int err;
-	bool closefufh = false, directio;
+	bool directio;
 
 	MPASS(vp->v_type == VREG || vp->v_type == VDIR);
 
@@ -2557,14 +2533,6 @@ fuse_vnop_write(struct vop_write_args *ap)
 		ioflag |= IO_DIRECT;
 
 	err = fuse_filehandle_getrw(vp, FWRITE, &fufh, cred, pid);
-	if (err == EBADF && vnode_mount(vp)->mnt_flag & MNT_EXPORTED) {
-		/*
-		 * nfsd will do I/O without first doing VOP_OPEN.  We
-		 * must implicitly open the file here
-		 */
-		err = fuse_filehandle_open(vp, FWRITE, &fufh, curthread, cred);
-		closefufh = true;
-	}
 	if (err) {
 		SDT_PROBE3(fusefs, , vnops, filehandles_closed, vp, uio, cred);
 		return err;
@@ -2613,9 +2581,6 @@ fuse_vnop_write(struct vop_write_args *ap)
 	fuse_internal_clear_suid_on_write(vp, cred, uio->uio_td);
 
 out:
-	if (closefufh)
-		fuse_filehandle_close(vp, fufh, curthread, cred);
-
 	return (err);
 }
 
@@ -3108,7 +3073,6 @@ fuse_vnop_deallocate(struct vop_deallocate_args *ap)
 	int ioflag = ap->a_ioflag;
 	off_t filesize;
 	int err;
-	bool closefufh = false;
 
 	if (fuse_isdeadfs(vp))
 		return (EXTERROR(ENXIO, "This FUSE session is about "
@@ -3121,14 +3085,6 @@ fuse_vnop_deallocate(struct vop_deallocate_args *ap)
 		goto fallback;
 
 	err = fuse_filehandle_getrw(vp, FWRITE, &fufh, cred, pid);
-	if (err == EBADF && vnode_mount(vp)->mnt_flag & MNT_EXPORTED) {
-		/*
-		 * nfsd will do I/O without first doing VOP_OPEN.  We
-		 * must implicitly open the file here
-		 */
-		err = fuse_filehandle_open(vp, FWRITE, &fufh, curthread, cred);
-		closefufh = true;
-	}
 	if (err)
 		return (err);
 
@@ -3184,15 +3140,9 @@ fuse_vnop_deallocate(struct vop_deallocate_args *ap)
 
 	fdisp_destroy(&fdi);
 out:
-	if (closefufh)
-		fuse_filehandle_close(vp, fufh, curthread, cred);
-
 	return (err);
 
 fallback:
-	if (closefufh)
-		fuse_filehandle_close(vp, fufh, curthread, cred);
-
 	return (vop_stddeallocate(ap));
 }
 
@@ -3334,25 +3284,6 @@ fuse_vnop_vptofh(struct vop_vptofh_args *ap)
 			"VOP_VPTOFH without FUSE_EXPORT_SUPPORT");
 		return (EXTERROR(EOPNOTSUPP, "This server is "
 		    "missing FUSE_EXPORT_SUPPORT"));
-	}
-	if ((mp->mnt_flag & MNT_EXPORTED) &&
-		fsess_is_impl(mp, FUSE_OPENDIR))
-	{
-		/*
-		 * NFS is stateless, so nfsd must reopen a directory on every
-		 * call to VOP_READDIR, passing in the d_off field from the
-		 * final dirent of the previous invocation.  But if the server
-		 * implements FUSE_OPENDIR, the FUSE protocol does not
-		 * guarantee that d_off will be valid after a directory is
-		 * closed and reopened.  So prohibit exporting FUSE file
-		 * systems that implement FUSE_OPENDIR.
-		 *
-		 * But userspace NFS servers don't have this problem.
-                 */
-		SDT_PROBE2(fusefs, , vnops, trace, 1,
-			"VOP_VPTOFH with FUSE_OPENDIR");
-		return (EXTERROR(EOPNOTSUPP, "This server implements "
-		    "FUSE_OPENDIR so is not compatible with getfh"));
 	}
 
 	err = fuse_internal_getattr(vp, &va, curthread->td_ucred, curthread);

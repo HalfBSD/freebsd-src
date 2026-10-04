@@ -13,7 +13,7 @@ HalfBSD does not want NFS in the source tree at all. This audit follows that
 correction.
 
 Remaining work includes historical audio, CTL high availability, storage and
-platform simplification, RPC remnants, and ABI-sensitive reductions. UFS,
+platform simplification and ABI-sensitive reductions. UFS,
 Netgraph, RPC, and compatibility layers require explicit dependency boundaries.
 
 The review covers the current tree, including build selections, kernel
@@ -212,98 +212,6 @@ medium confidence in deletion boundaries.
 
 **Validation:** Native and cross-host amd64 world/kernel builds, EFI,
 libc/runtime, debuggers, and external kernel modules.
-
-#### B9. Kernel SunRPC networking
-
-**Purpose and locations:** `sys/rpc`, `sys/modules/krpc`, kernel RPC options and
-Netlink RPC plumbing.
-
-**Why present / fit:** Kernel network services, primarily the now-removed NFS
-stack.
-
-**Dependencies:** `genl` contains a specific RPC parser; VFS export code includes
-RPC authentication definitions. ZFS needs XDR, **not the full RPC
-transport/service implementation**.
-
-**Disposition and impact:** Remove kernel RPC networking after separating
-shared definitions/XDR and removing its diagnostic parser. Retain general
-Netlink. External modules using kernel RPC lose that interface.
-
-**Benefit / risk / confidence:** Moderate networking/kernel simplification.
-Moderate risk; high confidence in candidacy.
-
-**Validation:** ZFS kernel module, import/export and send/receive; general
-`genl`/Netlink operation; clean all-module build.
-
-#### B10. Historical RPC service library and generated interfaces
-
-**Purpose and locations:** `lib/librpcsvc`, `include/rpcsvc`: remote execution,
-users/status/wall, bootparam, remote quota, and Secure RPC definitions.
-
-**Why present / fit:** Historical Unix network services whose programs have
-mostly disappeared.
-
-**Dependencies:** `rpcbind/security.c` still includes `rquota.h`; libc Secure
-RPC generates code from `crypt.x`; libc RPC tests link `librpcsvc`;
-`lib/Makefile` retains a PAM build-order dependency.
-
-**Disposition and impact:** Remove obsolete services and their dependencies
-together. Do not remove the entire include directory before separating libc’s
-remaining build inputs.
-
-**Benefit / risk / confidence:** Small-to-moderate reduction and good orphan
-cleanup. External programs linking `librpcsvc` break; moderate risk, high
-confidence.
-
-**Validation:** Clean bootstrap/world, generated headers, libc RPC tests while
-retained, and package ABI inventory.
-
-#### B11. rpcbind, rpcinfo, Secure RPC, and libc RPC transport support
-
-**Purpose and locations:** `usr.sbin/rpcbind`, `usr.bin/rpcinfo`,
-`lib/libc/rpc`, installed RPC configuration and headers.
-
-**Why present / fit:** Generic RPC applications and historical authentication.
-With NFS/NIS removed, rpcbind has no identified required base-system service.
-
-**Dependencies:** libc exports RPC, DES-authentication, and related APIs.
-`getent` exposes RPC database lookup. `rpcgen` remains a bootstrap tool while
-generated RPC sources exist. Third-party applications may use these APIs.
-
-**Disposition and impact:** Remove rpcbind/rpcinfo first. Full libc RPC deletion
-needs a deliberate ABI transition or retained compatibility implementation.
-Keep XDR.
-
-**Benefit / risk / confidence:** Moderate service/parser reduction; the measured
-RPC subset is approximately **1.11 MB**, not wholly removable. Low risk for
-daemons, high libc/package risk; high/medium confidence respectively.
-
-**Validation:** Clean bootstrap, libc symbol comparison, package rebuilds, ZFS
-serialization, and SSH/pkg/networking smoke tests.
-
-#### B12. NFS export and GSS remnants
-
-**Purpose and locations:** `sys/kern/vfs_export.c`, export-related mount
-interfaces, filesystem export callbacks, `sys/rpc/rpcsec_gss.h`, and the
-remaining `sys/kgssapi/gssapi.h`.
-
-**Why present / fit:** Filesystem export and authentication infrastructure left
-after NFS/GSS removal. No network-export requirement remains.
-
-**Dependencies:** VFS interfaces are shared across filesystems; ZFS still
-implements file-handle and filesystem operations. File-handle syscalls may have
-non-NFS administration consumers.
-
-**Disposition and impact:** Remove proven export/GSS-only implementation while
-preserving necessary VFS contracts and syscall numbering. Do not remove
-NFSv4-style ACLs: ZFS uses those local permissions semantics.
-
-**Benefit / risk / confidence:** Moderate cleanup. Kernel/module ABI risk is
-significant; medium confidence until callback and file-handle consumers are
-fully resolved.
-
-**Validation:** ZFS mounting, permissions/ACLs, VFS/file tests, external modules,
-and file-handle API consumers.
 
 #### B13. OpenBSM auditing
 
@@ -733,8 +641,8 @@ common validation baseline.
 
 Prioritize remaining work as follows:
 
-1. **Bounded cleanup:** A6 audio backends, B3 CTL HA/network remnants, B5 GEOM
-   Gate, and B9–B12 RPC/export remnants, with shared interfaces traced first.
+1. **Bounded cleanup:** A6 audio backends, B3 CTL HA/network remnants and B5
+   GEOM Gate, with shared interfaces traced first.
 2. **Supported deployment architecture:** B8 platform scope and C1 installation,
    release and recovery paths, building on the implemented C2 policy.
 3. **Storage simplification:** B4 unwanted GEOM classes and B6–B7 UFS after
@@ -777,6 +685,7 @@ A10 (Kboot/native U-Boot/standalone USB boot), A11 (in-tree DRM2 and AGP),
 A12 (the revised utility list per `A12.md`),
 A13 (TACACS+, PAM RADIUS, and Hesiod),
 B1 (remaining InfiniBand networking and Mellanox firmware support),
+B9–B12 (kernel/userland RPC, service definitions, and NFS export/GSS remnants),
 A8 (RIP/IPv4 router discovery), A9 (VMware/cloud drivers), B2 (SAN protocols),
 C2 (maintained workstation build/kernel/module policy), and C3
 (the alternate scheduler and scheduler-selection machinery) are implemented.
@@ -784,7 +693,8 @@ Their original assessments below remain as audit history. Processed means the
 authorized source changes are implemented; native build and hardware validation
 is still outstanding where recorded. NFS remains removed.
 
-A8/B2/A9/C2 were committed as `569873ccb4c3`. A5 removes all eleven
+A8/B2/A9/C2 were committed as `569873ccb4c3`; A5 and the audit
+reorganization were committed as `94d9b81249ef`. A5 removes all eleven
 user-approved families and dedicated Intel firmware, while preserving the shared
 Realtek header, retained PHY drivers, MII, net80211, iflib, firmware loading,
 LinuxKPI, `em`, and `ath`. Policy checks include explicit ALL_MODULES builds;
@@ -1321,6 +1231,163 @@ Moderate risk; high confidence.
 
 **Validation:** Clean world/modules; local `nvmecontrol` and `camcontrol`; ZFS
 import/stress; bhyve block, NVMe, AHCI, and virtio-SCSI.
+
+#### B9. Kernel SunRPC networking
+
+**Implementation status:** Removed on October 3, 2026, at the user's request.
+Removed kernel SunRPC transports, clients, services, authentication,
+Netlink RPC transport/parser, and `krpc` source/build integration. Generic
+Netlink and `genl` monitoring remain. Kernel XDR stays available for ZFS and
+local consumers, with its own allocation class and no RPC transport includes.
+The traditional `rpc/types.h` and `rpc/xdr.h` serialization interfaces remain.
+The legacy RPC TLS syscall slot remains unimplemented with its number reserved.
+
+Repository policy/ALL_MODULES, source/header/dependency, retained symbol and
+function-body, syscall, shell-syntax, mtree and whitespace checks passed.
+Full world/kernel/modules builds, package ABI/rebuild checks, ZFS and filesystem
+runtime tests, SSH/pkg/networking and generic Netlink smoke tests remain
+outstanding on a native FreeBSD environment. Installed-file cleanup is
+unconditional. The original assessment below is retained as audit history.
+
+**Purpose and locations:** `sys/rpc`, `sys/modules/krpc`, kernel RPC options and
+Netlink RPC plumbing.
+
+**Why present / fit:** Kernel network services, primarily the now-removed NFS
+stack.
+
+**Dependencies:** `genl` contains a specific RPC parser; VFS export code includes
+RPC authentication definitions. ZFS needs XDR, **not the full RPC
+transport/service implementation**.
+
+**Disposition and impact:** Remove kernel RPC networking after separating
+shared definitions/XDR and removing its diagnostic parser. Retain general
+Netlink. External modules using kernel RPC lose that interface.
+
+**Benefit / risk / confidence:** Moderate networking/kernel simplification.
+Moderate risk; high confidence in candidacy.
+
+**Validation:** ZFS kernel module, import/export and send/receive; general
+`genl`/Netlink operation; clean all-module build.
+
+#### B10. Historical RPC service library and generated interfaces
+
+**Implementation status:** Removed on October 3, 2026, at the user's request.
+Removed `librpcsvc`, `include/rpcsvc`, Secure RPC generated inputs,
+service examples and RPC-specific tests. Removed dependency/build metadata and
+unconditional library selection. No generated RPC source consumers remain, so
+`rpcgen` and its bootstrap selection were also retired. The existing XDR
+byte-vector regression now lives under `lib/libc/tests/xdr` and calls the retained
+serialization primitives directly without generated code.
+
+Repository policy/ALL_MODULES, source/header/dependency, retained symbol and
+function-body, syscall, shell-syntax, mtree and whitespace checks passed.
+Full world/kernel/modules builds, package ABI/rebuild checks, ZFS and filesystem
+runtime tests, SSH/pkg/networking and generic Netlink smoke tests remain
+outstanding on a native FreeBSD environment. Installed-file cleanup is
+unconditional. The original assessment below is retained as audit history.
+
+**Purpose and locations:** `lib/librpcsvc`, `include/rpcsvc`: remote execution,
+users/status/wall, bootparam, remote quota, and Secure RPC definitions.
+
+**Why present / fit:** Historical Unix network services whose programs have
+mostly disappeared.
+
+**Dependencies:** `rpcbind/security.c` still includes `rquota.h`; libc Secure
+RPC generates code from `crypt.x`; libc RPC tests link `librpcsvc`;
+`lib/Makefile` retains a PAM build-order dependency.
+
+**Disposition and impact:** Remove obsolete services and their dependencies
+together. Do not remove the entire include directory before separating libc’s
+remaining build inputs.
+
+**Benefit / risk / confidence:** Small-to-moderate reduction and good orphan
+cleanup. External programs linking `librpcsvc` break; moderate risk, high
+confidence.
+
+**Validation:** Clean bootstrap/world, generated headers, libc RPC tests while
+retained, and package ABI inventory.
+
+#### B11. rpcbind, rpcinfo, Secure RPC, and libc RPC transport support
+
+**Implementation status:** Removed on October 3, 2026, at the user's request.
+Removed rpcbind/rpcinfo, rc settings and startup integration,
+libc RPC transports/services, Secure RPC, RPC database lookups and `getent rpc`.
+Removed transport headers, netconfig data/API selection, RPC option descriptions,
+and NSS RPC configuration. Retained `bindresvport`/`bindresvport_sa` as ordinary
+networking helpers under libc/net, with unchanged implementations and symbol
+versions, declared in `netdb.h`. Generic XDR APIs and symbol versions remain.
+Tcpdump keeps packet decoding with RPC database/header detection disabled.
+This deliberately removes libc RPC symbols without compatibility stubs; external
+packages using those APIs require rebuilding or replacement.
+
+Repository policy/ALL_MODULES, source/header/dependency, retained symbol and
+function-body, syscall, shell-syntax, mtree and whitespace checks passed.
+Full world/kernel/modules builds, package ABI/rebuild checks, ZFS and filesystem
+runtime tests, SSH/pkg/networking and generic Netlink smoke tests remain
+outstanding on a native FreeBSD environment. Installed-file cleanup is
+unconditional. The original assessment below is retained as audit history.
+
+**Purpose and locations:** `usr.sbin/rpcbind`, `usr.bin/rpcinfo`,
+`lib/libc/rpc`, installed RPC configuration and headers.
+
+**Why present / fit:** Generic RPC applications and historical authentication.
+With NFS/NIS removed, rpcbind has no identified required base-system service.
+
+**Dependencies:** libc exports RPC, DES-authentication, and related APIs.
+`getent` exposes RPC database lookup. `rpcgen` remains a bootstrap tool while
+generated RPC sources exist. Third-party applications may use these APIs.
+
+**Disposition and impact:** Remove rpcbind/rpcinfo first. Full libc RPC deletion
+needs a deliberate ABI transition or retained compatibility implementation.
+Keep XDR.
+
+**Benefit / risk / confidence:** Moderate service/parser reduction; the measured
+RPC subset is approximately **1.11 MB**, not wholly removable. Low risk for
+daemons, high libc/package risk; high/medium confidence respectively.
+
+**Validation:** Clean bootstrap, libc symbol comparison, package rebuilds, ZFS
+serialization, and SSH/pkg/networking smoke tests.
+
+#### B12. NFS export and GSS remnants
+
+**Implementation status:** Removed on October 3, 2026, at the user's request.
+Removed `vfs_export.c`, network export address/credential lists,
+export-check callbacks, jail export tracking, and remaining kernel GSS headers.
+Mount export options and legacy export flags return EOPNOTSUPP before a mount
+is changed. Removed ZFS export-only callbacks/credential cloning and FUSE's
+NFS-only implicit opens and export tests. Retained local file-handle operations,
+ZFS NFSv4-style ACLs, syscall numbering, legacy mount argument layouts and numeric
+flag values. Retired mount/vfsops/jail fields are reserved slots rather than
+active export state; external filesystem modules need rebuilding.
+
+Repository policy/ALL_MODULES, source/header/dependency, retained symbol and
+function-body, syscall, shell-syntax, mtree and whitespace checks passed.
+Full world/kernel/modules builds, package ABI/rebuild checks, ZFS and filesystem
+runtime tests, SSH/pkg/networking and generic Netlink smoke tests remain
+outstanding on a native FreeBSD environment. Installed-file cleanup is
+unconditional. The original assessment below is retained as audit history.
+
+**Purpose and locations:** `sys/kern/vfs_export.c`, export-related mount
+interfaces, filesystem export callbacks, `sys/rpc/rpcsec_gss.h`, and the
+remaining `sys/kgssapi/gssapi.h`.
+
+**Why present / fit:** Filesystem export and authentication infrastructure left
+after NFS/GSS removal. No network-export requirement remains.
+
+**Dependencies:** VFS interfaces are shared across filesystems; ZFS still
+implements file-handle and filesystem operations. File-handle syscalls may have
+non-NFS administration consumers.
+
+**Disposition and impact:** Remove proven export/GSS-only implementation while
+preserving necessary VFS contracts and syscall numbering. Do not remove
+NFSv4-style ACLs: ZFS uses those local permissions semantics.
+
+**Benefit / risk / confidence:** Moderate cleanup. Kernel/module ABI risk is
+significant; medium confidence until callback and file-handle consumers are
+fully resolved.
+
+**Validation:** ZFS mounting, permissions/ACLs, VFS/file tests, external modules,
+and file-handle API consumers.
 
 ### C. Processed simplification/refactoring candidates
 

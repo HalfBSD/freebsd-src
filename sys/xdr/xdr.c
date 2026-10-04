@@ -46,8 +46,6 @@
 #include <sys/malloc.h>
 #include <sys/module.h>
 
-#include <rpc/rpc.h>
-#include <rpc/rpc_com.h>
 #include <rpc/types.h>
 #include <rpc/xdr.h>
 
@@ -60,7 +58,7 @@ typedef u_quad_t        u_longlong_t;   /* ANSI unsigned long long type */
 #define XDR_FALSE	((long) 0)
 #define XDR_TRUE	((long) 1)
 
-MALLOC_DEFINE(M_RPC, "rpc", "Remote Procedure Call");
+MALLOC_DEFINE(M_XDR, "xdr", "XDR serialization");
 
 /*
  * for unit alignment
@@ -680,7 +678,7 @@ xdr_string(XDR *xdrs, char **cpp, u_int maxsize)
 bool_t
 xdr_wrapstring(XDR *xdrs, char **cpp)
 {
-	return xdr_string(xdrs, cpp, RPC_MAXDATASIZE);
+	return xdr_string(xdrs, cpp, 9000);
 }
 
 /*

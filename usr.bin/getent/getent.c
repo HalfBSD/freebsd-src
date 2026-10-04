@@ -39,7 +39,6 @@
 #include <net/if.h>
 #include <netinet/if_ether.h>
 #include <netinet/in.h>		/* for INET6_ADDRSTRLEN */
-#include <rpc/rpcent.h>
 
 #include <assert.h>
 #include <ctype.h>
@@ -65,7 +64,6 @@ static int	netgroup(int, char *[]);
 static int	networks(int, char *[]);
 static int	passwd(int, char *[]);
 static int	protocols(int, char *[]);
-static int	rpc(int, char *[]);
 static int	services(int, char *[]);
 static int	shells(int, char *[]);
 static int	utmpx(int, char *[]);
@@ -88,7 +86,6 @@ static struct getentdb {
 	{	"networks",	networks,	},
 	{	"passwd",	passwd,		},
 	{	"protocols",	protocols,	},
-	{	"rpc",		rpc,		},
 	{	"services",	services,	},
 	{	"shells",	shells,		},
 	{	"utmpx",	utmpx,		},
@@ -447,46 +444,6 @@ protocols(int argc, char *argv[])
 		}
 	}
 	endprotoent();
-	return rv;
-}
-
-/*
- * rpc
- */
-static int
-rpc(int argc, char *argv[])
-{
-	struct rpcent	*re;
-	unsigned long	id;
-	int		i, rv;
-
-	assert(argc > 1);
-	assert(argv != NULL);
-
-#define RPCPRINT	printfmtstrings(re->r_aliases, "  ", " ", \
-				"%-16s  %6d", \
-				re->r_name, re->r_number)
-
-	setrpcent(1);
-	rv = RV_OK;
-	if (argc == 2) {
-		while ((re = getrpcent()) != NULL)
-			RPCPRINT;
-	} else {
-		for (i = 2; i < argc; i++) {
-			if (parsenum(argv[i], &id))
-				re = getrpcbynumber((int)id);
-			else
-				re = getrpcbyname(argv[i]);
-			if (re != NULL)
-				RPCPRINT;
-			else {
-				rv = RV_NOTFOUND;
-				break;
-			}
-		}
-	}
-	endrpcent();
 	return rv;
 }
 

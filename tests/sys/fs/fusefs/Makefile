@@ -37,7 +37,6 @@ GTESTS+=	lseek
 GTESTS+=	mkdir
 GTESTS+=	mknod
 GTESTS+=	mount
-GTESTS+=	nfs
 GTESTS+=	notify
 GTESTS+=	open
 GTESTS+=	opendir
@@ -65,7 +64,6 @@ SRCS.$p+=	utils.cc
 TEST_METADATA.default_permissions+=	required_user="unprivileged"
 TEST_METADATA.default_permissions_privileged+=	required_user="root"
 TEST_METADATA.mknod+=	required_user="root"
-TEST_METADATA.nfs+=	required_user="root"
 # NB: per-testcase metadata properties override global metadata properties.
 # This must reference all of the required modules for the test.
 TEST_METADATA.ctl+=	required_kmods="ctl fusefs"

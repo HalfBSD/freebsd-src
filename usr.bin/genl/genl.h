@@ -28,4 +28,3 @@
 extern const char * group_name(uint32_t id);
 
 typedef	void monitor_parser_t(struct snl_state *, struct nlmsghdr *);
-extern monitor_parser_t parser_rpc;

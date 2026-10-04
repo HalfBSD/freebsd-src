@@ -60,12 +60,10 @@
 
 #include <rpc/types.h>
 #include <rpc/xdr.h>
-#include <rpc/auth.h>
-#include <rpc/svc.h>
-#include <rpc/clnt.h>
 #include <sys/stddef.h>
 #include "un-namespace.h"
-#include "rpc_com.h"
+enum xprt_stat { XPRT_DIED, XPRT_MOREREQS, XPRT_IDLE };
+static bool_t __xdrrec_getrec(XDR *, enum xprt_stat *, bool_t);
 
 static bool_t	xdrrec_getlong(XDR *, long *);
 static bool_t	xdrrec_putlong(XDR *, const long *);
@@ -513,7 +511,7 @@ xdrrec_endofrecord(XDR *xdrs, bool_t sendnow)
  * Fill the stream buffer with a record for a non-blocking connection.
  * Return true if a record is available in the buffer, false if not.
  */
-bool_t
+static bool_t
 __xdrrec_getrec(XDR *xdrs, enum xprt_stat *statp, bool_t expectdata)
 {
 	RECSTREAM *rstrm = (RECSTREAM *)(xdrs->x_private);
@@ -591,18 +589,6 @@ __xdrrec_getrec(XDR *xdrs, enum xprt_stat *statp, bool_t expectdata)
 
 	*statp = XPRT_MOREREQS;
 	return FALSE;
-}
-
-bool_t
-__xdrrec_setnonblock(XDR *xdrs, int maxrec)
-{
-	RECSTREAM *rstrm = (RECSTREAM *)(xdrs->x_private);
-
-	rstrm->nonblock = TRUE;
-	if (maxrec == 0)
-		maxrec = rstrm->recvsize;
-	rstrm->in_maxrec = maxrec;
-	return TRUE;
 }
 
 /*

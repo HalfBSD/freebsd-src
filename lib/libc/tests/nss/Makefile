@@ -12,7 +12,6 @@ ATF_TESTS_C+=	gethostby_test
 TEST_METADATA.gethostby_test=	timeout="1200"
 ATF_TESTS_C+=	getpw_test
 ATF_TESTS_C+=	getproto_test
-ATF_TESTS_C+=	getrpc_test
 ATF_TESTS_C+=	getserv_test
 ATF_TESTS_C+=	getusershell_test
 

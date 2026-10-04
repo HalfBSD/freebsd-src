@@ -1,4 +1,4 @@
 PROG=	genl
-SRCS=	genl.c parser_rpc.c
+SRCS=	genl.c
 
 .include <bsd.prog.mk>

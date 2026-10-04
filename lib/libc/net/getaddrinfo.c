@@ -69,7 +69,6 @@
 #endif
 #include <arpa/inet.h>
 #include <arpa/nameser.h>
-#include <rpc/rpc.h>
 #include <netdb.h>
 #include <resolv.h>
 #include <string.h>

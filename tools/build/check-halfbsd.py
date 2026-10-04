@@ -67,7 +67,7 @@ def main():
         essential = {"vmm", "ctl", "zfs", "nvme", "if_epair", "if_bridge",
                      "linuxkpi", "linuxkpi_wlan", "linuxkpi_video", "usb", "sound"}
         assert essential <= selected, essential - selected
-        retired = {"ena", "gve", "mana", "vmware", "iscsi", "cfiscsi", "nvmf",
+        retired = {"ena", "gve", "mana", "vmware", "iscsi", "cfiscsi", "nvmf", "krpc",
                    "le", "dc", "fxp", "rl", "sis", "ste", "xl", "ipw", "iwi",
                    "wpi", "malo", "ipwfw", "iwifw", "wpifw"}
         assert not selected & retired

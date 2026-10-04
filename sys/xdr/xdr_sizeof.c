@@ -93,8 +93,8 @@ x_inline(XDR *xdrs, u_int len)
 	} else {
 		/* Free the earlier space and allocate new area */
 		if (xdrs->x_private)
-			free(xdrs->x_private, M_RPC);
-		xdrs->x_private = malloc(len, M_RPC, M_WAITOK);
+			free(xdrs->x_private, M_XDR);
+		xdrs->x_private = malloc(len, M_XDR, M_WAITOK);
 		xdrs->x_base = (caddr_t)(uintptr_t) len;
 		xdrs->x_handy += len;
 		return ((int32_t *) xdrs->x_private);
@@ -116,7 +116,7 @@ x_destroy(XDR *xdrs)
 	xdrs->x_handy = 0;
 	xdrs->x_base = 0;
 	if (xdrs->x_private) {
-		free(xdrs->x_private, M_RPC);
+		free(xdrs->x_private, M_XDR);
 		xdrs->x_private = NULL;
 	}
 	return;
@@ -151,6 +151,6 @@ xdr_sizeof(xdrproc_t func, void *data)
 
 	stat = func(&x, data);
 	if (x.x_private)
-		free(x.x_private, M_RPC);
+		free(x.x_private, M_XDR);
 	return (stat == TRUE ? (unsigned) x.x_handy: 0);
 }

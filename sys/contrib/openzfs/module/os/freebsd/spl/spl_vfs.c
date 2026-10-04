@@ -218,12 +218,6 @@ mount_snapshot(kthread_t *td, vnode_t **vpp, const char *fstype, char *fspath,
 	mp->mnt_opt = mp->mnt_optnew;
 	(void) VFS_STATFS(mp, &mp->mnt_stat);
 
-#ifdef VFS_SUPPORTS_EXJAIL_CLONE
-	/*
-	 * Clone the mnt_exjail credentials of the parent, as required.
-	 */
-	vfs_exjail_clone(parent_vfsp, mp);
-#endif
 
 	/*
 	 * Prevent external consumers of mount options from reading

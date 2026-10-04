@@ -222,7 +222,6 @@ struct mount_upper_node {
  *	i - interlock
  *	v - vnode freelist mutex
  *	d - deferred unmount list mutex
- *	e - mnt_explock
  *
  * Unmarked fields are considered stable as long as a ref is held.
  *
@@ -252,21 +251,21 @@ struct mount {
 	void *		mnt_data;		/* private data */
 	time_t		mnt_time;		/* last time written*/
 	int		mnt_iosize_max;		/* max size for clusters, etc */
-	struct netexport *mnt_export;		/* (e) export list */
+	void		*mnt_reserved_export;	/* reserved ABI slot */
 	struct label	*mnt_label;		/* MAC label for the fs */
 	u_int		mnt_hashseed;		/* Random seed for vfs_hash */
 	int		mnt_lockref;		/* (i) Lock reference count */
 	int		mnt_secondary_writes;   /* (i) # of secondary writes */
 	int		mnt_secondary_accwrites;/* (i) secondary wr. starts */
 	struct thread	*mnt_susp_owner;	/* (i) thread owning suspension */
-	struct ucred	*mnt_exjail;		/* (i) jail which did exports */
+	void		*mnt_reserved_exjail;	/* reserved ABI slot */
 #define	mnt_endzero	mnt_gjprovider
 	char		*mnt_gjprovider;	/* gjournal provider name */
 	struct mtx	mnt_listmtx;
 	struct vnodelst	mnt_lazyvnodelist;	/* (l) list of lazy vnodes */
 	int		mnt_lazyvnodelistsize;	/* (l) # of lazy vnodes */
 	int		mnt_upper_pending;	/* (i) # of pending ops on mnt_uppers */
-	struct lock	mnt_explock;		/* vfs_export walkers lock */
+	struct lock	mnt_reserved_explock;	/* reserved ABI slot */
 	struct lock	mnt_renamelock;		/* renames and O_RESOLVE_BENEATH */
 	TAILQ_HEAD(, mount_upper_node) mnt_uppers; /* (i) upper mounts over us */
 	TAILQ_HEAD(, mount_upper_node) mnt_notify; /* (i) upper mounts for notification */
@@ -399,7 +398,7 @@ struct mntoptnames {
 #define	MNT_NAMEDATTR	0x0000020000000000ULL /* named attributes enabled */
 
 /*
- * NFS export related mount flags.
+ * Reserved values for retired NFS export flags.
  */
 #define	MNT_EXRDONLY	0x0000000000000080ULL	/* exported read only */
 #define	MNT_EXPORTED	0x0000000000000100ULL	/* filesystem is exported */
@@ -807,9 +806,6 @@ typedef	int vfs_vget_t(struct mount *mp, ino_t ino, int flags,
 		    struct vnode **vpp);
 typedef	int vfs_fhtovp_t(struct mount *mp, struct fid *fhp,
 		    int flags, struct vnode **vpp);
-typedef	int vfs_checkexp_t(struct mount *mp, struct sockaddr *nam,
-		    uint64_t *extflagsp, struct ucred **credanonp,
-		    int *numsecflavors, int *secflavors);
 typedef	int vfs_init_t(struct vfsconf *);
 typedef	int vfs_uninit_t(struct vfsconf *);
 typedef	int vfs_extattrctl_t(struct mount *mp, int cmd,
@@ -835,7 +831,7 @@ struct vfsops {
 	vfs_sync_t		*vfs_sync;
 	vfs_vget_t		*vfs_vget;
 	vfs_fhtovp_t		*vfs_fhtovp;
-	vfs_checkexp_t		*vfs_checkexp;
+	void			*vfs_reserved_export;
 	vfs_init_t		*vfs_init;
 	vfs_uninit_t		*vfs_uninit;
 	vfs_extattrctl_t	*vfs_extattrctl;
@@ -904,13 +900,6 @@ vfs_statfs_t	__vfs_statfs;
 	int _rc;							\
 									\
 	_rc = (*(MP)->mnt_op->vfs_fhtovp)(MP, FIDP, FLAGS, VPP);	\
-	_rc; })
-
-#define	VFS_CHECKEXP(MP, NAM, EXFLG, CRED, NUMSEC, SEC) ({		\
-	int _rc;							\
-									\
-	_rc = (*(MP)->mnt_op->vfs_checkexp)(MP, NAM, EXFLG, CRED, NUMSEC,\
-	    SEC);							\
 	_rc; })
 
 #define	VFS_EXTATTRCTL(MP, C, FN, NS, N) ({				\
@@ -993,9 +982,6 @@ enum vfs_notify_upper_type {
  * exported vnode operations
  */
 
-/* Define this to indicate that vfs_exjail_clone() exists for ZFS to use. */
-#define	VFS_SUPPORTS_EXJAIL_CLONE	1
-
 int	dounmount(struct mount *, uint64_t, struct thread *);
 
 int	kernel_mount(struct mntarg *ma, uint64_t flags);
@@ -1029,15 +1015,8 @@ int	vfs_setopt_part(struct vfsoptlist *opts, const char *name, void *value,
 	    int len);
 int	vfs_setopts(struct vfsoptlist *opts, const char *name,
 	    const char *value);
-int	vfs_setpublicfs			    /* WebNFS compatibility entrypoint */
-	    (struct mount *, struct netexport *, struct export_args *);
 void	vfs_periodic(struct mount *, int);
 int	vfs_busy(struct mount *, int);
-void	vfs_exjail_clone(struct mount *, struct mount *);
-void	vfs_exjail_delete(struct prison *);
-int	vfs_export			 /* process mount export info */
-	    (struct mount *, struct export_args *, bool);
-void	vfs_free_addrlist(struct netexport *);
 void	vfs_allocate_syncvnode(struct mount *);
 void	vfs_deallocate_syncvnode(struct mount *);
 int	vfs_donmount(struct thread *td, uint64_t fsflags,
@@ -1070,7 +1049,6 @@ int	vfs_report_lockf(struct mount *mp, struct sbuf *sb);
 
 extern	TAILQ_HEAD(mntlist, mount) mountlist;	/* mounted filesystem list */
 extern	struct mtx_padalign mountlist_mtx;
-extern	struct nfs_public nfs_pub;
 extern	struct sx vfsconf_sx;
 #define	vfsconf_lock()		sx_xlock(&vfsconf_sx)
 #define	vfsconf_unlock()	sx_xunlock(&vfsconf_sx)
@@ -1092,7 +1070,6 @@ vfs_sync_t		vfs_stdsync;
 vfs_sync_t		vfs_stdnosync;
 vfs_vget_t		vfs_stdvget;
 vfs_fhtovp_t		vfs_stdfhtovp;
-vfs_checkexp_t		vfs_stdcheckexp;
 vfs_init_t		vfs_stdinit;
 vfs_uninit_t		vfs_stduninit;
 vfs_extattrctl_t	vfs_stdextattrctl;

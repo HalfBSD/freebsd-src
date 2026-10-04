@@ -142,7 +142,7 @@ DIRDEPS= \
       lib/libc/tests/nss \
       lib/libc/tests/regex \
       lib/libc/tests/resolv \
-      lib/libc/tests/rpc \
+      lib/libc/tests/xdr \
       lib/libc/tests/setjmp \
       lib/libc/tests/ssp \
       lib/libc/tests/stdio \
@@ -358,7 +358,6 @@ DIRDEPS= \
       usr.sbin/newsyslog/tests \
       usr.sbin/nmtree/tests \
       usr.sbin/pw/tests \
-      usr.sbin/rpcbind/tests \
       usr.sbin/sa/tests \
       usr.sbin/tests \
 

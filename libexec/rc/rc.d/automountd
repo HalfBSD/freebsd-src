@@ -3,7 +3,7 @@
 #
 
 # PROVIDE: automountd
-# REQUIRE: rpcbind FILESYSTEMS ldconfig
+# REQUIRE: FILESYSTEMS ldconfig
 # BEFORE: DAEMON
 # KEYWORD: nojail
 

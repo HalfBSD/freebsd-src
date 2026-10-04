@@ -372,7 +372,7 @@
             ..
             resolv
             ..
-            rpc
+            xdr
             ..
             secure
             ..
@@ -1272,8 +1272,6 @@
         pw
         ..
         quot
-        ..
-        rpcbind
         ..
         sa
         ..

@@ -224,7 +224,14 @@ struct addrinfo {
  */
 #define	SCOPE_DELIMITER	'%'
 
+struct sockaddr;
+struct sockaddr_in;
+
 __BEGIN_DECLS
+#if __BSD_VISIBLE
+int		bindresvport(int, struct sockaddr_in *);
+int		bindresvport_sa(int, struct sockaddr *);
+#endif
 void		endhostent(void);
 void		endnetent(void);
 void		endprotoent(void);

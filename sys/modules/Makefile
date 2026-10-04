@@ -178,7 +178,6 @@ SUBDIR=	\
 	jme \
 	kbdmux \
 	khelp \
-	krpc \
 	ksyms \
 	lge \
 	libalias \

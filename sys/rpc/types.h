@@ -31,7 +31,7 @@
  */
 
 /*
- * Rpc additions to <sys/types.h>
+ * Scalar types and allocation helpers for XDR serialization
  */
 #ifndef _RPC_TYPES_H
 #define _RPC_TYPES_H
@@ -60,56 +60,14 @@ typedef  int32_t rpc_inline_t;
 
 #ifdef _KERNEL
 #ifdef _SYS_MALLOC_H_
-MALLOC_DECLARE(M_RPC);
+MALLOC_DECLARE(M_XDR);
 #endif
-#define mem_alloc(bsize)	malloc(bsize, M_RPC,  M_WAITOK|M_ZERO)
-#define mem_free(ptr, bsize)	free(ptr, M_RPC)
+#define mem_alloc(bsize)	malloc(bsize, M_XDR,  M_WAITOK|M_ZERO)
+#define mem_free(ptr, bsize)	free(ptr, M_XDR)
 #else
 #define mem_alloc(bsize)	calloc(1, bsize)
 #define mem_free(ptr, bsize)	free(ptr)
 #endif
 
-#include <sys/time.h>
-#ifdef _KERNEL
-#include <rpc/netconfig.h>
-#else
-#include <netconfig.h>
-#endif
-
-/*
- * The netbuf structure is defined here, because FreeBSD / NetBSD only use
- * it inside the RPC code. It's in <xti.h> on SVR4, but it would be confusing
- * to have an xti.h, since FreeBSD / NetBSD does not support XTI/TLI.
- */
-
-/*
- * The netbuf structure is used for transport-independent address storage.
- */
-struct netbuf {
-	unsigned int maxlen;
-	unsigned int len;
-	void *buf;
-};
-
-/*
- * The format of the address and options arguments of the XTI t_bind call.
- * Only provided for compatibility, it should not be used.
- */
-
-struct t_bind {
-	struct netbuf   addr;
-	unsigned int    qlen;
-};
-
-/*
- * Internal library and rpcbind use. This is not an exported interface, do
- * not use.
- */
-struct __rpc_sockinfo {
-	int si_af; 
-	int si_proto;
-	int si_socktype;
-	int si_alen;
-};
 
 #endif /* !_RPC_TYPES_H */

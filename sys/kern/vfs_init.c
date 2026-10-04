@@ -277,19 +277,6 @@ vfs_fhtovp_sigdefer(struct mount *mp, struct fid *fidp, int flags,
 }
 
 static int
-vfs_checkexp_sigdefer(struct mount *mp, struct sockaddr *nam, uint64_t *exflg,
-    struct ucred **credp, int *numsecflavors, int *secflavors)
-{
-	int prev_stops, rc;
-
-	prev_stops = sigdeferstop(SIGDEFERSTOP_SILENT);
-	rc = (*mp->mnt_vfc->vfc_vfsops_sd->vfs_checkexp)(mp, nam, exflg, credp,
-	    numsecflavors, secflavors);
-	sigallowstop(prev_stops);
-	return (rc);
-}
-
-static int
 vfs_extattrctl_sigdefer(struct mount *mp, int cmd, struct vnode *filename_vp,
     int attrnamespace, const char *attrname)
 {
@@ -380,7 +367,6 @@ static struct vfsops vfsops_sigdefer = {
 	.vfs_sync =		vfs_sync_sigdefer,
 	.vfs_vget =		vfs_vget_sigdefer,
 	.vfs_fhtovp =		vfs_fhtovp_sigdefer,
-	.vfs_checkexp =		vfs_checkexp_sigdefer,
 	.vfs_extattrctl =	vfs_extattrctl_sigdefer,
 	.vfs_sysctl =		vfs_sysctl_sigdefer,
 	.vfs_susp_clean =	vfs_susp_clean_sigdefer,
@@ -488,9 +474,6 @@ vfs_register(struct vfsconf *vfc)
 	if (vfsops->vfs_fhtovp == NULL)
 		/* turn an NFS file handle into a vnode */
 		vfsops->vfs_fhtovp =	vfs_stdfhtovp;
-	if (vfsops->vfs_checkexp == NULL)
-		/* check if file system is exported */
-		vfsops->vfs_checkexp =	vfs_stdcheckexp;
 	if (vfsops->vfs_init == NULL)
 		/* file system specific initialisation */
 		vfsops->vfs_init =	vfs_stdinit;

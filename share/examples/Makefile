@@ -24,7 +24,6 @@ LDIRS=	BSD_daemon \
 	ses \
 	scsi_target \
 	sound \
-	sunrpc
 
 SE_DIRS+=	BSD_daemon
 SE_BSD_DAEMON= \
@@ -239,31 +238,6 @@ SE_SOUND= \
 	select.c \
 	simple.c \
 	sndstat_nv.c
-
-SE_DIRS+=	sunrpc
-SE_SUNRPC=	Makefile
-
-SE_DIRS+=	sunrpc/dir
-SE_SUNRPC_DIR= \
-	Makefile \
-	dir.x \
-	dir_proc.c \
-	rls.c
-
-SE_DIRS+=	sunrpc/msg
-SE_SUNRPC_MSG= \
-	Makefile \
-	msg.x \
-	msg_proc.c \
-	printmsg.c \
-	rprintmsg.c
-
-SE_DIRS+=	sunrpc/sort
-SE_SUNRPC_SORT= \
-	Makefile \
-	rsort.c \
-	sort.x \
-	sort_proc.c
 
 .if ${MK_EFI} != "no"
 LDIRS+=		uefisign

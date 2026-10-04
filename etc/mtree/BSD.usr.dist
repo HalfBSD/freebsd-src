@@ -298,14 +298,6 @@
             ..
             sound
             ..
-            sunrpc
-                dir
-                ..
-                msg
-                ..
-                sort
-                ..
-            ..
             uefisign
             ..
         ..

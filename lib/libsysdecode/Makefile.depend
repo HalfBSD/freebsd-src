@@ -14,7 +14,6 @@ DIRDEPS = \
 	include/arpa \
 	include/protocols \
 	include/rpc \
-	include/rpcsvc \
 	include/xlocale \
 	lib/${CSU_DIR} \
 	lib/atf/libatf-c \

@@ -1,31 +1,5 @@
-.include <src.opts.mk>
-.PATH: ${SRCTOP}/sys/rpc
-
-.SUFFIXES: .x
-
-RPCCOM=	RPCGEN_CPP=${CPP:Q} rpcgen -C
-
-HDRS=	rpcb_prot.h
-
-XFILES= rpcb_prot.x
-
-HFILES=	auth.h auth_unix.h clnt.h clnt_soc.h clnt_stat.h \
-	nettype.h pmap_clnt.h pmap_prot.h pmap_rmt.h raw.h \
-	rpc.h rpc_msg.h rpcb_clnt.h rpcent.h rpc_com.h \
-	svc.h svc_auth.h svc_soc.h svc_dg.h xdr.h
-
-# User visible declarations for kernel RPC modules
-HFILES+= clnt_nl.h
-
-# Secure RPC
-HFILES+= auth_des.h des.h des_crypt.h
-
-CLEANFILES+= ${HDRS}
-
-INCS=	${HFILES} ${XFILES} ${HDRS}
-INCSDIR=${INCLUDEDIR}/rpc
-
-.x.h:
-	${RPCCOM} -h -DWANT_NFS3 ${.IMPSRC} -o ${.TARGET}
+# XDR serialization remains available for ZFS and local consumers.
+INCS= ${.CURDIR}/xdr.h
+INCSDIR= ${INCLUDEDIR}/rpc
 
 .include <bsd.prog.mk>

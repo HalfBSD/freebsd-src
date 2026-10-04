@@ -181,7 +181,6 @@ C_DIRDEPS= \
 	include/arpa \
 	include/protocols \
 	include/rpc  \
-	include/rpcsvc \
 	include/xlocale \
 	lib/${CSU_DIR} \
 	lib/libc \
@@ -273,7 +272,6 @@ BROKEN_HOST_TESTS += \
 	usr.bin/xargs/tests \
 	usr.bin/yacc/tests \
 	usr.sbin/makefs/tests \
-	usr.sbin/rpcbind/tests \
 
 # these all have broken dependencies which we choose not to fix for host
 BROKEN_HOST_DEP_TESTS += \

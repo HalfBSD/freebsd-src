@@ -57,9 +57,6 @@
  */
 
 #include <sys/cdefs.h>
-__COPYRIGHT("@(#) Copyright (c) 2008\
- The NetBSD Foundation, inc. All rights reserved.");
-__RCSID("$NetBSD: t_xdr.c,v 1.1 2011/01/08 06:59:37 pgoyette Exp $");
 
 #include <rpc/types.h>
 #include <rpc/xdr.h>
@@ -68,13 +65,12 @@ __RCSID("$NetBSD: t_xdr.c,v 1.1 2011/01/08 06:59:37 pgoyette Exp $");
 
 #include <atf-c.h>
 
-#include "h_testbits.h"
 
 char xdrdata[] = {
 	0x3f, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* double 1.0 */
-	0x00, 0x00, 0x00, 0x01, /* enum smallenum SE_ONE */
-	0xff, 0xff, 0xfb, 0x2e, /* enum medenum ME_NEG */
-	0x00, 0x12, 0xd6, 0x87, /* enum bigenum BE_LOTS */
+	0x00, 0x00, 0x00, 0x01, /* enum smallenum 1 */
+	0xff, 0xff, 0xfb, 0x2e, /* enum medenum -1234 */
+	0x00, 0x12, 0xd6, 0x87, /* enum bigenum 1234567 */
 };
 
 ATF_TC(xdr);
@@ -87,9 +83,9 @@ ATF_TC_BODY(xdr, tc)
 {
 	XDR x;
 	double d;
-	smallenum s;
-	medenum m;
-	bigenum b;
+	enum_t s;
+	enum_t m;
+	enum_t b;
 	char newdata[sizeof(xdrdata)];
 
 	xdrmem_create(&x, xdrdata, sizeof(xdrdata), XDR_DECODE);
@@ -97,14 +93,14 @@ ATF_TC_BODY(xdr, tc)
 	ATF_REQUIRE_MSG(xdr_double(&x, &d), "xdr_double DECODE failed");
 	ATF_REQUIRE_EQ_MSG(d, 1.0, "double 1.0 decoded as %g", d);
 
-	ATF_REQUIRE_MSG(xdr_smallenum(&x, &s), "xdr_smallenum DECODE failed");
-	ATF_REQUIRE_EQ_MSG(s, SE_ONE, "SE_ONE decoded as %d", s);
+	ATF_REQUIRE_MSG(xdr_enum(&x, &s), "xdr_enum DECODE failed");
+	ATF_REQUIRE_EQ_MSG(s, 1, "1 decoded as %d", s);
 
-	ATF_REQUIRE_MSG(xdr_medenum(&x, &m), "xdr_medenum DECODE failed");
-	ATF_REQUIRE_EQ_MSG(m, ME_NEG, "ME_NEG decoded as %d", m);
+	ATF_REQUIRE_MSG(xdr_enum(&x, &m), "xdr_enum DECODE failed");
+	ATF_REQUIRE_EQ_MSG(m, -1234, "-1234 decoded as %d", m);
 
-	ATF_REQUIRE_MSG(xdr_bigenum(&x, &b), "xdr_bigenum DECODE failed");
-	ATF_REQUIRE_EQ_MSG(b, BE_LOTS, "BE_LOTS decoded as %d", b);
+	ATF_REQUIRE_MSG(xdr_enum(&x, &b), "xdr_enum DECODE failed");
+	ATF_REQUIRE_EQ_MSG(b, 1234567, "1234567 decoded as %d", b);
 
 	xdr_destroy(&x);
 
@@ -112,9 +108,9 @@ ATF_TC_BODY(xdr, tc)
 	xdrmem_create(&x, newdata, sizeof(newdata), XDR_ENCODE);
 
 	ATF_REQUIRE_MSG(xdr_double(&x, &d), "xdr_double ENCODE failed");
-	ATF_REQUIRE_MSG(xdr_smallenum(&x, &s), "xdr_smallenum ENCODE failed");
-	ATF_REQUIRE_MSG(xdr_medenum(&x, &m), "xdr_medenum ENCODE failed");
-	ATF_REQUIRE_MSG(xdr_bigenum(&x, &b), "xdr_bigenum ENCODE failed");
+	ATF_REQUIRE_MSG(xdr_enum(&x, &s), "xdr_enum ENCODE failed");
+	ATF_REQUIRE_MSG(xdr_enum(&x, &m), "xdr_enum ENCODE failed");
+	ATF_REQUIRE_MSG(xdr_enum(&x, &b), "xdr_enum ENCODE failed");
 	ATF_REQUIRE_MSG(memcmp(newdata, xdrdata, sizeof(xdrdata)) == 0,
 		"xdr ENCODE result differs");
 

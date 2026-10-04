@@ -82,7 +82,6 @@ SUBDIR=	${SUBDIR_BOOTSTRAP} \
 	libproc \
 	libprocstat \
 	libregex \
-	librpcsvc \
 	librss \
 	librt \
 	librtld_db \
@@ -126,7 +125,7 @@ SUBDIR_DEPEND_libedit= ncurses
 SUBDIR_DEPEND_libgeom= libexpat libsbuf
 SUBDIR_DEPEND_libmagic= libz
 SUBDIR_DEPEND_libmemstat= libkvm
-SUBDIR_DEPEND_libpam= libcrypt librpcsvc libutil
+SUBDIR_DEPEND_libpam= libcrypt libutil
 SUBDIR_DEPEND_libpjdlog= libutil
 SUBDIR_DEPEND_libprocstat= libkvm libutil
 # See comment above about libssp_nonshared

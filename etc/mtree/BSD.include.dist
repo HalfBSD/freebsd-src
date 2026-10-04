@@ -308,8 +308,6 @@
     ..
     rpc
     ..
-    rpcsvc
-    ..
     security
         audit           tags=package=audit-dev
         ..

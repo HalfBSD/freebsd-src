@@ -58,7 +58,7 @@
 #define HAVE_GETOPT_LONG 1
 
 /* define if you have getrpcbynumber() */
-#define HAVE_GETRPCBYNUMBER 1
+/* #undef HAVE_GETRPCBYNUMBER */
 
 /* Define to 1 if you have the `getservent' function. */
 #define HAVE_GETSERVENT 1
@@ -164,10 +164,10 @@
 /* #undef HAVE_PFOPEN */
 
 /* Define to 1 if you have the <rpc/rpcent.h> header file. */
-#define HAVE_RPC_RPCENT_H 1
+/* #undef HAVE_RPC_RPCENT_H */
 
 /* Define to 1 if you have the <rpc/rpc.h> header file. */
-#define HAVE_RPC_RPC_H 1
+/* #undef HAVE_RPC_RPC_H */
 
 /* Define to 1 if you have the `setlinebuf' function. */
 #define HAVE_SETLINEBUF 1

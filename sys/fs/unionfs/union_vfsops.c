@@ -53,7 +53,6 @@
 static MALLOC_DEFINE(M_UNIONFSMNT, "UNIONFS mount", "UNIONFS mount structure");
 
 static vfs_fhtovp_t	unionfs_fhtovp;
-static vfs_checkexp_t	unionfs_checkexp;
 static vfs_mount_t	unionfs_domount;
 static vfs_quotactl_t	unionfs_quotactl;
 static vfs_root_t	unionfs_root;
@@ -565,13 +564,6 @@ unionfs_fhtovp(struct mount *mp, struct fid *fidp, int flags,
 }
 
 static int
-unionfs_checkexp(struct mount *mp, struct sockaddr *nam, uint64_t *extflagsp,
-    struct ucred **credanonp, int *numsecflavors, int *secflavors)
-{
-	return (EOPNOTSUPP);
-}
-
-static int
 unionfs_extattrctl(struct mount *mp, int cmd, struct vnode *filename_vp,
     int namespace, const char *attrname)
 {
@@ -591,7 +583,6 @@ unionfs_extattrctl(struct mount *mp, int cmd, struct vnode *filename_vp,
 }
 
 static struct vfsops unionfs_vfsops = {
-	.vfs_checkexp =		unionfs_checkexp,
 	.vfs_extattrctl =	unionfs_extattrctl,
 	.vfs_fhtovp =		unionfs_fhtovp,
 	.vfs_init =		unionfs_init,

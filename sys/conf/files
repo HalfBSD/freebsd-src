@@ -3595,7 +3595,6 @@ kern/vfs_bio.c			standard
 kern/vfs_cache.c		standard
 kern/vfs_cluster.c		standard
 kern/vfs_default.c		standard
-kern/vfs_export.c		standard
 kern/vfs_extattr.c		standard
 kern/vfs_hash.c			standard
 kern/vfs_init.c			standard
@@ -4239,26 +4238,6 @@ crypto/libsodium/randombytes.c	optional crypto \
 crypto/libsodium/utils.c	optional crypto \
 	compile-with "${NORMAL_C} -I$S/contrib/libsodium/src/libsodium/include -I$S/crypto/libsodium"
 
-rpc/auth_none.c			optional krpc
-rpc/auth_unix.c			optional krpc
-rpc/authunix_prot.c		optional krpc
-rpc/clnt_dg.c			optional krpc
-rpc/clnt_nl.c			optional krpc
-rpc/clnt_rc.c			optional krpc
-rpc/clnt_vc.c			optional krpc
-rpc/getnetconfig.c		optional krpc
-rpc/replay.c			optional krpc
-rpc/rpc_callmsg.c		optional krpc
-rpc/rpc_generic.c		optional krpc
-rpc/rpc_prot.c			optional krpc
-rpc/rpcb_clnt.c			optional krpc
-rpc/rpcb_prot.c			optional krpc
-rpc/svc.c			optional krpc
-rpc/svc_auth.c			optional krpc
-rpc/svc_auth_unix.c		optional krpc
-rpc/svc_dg.c			optional krpc
-rpc/svc_generic.c		optional krpc
-rpc/svc_vc.c			optional krpc
 security/audit/audit.c		optional audit
 security/audit/audit_arg.c	optional audit
 security/audit/audit_bsm.c	optional audit
@@ -4369,9 +4348,9 @@ vm/vm_reserv.c			standard
 vm/vm_swapout.c			optional racct
 vm/vm_unix.c			standard
 vm/vnode_pager.c		standard
-xdr/xdr.c			optional xdr | krpc | zfs
-xdr/xdr_array.c			optional xdr | krpc | zfs
-xdr/xdr_mbuf.c			optional xdr | krpc | zfs
-xdr/xdr_mem.c			optional xdr | krpc | zfs
-xdr/xdr_reference.c		optional xdr | krpc | zfs
-xdr/xdr_sizeof.c		optional xdr | krpc | zfs
+xdr/xdr.c			optional xdr | zfs
+xdr/xdr_array.c			optional xdr | zfs
+xdr/xdr_mbuf.c			optional xdr | zfs
+xdr/xdr_mem.c			optional xdr | zfs
+xdr/xdr_reference.c		optional xdr | zfs
+xdr/xdr_sizeof.c		optional xdr | zfs

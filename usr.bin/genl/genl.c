@@ -65,7 +65,6 @@ static struct mcast_parsers {
 } mcast_parsers [] = {
 	{ "nlctrl", parser_nlctrl_notify },
 	{ "nlsysevent", parser_nlsysevent },
-	{ "rpc", parser_rpc },
 };
 
 struct nlevent {

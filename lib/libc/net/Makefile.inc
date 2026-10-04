@@ -2,7 +2,7 @@
 .PATH: ${LIBC_SRCTOP}/net
 
 CONFS+=	net/hosts net/hosts.equiv net/networks ${.OBJDIR}/nsswitch.conf net/protocols
-SRCS+=	base64.c ether_addr.c eui64.c \
+SRCS+=	bindresvport.c base64.c ether_addr.c eui64.c \
 	gai_strerror.c getaddrinfo.c \
 	gethostbydns.c gethostbyht.c gethostnamadr.c \
 	getifaddrs.c getifmaddrs.c getnameinfo.c \

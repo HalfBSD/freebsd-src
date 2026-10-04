@@ -42,6 +42,23 @@ def main():
             return result.stdout.splitlines(), result.stderr
 
         opts = "share/mk/src.opts.mk"
+        bootstrap = root / "tools/build"
+        for host_os in ["FreeBSD", "Linux"]:
+            result = subprocess.run(
+                common + ["-C", str(bootstrap), ".MAKE.OS=" + host_os,
+                          "CC=cc", "CXX=c++", "CPP=cpp", "LD=ld",
+                          "DESTDIR=" + tmp + "/legacy", "-n",
+                          "installdirs", "host-symlinks"],
+                text=True, capture_output=True)
+            assert result.returncode == 0, result.stderr
+            assert "Linking host tools" in result.stdout, result.stdout
+            assert "mkdir -p " + tmp + "/legacy/bin" in result.stdout, result.stdout
+        values, _ = evaluate("tools/build/Makefile",
+                             ["INCS", "SYSINCS", "INCSGROUPS"],
+                             ["CC=cc", "CXX=c++", "CPP=cpp", "LD=ld"], cwd=bootstrap)
+        assert "mpool.h" in values[0] and "elf_common.h" in values[1], values
+        assert "RPCINCS" not in values[2], values
+        print("PASS: bootstrap directory/host-tool targets and non-RPC headers")
         llvm_targets = ["MK_LLVM_TARGET_" + target for target in
                         ["ALL", "X86", "AARCH64", "ARM", "RISCV", "BPF", "MIPS"]]
         values, _ = evaluate(opts, llvm_targets)

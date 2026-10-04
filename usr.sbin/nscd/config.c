@@ -44,13 +44,12 @@
 /*
  * Default entries, which always exist in the configuration
  */
-const char *c_default_entries[6] = {
+const char *c_default_entries[5] = {
 	NSDB_PASSWD,
 	NSDB_GROUP,
 	NSDB_HOSTS,
 	NSDB_SERVICES,
-	NSDB_PROTOCOLS,
-	NSDB_RPC
+	NSDB_PROTOCOLS
 	};
 
 static int configuration_entry_cmp(const void *, const void *);

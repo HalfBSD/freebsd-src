@@ -52,7 +52,7 @@
 #define DEFAULT_MULITPART_SESSIONS_SIZE	(1024)
 #define DEFAULT_MULITPART_LIFETIME	(3600)
 
-extern const char *c_default_entries[6];
+extern const char *c_default_entries[5];
 
 /*
  * Configuration entry represents the details of each cache entry in the

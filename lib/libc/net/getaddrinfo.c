@@ -56,6 +56,7 @@
 #include "namespace.h"
 #include <sys/param.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <net/if.h>
 #include <netinet/in.h>
 #include <net/if_types.h>

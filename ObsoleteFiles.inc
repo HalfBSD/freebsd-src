@@ -520,8 +520,6 @@ OLD_DIRS+=usr/tests/usr.bin/asa
 OLD_FILES+=boot/kernel/agp.ko
 OLD_FILES+=boot/kernel/drm2.ko
 OLD_FILES+=usr/include/sys/agpio.h
-OLD_FILES+=usr/include/dev/agp/agpreg.h
-OLD_DIRS+=usr/include/dev/agp
 
 # 20261003: Retire Frame Relay and synchronous-WAN Netgraph leaf nodes.
 OLD_FILES+=boot/kernel/ng_cisco.ko

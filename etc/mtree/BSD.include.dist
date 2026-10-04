@@ -123,6 +123,8 @@
     dev
         acpica
         ..
+        agp
+        ..
         ciss
         ..
         evdev

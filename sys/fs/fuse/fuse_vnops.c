@@ -1951,7 +1951,6 @@ fuse_vnop_readdir(struct vop_readdir_args *ap)
 	struct uio *uio = ap->a_uio;
 	struct ucred *cred = ap->a_cred;
 	struct fuse_filehandle *fufh = NULL;
-	struct mount *mp = vnode_mount(vp);
 	struct fuse_iov cookediov;
 	int err = 0;
 	uint64_t *cookies;

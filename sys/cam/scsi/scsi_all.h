@@ -1067,6 +1067,11 @@ struct scsi_read_attribute
 #define	SRA_SA_MASK			0x1f
 	uint8_t element[2];
 	uint8_t elem_type;
+#define SRA_ELEMENT_TYPE_ALL		0x00
+#define SRA_ELEMENT_TYPE_MT		0x01
+#define SRA_ELEMENT_TYPE_ST		0x02
+#define SRA_ELEMENT_TYPE_IE		0x03
+#define SRA_ELEMENT_TYPE_DT		0x04
 	uint8_t logical_volume;
 	uint8_t reserved1;
 	uint8_t partition;

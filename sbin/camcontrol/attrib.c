@@ -71,11 +71,11 @@ struct scsi_attr_desc {
 #endif
 
 static struct scsi_nv elem_type_map[] = {
-	{ "all", ELEMENT_TYPE_ALL },
-	{ "picker", ELEMENT_TYPE_MT },
-	{ "slot", ELEMENT_TYPE_ST },
-	{ "portal", ELEMENT_TYPE_IE },
-	{ "drive", ELEMENT_TYPE_DT },
+	{ "all", SRA_ELEMENT_TYPE_ALL },
+	{ "picker", SRA_ELEMENT_TYPE_MT },
+	{ "slot", SRA_ELEMENT_TYPE_ST },
+	{ "portal", SRA_ELEMENT_TYPE_IE },
+	{ "drive", SRA_ELEMENT_TYPE_DT },
 };
 
 static struct scsi_nv sa_map[] = {
@@ -115,7 +115,7 @@ scsiattrib(struct cam_device *device, int argc, char **argv, char *combinedopt,
 	int read_service_action = -1;
 	int read_attr = 0, write_attr = 0;
 	int element_address = 0;
-	int element_type = ELEMENT_TYPE_ALL;
+	int element_type = SRA_ELEMENT_TYPE_ALL;
 	int partition = 0;
 	int logical_volume = 0;
 	char *endptr;

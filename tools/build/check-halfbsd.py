@@ -67,9 +67,10 @@ def main():
         essential = {"vmm", "ctl", "zfs", "nvme", "if_epair", "if_bridge",
                      "linuxkpi", "linuxkpi_wlan", "linuxkpi_video", "usb", "sound"}
         assert essential <= selected, essential - selected
-        retired = {"ena", "gve", "mana", "vmware", "iscsi", "cfiscsi", "nvmf"}
+        retired = {"ena", "gve", "mana", "vmware", "iscsi", "cfiscsi", "nvmf",
+                   "le", "dc", "fxp", "rl", "sis", "ste", "xl", "ipw", "iwi",
+                   "wpi", "malo", "ipwfw", "iwifw", "wpifw"}
         assert not selected & retired
-        assert not selected & {"le", "dc", "fxp", "rl", "sis", "ste", "xl", "ipw", "iwi", "wpi", "malo"}
         values, _ = evaluate(top, ["SUBDIR"], smp + ["MODULES_EXTRA=accf_data"])
         assert "accf_data" in " ".join(values).split()
         values, _ = evaluate(top, ["SUBDIR"], smp + ["MODULES_OVERRIDE=virtio vmm"])
@@ -78,6 +79,8 @@ def main():
         all_modules = set(" ".join(values).split())
         assert {"accf_data"} <= all_modules
         assert not retired & all_modules
+        assert all((root / "sys/modules" / name / "Makefile").is_file()
+                   for name in all_modules)
         values, _ = evaluate(top, ["SUBDIR"], smp + ["WITHOUT_MODULES=vmm"])
         assert "vmm" not in " ".join(values).split()
         for group, includes in [

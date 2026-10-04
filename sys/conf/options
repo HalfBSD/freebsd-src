@@ -721,11 +721,6 @@ BWN_USE_SIBA		opt_bwn.h
 # Options for the SIBA driver
 SIBA_DEBUG		opt_siba.h
 
-# options for the Marvell 8335 wireless driver
-MALO_DEBUG		opt_malo.h
-MALO_TXBUF		opt_malo.h
-MALO_RXBUF		opt_malo.h
-
 # options for the Marvell wireless driver
 MWL_DEBUG		opt_mwl.h
 MWL_TXBUF		opt_mwl.h
@@ -743,9 +738,6 @@ IWM_DEBUG		opt_iwm.h
 
 # Options for the Intel 802.11n wireless driver
 IWN_DEBUG		opt_iwn.h
-
-# Options for the Intel 3945ABG wireless driver
-WPI_DEBUG		opt_wpi.h
 
 # dcons options 
 DCONS_BUF_SIZE		opt_dcons.h

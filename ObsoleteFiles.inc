@@ -51,6 +51,42 @@
 #   xargs -n1 | sort | uniq -d;
 # done
 
+# 20261003: Retire eleven legacy Ethernet and Wi-Fi driver families
+OLD_FILES+=boot/kernel/if_dc.ko
+OLD_FILES+=usr/share/man/man4/dc.4.gz
+OLD_FILES+=boot/kernel/if_fxp.ko
+OLD_FILES+=usr/share/man/man4/fxp.4.gz
+OLD_FILES+=boot/kernel/if_ipw.ko
+OLD_FILES+=usr/share/man/man4/ipw.4.gz
+OLD_FILES+=boot/kernel/if_iwi.ko
+OLD_FILES+=usr/share/man/man4/iwi.4.gz
+OLD_FILES+=boot/kernel/if_le.ko
+OLD_FILES+=usr/share/man/man4/le.4.gz
+OLD_FILES+=boot/kernel/if_malo.ko
+OLD_FILES+=usr/share/man/man4/malo.4.gz
+OLD_FILES+=boot/kernel/if_rl.ko
+OLD_FILES+=usr/share/man/man4/rl.4.gz
+OLD_FILES+=boot/kernel/if_sis.ko
+OLD_FILES+=usr/share/man/man4/sis.4.gz
+OLD_FILES+=boot/kernel/if_ste.ko
+OLD_FILES+=usr/share/man/man4/ste.4.gz
+OLD_FILES+=boot/kernel/if_wpi.ko
+OLD_FILES+=usr/share/man/man4/wpi.4.gz
+OLD_FILES+=boot/kernel/if_xl.ko
+OLD_FILES+=usr/share/man/man4/xl.4.gz
+OLD_FILES+=boot/kernel/ipw_bss.ko
+OLD_FILES+=boot/kernel/ipw_ibss.ko
+OLD_FILES+=boot/kernel/ipw_monitor.ko
+OLD_FILES+=usr/share/man/man4/ipwfw.4.gz
+OLD_FILES+=boot/kernel/iwi_bss.ko
+OLD_FILES+=boot/kernel/iwi_ibss.ko
+OLD_FILES+=boot/kernel/iwi_monitor.ko
+OLD_FILES+=usr/share/man/man4/iwifw.4.gz
+OLD_FILES+=boot/kernel/wpifw.ko
+OLD_FILES+=usr/share/man/man4/wpifw.4.gz
+OLD_FILES+=boot/kernel/malo8335-h.ko
+OLD_FILES+=boot/kernel/malo8335-m.ko
+
 # 20261003: Retire SAN protocols and VMware/cloud guest drivers (B2/A9).
 OLD_FILES+=etc/rc.d/iscsictl
 OLD_FILES+=etc/rc.d/iscsid

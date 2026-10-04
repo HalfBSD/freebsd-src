@@ -88,7 +88,6 @@ SUBDIR=	\
 	ctl \
 	${_cxgb} \
 	${_cxgbe} \
-	dc \
 	dcons \
 	dcons_crom \
 	${_dpaa2} \
@@ -118,7 +117,6 @@ SUBDIR=	\
 	${_ftgpio} \
 	${_ftwd} \
 	fusefs \
-	${_fxp} \
 	gem \
 	geom \
 	${_glxiic} \
@@ -167,12 +165,8 @@ SUBDIR=	\
 	ip6_mroute_mod \
 	ip_mroute_mod \
 	${_ipsec} \
-	${_ipw} \
-	${_ipwfw} \
 	${_isci} \
 	${_itwd} \
-	${_iwi} \
-	${_iwifw} \
 	${_iwlwifi} \
 	${_iwm} \
 	${_iwn} \
@@ -186,7 +180,6 @@ SUBDIR=	\
 	khelp \
 	krpc \
 	ksyms \
-	le \
 	lge \
 	libalias \
 	libiconv \
@@ -219,7 +212,6 @@ SUBDIR=	\
 	${_mac_veriexec_sha256} \
 	${_mac_veriexec_sha384} \
 	${_mac_veriexec_sha512} \
-	${_malo} \
 	md \
 	mdio \
 	${_mgb} \
@@ -292,7 +284,6 @@ SUBDIR=	\
 	${_rdrand_rng} \
 	${_rdseed_rng} \
 	re \
-	rl \
 	${_rockchip} \
 	rtsx \
 	${_rtw88} \
@@ -321,14 +312,12 @@ SUBDIR=	\
 	${_sgx_linux} \
 	siftr \
 	siis \
-	sis \
 	sk \
 	${_smartpqi} \
 	snp \
 	sound \
 	${_speaker} \
 	spi \
-	ste \
 	stge \
 	${_sume} \
 	${_superio} \
@@ -371,12 +360,9 @@ SUBDIR=	\
 	wlan_tkip \
 	wlan_wep \
 	wlan_xauth \
-	${_wpi} \
-	${_wpifw} \
 	${_wtap} \
 	${_x86bios} \
 	xdr \
-	xl \
 	xz \
 	zlib
 
@@ -541,7 +527,6 @@ _netgraph=	netgraph
 
 .if ${MK_SOURCELESS_UCODE} != "no"
 _bce=		bce
-_fxp=		fxp
 _ti=		ti
 _mwlfw=		mwlfw
 _otusfw=	otusfw
@@ -677,13 +662,9 @@ _coretemp=	coretemp
 _ichwd=		ichwd
 _intelspi=	intelspi
 _isci=		isci
-_ipw=		ipw
-_iwi=		iwi
 _iwm=		iwm
 _iwn=		iwn
 .if ${MK_SOURCELESS_UCODE} != "no"
-_ipwfw=		ipwfw
-_iwifw=		iwifw
 _iwnfw=		iwnfw
 .endif
 _nfe=		nfe
@@ -701,10 +682,6 @@ _superio=	superio
 _vesa=		vesa
 _viawd=		viawd
 _vmd=		vmd
-_wpi=		wpi
-.if ${MK_SOURCELESS_UCODE} != "no"
-_wpifw=		wpifw
-.endif
 .if ${KERN_OPTS:MVIMAGE}
 _wtap=		wtap
 .endif
@@ -775,11 +752,6 @@ _bcm283x_pwm=	bcm283x_pwm
 _neta=		neta
 .endif
 
-.if !(${COMPILER_TYPE} == "clang" && ${COMPILER_VERSION} < 110000)
-# LLVM 10 crashes when building if_malo_pci.c, fixed in LLVM11:
-# https://bugs.llvm.org/show_bug.cgi?id=44351
-_malo=	malo
-.endif
 
 .if ${MACHINE_CPUARCH} == "amd64" || ${MACHINE_CPUARCH} == "aarch64"
 _ufshci=ufshci

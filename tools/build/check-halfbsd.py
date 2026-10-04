@@ -94,6 +94,11 @@ def main():
                      "linuxkpi", "linuxkpi_wlan", "linuxkpi_video", "usb", "sound",
                      "cam", "mps", "mpr", "mpi3mr"}
         assert essential <= selected, essential - selected
+        zfs_core = root / "sys/contrib/openzfs/module/os/freebsd/zfs/kmod_core.c"
+        zfs_dependencies = set(re.findall(
+            r"MODULE_DEPEND\(zfsctrl,\s*(\w+),", zfs_core.read_text()))
+        assert zfs_dependencies, "no ZFS module dependencies found"
+        assert zfs_dependencies <= selected, zfs_dependencies - selected
         retired = {"ena", "gve", "mana", "vmware", "iscsi", "cfiscsi", "nvmf", "krpc",
                    "le", "dc", "fxp", "rl", "sis", "ste", "xl", "ipw", "iwi",
                    "wpi", "malo", "ipwfw", "iwifw", "wpifw"}

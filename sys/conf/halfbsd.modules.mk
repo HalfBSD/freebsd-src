@@ -3,9 +3,10 @@
 # explicit MODULES_OVERRIDE, MODULES_EXTRA, or ALL_MODULES builds.
 # External module Makefiles do not include this file.
 # Filter the existing candidate set, respecting feature/firmware/arch choices.
+# Keep ZFS dependencies even when a kernel does not compile them in.
 
 HALFBSD_MODULES.top= \
-	acpi aesni ahci alq amdgpio amdsmn amdsmu amdtemp asmc ath ath_dfs \
+	acl_nfs4 acpi aesni ahci alq amdgpio amdsmn amdsmu amdtemp asmc ath ath_dfs \
 	ath_hal ath_hal_ar5210 ath_hal_ar5211 ath_hal_ar5212 ath_hal_ar5416 ath_hal_ar9300 \
 	ath_main ath_rate axgbe backlight bce bge bhnd blake2 bnxt bridgestp bwi bwn bxe \
 	bytgpio cam carp cc ccp cd9660 cd9660_iconv chromebook_platform chvgpio coretemp \
@@ -24,7 +25,7 @@ HALFBSD_MODULES.top= \
 	sdhci sdhci_acpi sdhci_pci sdio sem sfxge siftr  sound spi superio \
 	sysvipc tarfs tcp tests tmpfs tpm uart udf udf_iconv ufs uinput unionfs usb \
 	videomode virtio vkbd vmd vmm wdatwd wlan wlan_acl wlan_amrr wlan_ccmp wlan_gcmp \
-	wlan_rssadapt wlan_tkip wlan_wep wlan_xauth xz zfs zlib
+	wlan_rssadapt wlan_tkip wlan_wep wlan_xauth xdr xz zfs zlib
 
 HALFBSD_MODULES.geom= \
 	geom_cache geom_eli geom_label geom_mirror geom_mountver geom_nop geom_part \

@@ -6,6 +6,8 @@
 #if defined(__i386__) || defined(__amd64__)
 
 #define X86_HYPER_NATIVE	1
+/* Retained for driver compatibility; Hyper-V is not supported. */
+#define X86_HYPER_MS_HYPERV	2
 
 static inline bool
 hypervisor_is_type(int type)

@@ -10,9 +10,7 @@
 
 name="zpool"
 desc="Import ZPOOLs"
-rcvar="zfs_enable"
 start_cmd="zpool_start"
-required_modules="zfs"
 
 zpool_start()
 {

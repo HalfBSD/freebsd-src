@@ -137,11 +137,9 @@ vm_install_base() {
 	echo "hostname=\"${hostname}\"" >> ${DESTDIR}/etc/rc.conf
 	metalog_add_data ./etc/rc.conf
 	if [ "${VMFS}" = zfs ]; then
-		echo "zfs_enable=\"YES\"" >> ${DESTDIR}/etc/rc.conf
 		echo "zpool_reguid=\"zroot\"" >> ${DESTDIR}/etc/rc.conf
 		echo "zpool_upgrade=\"zroot\"" >> ${DESTDIR}/etc/rc.conf
 		echo "kern.geom.label.disk_ident.enable=0" >> ${DESTDIR}/boot/loader.conf
-		echo "zfs_load=YES" >> ${DESTDIR}/boot/loader.conf
 		metalog_add_data ./boot/loader.conf
 	fi
 

@@ -50,7 +50,8 @@ libbe_create_setup()
 	# Sanity check to make sure `make_zpool_name` succeeded
 	atf_check test -n "$zpool"
 
-	kldload -n -q zfs || atf_skip "ZFS module not loaded on the current system"
+	[ "$(sysctl -n kern.features.zfs 2>/dev/null)" = 1 ] ||
+	    atf_skip "ZFS is not present in the current kernel"
 	atf_check mkdir -p ${mnt}
 	atf_check truncate -s 1G ${disk}
 	atf_check zpool create -o altroot=${mnt} ${zpool} ${disk}

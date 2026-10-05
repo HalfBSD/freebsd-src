@@ -26,7 +26,8 @@ bectl_create_setup()
 	# Sanity check to make sure `make_zpool_name` succeeded
 	atf_check test -n "$zpool"
 
-	kldload -n -q zfs || atf_skip "ZFS module not loaded on the current system"
+	[ "$(sysctl -n kern.features.zfs 2>/dev/null)" = 1 ] ||
+	    atf_skip "ZFS is not present in the current kernel"
 	if ! getconf MIN_HOLE_SIZE "$(pwd)"; then
 		echo "getconf MIN_HOLE_SIZE $(pwd) failed; sparse files " \
 		    "probably not supported by file system"

@@ -9,7 +9,6 @@
 
 name="zpoolupgrade"
 desc="Upgrade zpool version"
-rcvar="zfs_enable"
 start_cmd="zpoolupgrade_start"
 
 zpoolupgrade_start()

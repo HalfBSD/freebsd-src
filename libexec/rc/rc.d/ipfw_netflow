@@ -16,7 +16,7 @@ start_cmd="${name}_start"
 stop_cmd="${name}_stop"
 start_precmd="${name}_test"
 status_cmd="${name}_status"
-required_modules="ipfw ng_netflow ng_ipfw"
+required_modules="ng_netflow ng_ipfw"
 extra_commands="status"
 
 : ${ipfw_netflow_hook:=9995}

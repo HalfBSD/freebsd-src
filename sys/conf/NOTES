@@ -882,12 +882,10 @@ device		dummymbuf
 # logged packets to the system logger.  IPFIREWALL_VERBOSE_LIMIT
 # limits the number of times a matching entry can be logged.
 #
-# WARNING:  IPFIREWALL defaults to a policy of "deny ip from any to any"
-# and if you do not add other rules during startup to allow access,
-# YOU WILL LOCK YOURSELF OUT.  It is suggested that you set firewall_type=open
-# in /etc/rc.conf when first enabling this feature, then refining the
-# firewall rules in /etc/rc.firewall after you've tested that the new kernel
-# feature works properly.
+# Without IPFIREWALL_DEFAULT_TO_ACCEPT, IPFIREWALL defaults to denying all
+# traffic. HalfBSD builds IPFIREWALL_DEFAULT_TO_ACCEPT into its amd64 kernel
+# and selects open, workstation, or closed with firewall_mode in rc.conf.
+# Restrictive HalfBSD policies install an explicit terminal deny rule.
 #
 # IPFIREWALL_DEFAULT_TO_ACCEPT causes the default rule (at boot) to
 # allow everything.  Use with care, if a cracker can crash your

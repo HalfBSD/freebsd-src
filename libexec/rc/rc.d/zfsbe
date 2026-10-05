@@ -14,10 +14,8 @@
 . /etc/rc.subr
 
 name="zfsbe"
-rcvar="zfs_enable"
 start_cmd="be_start"
 stop_cmd="be_stop"
-required_modules="zfs"
 
 mount_subordinate()
 {
@@ -82,6 +80,7 @@ be_start()
 
 be_stop()
 {
+	:
 }
 
 load_rc_config $name

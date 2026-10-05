@@ -1,5 +1,6 @@
 # HalfBSD amd64 workstation kernel.
-# ZFS, bhyve VMM, local CTL, and additional workstation drivers are modules.
+# IPFW and ZFS are built in; bhyve VMM, local CTL, and additional drivers
+# remain modules.
 # Default module selection is maintained in sys/conf/halfbsd.modules.mk.
 # Keep cross-host toolchain and external LinuxKPI/drm-kmod interfaces usable.
 
@@ -16,6 +17,10 @@ options 	PREEMPTION		# Enable kernel thread preemption
 options 	EXTERR_STRINGS
 options 	INET			# InterNETworking
 options 	INET6			# IPv6 communications protocols
+options 	IPFIREWALL		# Mandatory platform firewall
+options 	IPFIREWALL_VERBOSE	# Support explicit logged rules
+options 	IPFIREWALL_DEFAULT_TO_ACCEPT # Keep networking available before rc policy
+options 	ZFS			# Mandatory root filesystem
 options 	FIB_ALGO		# Modular fib lookups
 options 	TCP_BLACKBOX		# Enhanced TCP event logging
 options 	TCP_HHOOK		# hhook(9) framework for TCP
@@ -132,6 +137,7 @@ device		wlan			# Wi-Fi core; hardware/crypto built as modules
 
 # Pseudo devices.
 device		crypto			# core crypto support
+device		cryptodev		# Static ZFS crypto dependency
 device		aesni			# AES-NI OpenCrypto module
 device		loop			# Network loopback
 device		rdrand_rng		# Intel Bull Mountain RNG

@@ -9,7 +9,6 @@
 
 name="zpoolreguid"
 desc="Generate a new zpool GUID"
-rcvar="zfs_enable"
 start_cmd="zpoolreguid_start"
 
 zpoolreguid_start()

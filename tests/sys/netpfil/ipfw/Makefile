@@ -4,6 +4,7 @@ TESTSDIR=       ${TESTSBASE}/sys/netpfil/ipfw
 
 ATF_TESTS_SH+=	fwd \
 		divert \
+		halfbsd \
 		lookup
 
 # Allow tests to run in parallel in their own jails

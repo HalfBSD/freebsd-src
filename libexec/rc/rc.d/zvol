@@ -10,10 +10,8 @@
 
 name="zvol"
 desc="Activate swap on ZVOLs"
-rcvar="zfs_enable"
 start_cmd="zvol_start"
 stop_cmd="zvol_stop"
-required_modules="zfs"
 
 zvol_start()
 {

@@ -175,6 +175,9 @@ def main():
     kernel = (root / "sys/amd64/conf/HALFBSD").read_text()
     devices = set(re.findall(r"^device\s+(\w+)", kernel, re.M))
     options = set(re.findall(r"^options\s+(\w+)", kernel, re.M))
+    assert {"crypto", "cryptodev"} <= devices
+    assert {"ZFS", "ZSTDIO", "IPFIREWALL", "IPFIREWALL_VERBOSE",
+            "IPFIREWALL_DEFAULT_TO_ACCEPT"} <= options
     assert {"nvme", "nda", "scbus", "da", "ahci", "wlan", "iflib"} <= devices
     assert {"SMP", "VIMAGE", "INET", "INET6", "COMPAT_LINUXKPI"} <= options
     known_options = set()

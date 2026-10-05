@@ -10,11 +10,9 @@
 
 name="zfs"
 desc="Mount and share ZFS datasets"
-rcvar="zfs_enable"
 start_cmd="zfs_start"
 start_postcmd="zfs_poststart"
 stop_cmd="zfs_stop"
-required_modules="zfs"
 
 zfs_start_jail()
 {

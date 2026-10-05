@@ -13,7 +13,6 @@ extra_commands="status"
 start_cmd="load_zfs_keys"
 stop_cmd="unload_zfs_keys"
 status_cmd="status_zfs_keys"
-required_modules="zfs"
 
 # Note that zfskeys_datasets must have any character found in IFS escaped.
 # Forcibly unmounting/unloading only applies to filesystems; ignored for zvols.

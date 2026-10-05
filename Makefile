@@ -88,6 +88,10 @@
 #  9.  `make delete-old'
 # 10.  `reboot'
 # 11.  `make delete-old-libs' (in case no 3rd party program uses them anymore)
+# 12.  `sh tools/build/install-desktop-packages.sh' (as root, install desktop
+#       and font packages, building drm-kmod from ports; pass package names
+#       or port:category/name to install a custom list, and set PORTSDIR to
+#       override /usr/ports).
 #
 # For individuals wanting to build from source with GCC from ports, first
 # install the appropriate GCC cross toolchain package:

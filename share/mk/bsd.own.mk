@@ -114,6 +114,15 @@
 # INFOMODE	Info mode. [${NOBINMODE}]
 #
 #
+# MANDIR	Base path for manual installation. [${SHAREDIR}/man/man]
+#
+# MANOWN	Manual owner. [${SHAREOWN}]
+#
+# MANGRP	Manual group. [${SHAREGRP}]
+#
+# MANMODE	Manual mode. [${NOBINMODE}]
+#
+#
 #
 # NLSDIR	Base path for National Language Support files
 #		installation. [${SHAREDIR}/nls]
@@ -207,6 +216,12 @@ CONFOWN?=	root
 CONFGRP?=	wheel
 CONFMODE?=	644
 
+# Compatibility defaults for ports and other external Makefiles.
+MANDIR?=	${SHAREDIR}/man/man
+MANOWN?=	${SHAREOWN}
+MANGRP?=	${SHAREGRP}
+MANMODE?=	${NOBINMODE}
+
 DIROWN?=	root
 DIRGRP?=	wheel
 DIRMODE?=	755
@@ -238,11 +253,13 @@ _SYMLINKOWN?=	${SYMLINKOWN:U${BINOWN}}
 _SYMLINKGRP?=	${SYMLINKGRP:U${BINGRP}}
 _SYMLINKMODE?=	${SYMLINKMODE:U755}
 HRDLINK?=	-l mr -o ${_LINKOWN} -g ${_LINKGRP} -m ${_LINKMODE}
+MANHRDLINK?=	-l h -o ${MANOWN} -g ${MANGRP} -m ${MANMODE}
 SYMLINK?=	-l s -o ${_SYMLINKOWN} -g ${_SYMLINKGRP} -m ${_SYMLINKMODE}
 LSYMLINK?=	-l s -o ${LIBOWN} -g ${LIBGRP} -m ${LIBMODE}
 RSYMLINK?=	-l rs -o ${_SYMLINKOWN} -g ${_SYMLINKGRP} -m ${_SYMLINKMODE}
 
 INSTALL_LINK?=		${INSTALL} ${HRDLINK}
+INSTALL_MANLINK?=	${INSTALL} ${MANHRDLINK}
 INSTALL_SYMLINK?=	${INSTALL} ${SYMLINK}
 INSTALL_LIBSYMLINK?=	${INSTALL} ${LSYMLINK}
 INSTALL_RSYMLINK?=	${INSTALL} ${RSYMLINK}

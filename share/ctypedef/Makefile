@@ -16,10 +16,6 @@ MAPLOC=		${.CURDIR}/../../tools/tools/locale/etc/final-maps
 	-i ${.IMPSRC} ${.OBJDIR}/${.IMPSRC:T:R}
 
 LOCALES+=	C.UTF-8
-.if ${MK_LOCALES} != no
-
-SAME+=		C.UTF-8 en_US.UTF-8
-.endif
 
 # C.UTF-8 is the default locale, so it should always been installed.
 ALWAYS=		C.UTF-8.LC_CTYPE

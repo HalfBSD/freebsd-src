@@ -51,6 +51,14 @@
 #   xargs -n1 | sort | uniq -d;
 # done
 
+# 20261006: Remove en_US.UTF-8; retain C.UTF-8.
+OLD_FILES+=usr/share/locale/en_US.UTF-8/LC_COLLATE
+OLD_FILES+=usr/share/locale/en_US.UTF-8/LC_CTYPE
+OLD_FILES+=usr/share/locale/en_US.UTF-8/LC_MESSAGES
+OLD_FILES+=usr/share/locale/en_US.UTF-8/LC_MONETARY
+OLD_FILES+=usr/share/locale/en_US.UTF-8/LC_NUMERIC
+OLD_FILES+=usr/share/locale/en_US.UTF-8/LC_TIME
+OLD_DIRS+=usr/share/locale/en_US.UTF-8
 # 20261003: Retire native a.out execution.
 OLD_FILES+=boot/kernel/aout.ko
 # 20261003: Retire tape, media changers and remote tape.

@@ -1518,16 +1518,6 @@ OLD_FILES+=usr/bin/llvm-cov
 OLD_FILES+=usr/bin/llvm-profdata
 .endif
 
-.if ${MK_LOCALES} == no
-OLD_DIRS+=usr/share/locale/en_US.UTF-8
-OLD_FILES+=usr/share/locale/en_US.UTF-8/LC_COLLATE
-OLD_FILES+=usr/share/locale/en_US.UTF-8/LC_CTYPE
-OLD_FILES+=usr/share/locale/en_US.UTF-8/LC_MESSAGES
-OLD_FILES+=usr/share/locale/en_US.UTF-8/LC_MONETARY
-OLD_FILES+=usr/share/locale/en_US.UTF-8/LC_NUMERIC
-OLD_FILES+=usr/share/locale/en_US.UTF-8/LC_TIME
-.endif
-
 .if ${MK_MAKE} == no
 OLD_FILES+=usr/bin/make
 OLD_FILES+=usr/share/mk/atf.test.mk

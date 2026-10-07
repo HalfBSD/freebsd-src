@@ -16,7 +16,7 @@ CLDR_VERSION=	"48"
 	-V ${CLDR_VERSION} \
 	-f ${MAPLOC}/map.${.TARGET:T:R:E:C/@.*//} ${.OBJDIR}/${.IMPSRC:T:R}
 
-LOCALES+=	en_US.UTF-8
+LOCALES=
 
 
 

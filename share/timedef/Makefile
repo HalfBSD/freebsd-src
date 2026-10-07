@@ -6,7 +6,7 @@ FILESNAME=	LC_TIME
 .src.out:
 	grep -v -E '^(#$$|#[ ])' < ${.IMPSRC} > ${.TARGET}
 
-LOCALES+=	en_US.UTF-8
+LOCALES=
 
 
 

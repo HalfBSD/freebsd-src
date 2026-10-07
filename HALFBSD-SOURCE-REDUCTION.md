@@ -228,8 +228,8 @@ they do not imply that equivalent third-party software cannot be installed.
 - Installed manual-page readers, lookup/indexing utilities, manual sources,
   manual build rules, and mandoc sources.
 - Most locale definitions and aliases. The remaining locale source data
-  centers on `C.UTF-8` and `en_US.UTF-8`; timezone data remains separate
-  and was updated to 2026d.
+  centers on `C.UTF-8`; `en_US.UTF-8` has also been removed. Timezone data
+  remains separate and was updated to 2026d.
 
 Other deleted content includes obsolete GNU scaffolding, upstream CI and
 contribution metadata, historical release/update notes, and temporary

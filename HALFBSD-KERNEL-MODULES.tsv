@@ -1,0 +1,802 @@
+makefile	kmod_expression	halfbsd_amd64_allowlist
+sys/modules/3dfx/Makefile	3dfx	outside default allowlist
+sys/modules/3dfx_linux/Makefile	3dfx_linux	outside default allowlist
+sys/modules/accf_data/Makefile	accf_data	outside default allowlist
+sys/modules/accf_dns/Makefile	accf_dns	outside default allowlist
+sys/modules/accf_http/Makefile	accf_http	outside default allowlist
+sys/modules/accf_tls/Makefile	accf_tls	outside default allowlist
+sys/modules/acl_nfs4/Makefile	acl_nfs4	candidate
+sys/modules/acl_posix1e/Makefile	acl_posix1e	outside default allowlist
+sys/modules/acpi/acpi_asus/Makefile	acpi_asus	candidate
+sys/modules/acpi/acpi_asus_wmi/Makefile	acpi_asus_wmi	candidate
+sys/modules/acpi/acpi_dock/Makefile	acpi_dock	candidate
+sys/modules/acpi/acpi_fujitsu/Makefile	acpi_fujitsu	candidate
+sys/modules/acpi/acpi_ged/Makefile	acpi_ged	candidate
+sys/modules/acpi/acpi_hp/Makefile	acpi_hp	candidate
+sys/modules/acpi/acpi_ibm/Makefile	acpi_ibm	candidate
+sys/modules/acpi/acpi_panasonic/Makefile	acpi_panasonic	candidate
+sys/modules/acpi/acpi_rapidstart/Makefile	acpi_rapidstart	candidate
+sys/modules/acpi/acpi_sbl_wmi/Makefile	acpi_sbl_wmi	candidate
+sys/modules/acpi/acpi_sony/Makefile	acpi_sony	candidate
+sys/modules/acpi/acpi_toshiba/Makefile	acpi_toshiba	candidate
+sys/modules/acpi/acpi_video/Makefile	acpi_video	candidate
+sys/modules/acpi/acpi_wmi/Makefile	acpi_wmi	candidate
+sys/modules/acpi/aibs/Makefile	aibs	candidate
+sys/modules/adlink/Makefile	adlink	outside default allowlist
+sys/modules/ae/Makefile	if_ae	outside default allowlist
+sys/modules/aesni/Makefile	aesni	candidate
+sys/modules/age/Makefile	if_age	outside default allowlist
+sys/modules/ahci/Makefile	ahci	candidate
+sys/modules/alc/Makefile	if_alc	outside default allowlist
+sys/modules/ale/Makefile	if_ale	outside default allowlist
+sys/modules/allwinner/aw_mmc/Makefile	aw_mmc	outside default allowlist
+sys/modules/allwinner/aw_pwm/Makefile	aw_pwm	outside default allowlist
+sys/modules/allwinner/aw_rsb/Makefile	aw_rsb	outside default allowlist
+sys/modules/allwinner/aw_rtc/Makefile	aw_rtc	outside default allowlist
+sys/modules/allwinner/aw_sid/Makefile	aw_sid	outside default allowlist
+sys/modules/allwinner/aw_spi/Makefile	aw_spi	outside default allowlist
+sys/modules/allwinner/aw_thermal/Makefile	aw_thermal	outside default allowlist
+sys/modules/allwinner/axp81x/Makefile	axp81x	outside default allowlist
+sys/modules/allwinner/if_awg/Makefile	if_awg	outside default allowlist
+sys/modules/alq/Makefile	alq	candidate
+sys/modules/am335x_dmtpps/Makefile	am335x_dmtpps	outside default allowlist
+sys/modules/amd_ecc_inject/Makefile	amd_ecc_inject	outside default allowlist
+sys/modules/amdgpio/Makefile	amdgpio	candidate
+sys/modules/amdsbwd/Makefile	amdsbwd	outside default allowlist
+sys/modules/amdsmb/Makefile	amdsmb	outside default allowlist
+sys/modules/amdsmn/Makefile	amdsmn	candidate
+sys/modules/amdsmu/Makefile	amdsmu	candidate
+sys/modules/amdtemp/Makefile	amdtemp	candidate
+sys/modules/arcmsr/Makefile	arcmsr	outside default allowlist
+sys/modules/arm_ti/am335x_ehrpwm/Makefile	am335x_ehrpwm	outside default allowlist
+sys/modules/arm_ti/ti_i2c/Makefile	ti_i2c	outside default allowlist
+sys/modules/armv8_rng/Makefile	armv8_rng	outside default allowlist
+sys/modules/armv8crypto/Makefile	armv8crypto	outside default allowlist
+sys/modules/asmc/Makefile	asmc	candidate
+sys/modules/ata/atacore/Makefile	ata	outside default allowlist
+sys/modules/ata/ataisa/Makefile	ataisa	outside default allowlist
+sys/modules/ata/atapci/Makefile	atapci	outside default allowlist
+sys/modules/ata/atapci/chipsets/ataacard/Makefile	ataacard	outside default allowlist
+sys/modules/ata/atapci/chipsets/ataacerlabs/Makefile	ataacerlabs	outside default allowlist
+sys/modules/ata/atapci/chipsets/ataamd/Makefile	ataamd	outside default allowlist
+sys/modules/ata/atapci/chipsets/ataati/Makefile	ataati	outside default allowlist
+sys/modules/ata/atapci/chipsets/atacenatek/Makefile	atacenatek	outside default allowlist
+sys/modules/ata/atapci/chipsets/atacypress/Makefile	atacypress	outside default allowlist
+sys/modules/ata/atapci/chipsets/atacyrix/Makefile	atacyrix	outside default allowlist
+sys/modules/ata/atapci/chipsets/atahighpoint/Makefile	atahighpoint	outside default allowlist
+sys/modules/ata/atapci/chipsets/ataintel/Makefile	ataintel	outside default allowlist
+sys/modules/ata/atapci/chipsets/ataite/Makefile	ataite	outside default allowlist
+sys/modules/ata/atapci/chipsets/atajmicron/Makefile	atajmicron	outside default allowlist
+sys/modules/ata/atapci/chipsets/atamarvell/Makefile	atamarvell	outside default allowlist
+sys/modules/ata/atapci/chipsets/atamicron/Makefile	atamicron	outside default allowlist
+sys/modules/ata/atapci/chipsets/atanational/Makefile	atanational	outside default allowlist
+sys/modules/ata/atapci/chipsets/atanetcell/Makefile	atanetcell	outside default allowlist
+sys/modules/ata/atapci/chipsets/atanvidia/Makefile	atanvidia	outside default allowlist
+sys/modules/ata/atapci/chipsets/atapromise/Makefile	atapromise	outside default allowlist
+sys/modules/ata/atapci/chipsets/ataserverworks/Makefile	ataserverworks	outside default allowlist
+sys/modules/ata/atapci/chipsets/atasiliconimage/Makefile	atasiliconimage	outside default allowlist
+sys/modules/ata/atapci/chipsets/atasis/Makefile	atasis	outside default allowlist
+sys/modules/ata/atapci/chipsets/atavia/Makefile	atavia	outside default allowlist
+sys/modules/ath/Makefile	if_ath	candidate
+sys/modules/ath10k/Makefile	if_ath10k	outside default allowlist
+sys/modules/ath11k/Makefile	if_ath11k	outside default allowlist
+sys/modules/ath12k/Makefile	if_ath12k	outside default allowlist
+sys/modules/ath_dfs/Makefile	ath_dfs	candidate
+sys/modules/ath_hal/Makefile	ath_hal	candidate
+sys/modules/ath_hal_ar5210/Makefile	ath_hal_ar5210	candidate
+sys/modules/ath_hal_ar5211/Makefile	ath_hal_ar5211	candidate
+sys/modules/ath_hal_ar5212/Makefile	ath_hal_ar5212	candidate
+sys/modules/ath_hal_ar5416/Makefile	ath_hal_ar5416	candidate
+sys/modules/ath_hal_ar9300/Makefile	ath_hal_ar9300	candidate
+sys/modules/ath_main/Makefile	ath_main	candidate
+sys/modules/ath_rate/Makefile	ath_rate	candidate
+sys/modules/athk_common/Makefile	athk_common	outside default allowlist
+sys/modules/autofs/Makefile	autofs	outside default allowlist
+sys/modules/axgbe/if_axa/Makefile	if_axa	candidate
+sys/modules/axgbe/if_axp/Makefile	if_axp	candidate
+sys/modules/backlight/Makefile	backlight	candidate
+sys/modules/bce/Makefile	if_bce	candidate
+sys/modules/bcm283x_clkman/Makefile	bcm283x_clkman	outside default allowlist
+sys/modules/bcm283x_pwm/Makefile	bcm283x_pwm	outside default allowlist
+sys/modules/bfe/Makefile	if_bfe	outside default allowlist
+sys/modules/bge/Makefile	if_bge	candidate
+sys/modules/bhnd/Makefile	bhnd	candidate
+sys/modules/bhnd/bcma/Makefile	bcma	candidate
+sys/modules/bhnd/bcma_bhndb/Makefile	bcma_bhndb	candidate
+sys/modules/bhnd/bhndb/Makefile	bhndb	candidate
+sys/modules/bhnd/bhndb_pci/Makefile	bhndb_pci	candidate
+sys/modules/bhnd/cores/bhnd_pci/Makefile	bhnd_pci	candidate
+sys/modules/bhnd/cores/bhnd_pci_hostb/Makefile	bhnd_pci_hostb	candidate
+sys/modules/bhnd/cores/bhnd_pcib/Makefile	bhnd_pcib	candidate
+sys/modules/bhnd/siba/Makefile	siba	candidate
+sys/modules/bhnd/siba_bhndb/Makefile	siba_bhndb	candidate
+sys/modules/bios/smapi/Makefile	smapi	outside default allowlist
+sys/modules/bios/smbios/Makefile	smbios	outside default allowlist
+sys/modules/bios/vpd/Makefile	vpd	outside default allowlist
+sys/modules/blake2/Makefile	blake2	candidate
+sys/modules/bnxt/bnxt_en/Makefile	if_bnxt	candidate
+sys/modules/brcm80211/brcmfmac/Makefile	if_brcmfmac	outside default allowlist
+sys/modules/brcm80211/brcmutil/Makefile	brcmutil	outside default allowlist
+sys/modules/bridgestp/Makefile	bridgestp	candidate
+sys/modules/bwi/Makefile	if_bwi	candidate
+sys/modules/bwn/Makefile	if_bwn	candidate
+sys/modules/bxe/Makefile	if_bxe	candidate
+sys/modules/bytgpio/Makefile	bytgpio	candidate
+sys/modules/cam/Makefile	cam	candidate
+sys/modules/carp/Makefile	carp	candidate
+sys/modules/cas/Makefile	if_cas	outside default allowlist
+sys/modules/cc/cc_cdg/Makefile	cc_cdg	candidate
+sys/modules/cc/cc_chd/Makefile	cc_chd	candidate
+sys/modules/cc/cc_cubic/Makefile	cc_cubic	candidate
+sys/modules/cc/cc_dctcp/Makefile	cc_dctcp	candidate
+sys/modules/cc/cc_hd/Makefile	cc_hd	candidate
+sys/modules/cc/cc_htcp/Makefile	cc_htcp	candidate
+sys/modules/cc/cc_newreno/Makefile	cc_newreno	candidate
+sys/modules/cc/cc_vegas/Makefile	cc_vegas	candidate
+sys/modules/ccp/Makefile	ccp	candidate
+sys/modules/cd9660/Makefile	cd9660	candidate
+sys/modules/cd9660_iconv/Makefile	cd9660_iconv	candidate
+sys/modules/cfi/Makefile	cfi	outside default allowlist
+sys/modules/chromebook_platform/Makefile	chromebook_platform	candidate
+sys/modules/chvgpio/Makefile	chvgpio	candidate
+sys/modules/ciss/Makefile	ciss	outside default allowlist
+sys/modules/coretemp/Makefile	coretemp	candidate
+sys/modules/cpsw/Makefile	if_cpsw	outside default allowlist
+sys/modules/cpuctl/Makefile	cpuctl	candidate
+sys/modules/cpufreq/Makefile	cpufreq	candidate
+sys/modules/crypto/Makefile	crypto	candidate
+sys/modules/cryptodev/Makefile	cryptodev	candidate
+sys/modules/ctl/Makefile	ctl	candidate
+sys/modules/cuse/Makefile	cuse	candidate
+sys/modules/cxgb/cxgb/Makefile	if_cxgb	outside default allowlist
+sys/modules/cxgb/cxgb_t3fw/Makefile	cxgb_t3fw	outside default allowlist
+sys/modules/cxgbe/ccr/Makefile	ccr	candidate
+sys/modules/cxgbe/if_cc/Makefile	if_cc	candidate
+sys/modules/cxgbe/if_ccv/Makefile	if_ccv	candidate
+sys/modules/cxgbe/if_cxgbe/Makefile	if_cxgbe	candidate
+sys/modules/cxgbe/if_cxgbev/Makefile	if_cxgbev	candidate
+sys/modules/cxgbe/if_cxl/Makefile	if_cxl	candidate
+sys/modules/cxgbe/if_cxlv/Makefile	if_cxlv	candidate
+sys/modules/cxgbe/t4_firmware/Makefile	t4fw_cfg	candidate
+sys/modules/cxgbe/t5_firmware/Makefile	t5fw_cfg	candidate
+sys/modules/cxgbe/t6_firmware/Makefile	t6fw_cfg	candidate
+sys/modules/cxgbe/t7_firmware/Makefile	t7fw_cfg	candidate
+sys/modules/cxgbe/tom/Makefile	t4_tom	candidate
+sys/modules/dcons/Makefile	dcons	outside default allowlist
+sys/modules/dcons_crom/Makefile	dcons_crom	outside default allowlist
+sys/modules/dpaa2/Makefile	dpaa2	outside default allowlist
+sys/modules/dpdk_lpm4/Makefile	dpdk_lpm4	outside default allowlist
+sys/modules/dpdk_lpm6/Makefile	dpdk_lpm6	outside default allowlist
+sys/modules/dpms/Makefile	dpms	outside default allowlist
+sys/modules/dtrace/dtaudit/Makefile	dtaudit	outside default allowlist
+sys/modules/dtrace/dtmalloc/Makefile	dtmalloc	outside default allowlist
+sys/modules/dtrace/dtrace/Makefile	dtrace	outside default allowlist
+sys/modules/dtrace/dtrace_test/Makefile	dtrace_test	outside default allowlist
+sys/modules/dtrace/dtraceall/Makefile	dtraceall	outside default allowlist
+sys/modules/dtrace/fasttrap/Makefile	fasttrap	outside default allowlist
+sys/modules/dtrace/fbt/Makefile	fbt	outside default allowlist
+sys/modules/dtrace/kinst/Makefile	kinst	outside default allowlist
+sys/modules/dtrace/profile/Makefile	profile	outside default allowlist
+sys/modules/dtrace/prototype/Makefile	prototype	outside default allowlist
+sys/modules/dtrace/sdt/Makefile	sdt	outside default allowlist
+sys/modules/dtrace/systrace/Makefile	systrace	outside default allowlist
+sys/modules/dtrace/systrace_freebsd32/Makefile	systrace_freebsd32	outside default allowlist
+sys/modules/dtrace/systrace_linux/Makefile	systrace_linux	outside default allowlist
+sys/modules/dtrace/systrace_linux32/Makefile	systrace_linux32	outside default allowlist
+sys/modules/dummymbuf/Makefile	dummymbuf	outside default allowlist
+sys/modules/dummynet/Makefile	dummynet	candidate
+sys/modules/dwwdt/Makefile	dwwdt	outside default allowlist
+sys/modules/e6000sw/Makefile	e6000sw	outside default allowlist
+sys/modules/efirt/Makefile	efirt	candidate
+sys/modules/em/Makefile	if_em	candidate
+sys/modules/enetc/Makefile	if_enetc	outside default allowlist
+sys/modules/enic/Makefile	if_enic	candidate
+sys/modules/epoch_test/Makefile	epoch_test	outside default allowlist
+sys/modules/et/Makefile	if_et	candidate
+sys/modules/etherswitch/Makefile	etherswitch	outside default allowlist
+sys/modules/evdev/Makefile	evdev	candidate
+sys/modules/ext2fs/Makefile	ext2fs	outside default allowlist
+sys/modules/fdescfs/Makefile	fdescfs	candidate
+sys/modules/fdt/fdt_slicer/Makefile	fdt_slicer	outside default allowlist
+sys/modules/felix/Makefile	felix	outside default allowlist
+sys/modules/ffec/Makefile	if_ffec	outside default allowlist
+sys/modules/fib_dxr/Makefile	fib_dxr	outside default allowlist
+sys/modules/filemon/Makefile	filemon	candidate
+sys/modules/firewire/firewire/Makefile	firewire	outside default allowlist
+sys/modules/firewire/fwe/Makefile	if_fwe	outside default allowlist
+sys/modules/firewire/fwip/Makefile	if_fwip	outside default allowlist
+sys/modules/firewire/sbp/Makefile	sbp	outside default allowlist
+sys/modules/firewire/sbp_targ/Makefile	sbp_targ	outside default allowlist
+sys/modules/firmware/Makefile	firmware	candidate
+sys/modules/flash/flexspi/Makefile	flexspi	outside default allowlist
+sys/modules/ftgpio/Makefile	ftgpio	outside default allowlist
+sys/modules/ftwd/Makefile	ftwd	outside default allowlist
+sys/modules/fusefs/Makefile	fusefs	candidate
+sys/modules/gem/Makefile	if_gem	outside default allowlist
+sys/modules/genet/Makefile	if_genet	outside default allowlist
+sys/modules/geom/geom_cache/Makefile	geom_cache	candidate
+sys/modules/geom/geom_ccd/Makefile	geom_ccd	outside default allowlist
+sys/modules/geom/geom_concat/Makefile	geom_concat	outside default allowlist
+sys/modules/geom/geom_eli/Makefile	geom_eli	candidate
+sys/modules/geom/geom_flashmap/Makefile	geom_flashmap	outside default allowlist
+sys/modules/geom/geom_gate/Makefile	geom_gate	outside default allowlist
+sys/modules/geom/geom_journal/Makefile	geom_journal	outside default allowlist
+sys/modules/geom/geom_label/Makefile	geom_label	candidate
+sys/modules/geom/geom_linux_lvm/Makefile	geom_linux_lvm	outside default allowlist
+sys/modules/geom/geom_mirror/Makefile	geom_mirror	candidate
+sys/modules/geom/geom_mountver/Makefile	geom_mountver	candidate
+sys/modules/geom/geom_multipath/Makefile	geom_multipath	outside default allowlist
+sys/modules/geom/geom_nop/Makefile	geom_nop	candidate
+sys/modules/geom/geom_part/geom_part_apm/Makefile	geom_part_apm	candidate
+sys/modules/geom/geom_part/geom_part_bsd/Makefile	geom_part_bsd	candidate
+sys/modules/geom/geom_part/geom_part_bsd64/Makefile	geom_part_bsd64	candidate
+sys/modules/geom/geom_part/geom_part_ebr/Makefile	geom_part_ebr	candidate
+sys/modules/geom/geom_part/geom_part_gpt/Makefile	geom_part_gpt	candidate
+sys/modules/geom/geom_part/geom_part_ldm/Makefile	geom_part_ldm	candidate
+sys/modules/geom/geom_part/geom_part_mbr/Makefile	geom_part_mbr	candidate
+sys/modules/geom/geom_raid/Makefile	geom_raid	outside default allowlist
+sys/modules/geom/geom_raid3/Makefile	geom_raid3	outside default allowlist
+sys/modules/geom/geom_shsec/Makefile	geom_shsec	outside default allowlist
+sys/modules/geom/geom_stripe/Makefile	geom_stripe	outside default allowlist
+sys/modules/geom/geom_union/Makefile	geom_union	candidate
+sys/modules/geom/geom_uzip/Makefile	geom_uzip	candidate
+sys/modules/geom/geom_virstor/Makefile	geom_virstor	outside default allowlist
+sys/modules/geom/geom_zero/Makefile	geom_zero	candidate
+sys/modules/glxiic/Makefile	glxiic	outside default allowlist
+sys/modules/glxsb/Makefile	glxsb	outside default allowlist
+sys/modules/gpio/gpioaei/Makefile	gpioaei	candidate
+sys/modules/gpio/gpiobus/Makefile	gpiobus	candidate
+sys/modules/gpio/gpioiic/Makefile	gpioiic	candidate
+sys/modules/gpio/gpiokeys/Makefile	gpiokeys	candidate
+sys/modules/gpio/gpioled/Makefile	gpioled	candidate
+sys/modules/gpio/gpiopps/Makefile	gpiopps	candidate
+sys/modules/gpio/gpiospi/Makefile	gpiospi	candidate
+sys/modules/gpio/gpioths/Makefile	gpioths	candidate
+sys/modules/hid/bcm5974/Makefile	bcm5974	candidate
+sys/modules/hid/hconf/Makefile	hconf	candidate
+sys/modules/hid/hcons/Makefile	hcons	candidate
+sys/modules/hid/hgame/Makefile	hgame	candidate
+sys/modules/hid/hid/Makefile	hid	candidate
+sys/modules/hid/hidbus/Makefile	hidbus	candidate
+sys/modules/hid/hidmap/Makefile	hidmap	candidate
+sys/modules/hid/hidquirk/Makefile	hidquirk	candidate
+sys/modules/hid/hidraw/Makefile	hidraw	candidate
+sys/modules/hid/hkbd/Makefile	hkbd	candidate
+sys/modules/hid/hms/Makefile	hms	candidate
+sys/modules/hid/hmt/Makefile	hmt	candidate
+sys/modules/hid/hpen/Makefile	hpen	candidate
+sys/modules/hid/hsctrl/Makefile	hsctrl	candidate
+sys/modules/hid/ietp/Makefile	ietp	candidate
+sys/modules/hid/ps4dshock/Makefile	ps4dshock	candidate
+sys/modules/hid/u2f/Makefile	u2f	candidate
+sys/modules/hid/xb360gp/Makefile	xb360gp	candidate
+sys/modules/hifn/Makefile	hifn	outside default allowlist
+sys/modules/hwpmc/Makefile	hwpmc	candidate
+sys/modules/hwt/Makefile	hwt	outside default allowlist
+sys/modules/i2c/ads111x/Makefile	ads111x	candidate
+sys/modules/i2c/controllers/alpm/Makefile	alpm	candidate
+sys/modules/i2c/controllers/amdpm/Makefile	amdpm	candidate
+sys/modules/i2c/controllers/amdsmb/Makefile	amdsmb	candidate
+sys/modules/i2c/controllers/geni_iic/Makefile	geni_iic	candidate
+sys/modules/i2c/controllers/ichiic/Makefile	ig4	candidate
+sys/modules/i2c/controllers/ichsmb/Makefile	ichsmb	candidate
+sys/modules/i2c/controllers/iicoc/Makefile	iicoc	candidate
+sys/modules/i2c/controllers/imcsmb/Makefile	imcsmb	candidate
+sys/modules/i2c/controllers/intpm/Makefile	intpm	candidate
+sys/modules/i2c/controllers/ismt/Makefile	ismt	candidate
+sys/modules/i2c/controllers/nfsmb/Makefile	nfsmb	candidate
+sys/modules/i2c/controllers/pcf/Makefile	pcf	candidate
+sys/modules/i2c/controllers/viapm/Makefile	viapm	candidate
+sys/modules/i2c/cyapa/Makefile	cyapa	candidate
+sys/modules/i2c/ds1307/Makefile	ds1307	candidate
+sys/modules/i2c/ds13rtc/Makefile	ds13rtc	candidate
+sys/modules/i2c/ds1672/Makefile	ds1672	candidate
+sys/modules/i2c/ds3231/Makefile	ds3231	candidate
+sys/modules/i2c/htu21/Makefile	htu21	candidate
+sys/modules/i2c/hym8563/Makefile	hym8563	candidate
+sys/modules/i2c/icee/Makefile	icee	candidate
+sys/modules/i2c/if_ic/Makefile	if_ic	candidate
+sys/modules/i2c/iic/Makefile	iic	candidate
+sys/modules/i2c/iicbb/Makefile	iicbb	candidate
+sys/modules/i2c/iicbus/Makefile	iicbus	candidate
+sys/modules/i2c/iichid/Makefile	iichid	candidate
+sys/modules/i2c/iicsmb/Makefile	iicsmb	candidate
+sys/modules/i2c/isl/Makefile	isl	candidate
+sys/modules/i2c/isl12xx/Makefile	isl12xx	candidate
+sys/modules/i2c/jedec_dimm/Makefile	jedec_dimm	candidate
+sys/modules/i2c/max44009/Makefile	max44009	candidate
+sys/modules/i2c/mux/iic_gpiomux/Makefile	iic_gpiomux	candidate
+sys/modules/i2c/mux/iicmux/Makefile	iicmux	candidate
+sys/modules/i2c/mux/ltc430x/Makefile	ltc430x	candidate
+sys/modules/i2c/mux/pca954x/Makefile	pca954x	candidate
+sys/modules/i2c/nxprtc/Makefile	nxprtc	candidate
+sys/modules/i2c/pcf8574/Makefile	pcf8574	candidate
+sys/modules/i2c/pcf8591/Makefile	pcf8591	candidate
+sys/modules/i2c/rtc8583/Makefile	rtc8583	candidate
+sys/modules/i2c/rv3032/Makefile	rv3032	candidate
+sys/modules/i2c/rx8803/Makefile	rx8803	candidate
+sys/modules/i2c/s35390a/Makefile	s35390a	candidate
+sys/modules/i2c/smb/Makefile	smb	candidate
+sys/modules/i2c/smbus/Makefile	smbus	candidate
+sys/modules/i2c/tca64xx/Makefile	tca64xx	candidate
+sys/modules/i2c/tmp461/Makefile	tmp461	candidate
+sys/modules/iavf/Makefile	if_iavf	candidate
+sys/modules/ice/Makefile	if_ice	candidate
+sys/modules/ice_ddp/Makefile	ice_ddp	candidate
+sys/modules/ichwd/Makefile	ichwd	candidate
+sys/modules/if_bridge/Makefile	if_bridge	candidate
+sys/modules/if_cgem/Makefile	if_cgem	outside default allowlist
+sys/modules/if_disc/Makefile	if_disc	candidate
+sys/modules/if_edsc/Makefile	if_edsc	outside default allowlist
+sys/modules/if_enc/Makefile	if_enc	candidate
+sys/modules/if_epair/Makefile	if_epair	candidate
+sys/modules/if_gif/Makefile	if_gif	candidate
+sys/modules/if_gre/Makefile	if_gre	candidate
+sys/modules/if_lagg/Makefile	if_lagg	candidate
+sys/modules/if_me/Makefile	if_me	outside default allowlist
+sys/modules/if_ovpn/Makefile	if_ovpn	candidate
+sys/modules/if_stf/Makefile	if_stf	candidate
+sys/modules/if_tuntap/Makefile	if_tuntap	candidate
+sys/modules/if_vlan/Makefile	if_vlan	candidate
+sys/modules/if_vxlan/Makefile	if_vxlan	candidate
+sys/modules/if_wg/Makefile	if_wg	candidate
+sys/modules/iflib/Makefile	iflib	candidate
+sys/modules/igc/Makefile	if_igc	candidate
+sys/modules/imgact_binmisc/Makefile	imgact_binmisc	outside default allowlist
+sys/modules/imx/imx6_ahci/Makefile	imx6_ahci	outside default allowlist
+sys/modules/imx/imx6_snvs/Makefile	imx6_snvs	outside default allowlist
+sys/modules/imx/imx_i2c/Makefile	imx_i2c	outside default allowlist
+sys/modules/imx/imx_spi/Makefile	imx_spi	outside default allowlist
+sys/modules/imx/imx_wdog/Makefile	imx_wdog	outside default allowlist
+sys/modules/intelspi/Makefile	intelspi	candidate
+sys/modules/io/Makefile	io	candidate
+sys/modules/ioat/Makefile	ioat	outside default allowlist
+sys/modules/ip6_mroute_mod/Makefile	ip6_mroute	outside default allowlist
+sys/modules/ip_mroute_mod/Makefile	ip_mroute	outside default allowlist
+sys/modules/ipdivert/Makefile	ipdivert	candidate
+sys/modules/ipfw/Makefile	ipfw	candidate
+sys/modules/ipfw_nat/Makefile	ipfw_nat	candidate
+sys/modules/ipfw_nat64/Makefile	ipfw_nat64	candidate
+sys/modules/ipfw_nptv6/Makefile	ipfw_nptv6	candidate
+sys/modules/ipfw_pmod/Makefile	ipfw_pmod	candidate
+sys/modules/ipmi/Makefile	ipmi	outside default allowlist
+sys/modules/ipmi/ipmi_linux/Makefile	ipmi_linux	outside default allowlist
+sys/modules/ipsec/Makefile	ipsec	candidate
+sys/modules/isci/Makefile	isci	candidate
+sys/modules/itwd/Makefile	itwd	candidate
+sys/modules/iwlwifi/Makefile	if_iwlwifi	candidate
+sys/modules/iwm/Makefile	if_iwm	candidate
+sys/modules/iwn/Makefile	if_iwn	candidate
+sys/modules/iwnfw/iwn100/Makefile	iwn100fw	candidate
+sys/modules/iwnfw/iwn1000/Makefile	iwn1000fw	candidate
+sys/modules/iwnfw/iwn105/Makefile	iwn105fw	candidate
+sys/modules/iwnfw/iwn135/Makefile	iwn135fw	candidate
+sys/modules/iwnfw/iwn2000/Makefile	iwn2000fw	candidate
+sys/modules/iwnfw/iwn2030/Makefile	iwn2030fw	candidate
+sys/modules/iwnfw/iwn4965/Makefile	iwn4965fw	candidate
+sys/modules/iwnfw/iwn5000/Makefile	iwn5000fw	candidate
+sys/modules/iwnfw/iwn5150/Makefile	iwn5150fw	candidate
+sys/modules/iwnfw/iwn6000/Makefile	iwn6000fw	candidate
+sys/modules/iwnfw/iwn6000g2a/Makefile	iwn6000g2afw	candidate
+sys/modules/iwnfw/iwn6000g2b/Makefile	iwn6000g2bfw	candidate
+sys/modules/iwnfw/iwn6050/Makefile	iwn6050fw	candidate
+sys/modules/iwx/Makefile	if_iwx	candidate
+sys/modules/ix/Makefile	if_ix	candidate
+sys/modules/ixl/Makefile	if_ixl	candidate
+sys/modules/ixv/Makefile	if_ixv	candidate
+sys/modules/jme/Makefile	if_jme	candidate
+sys/modules/kbdmux/Makefile	kbdmux	candidate
+sys/modules/khelp/h_ertt/Makefile	h_ertt	candidate
+sys/modules/ksyms/Makefile	ksyms	candidate
+sys/modules/ktest/ktest/Makefile	ktest	outside default allowlist
+sys/modules/ktest/ktest_example/Makefile	ktest_example	outside default allowlist
+sys/modules/ktest/ktest_netlink_message_writer/Makefile	ktest_netlink_message_writer	outside default allowlist
+sys/modules/lge/Makefile	if_lge	outside default allowlist
+sys/modules/libalias/libalias/Makefile	libalias	candidate
+sys/modules/libalias/modules/dummy/Makefile	alias_dummy	candidate
+sys/modules/libalias/modules/ftp/Makefile	alias_ftp	candidate
+sys/modules/libalias/modules/irc/Makefile	alias_irc	candidate
+sys/modules/libalias/modules/nbt/Makefile	alias_nbt	candidate
+sys/modules/libalias/modules/pptp/Makefile	alias_pptp	candidate
+sys/modules/libalias/modules/skinny/Makefile	alias_skinny	candidate
+sys/modules/libalias/modules/smedia/Makefile	alias_smedia	candidate
+sys/modules/libiconv/Makefile	libiconv	candidate
+sys/modules/libmchain/Makefile	libmchain	candidate
+sys/modules/lindebugfs/Makefile	lindebugfs	candidate
+sys/modules/linprocfs/Makefile	linprocfs	candidate
+sys/modules/linsysfs/Makefile	linsysfs	candidate
+sys/modules/linux/Makefile	linux	candidate
+sys/modules/linux64/Makefile	linux64	candidate
+sys/modules/linux_common/Makefile	linux_common	candidate
+sys/modules/linuxkpi/Makefile	linuxkpi	candidate
+sys/modules/linuxkpi_hdmi/Makefile	linuxkpi_hdmi	candidate
+sys/modules/linuxkpi_video/Makefile	linuxkpi_video	candidate
+sys/modules/linuxkpi_wlan/Makefile	linuxkpi_wlan	candidate
+sys/modules/lio/Makefile	if_lio	outside default allowlist
+sys/modules/mac_biba/Makefile	mac_biba	outside default allowlist
+sys/modules/mac_bsdextended/Makefile	mac_bsdextended	outside default allowlist
+sys/modules/mac_ddb/Makefile	mac_ddb	outside default allowlist
+sys/modules/mac_do/Makefile	mac_do	outside default allowlist
+sys/modules/mac_ifoff/Makefile	mac_ifoff	outside default allowlist
+sys/modules/mac_ipacl/Makefile	mac_ipacl	outside default allowlist
+sys/modules/mac_lomac/Makefile	mac_lomac	outside default allowlist
+sys/modules/mac_mls/Makefile	mac_mls	outside default allowlist
+sys/modules/mac_none/Makefile	mac_none	outside default allowlist
+sys/modules/mac_ntpd/Makefile	mac_ntpd	outside default allowlist
+sys/modules/mac_partition/Makefile	mac_partition	outside default allowlist
+sys/modules/mac_pimd/Makefile	mac_pimd	outside default allowlist
+sys/modules/mac_portacl/Makefile	mac_portacl	outside default allowlist
+sys/modules/mac_priority/Makefile	mac_priority	outside default allowlist
+sys/modules/mac_seeotheruids/Makefile	mac_seeotheruids	outside default allowlist
+sys/modules/mac_stub/Makefile	mac_stub	outside default allowlist
+sys/modules/mac_test/Makefile	mac_test	outside default allowlist
+sys/modules/mac_veriexec/Makefile	mac_veriexec	outside default allowlist
+sys/modules/mac_veriexec_sha1/Makefile	mac_veriexec_sha1	outside default allowlist
+sys/modules/mac_veriexec_sha256/Makefile	mac_veriexec_sha256	outside default allowlist
+sys/modules/mac_veriexec_sha384/Makefile	mac_veriexec_sha384	outside default allowlist
+sys/modules/mac_veriexec_sha512/Makefile	mac_veriexec_sha512	outside default allowlist
+sys/modules/md/Makefile	geom_md	candidate
+sys/modules/mdio/Makefile	mdio	candidate
+sys/modules/mem/Makefile	mem	candidate
+sys/modules/mfi/Makefile	mfi	outside default allowlist
+sys/modules/mfi/mfi_linux/Makefile	mfi_linux	outside default allowlist
+sys/modules/mfi/mfip/Makefile	mfip	outside default allowlist
+sys/modules/mgb/Makefile	if_mgb	candidate
+sys/modules/mii/Makefile	miibus	candidate
+sys/modules/miiproxy/Makefile	miiproxy	outside default allowlist
+sys/modules/mmc/Makefile	mmc	candidate
+sys/modules/mmcnull/Makefile	mmcnull	outside default allowlist
+sys/modules/mmcsd/Makefile	mmcsd	candidate
+sys/modules/mpi3mr/Makefile	mpi3mr	candidate
+sys/modules/mpr/Makefile	mpr	candidate
+sys/modules/mps/Makefile	mps	candidate
+sys/modules/mpt/Makefile	mpt	outside default allowlist
+sys/modules/mqueue/Makefile	mqueuefs	candidate
+sys/modules/mrsas/Makefile	mrsas	outside default allowlist
+sys/modules/mrsas/mrsas_linux/Makefile	mrsas_linux	outside default allowlist
+sys/modules/msdosfs/Makefile	msdosfs	candidate
+sys/modules/msdosfs_iconv/Makefile	msdosfs_iconv	candidate
+sys/modules/msk/Makefile	if_msk	candidate
+sys/modules/mt76/core/Makefile	${MT76_DRIVER_NAME}	outside default allowlist
+sys/modules/mvs/Makefile	mvs	outside default allowlist
+sys/modules/mwl/Makefile	if_mwl	outside default allowlist
+sys/modules/mwlfw/Makefile	mw88W8363fw	outside default allowlist
+sys/modules/mxge/mxge/Makefile	if_mxge	outside default allowlist
+sys/modules/mxge/mxge_eth_z8e/Makefile	mxge_eth_z8e	outside default allowlist
+sys/modules/mxge/mxge_ethp_z8e/Makefile	mxge_ethp_z8e	outside default allowlist
+sys/modules/mxge/mxge_rss_eth_z8e/Makefile	mxge_rss_eth_z8e	outside default allowlist
+sys/modules/mxge/mxge_rss_ethp_z8e/Makefile	mxge_rss_ethp_z8e	outside default allowlist
+sys/modules/my/Makefile	if_my	outside default allowlist
+sys/modules/nctgpio/Makefile	nctgpio	candidate
+sys/modules/ncthwm/Makefile	ncthwm	candidate
+sys/modules/neta/Makefile	if_mvneta	outside default allowlist
+sys/modules/netgraph/UI/Makefile	ng_UI	candidate
+sys/modules/netgraph/bluetooth/bluetooth/Makefile	ng_bluetooth	candidate
+sys/modules/netgraph/bluetooth/hci/Makefile	ng_hci	candidate
+sys/modules/netgraph/bluetooth/l2cap/Makefile	ng_l2cap	candidate
+sys/modules/netgraph/bluetooth/socket/Makefile	ng_btsocket	candidate
+sys/modules/netgraph/bluetooth/ubt/Makefile	ng_ubt	candidate
+sys/modules/netgraph/bluetooth/ubtbcmfw/Makefile	ubtbcmfw	candidate
+sys/modules/netgraph/bpf/Makefile	ng_bpf	candidate
+sys/modules/netgraph/bridge/Makefile	ng_bridge	candidate
+sys/modules/netgraph/car/Makefile	ng_car	candidate
+sys/modules/netgraph/checksum/Makefile	ng_checksum	candidate
+sys/modules/netgraph/device/Makefile	ng_device	candidate
+sys/modules/netgraph/echo/Makefile	ng_echo	candidate
+sys/modules/netgraph/eiface/Makefile	ng_eiface	candidate
+sys/modules/netgraph/etf/Makefile	ng_etf	candidate
+sys/modules/netgraph/ether/Makefile	ng_ether	candidate
+sys/modules/netgraph/ether_echo/Makefile	ng_ether_echo	candidate
+sys/modules/netgraph/gif/Makefile	ng_gif	candidate
+sys/modules/netgraph/gif_demux/Makefile	ng_gif_demux	candidate
+sys/modules/netgraph/hole/Makefile	ng_hole	candidate
+sys/modules/netgraph/hub/Makefile	ng_hub	candidate
+sys/modules/netgraph/iface/Makefile	ng_iface	candidate
+sys/modules/netgraph/ip_input/Makefile	ng_ip_input	candidate
+sys/modules/netgraph/ipfw/Makefile	ng_ipfw	candidate
+sys/modules/netgraph/ksocket/Makefile	ng_ksocket	candidate
+sys/modules/netgraph/macfilter/Makefile	ng_macfilter	candidate
+sys/modules/netgraph/nat/Makefile	ng_nat	candidate
+sys/modules/netgraph/netflow/Makefile	ng_netflow	candidate
+sys/modules/netgraph/netgraph/Makefile	netgraph	candidate
+sys/modules/netgraph/one2many/Makefile	ng_one2many	candidate
+sys/modules/netgraph/patch/Makefile	ng_patch	candidate
+sys/modules/netgraph/pipe/Makefile	ng_pipe	candidate
+sys/modules/netgraph/sample/Makefile	ng_sample	candidate
+sys/modules/netgraph/socket/Makefile	ng_socket	candidate
+sys/modules/netgraph/source/Makefile	ng_source	candidate
+sys/modules/netgraph/split/Makefile	ng_split	candidate
+sys/modules/netgraph/tag/Makefile	ng_tag	candidate
+sys/modules/netgraph/tcpmss/Makefile	ng_tcpmss	candidate
+sys/modules/netgraph/tee/Makefile	ng_tee	candidate
+sys/modules/netgraph/tty/Makefile	ng_tty	candidate
+sys/modules/netgraph/vlan/Makefile	ng_vlan	candidate
+sys/modules/netgraph/vlan_rotate/Makefile	ng_vlan_rotate	candidate
+sys/modules/netlink/Makefile	netlink	candidate
+sys/modules/netmap/Makefile	netmap	outside default allowlist
+sys/modules/nfe/Makefile	if_nfe	candidate
+sys/modules/nge/Makefile	if_nge	outside default allowlist
+sys/modules/nlsysevent/Makefile	nlsysevent	candidate
+sys/modules/nmdm/Makefile	nmdm	candidate
+sys/modules/ntb/if_ntb/Makefile	if_ntb	outside default allowlist
+sys/modules/ntb/ntb/Makefile	ntb	outside default allowlist
+sys/modules/ntb/ntb_hw_amd/Makefile	ntb_hw_amd	outside default allowlist
+sys/modules/ntb/ntb_hw_intel/Makefile	ntb_hw_intel	outside default allowlist
+sys/modules/ntb/ntb_hw_plx/Makefile	ntb_hw_plx	outside default allowlist
+sys/modules/ntb/ntb_tool/Makefile	ntb_tool	outside default allowlist
+sys/modules/ntb/ntb_transport/Makefile	ntb_transport	outside default allowlist
+sys/modules/nullfs/Makefile	nullfs	candidate
+sys/modules/nvd/Makefile	nvd	candidate
+sys/modules/nvdimm/Makefile	nvdimm	outside default allowlist
+sys/modules/nvme/Makefile	nvme	candidate
+sys/modules/nvram/Makefile	nvram	candidate
+sys/modules/oce/Makefile	if_oce	outside default allowlist
+sys/modules/opensolaris/Makefile	opensolaris	candidate
+sys/modules/ossl/Makefile	ossl	candidate
+sys/modules/otus/Makefile	if_otus	outside default allowlist
+sys/modules/otusfw/otusfw_init/Makefile	otusfw_init	outside default allowlist
+sys/modules/otusfw/otusfw_main/Makefile	otusfw_main	outside default allowlist
+sys/modules/ow/ow/Makefile	ow	outside default allowlist
+sys/modules/ow/ow_temp/Makefile	ow_temp	outside default allowlist
+sys/modules/ow/owc/Makefile	owc	outside default allowlist
+sys/modules/p2sb/Makefile	p2sb	candidate
+sys/modules/p9fs/Makefile	p9fs	outside default allowlist
+sys/modules/padlock/Makefile	padlock	candidate
+sys/modules/padlock_rng/Makefile	padlock_rng	candidate
+sys/modules/pchtherm/Makefile	pchtherm	candidate
+sys/modules/pms/Makefile	pmspcv	outside default allowlist
+sys/modules/powermac_nvram/Makefile	powermac_nvram	outside default allowlist
+sys/modules/procfs/Makefile	procfs	candidate
+sys/modules/proto/Makefile	proto	outside default allowlist
+sys/modules/pseudofs/Makefile	pseudofs	candidate
+sys/modules/pst/Makefile	pst	outside default allowlist
+sys/modules/pt/Makefile	pt	candidate
+sys/modules/pty/Makefile	pty	outside default allowlist
+sys/modules/puc/Makefile	puc	candidate
+sys/modules/pwm/pwm_backlight/Makefile	pwm_backlight	outside default allowlist
+sys/modules/pwm/pwmbus/Makefile	pwmbus	outside default allowlist
+sys/modules/pwm/pwmc/Makefile	pwmc	outside default allowlist
+sys/modules/qat/qat/Makefile	qat	candidate
+sys/modules/qat/qat_api/Makefile	qat_api	candidate
+sys/modules/qat/qat_common/Makefile	qat_common	candidate
+sys/modules/qat/qat_hw/Makefile	qat_hw	candidate
+sys/modules/qat_c2xxx/Makefile	qat_c2xxx	candidate
+sys/modules/qat_c2xxxfw/Makefile	qat_c2xxxfw	candidate
+sys/modules/qatfw/qat_200xx/Makefile	qat_200xx_fw	candidate
+sys/modules/qatfw/qat_4xxx/Makefile	qat_4xxx_fw	candidate
+sys/modules/qatfw/qat_c3xxx/Makefile	qat_c3xxx_fw	candidate
+sys/modules/qatfw/qat_c4xxx/Makefile	qat_c4xxx_fw	candidate
+sys/modules/qatfw/qat_c62x/Makefile	qat_c62x_fw	candidate
+sys/modules/qatfw/qat_dh895xcc/Makefile	qat_dh895xcc_fw	candidate
+sys/modules/qlnx/qlnxe/Makefile	if_qlnxe	candidate
+sys/modules/qlnx/qlnxev/Makefile	if_qlnxev	candidate
+sys/modules/qlxgb/Makefile	if_qlxgb	outside default allowlist
+sys/modules/qlxgbe/Makefile	if_qlxgbe	outside default allowlist
+sys/modules/qlxge/Makefile	if_qlxge	outside default allowlist
+sys/modules/ral/Makefile	if_ral	candidate
+sys/modules/random_fortuna/Makefile	random_fortuna	candidate
+sys/modules/random_other/Makefile	random_OTHER	outside default allowlist
+sys/modules/rc4/Makefile	rc4	outside default allowlist
+sys/modules/rccgpio/Makefile	rccgpio	outside default allowlist
+sys/modules/rdrand_rng/Makefile	rdrand_rng	candidate
+sys/modules/rdseed_rng/Makefile	rdseed_rng	candidate
+sys/modules/re/Makefile	if_re	candidate
+sys/modules/rndtest/Makefile	rndtest	outside default allowlist
+sys/modules/rockchip/rk805/Makefile	rk805	outside default allowlist
+sys/modules/rockchip/rk808/Makefile	rk808	outside default allowlist
+sys/modules/rockchip/rk_dwmmc/Makefile	rk_dwmmc	outside default allowlist
+sys/modules/rockchip/rk_i2c/Makefile	rk_i2c	outside default allowlist
+sys/modules/rockchip/rk_spi/Makefile	rk_spi	outside default allowlist
+sys/modules/rpi_ft5406/Makefile	rpi_ft5406	outside default allowlist
+sys/modules/rtsx/Makefile	rtsx	candidate
+sys/modules/rtw88/Makefile	if_rtw88	candidate
+sys/modules/rtw89/Makefile	if_rtw89	candidate
+sys/modules/rtwn/Makefile	rtwn	candidate
+sys/modules/rtwn_pci/Makefile	if_rtwn_pci	candidate
+sys/modules/rtwn_usb/Makefile	if_rtwn_usb	candidate
+sys/modules/rtwnfw/rtwnrtl8188ee/Makefile	rtwn-rtl8188eefw	candidate
+sys/modules/rtwnfw/rtwnrtl8188eu/Makefile	rtwn-rtl8188eufw	candidate
+sys/modules/rtwnfw/rtwnrtl8192cE/Makefile	rtwn-rtl8192cfwE	candidate
+sys/modules/rtwnfw/rtwnrtl8192cEB/Makefile	rtwn-rtl8192cfwE_B	candidate
+sys/modules/rtwnfw/rtwnrtl8192cT/Makefile	rtwn-rtl8192cfwT	candidate
+sys/modules/rtwnfw/rtwnrtl8192cU/Makefile	rtwn-rtl8192cfwU	candidate
+sys/modules/rtwnfw/rtwnrtl8192eu/Makefile	rtwn-rtl8192eufw	candidate
+sys/modules/rtwnfw/rtwnrtl8812au/Makefile	rtwn-rtl8812aufw	candidate
+sys/modules/rtwnfw/rtwnrtl8821au/Makefile	rtwn-rtl8821aufw	candidate
+sys/modules/s3/Makefile	s3	outside default allowlist
+sys/modules/safe/Makefile	safe	outside default allowlist
+sys/modules/safexcel/Makefile	safexcel	outside default allowlist
+sys/modules/sbni/Makefile	if_sbni	outside default allowlist
+sys/modules/scc/Makefile	scc	candidate
+sys/modules/sctp/Makefile	sctp	candidate
+sys/modules/sdhci/Makefile	sdhci	candidate
+sys/modules/sdhci_acpi/Makefile	sdhci_acpi	candidate
+sys/modules/sdhci_fdt/Makefile	sdhci_fdt	outside default allowlist
+sys/modules/sdhci_pci/Makefile	sdhci_pci	candidate
+sys/modules/sdio/Makefile	sdio	candidate
+sys/modules/sem/Makefile	sem	candidate
+sys/modules/send/Makefile	send	outside default allowlist
+sys/modules/sff/Makefile	sff	outside default allowlist
+sys/modules/sfxge/Makefile	sfxge	candidate
+sys/modules/sge/Makefile	if_sge	outside default allowlist
+sys/modules/sgx/Makefile	sgx	outside default allowlist
+sys/modules/sgx_linux/Makefile	sgx_linux	outside default allowlist
+sys/modules/siftr/Makefile	siftr	candidate
+sys/modules/siis/Makefile	siis	outside default allowlist
+sys/modules/sk/Makefile	if_sk	outside default allowlist
+sys/modules/smartpqi/Makefile	smartpqi	outside default allowlist
+sys/modules/snp/Makefile	snp	outside default allowlist
+sys/modules/sound/driver/als4000/Makefile	snd_als4000	candidate
+sys/modules/sound/driver/atiixp/Makefile	snd_atiixp	candidate
+sys/modules/sound/driver/cmi/Makefile	snd_cmi	candidate
+sys/modules/sound/driver/cs4281/Makefile	snd_cs4281	candidate
+sys/modules/sound/driver/csa/Makefile	snd_csa	candidate
+sys/modules/sound/driver/driver/Makefile	snd_driver	candidate
+sys/modules/sound/driver/dummy/Makefile	snd_dummy	candidate
+sys/modules/sound/driver/emu10k1/Makefile	snd_emu10k1	candidate
+sys/modules/sound/driver/emu10kx/Makefile	snd_emu10kx	candidate
+sys/modules/sound/driver/envy24/Makefile	snd_envy24	candidate
+sys/modules/sound/driver/envy24ht/Makefile	snd_envy24ht	candidate
+sys/modules/sound/driver/es137x/Makefile	snd_es137x	candidate
+sys/modules/sound/driver/fm801/Makefile	snd_fm801	candidate
+sys/modules/sound/driver/hda/Makefile	snd_hda	candidate
+sys/modules/sound/driver/hdsp/Makefile	snd_hdsp	candidate
+sys/modules/sound/driver/hdspe/Makefile	snd_hdspe	candidate
+sys/modules/sound/driver/maestro3/Makefile	snd_maestro3	candidate
+sys/modules/sound/driver/spicds/Makefile	snd_spicds	candidate
+sys/modules/sound/driver/uaudio/Makefile	snd_uaudio	candidate
+sys/modules/sound/sound/Makefile	sound	outside default allowlist
+sys/modules/speaker/Makefile	speaker	outside default allowlist
+sys/modules/spi/at45d/Makefile	at45d	candidate
+sys/modules/spi/atopcase/Makefile	atopcase	candidate
+sys/modules/spi/mx25l/Makefile	mx25l	candidate
+sys/modules/spi/spibus/Makefile	spibus	candidate
+sys/modules/spigen/Makefile	spigen	outside default allowlist
+sys/modules/stge/Makefile	if_stge	outside default allowlist
+sys/modules/sume/Makefile	if_sume	outside default allowlist
+sys/modules/superio/Makefile	superio	candidate
+sys/modules/sysvipc/sysvmsg/Makefile	sysvmsg	candidate
+sys/modules/sysvipc/sysvsem/Makefile	sysvsem	candidate
+sys/modules/sysvipc/sysvshm/Makefile	sysvshm	candidate
+sys/modules/tarfs/Makefile	tarfs	candidate
+sys/modules/tcp/bbr/Makefile	tcp_${STACKNAME}	candidate
+sys/modules/tcp/hpts/Makefile	tcphpts	candidate
+sys/modules/tcp/rack/Makefile	tcp_${STACKNAME}	candidate
+sys/modules/tcp/tcpmd5/Makefile	tcpmd5	candidate
+sys/modules/tests/fib_lookup/Makefile	test_lookup	candidate
+sys/modules/tests/framework/Makefile	kern_testfrwk	candidate
+sys/modules/ti/Makefile	if_ti	outside default allowlist
+sys/modules/tmpfs/Makefile	tmpfs	candidate
+sys/modules/toecore/Makefile	toecore	outside default allowlist
+sys/modules/tpm/Makefile	tpm	candidate
+sys/modules/tsec/Makefile	if_tsec	outside default allowlist
+sys/modules/tws/Makefile	tws	outside default allowlist
+sys/modules/uart/Makefile	uart	candidate
+sys/modules/ubser/Makefile	ubser	outside default allowlist
+sys/modules/uchcom/Makefile	uchcom	outside default allowlist
+sys/modules/ucycom/Makefile	ucycom	outside default allowlist
+sys/modules/udf/Makefile	udf	candidate
+sys/modules/udf_iconv/Makefile	udf_iconv	candidate
+sys/modules/ufs/Makefile	ufs	candidate
+sys/modules/ufshci/Makefile	ufshci	outside default allowlist
+sys/modules/uinput/Makefile	uinput	candidate
+sys/modules/unionfs/Makefile	unionfs	candidate
+sys/modules/usb/atmegadci/Makefile	atmegadci	outside default allowlist
+sys/modules/usb/atp/Makefile	atp	candidate
+sys/modules/usb/aue/Makefile	if_aue	outside default allowlist
+sys/modules/usb/avr32dci/Makefile	avr32dci	outside default allowlist
+sys/modules/usb/axe/Makefile	if_axe	candidate
+sys/modules/usb/axge/Makefile	if_axge	candidate
+sys/modules/usb/bcm2838_xhci/Makefile	bcm2838_xhci	outside default allowlist
+sys/modules/usb/cdce/Makefile	if_cdce	candidate
+sys/modules/usb/cdceem/Makefile	if_cdceem	candidate
+sys/modules/usb/cp2112/Makefile	cp2112	candidate
+sys/modules/usb/cue/Makefile	if_cue	outside default allowlist
+sys/modules/usb/dwc_otg/Makefile	dwc_otg	outside default allowlist
+sys/modules/usb/ehci/Makefile	ehci	candidate
+sys/modules/usb/i2ctinyusb/Makefile	i2ctinyusb	candidate
+sys/modules/usb/ipheth/Makefile	if_ipheth	candidate
+sys/modules/usb/kue/Makefile	if_kue	outside default allowlist
+sys/modules/usb/mos/Makefile	if_mos	candidate
+sys/modules/usb/mtw/Makefile	if_mtw	candidate
+sys/modules/usb/muge/Makefile	if_muge	candidate
+sys/modules/usb/musb/Makefile	musb	outside default allowlist
+sys/modules/usb/ohci/Makefile	ohci	candidate
+sys/modules/usb/quirk/Makefile	usb_quirk	candidate
+sys/modules/usb/rsu/Makefile	if_rsu	candidate
+sys/modules/usb/rsufw/rsurtl8712fw/Makefile	rsu-rtl8712fw	candidate
+sys/modules/usb/rue/Makefile	if_rue	outside default allowlist
+sys/modules/usb/rum/Makefile	if_rum	candidate
+sys/modules/usb/run/Makefile	if_run	candidate
+sys/modules/usb/runfw/Makefile	runfw	candidate
+sys/modules/usb/smsc/Makefile	if_smsc	candidate
+sys/modules/usb/u3g/Makefile	u3g	candidate
+sys/modules/usb/uacpi/Makefile	uacpi	candidate
+sys/modules/usb/uark/Makefile	uark	candidate
+sys/modules/usb/uath/Makefile	if_uath	candidate
+sys/modules/usb/ubsa/Makefile	ubsa	candidate
+sys/modules/usb/ubser/Makefile	ubser	candidate
+sys/modules/usb/uchcom/Makefile	uchcom	candidate
+sys/modules/usb/ucom/Makefile	ucom	candidate
+sys/modules/usb/ucycom/Makefile	ucycom	candidate
+sys/modules/usb/udav/Makefile	if_udav	candidate
+sys/modules/usb/udbc/Makefile	udbc	candidate
+sys/modules/usb/udbp/Makefile	udbp	outside default allowlist
+sys/modules/usb/udl/Makefile	udl	candidate
+sys/modules/usb/uep/Makefile	uep	candidate
+sys/modules/usb/uether/Makefile	uether	candidate
+sys/modules/usb/ufoma/Makefile	ufoma	candidate
+sys/modules/usb/uftdi/Makefile	uftdi	candidate
+sys/modules/usb/ugensa/Makefile	ugensa	candidate
+sys/modules/usb/ugold/Makefile	ugold	candidate
+sys/modules/usb/uhci/Makefile	uhci	candidate
+sys/modules/usb/uhid/Makefile	uhid	candidate
+sys/modules/usb/uhid_snes/Makefile	uhid_snes	candidate
+sys/modules/usb/ukbd/Makefile	ukbd	candidate
+sys/modules/usb/uled/Makefile	uled	candidate
+sys/modules/usb/ulpt/Makefile	ulpt	candidate
+sys/modules/usb/umass/Makefile	umass	candidate
+sys/modules/usb/umb/Makefile	umb	candidate
+sys/modules/usb/umcs/Makefile	umcs	candidate
+sys/modules/usb/umct/Makefile	umct	candidate
+sys/modules/usb/umodem/Makefile	umodem	candidate
+sys/modules/usb/umoscom/Makefile	umoscom	candidate
+sys/modules/usb/ums/Makefile	ums	candidate
+sys/modules/usb/upgt/Makefile	if_upgt	candidate
+sys/modules/usb/uplcom/Makefile	uplcom	candidate
+sys/modules/usb/ural/Makefile	if_ural	candidate
+sys/modules/usb/ure/Makefile	if_ure	candidate
+sys/modules/usb/urndis/Makefile	if_urndis	candidate
+sys/modules/usb/urtw/Makefile	if_urtw	candidate
+sys/modules/usb/usb/Makefile	usb	candidate
+sys/modules/usb/usbhid/Makefile	usbhid	candidate
+sys/modules/usb/usie/Makefile	usie	outside default allowlist
+sys/modules/usb/uslcom/Makefile	uslcom	candidate
+sys/modules/usb/uss820dci/Makefile	uss820dci	outside default allowlist
+sys/modules/usb/uvscom/Makefile	uvscom	candidate
+sys/modules/usb/wmt/Makefile	wmt	candidate
+sys/modules/usb/wsp/Makefile	wsp	candidate
+sys/modules/usb/xhci/Makefile	xhci	candidate
+sys/modules/usb/zyd/Makefile	if_zyd	candidate
+sys/modules/veriexec/Makefile	veriexec	outside default allowlist
+sys/modules/vesa/Makefile	vesa	outside default allowlist
+sys/modules/vf_i2c/Makefile	vf_i2c	outside default allowlist
+sys/modules/vge/Makefile	if_vge	outside default allowlist
+sys/modules/viawd/Makefile	viawd	outside default allowlist
+sys/modules/videomode/Makefile	videomode	candidate
+sys/modules/virtio/balloon/Makefile	virtio_balloon	candidate
+sys/modules/virtio/block/Makefile	virtio_blk	candidate
+sys/modules/virtio/console/Makefile	virtio_console	candidate
+sys/modules/virtio/network/Makefile	if_vtnet	candidate
+sys/modules/virtio/p9fs/Makefile	virtio_p9fs	candidate
+sys/modules/virtio/pci/Makefile	virtio_pci	candidate
+sys/modules/virtio/random/Makefile	virtio_random	candidate
+sys/modules/virtio/scsi/Makefile	virtio_scsi	candidate
+sys/modules/virtio/virtio/Makefile	virtio	candidate
+sys/modules/vkbd/Makefile	vkbd	candidate
+sys/modules/vmd/Makefile	vmd	candidate
+sys/modules/vmm/Makefile	vmm	candidate
+sys/modules/vnic/mrmlbus/Makefile	mrmlbus	outside default allowlist
+sys/modules/vnic/thunder_bgx/Makefile	thunder_bgx	outside default allowlist
+sys/modules/vnic/thunder_mdio/Makefile	thunder_mdio	outside default allowlist
+sys/modules/vnic/vnicpf/Makefile	vnicpf	outside default allowlist
+sys/modules/vnic/vnicvf/Makefile	vnicvf	outside default allowlist
+sys/modules/vr/Makefile	if_vr	outside default allowlist
+sys/modules/vte/Makefile	if_vte	outside default allowlist
+sys/modules/wbwd/Makefile	wbwd	outside default allowlist
+sys/modules/wdatwd/Makefile	wdatwd	candidate
+sys/modules/wlan/Makefile	wlan	candidate
+sys/modules/wlan_acl/Makefile	wlan_acl	candidate
+sys/modules/wlan_amrr/Makefile	wlan_amrr	candidate
+sys/modules/wlan_ccmp/Makefile	wlan_ccmp	candidate
+sys/modules/wlan_gcmp/Makefile	wlan_gcmp	candidate
+sys/modules/wlan_rssadapt/Makefile	wlan_rssadapt	candidate
+sys/modules/wlan_tkip/Makefile	wlan_tkip	candidate
+sys/modules/wlan_wep/Makefile	wlan_wep	candidate
+sys/modules/wlan_xauth/Makefile	wlan_xauth	candidate
+sys/modules/wtap/Makefile	wtap	outside default allowlist
+sys/modules/x86bios/Makefile	x86bios	outside default allowlist
+sys/modules/xdr/Makefile	xdr	candidate
+sys/modules/xz/Makefile	xz	candidate
+sys/modules/zfs/Makefile	zfs	candidate
+sys/modules/zlib/Makefile	zlib	candidate

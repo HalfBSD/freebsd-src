@@ -1496,6 +1496,14 @@ distributeworld installworld stageworld: _installcheck_world .PHONY
 .endfor
 .endif # make(distributeworld)
 
+# Configure the live system's resolver after installworld.  Staged and
+# unprivileged installs use local_unbound's initial setup at first boot.
+.if make(installworld) && ${MK_UNBOUND} != "no" && \
+    !defined(NO_ROOT) && !defined(CROSSBUILD_HOST) && \
+    (!defined(DESTDIR) || empty(DESTDIR) || ${DESTDIR} == "/")
+	/usr/sbin/service local_unbound setup
+.endif
+
 packageworld: .PHONY
 .for dist in base ${EXTRA_DISTRIBUTIONS}
 	${_+_}cd ${DESTDIR}/${DISTDIR}/${dist}; \

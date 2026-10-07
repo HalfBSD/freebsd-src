@@ -1,0 +1,403 @@
+group	matches	path	line	source
+native	environment	Makefile	406	STARTTIME!= LC_ALL=C date
+native	environment	Makefile	443	"@echo "">>> make world completed on `LC_ALL=C date`"""
+native	environment	Makefile	616	"@echo ""> Toolchain bootstrap started on `LC_ALL=C date`"""
+native	environment	Makefile	641	"@echo ""> Toolchain bootstrap completed on `LC_ALL=C date`"""
+native	environment	Makefile	649	"@echo "">> ${target} started on `LC_ALL=C date`"""
+native	environment	Makefile	708	"@echo "">> ${target}.${target_arch} ${UNIVERSE_TARGET} started on `LC_ALL=C date`"""
+native	environment	Makefile	718	"@echo "">> ${target}.${target_arch} ${UNIVERSE_TARGET} completed on `LC_ALL=C date`"""
+native	environment	Makefile	733	"@echo "">> ${target} completed on `LC_ALL=C date`"""
+native	environment	Makefile	740	"@echo "">> ${TARGET} kernels started on `LC_ALL=C date`"""
+native	environment	Makefile	742	"@echo "">> ${TARGET} kernels completed on `LC_ALL=C date`"""
+native	environment	Makefile	766	"@echo "">> ${TARGET}.${TARGET_ARCH_${kernel}} ${kernel} kernel started on `LC_ALL=C date`"""
+native	environment	Makefile	776	"@echo "">> ${TARGET}.${TARGET_ARCH_${kernel}} ${kernel} kernel completed on `LC_ALL=C date`"""
+native	environment	Makefile	786	"@echo "">>> make universe completed on `LC_ALL=C date`"""
+native	environment	Makefile.inc1	1012	"METALOG_SORT_CMD=	env -i LC_COLLATE=C sort"
+native	environment	Makefile.inc1	1239	"@echo "">>> World build started on `LC_ALL=C date`"""
+native	environment	Makefile.inc1	1245	"@echo "">>> World build completed on `LC_ALL=C date`"""
+native	environment	Makefile.inc1	1298	"@echo "">>> Install check world started on `LC_ALL=C date`"""
+native	environment	Makefile.inc1	1302	"@echo "">>> Install check kernel started on `LC_ALL=C date`"""
+native	environment	Makefile.inc1	1571	"@echo "">>> Installing everything started on `LC_ALL=C date`"""
+native	environment	Makefile.inc1	1578	"@echo "">>> Installing everything completed on `LC_ALL=C date`"""
+native	environment	Makefile.inc1	1725	"@echo "">>> Kernel build for ${_kernel} started on `LC_ALL=C date`"""
+native	environment	Makefile.inc1	1767	"@echo "">>> Kernel build for ${_kernel} completed on `LC_ALL=C date`"""
+native	environment	Makefile.inc1	1871	"@echo "">>> Installing kernel ${INSTALLKERNEL} on $$(LC_ALL=C date)"""
+native	environment	Makefile.inc1	1878	"@echo "">>> Installing kernel ${INSTALLKERNEL} completed on $$(LC_ALL=C date)"""
+native	environment	Makefile.inc1	1887	"@echo "">>> Installing kernel ${_kernel} $$(LC_ALL=C date)"""
+native	environment	Makefile.inc1	1894	"@echo "">>> Installing kernel ${_kernel} completed on $$(LC_ALL=C date)"""
+native	locale_api	bin/date/date.c	213	"setlocale(LC_TIME, ""C"");"
+native_tests	environment	bin/hostname/tests/hostname_test.sh	33	export LC_MESSAGES=C
+native_tests	environment	bin/sh/tests/builtins/cd8.0	5	LC_ALL=C
+native_tests	environment	bin/sh/tests/builtins/locale1.0	26	case $(LC_ALL=C command . /var/empty/foo 2>&1) in
+native_tests	environment	bin/sh/tests/builtins/locale1.0	32	case $(LC_ALL=C LANG=nl_NL.ISO8859-1 command . /var/empty/foo 2>&1) in
+native_tests	environment	bin/sh/tests/builtins/locale1.0	38	case $(LC_ALL=C LC_MESSAGES=nl_NL.ISO8859-1 command . /var/empty/foo 2>&1) in
+native_tests	environment	bin/sh/tests/builtins/locale2.0	2	$SH -c 'LC_ALL=C true; kill -INT $$; echo continued'
+native_tests	environment	bin/sh/tests/expansion/pathname1.0	3	LC_COLLATE=C
+native_tests	environment	bin/sh/tests/expansion/pathname2.0	3	LC_COLLATE=C
+native_tests	environment	cddl/usr.sbin/dtrace/tests/tools/genmakefiles.sh	90	export LC_ALL=C
+vendor	environment	contrib/bc/configure.sh	452	"_find_src_files_files=$(find ""$scriptdir/src"" -depth -name ""*.c"" -print | LC_ALL=C sort)"
+vendor	environment	contrib/bc/gen/strgen.sh	30	export LANG=C
+vendor	environment	contrib/bc/gen/strgen.sh	31	export LC_CTYPE=C
+vendor	environment	contrib/bmake/ChangeLog	4187	* unit-tests/Makefile.in: set LANG=C when running unit-tests to
+vendor	environment	contrib/bmake/configure	57	LC_ALL=C
+vendor	environment	contrib/bmake/configure	7509	LC_ALL=C
+vendor_tests	environment	contrib/bmake/unit-tests/Makefile	801	"LC_ALL=		C"
+vendor_tests	environment	contrib/bmake/unit-tests/Makefile	802	"LANG=		C"
+vendor	environment	contrib/byacc/aclocal.m4	1022	LANG=C;     export LANG
+vendor	environment	contrib/byacc/aclocal.m4	1023	LC_ALL=C;   export LC_ALL
+vendor	environment	contrib/byacc/aclocal.m4	1024	LC_CTYPE=C; export LC_CTYPE
+vendor	environment	contrib/byacc/aclocal.m4	2016	LC_ALL=C LC_CTYPE=C LANG=C LANGUAGE=C $NROFF_PATH -man conftest.in >conftest.out
+vendor	environment	contrib/byacc/aclocal.m4	2044	LC_ALL=C LC_CTYPE=C LANG=C LANGUAGE=C $NROFF_PATH -man conftest.in >conftest.out
+vendor	environment	contrib/byacc/configure	70	"$as_unset LANG || test ""${LANG+set}"" != set || { LANG=C; export LANG; }"
+vendor	environment	contrib/byacc/configure	71	"$as_unset LC_ALL || test ""${LC_ALL+set}"" != set || { LC_ALL=C; export LC_ALL; }"
+vendor	environment	contrib/byacc/configure	72	"$as_unset LC_TIME || test ""${LC_TIME+set}"" != set || { LC_TIME=C; export LC_TIME; }"
+vendor	environment	contrib/byacc/configure	73	"$as_unset LC_CTYPE || test ""${LC_CTYPE+set}"" != set || { LC_CTYPE=C; export LC_CTYPE; }"
+vendor	environment	contrib/byacc/configure	75	"$as_unset LC_COLLATE || test ""${LC_COLLATE+set}"" != set || { LC_COLLATE=C; export LC_COLLATE; }"
+vendor	environment	contrib/byacc/configure	76	"$as_unset LC_NUMERIC || test ""${LC_NUMERIC+set}"" != set || { LC_NUMERIC=C; export LC_NUMERIC; }"
+vendor	environment	contrib/byacc/configure	77	"$as_unset LC_MESSAGES || test ""${LC_MESSAGES+set}"" != set || { LC_MESSAGES=C; export LC_MESSAGES; }"
+vendor	environment	contrib/byacc/configure	7095	LANG=C;     export LANG
+vendor	environment	contrib/byacc/configure	7096	LC_ALL=C;   export LC_ALL
+vendor	environment	contrib/byacc/configure	7097	LC_CTYPE=C; export LC_CTYPE
+vendor	environment	contrib/byacc/configure	7554	LC_ALL=C LC_CTYPE=C LANG=C LANGUAGE=C $NROFF_PATH -man conftest.in >conftest.out
+vendor	environment	contrib/byacc/configure	7584	LC_ALL=C LC_CTYPE=C LANG=C LANGUAGE=C $NROFF_PATH -man conftest.in >conftest.out
+vendor	environment	contrib/byacc/configure	7807	"$as_unset LANG || test ""${LANG+set}"" != set || { LANG=C; export LANG; }"
+vendor	environment	contrib/byacc/configure	7808	"$as_unset LC_ALL || test ""${LC_ALL+set}"" != set || { LC_ALL=C; export LC_ALL; }"
+vendor	environment	contrib/byacc/configure	7809	"$as_unset LC_TIME || test ""${LC_TIME+set}"" != set || { LC_TIME=C; export LC_TIME; }"
+vendor	environment	contrib/byacc/configure	7810	"$as_unset LC_CTYPE || test ""${LC_CTYPE+set}"" != set || { LC_CTYPE=C; export LC_CTYPE; }"
+vendor	environment	contrib/byacc/configure	7812	"$as_unset LC_COLLATE || test ""${LC_COLLATE+set}"" != set || { LC_COLLATE=C; export LC_COLLATE; }"
+vendor	environment	contrib/byacc/configure	7813	"$as_unset LC_NUMERIC || test ""${LC_NUMERIC+set}"" != set || { LC_NUMERIC=C; export LC_NUMERIC; }"
+vendor	environment	contrib/byacc/configure	7814	"$as_unset LC_MESSAGES || test ""${LC_MESSAGES+set}"" != set || { LC_MESSAGES=C; export LC_MESSAGES; }"
+vendor	environment	contrib/byacc/install-sh	485	"old=`LC_ALL=C ls -dlL ""$dst""     2>/dev/null` &&"
+vendor	environment	contrib/byacc/install-sh	486	"new=`LC_ALL=C ls -dlL ""$dsttmp""  2>/dev/null` &&"
+vendor	environment	contrib/elftoolchain/common/native-elf-format	22	LC_ALL=C readelf -h ${tmp_o} | awk '
+vendor	environment	contrib/file/configure	57	LC_ALL=C
+vendor	environment	contrib/file/configure	15055	case `TZ=UTC0 LC_ALL=C ls -l conftest.time 2>/dev/null` in #(
+vendor	environment	contrib/file/configure	16556	LC_ALL=C
+vendor	environment	contrib/file/ltmain.sh	136	LC_ALL=C
+vendor	environment	contrib/file/magic/Magdir/console	758	"#		verified by gbsplay `LANG=C gbsinfo /usr/share/doc/gbsplay/examples/nightmode.gbs`"
+vendor	environment	contrib/file/magic/scripts/create_filemagic_flac	8	LANG=C
+vendor	environment	contrib/file/magic/scripts/create_filemagic_flac	54	"stripped_rate=""$(LANG=C bc <<< ""scale=5; ${samplerate} / 1000"" | \"
+vendor	locale_api	contrib/file/src/apprentice.c	591	"ms->c_lc_ctype = newlocale(LC_CTYPE_MASK, ""C"", 0);"
+vendor	locale_api	contrib/file/src/funcs.c	731	"(void)setlocale(LC_CTYPE, ""C"");"
+vendor	locale_api	contrib/file/src/funcs.c	763	"(void)setlocale(LC_CTYPE, ""C"");"
+vendor	locale_api	contrib/file/src/readcdf.c	118	"c_lc_ctype = newlocale(LC_CTYPE_MASK, ""C"", 0);"
+vendor	locale_api	contrib/file/src/readcdf.c	127	"(void)setlocale(LC_CTYPE, ""C"");"
+vendor	environment	contrib/ldns/configure	57	LC_ALL=C
+vendor	environment	contrib/ldns/configure	19680	LC_ALL=C
+vendor	environment	contrib/ldns/drill/install-sh	468	"old=`LC_ALL=C ls -dlL ""$dst""	2>/dev/null` &&"
+vendor	environment	contrib/ldns/drill/install-sh	469	"new=`LC_ALL=C ls -dlL ""$dsttmp""	2>/dev/null` &&"
+vendor	environment	contrib/ldns/install-sh	485	"old=`LC_ALL=C ls -dlL ""$dst""     2>/dev/null` &&"
+vendor	environment	contrib/ldns/install-sh	486	"new=`LC_ALL=C ls -dlL ""$dsttmp""  2>/dev/null` &&"
+vendor_tests	locale_api	contrib/libarchive/libarchive/test/main.c	2656	"setlocale(LC_ALL, ""C"");"
+vendor_tests	locale_api	contrib/libarchive/libarchive/test/main.c	2670	"setlocale(LC_ALL, ""C"");"
+vendor_tests	locale_api	contrib/libarchive/libarchive/test/test_entry.c	970	"if (NULL == setlocale(LC_ALL, ""C"") || (long)wc != l) {"
+vendor_tests	locale_api	contrib/libarchive/libarchive/test/test_pax_filename_encoding.c	203	"if (NULL == setlocale(LC_ALL, ""C"")) {"
+vendor_tests	locale_api	contrib/libarchive/test_utils/test_main.c	3569	"setlocale(LC_ALL, ""C"");"
+vendor	locale_api	contrib/libc-vis/vis.c	112	"ol = setlocale(LC_CTYPE, ""C"");"
+vendor	inherited_byte_mode	contrib/libedit/el.c	297	if (MB_CUR_MAX == 1)
+vendor	environment	contrib/libevent/build-aux/install-sh	480	"old=`LC_ALL=C ls -dlL ""$dst""     2>/dev/null` &&"
+vendor	environment	contrib/libevent/build-aux/install-sh	481	"new=`LC_ALL=C ls -dlL ""$dsttmp""  2>/dev/null` &&"
+vendor	environment	contrib/libevent/configure	127	LC_ALL=C
+vendor	environment	contrib/libevent/configure	18962	LC_ALL=C
+vendor	environment	contrib/libpcap/configure	55	LC_ALL=C
+vendor	environment	contrib/libpcap/configure	14141	LC_ALL=C
+vendor	environment	contrib/libpcap/install-sh	485	"old=`LC_ALL=C ls -dlL ""$dst""     2>/dev/null` &&"
+vendor	environment	contrib/libpcap/install-sh	486	"new=`LC_ALL=C ls -dlL ""$dsttmp""  2>/dev/null` &&"
+vendor	environment	contrib/llvm-project/compiler-rt/lib/sanitizer_common/symbolizer/scripts/build_symbolizer.sh	194	export LC_ALL=C
+vendor	classic_locale	contrib/llvm-project/libcxx/include/__chrono/formatter.h	628	__sstr.imbue(locale::classic());
+vendor	locale_api	contrib/llvm-project/libcxx/include/__locale_dir/locale_base_api/ibm.h	34	"__cloc   = newlocale(LC_ALL_MASK, ""C"", /* base */ (locale_t)0);"
+vendor	classic_locale	contrib/llvm-project/libcxx/include/__thread/thread.h	141	__sstr.imbue(locale::classic());
+vendor	locale_api	contrib/llvm-project/libcxx/src/iostream.cpp	110	"auto loc = newlocale(LC_ALL_MASK, ""C"", 0);"
+vendor	locale_api	contrib/llvm-project/libcxx/src/locale.cpp	77	"static locale_t result = newlocale(LC_ALL_MASK, ""C"", 0);"
+vendor	classic_locale	contrib/llvm-project/libcxx/src/locale.cpp	225	facets_ = locale::classic().__locale_->facets_;
+vendor	classic_locale	contrib/llvm-project/libcxx/src/locale.cpp	499	const locale& locale::classic() {
+vendor	classic_locale	contrib/llvm-project/libcxx/src/locale.cpp	509	static __no_destroy<locale> g(locale::classic());
+vendor	classic_locale	contrib/llvm-project/libcxx/src/locale.cpp	735	return isascii(c) ? _DefaultRuneLocale.__mapupper[c] : c;
+vendor	classic_locale	contrib/llvm-project/libcxx/src/locale.cpp	746	*low = isascii(*low) ? _DefaultRuneLocale.__mapupper[*low] : *low;
+vendor	classic_locale	contrib/llvm-project/libcxx/src/locale.cpp	757	return isascii(c) ? _DefaultRuneLocale.__maplower[c] : c;
+vendor	classic_locale	contrib/llvm-project/libcxx/src/locale.cpp	768	*low = isascii(*low) ? _DefaultRuneLocale.__maplower[*low] : *low;
+vendor	classic_locale	contrib/llvm-project/libcxx/src/locale.cpp	819	return isascii(c) ? static_cast<char>(_DefaultRuneLocale.__mapupper[static_cast<ptrdiff_t>(c)]) : c;
+vendor	classic_locale	contrib/llvm-project/libcxx/src/locale.cpp	832	*low = isascii(*low) ? static_cast<char>(_DefaultRuneLocale.__mapupper[static_cast<ptrdiff_t>(*low)]) : *low;
+vendor	classic_locale	contrib/llvm-project/libcxx/src/locale.cpp	845	return isascii(c) ? static_cast<char>(_DefaultRuneLocale.__maplower[static_cast<ptrdiff_t>(c)]) : c;
+vendor	classic_locale	contrib/llvm-project/libcxx/src/locale.cpp	858	*low = isascii(*low) ? static_cast<char>(_DefaultRuneLocale.__maplower[static_cast<ptrdiff_t>(*low)]) : *low;
+vendor	classic_locale	contrib/llvm-project/libcxx/src/locale.cpp	981	return _DefaultRuneLocale.__runetype;
+vendor	environment	contrib/ncurses/configure	70	"$as_unset LANG || test ""${LANG+set}"" != set || { LANG=C; export LANG; }"
+vendor	environment	contrib/ncurses/configure	71	"$as_unset LC_ALL || test ""${LC_ALL+set}"" != set || { LC_ALL=C; export LC_ALL; }"
+vendor	environment	contrib/ncurses/configure	72	"$as_unset LC_TIME || test ""${LC_TIME+set}"" != set || { LC_TIME=C; export LC_TIME; }"
+vendor	environment	contrib/ncurses/configure	73	"$as_unset LC_CTYPE || test ""${LC_CTYPE+set}"" != set || { LC_CTYPE=C; export LC_CTYPE; }"
+vendor	environment	contrib/ncurses/configure	75	"$as_unset LC_COLLATE || test ""${LC_COLLATE+set}"" != set || { LC_COLLATE=C; export LC_COLLATE; }"
+vendor	environment	contrib/ncurses/configure	76	"$as_unset LC_NUMERIC || test ""${LC_NUMERIC+set}"" != set || { LC_NUMERIC=C; export LC_NUMERIC; }"
+vendor	environment	contrib/ncurses/configure	77	"$as_unset LC_MESSAGES || test ""${LC_MESSAGES+set}"" != set || { LC_MESSAGES=C; export LC_MESSAGES; }"
+vendor	environment	contrib/ncurses/configure	30204	"$as_unset LANG || test ""${LANG+set}"" != set || { LANG=C; export LANG; }"
+vendor	environment	contrib/ncurses/configure	30205	"$as_unset LC_ALL || test ""${LC_ALL+set}"" != set || { LC_ALL=C; export LC_ALL; }"
+vendor	environment	contrib/ncurses/configure	30206	"$as_unset LC_TIME || test ""${LC_TIME+set}"" != set || { LC_TIME=C; export LC_TIME; }"
+vendor	environment	contrib/ncurses/configure	30207	"$as_unset LC_CTYPE || test ""${LC_CTYPE+set}"" != set || { LC_CTYPE=C; export LC_CTYPE; }"
+vendor	environment	contrib/ncurses/configure	30209	"$as_unset LC_COLLATE || test ""${LC_COLLATE+set}"" != set || { LC_COLLATE=C; export LC_COLLATE; }"
+vendor	environment	contrib/ncurses/configure	30210	"$as_unset LC_NUMERIC || test ""${LC_NUMERIC+set}"" != set || { LC_NUMERIC=C; export LC_NUMERIC; }"
+vendor	environment	contrib/ncurses/configure	30211	"$as_unset LC_MESSAGES || test ""${LC_MESSAGES+set}"" != set || { LC_MESSAGES=C; export LC_MESSAGES; }"
+vendor	environment	contrib/ncurses/install-sh	492	"old=`LC_ALL=C ls -dlL ""$dst""     2>/dev/null` &&"
+vendor	environment	contrib/ncurses/install-sh	493	"new=`LC_ALL=C ls -dlL ""$dsttmp""  2>/dev/null` &&"
+vendor	environment	contrib/ncurses/man/MKterminfo.sh	46	"if test ""${LANG+set}""        = set; then LANG=C;        export LANG;        fi"
+vendor	environment	contrib/ncurses/man/MKterminfo.sh	47	"if test ""${LC_ALL+set}""      = set; then LC_ALL=C;      export LC_ALL;      fi"
+vendor	environment	contrib/ncurses/man/MKterminfo.sh	48	"if test ""${LC_MESSAGES+set}"" = set; then LC_MESSAGES=C; export LC_MESSAGES; fi"
+vendor	environment	contrib/ncurses/man/MKterminfo.sh	49	"if test ""${LC_CTYPE+set}""    = set; then LC_CTYPE=C;    export LC_CTYPE;    fi"
+vendor	environment	contrib/ncurses/man/MKterminfo.sh	50	"if test ""${LC_COLLATE+set}""  = set; then LC_COLLATE=C;  export LC_COLLATE;  fi"
+vendor	environment	contrib/ncurses/misc/csort	33	"LANG=C;		export LANG"
+vendor	environment	contrib/ncurses/misc/csort	35	"LC_ALL=C;	export LC_ALL"
+vendor	environment	contrib/ncurses/misc/csort	36	"LC_CTYPE=C;	export LC_CTYPE"
+vendor	environment	contrib/ncurses/misc/ncurses-config.in	34	"LANG=C;		export LANG"
+vendor	environment	contrib/ncurses/misc/ncurses-config.in	36	"LC_ALL=C;	export LC_ALL"
+vendor	environment	contrib/ncurses/misc/ncurses-config.in	37	"LC_CTYPE=C;	export LC_CTYPE"
+vendor	environment	contrib/ncurses/ncurses/Makefile.in	256	AWK=$(AWK) USE_SIGWINCH=@cf_cv_enable_sigwinch@ $(SHELL) $(tinfo)/MKkeys_list.sh $(CAPLIST) | LC_ALL=C sort >$@
+vendor	environment	contrib/ncurses/ncurses/base/MKlib_gen.sh	60	"if test ""${LANG+set}""        = set; then LANG=C;        export LANG;        fi"
+vendor	environment	contrib/ncurses/ncurses/base/MKlib_gen.sh	61	"if test ""${LC_ALL+set}""      = set; then LC_ALL=C;      export LC_ALL;      fi"
+vendor	environment	contrib/ncurses/ncurses/base/MKlib_gen.sh	62	"if test ""${LC_MESSAGES+set}"" = set; then LC_MESSAGES=C; export LC_MESSAGES; fi"
+vendor	environment	contrib/ncurses/ncurses/base/MKlib_gen.sh	63	"if test ""${LC_CTYPE+set}""    = set; then LC_CTYPE=C;    export LC_CTYPE;    fi"
+vendor	environment	contrib/ncurses/ncurses/base/MKlib_gen.sh	64	"if test ""${LC_COLLATE+set}""  = set; then LC_COLLATE=C;  export LC_COLLATE;  fi"
+vendor	environment	contrib/ncurses/progs/MKtermsort.sh	40	"if test ""${LANG+set}""        = set; then LANG=C;        export LANG;        fi"
+vendor	environment	contrib/ncurses/progs/MKtermsort.sh	41	"if test ""${LC_ALL+set}""      = set; then LC_ALL=C;      export LC_ALL;      fi"
+vendor	environment	contrib/ncurses/progs/MKtermsort.sh	42	"if test ""${LC_MESSAGES+set}"" = set; then LC_MESSAGES=C; export LC_MESSAGES; fi"
+vendor	environment	contrib/ncurses/progs/MKtermsort.sh	43	"if test ""${LC_CTYPE+set}""    = set; then LC_CTYPE=C;    export LC_CTYPE;    fi"
+vendor	environment	contrib/ncurses/progs/MKtermsort.sh	44	"if test ""${LC_COLLATE+set}""  = set; then LC_COLLATE=C;  export LC_COLLATE;  fi"
+vendor_tests	locale_api	contrib/netbsd-tests/lib/libc/gen/t_vis.c	169	"ATF_REQUIRE(setlocale(LC_CTYPE, ""C"") != NULL);"
+vendor_tests	locale_api	contrib/netbsd-tests/lib/libc/locale/t_mbrtowc.c	132	"ATF_REQUIRE_STREQ(setlocale(LC_ALL, ""C""), ""C"");"
+vendor_tests	locale_api	contrib/netbsd-tests/lib/libc/locale/t_mbsnrtowcs.c	75	"ATF_REQUIRE_STREQ(setlocale(LC_ALL, ""C""), ""C"");"
+vendor_tests	locale_api	contrib/netbsd-tests/lib/libc/locale/t_mbstowcs.c	154	"ATF_REQUIRE_STREQ(setlocale(LC_ALL, ""C""), ""C"");"
+vendor_tests	locale_api	contrib/netbsd-tests/lib/libc/locale/t_mbtowc.c	78	"ATF_REQUIRE_STREQ(setlocale(LC_ALL, ""C""), ""C"");"
+vendor_tests	locale_api	contrib/netbsd-tests/lib/libc/locale/t_wctomb.c	111	"ATF_REQUIRE_STREQ(setlocale(LC_ALL, ""C""), ""C"");"
+vendor_tests	locale_api	contrib/netbsd-tests/lib/libc/string/t_strerror.c	128	"(void)setlocale(LC_ALL, ""C"");"
+vendor_tests	environment	contrib/netbsd-tests/usr.bin/cut/t_cut.sh	97	export LC_ALL=C
+vendor	environment	contrib/ntp/configure	57	LC_ALL=C
+vendor	environment	contrib/ntp/configure	35424	LC_ALL=C
+vendor	environment	contrib/ntp/scripts/build/mkver.in	21	"ConfStr=""$ConfStr `LC_TIME=C TZ=UTC date -d@$SOURCE_DATE_EPOCH 2>/dev/null`"" ||"
+vendor	environment	contrib/ntp/scripts/build/mkver.in	22	"ConfStr=""$ConfStr `LC_TIME=C TZ=UTC date -r $SOURCE_DATE_EPOCH`"""
+vendor	environment	contrib/ntp/scripts/build/mkver.in	24	"ConfStr=""$ConfStr `LC_TIME=C TZ=UTC date`"""
+vendor	environment	contrib/ntp/sntp/configure	57	LC_ALL=C
+vendor	environment	contrib/ntp/sntp/configure	28515	LC_ALL=C
+vendor	environment	contrib/ntp/sntp/libevent/build-aux/install-sh	452	"old=`LC_ALL=C ls -dlL ""$dst""     2>/dev/null` &&"
+vendor	environment	contrib/ntp/sntp/libevent/build-aux/install-sh	453	"new=`LC_ALL=C ls -dlL ""$dsttmp""  2>/dev/null` &&"
+vendor	environment	contrib/ntp/sntp/libevent/configure	55	LC_ALL=C
+vendor	environment	contrib/ntp/sntp/libevent/configure	20281	LC_ALL=C
+vendor	environment	contrib/one-true-awk/bugs-fixed/space.awk	11	"sort = ""LC_ALL=C sort"""
+vendor	locale_api	contrib/one-true-awk/main.c	140	"setlocale(LC_NUMERIC, ""C""); /* for parsing cmdline & prog */"
+vendor	environment	contrib/openbsm/config/config.guess	907	# Set LC_ALL=C to ensure ld outputs messages in English.
+vendor	environment	contrib/openbsm/config/config.guess	908	ld_supported_targets=`cd /; LC_ALL=C ld --help 2>&1 \
+vendor	environment	contrib/openbsm/configure	129	LC_ALL=C
+vendor	environment	contrib/openbsm/configure	14579	LC_ALL=C
+vendor	environment	contrib/openpam/configure	57	LC_ALL=C
+vendor	environment	contrib/openpam/configure	20508	LC_ALL=C
+vendor	environment	contrib/openpam/install-sh	485	"old=`LC_ALL=C ls -dlL ""$dst""     2>/dev/null` &&"
+vendor	environment	contrib/openpam/install-sh	486	"new=`LC_ALL=C ls -dlL ""$dsttmp""  2>/dev/null` &&"
+vendor	environment	contrib/openpam/ltmain.sh	136	LC_ALL=C
+vendor	environment	contrib/tcpdump/configure	55	LC_ALL=C
+vendor	environment	contrib/tcpdump/configure	9946	LC_ALL=C
+vendor	environment	contrib/tcpdump/install-sh	485	"old=`LC_ALL=C ls -dlL ""$dst""     2>/dev/null` &&"
+vendor	environment	contrib/tcpdump/install-sh	486	"new=`LC_ALL=C ls -dlL ""$dsttmp""  2>/dev/null` &&"
+vendor	environment	contrib/tzcode/Makefile	601	export LC_ALL=C && \
+vendor	environment	contrib/tzcode/Makefile	756	LC_ALL=C $(AWK) \
+vendor	environment	contrib/tzcode/Makefile	872	tzdata.zi | LC_ALL=C sort >$@.out
+vendor	environment	contrib/tzcode/Makefile	875	| LC_ALL=C sort -t . -k 2,2) && \
+vendor	environment	contrib/tzcode/Makefile	977	backward | LC_ALL=C sort -cu
+vendor	environment	contrib/tzcode/Makefile	978	$(AWK) '/^Zone.*\// {print $$2}' backzone | LC_ALL=C sort -cu
+vendor	environment	contrib/tzcode/Makefile	1116	LC_ALL=C sh workman.sh $(MANFLAGS) $(@:.txt=) >$@.out
+vendor	environment	contrib/tzcode/tzselect.ksh	746	"TZdate=$(LANG=C TZ=""$TZ_for_date"" date)"
+vendor	environment	contrib/tzcode/tzselect.ksh	747	UTdate=$(LANG=C TZ=UTC0 date)
+vendor	environment	contrib/tzdata/Makefile	602	export LC_ALL=C && \
+vendor	environment	contrib/tzdata/Makefile	757	LC_ALL=C $(AWK) \
+vendor	environment	contrib/tzdata/Makefile	873	tzdata.zi | LC_ALL=C sort >$@.out
+vendor	environment	contrib/tzdata/Makefile	876	| LC_ALL=C sort -t . -k 2,2) && \
+vendor	environment	contrib/tzdata/Makefile	978	backward | LC_ALL=C sort -cu
+vendor	environment	contrib/tzdata/Makefile	979	$(AWK) '/^Zone.*\// {print $$2}' backzone | LC_ALL=C sort -cu
+vendor	environment	contrib/tzdata/Makefile	1094	grep '^Release [0-9][0-9][0-9][0-9]' NEWS | LC_ALL=C sort -cru
+vendor	environment	contrib/tzdata/Makefile	1095	sed -n '/ -0000$$/!s/^Release [^ ]*//p' NEWS|LC_ALL=C sort -cru
+vendor	environment	contrib/tzdata/Makefile	1128	LC_ALL=C sh workman.sh $(MANFLAGS) $(@:.txt=) >$@.out
+vendor	environment	contrib/unbound/configure	57	LC_ALL=C
+vendor	environment	contrib/unbound/configure	26516	LC_ALL=C
+vendor	environment	contrib/unbound/install-sh	485	"old=`LC_ALL=C ls -dlL ""$dst""     2>/dev/null` &&"
+vendor	environment	contrib/unbound/install-sh	486	"new=`LC_ALL=C ls -dlL ""$dsttmp""  2>/dev/null` &&"
+vendor	environment	contrib/unbound/ltmain.sh	136	LC_ALL=C
+vendor	environment	contrib/unifdef/unifdefall.sh	46	export LC_ALL=C
+vendor	environment	contrib/xz/ChangeLog	985	No -f       With -f     LC_ALL=C
+vendor	environment	contrib/xz/ChangeLog	995	(4) LC_ALL=C sort
+vendor	environment	contrib/xz/ChangeLog	3570	Use also LC_COLLATE=C to make the sorting locale-independent.
+vendor	environment	contrib/xz/src/liblzma/validate_map.sh	84	LC_ALL=C
+vendor	locale_api	contrib/xz/src/xz/args.c	453	"setlocale(LC_NUMERIC, ""C"");"
+vendor	environment	crypto/openssh/freebsd-namespace.sh	13	export LANG=C
+vendor	environment	crypto/openssh/install-sh	485	"old=`LC_ALL=C ls -dlL ""$dst""     2>/dev/null` &&"
+vendor	environment	crypto/openssh/install-sh	486	"new=`LC_ALL=C ls -dlL ""$dsttmp""  2>/dev/null` &&"
+vendor_tests	environment	crypto/openssh/regress/agent-pkcs11-cert.sh	8	LC_ALL=C
+vendor_tests	environment	crypto/openssh/regress/agent-pkcs11-restrict.sh	79	LC_ALL=C
+vendor_tests	environment	crypto/openssh/regress/agent-restrict.sh	55	LC_ALL=C
+vendor_tests	locale_api	crypto/openssh/regress/unittests/utf8/tests.c	84	"loc = setlocale(LC_CTYPE, ""C"");"
+vendor	locale_api	crypto/openssh/utf8.c	350	"setlocale(LC_CTYPE, ""C"");"
+vendor	environment	crypto/openssl/Configurations/unix-Makefile.tmpl	535	LC_ALL=C
+vendor	environment	crypto/openssl/Configurations/unix-Makefile.tmpl	536	LC_MESSAGES=C
+vendor	environment	crypto/openssl/Configurations/unix-Makefile.tmpl	537	LANG=C
+native	classic_locale	include/_ctype.h	126	!!(_DefaultRuneLocale.__runetype[_c] & _f);
+native	classic_locale	include/runetype.h	86	extern const _RuneLocale _DefaultRuneLocale;
+native	classic_locale	lib/libc/locale/Symbol.map	73	_DefaultRuneLocale;
+native	classic_locale	lib/libc/locale/none.c	191	(_RuneLocale*)&_DefaultRuneLocale,
+native	classic_locale	lib/libc/locale/none.c	203	(_RuneLocale*)&_DefaultRuneLocale,
+native	classic_locale	lib/libc/locale/setrunelocale.c	72	if (&_DefaultRuneLocale != l->runes)
+native	classic_locale	lib/libc/locale/setrunelocale.c	87	if ((rl != &_DefaultRuneLocale) && (rl)) {
+native	classic_locale	lib/libc/locale/setrunelocale.c	105	(void) _none_init(l, (_RuneLocale*)&_DefaultRuneLocale);
+native	classic_locale	lib/libc/locale/setrunelocale.c	202	_ThreadRuneLocale = &_DefaultRuneLocale;
+native	classic_locale	lib/libc/locale/table.c	45	const _RuneLocale _DefaultRuneLocale = {
+native	classic_locale	lib/libc/locale/table.c	250	const _RuneLocale *_CurrentRuneLocale = &_DefaultRuneLocale;
+native	classic_locale	lib/libc/locale/xlocale.c	87	struct _xlocale __xlocale_C_locale = {
+native	classic_locale	lib/libc/locale/xlocale_private.h	177	extern struct _xlocale __xlocale_C_locale;
+native	classic_locale	lib/libc/locale/xlocale_private.h	215	case 0: return (&__xlocale_C_locale);
+native	inherited_byte_mode	lib/libc/regex/engine.c	159	if (MB_CUR_MAX == 1)
+native	inherited_byte_mode	lib/libc/regex/regcomp.c	1147	if (table->__collate_load_error || MB_CUR_MAX > 1) {
+native	inherited_byte_mode	lib/libc/regex/regcomp.c	1149	if (MB_CUR_MAX > 1) {
+native	inherited_byte_mode	lib/libc/regex/regcomp.c	1882	if (MB_CUR_MAX > 1 &&
+native	inherited_byte_mode	lib/libc/regex/regexec.c	221	if (MB_CUR_MAX > 1)
+native_tests	inherited_byte_mode	lib/libc/tests/locale/btowc_test.c	57	ATF_REQUIRE(MB_CUR_MAX > 1);
+native_tests	inherited_byte_mode	lib/libc/tests/locale/mblen_test.c	52	ATF_REQUIRE(MB_CUR_MAX == 1);
+native_tests	inherited_byte_mode	lib/libc/tests/locale/mblen_test.c	77	ATF_REQUIRE(MB_CUR_MAX > 1);
+native_tests	inherited_byte_mode	lib/libc/tests/locale/mbrlen_test.c	52	ATF_REQUIRE(MB_CUR_MAX == 1);
+native_tests	inherited_byte_mode	lib/libc/tests/locale/mbrlen_test.c	80	ATF_REQUIRE(MB_CUR_MAX > 1);
+native_tests	inherited_byte_mode	lib/libc/tests/locale/mbrtowc_test.c	56	ATF_REQUIRE(MB_CUR_MAX == 1);
+native_tests	inherited_byte_mode	lib/libc/tests/locale/mbrtowc_test.c	99	ATF_REQUIRE(MB_CUR_MAX > 1);
+native_tests	inherited_byte_mode	lib/libc/tests/locale/mbsnrtowcs_test.c	156	ATF_REQUIRE(MB_CUR_MAX > 1);
+native_tests	inherited_byte_mode	lib/libc/tests/locale/mbsrtowcs_test.c	131	ATF_REQUIRE(MB_CUR_MAX > 1);
+native_tests	inherited_byte_mode	lib/libc/tests/locale/mbstowcs_test.c	93	ATF_REQUIRE(MB_CUR_MAX > 1);
+native_tests	inherited_byte_mode	lib/libc/tests/locale/mbtowc_test.c	51	ATF_REQUIRE(MB_CUR_MAX == 1);
+native_tests	inherited_byte_mode	lib/libc/tests/locale/mbtowc_test.c	78	ATF_REQUIRE(MB_CUR_MAX > 1);
+native_tests	inherited_byte_mode	lib/libc/tests/locale/wcrtomb_test.c	54	ATF_REQUIRE(MB_CUR_MAX == 1);
+native_tests	inherited_byte_mode	lib/libc/tests/locale/wcsnrtombs_test.c	158	ATF_REQUIRE(MB_CUR_MAX > 1);
+native_tests	inherited_byte_mode	lib/libc/tests/locale/wcsrtombs_test.c	129	ATF_REQUIRE(MB_CUR_MAX > 1);
+native_tests	inherited_byte_mode	lib/libc/tests/locale/wcstombs_test.c	107	ATF_REQUIRE(MB_CUR_MAX > 1);
+native_tests	inherited_byte_mode	lib/libc/tests/locale/wctomb_test.c	64	ATF_REQUIRE(MB_CUR_MAX == 1);
+native_tests	locale_api	lib/libc/tests/stdio/printbasic_test.c	99	"ATF_REQUIRE(setlocale(LC_NUMERIC, ""C""));"
+native_tests	locale_api	lib/libc/tests/stdio/printbasic_test.c	142	"ATF_REQUIRE(setlocale(LC_NUMERIC, ""C""));"
+native_tests	locale_api	lib/libc/tests/stdio/printfloat_test.c	91	"ATF_REQUIRE(setlocale(LC_NUMERIC, ""C""));"
+native_tests	locale_api	lib/libc/tests/stdio/printfloat_test.c	123	"ATF_REQUIRE(setlocale(LC_NUMERIC, ""C""));"
+native_tests	locale_api	lib/libc/tests/stdio/printfloat_test.c	144	"ATF_REQUIRE(setlocale(LC_NUMERIC, ""C""));"
+native_tests	locale_api	lib/libc/tests/stdio/printfloat_test.c	157	"ATF_REQUIRE(setlocale(LC_NUMERIC, ""C""));"
+native_tests	locale_api	lib/libc/tests/stdio/printfloat_test.c	171	"ATF_REQUIRE(setlocale(LC_NUMERIC, ""C""));"
+native_tests	locale_api	lib/libc/tests/stdio/printfloat_test.c	193	"ATF_REQUIRE(setlocale(LC_NUMERIC, ""C""));"
+native_tests	locale_api	lib/libc/tests/stdio/printfloat_test.c	202	"ATF_REQUIRE(setlocale(LC_NUMERIC, ""C""));"
+native_tests	locale_api	lib/libc/tests/stdio/printfloat_test.c	218	"ATF_REQUIRE(setlocale(LC_NUMERIC, ""C""));"
+native_tests	locale_api	lib/libc/tests/stdio/printfloat_test.c	231	"ATF_REQUIRE(setlocale(LC_NUMERIC, ""C""));"
+native_tests	locale_api	lib/libc/tests/stdio/printfloat_test.c	266	"ATF_REQUIRE(setlocale(LC_NUMERIC, ""C""));"
+native_tests	locale_api	lib/libc/tests/stdio/printfloat_test.c	297	"ATF_REQUIRE(setlocale(LC_NUMERIC, ""C""));"
+native_tests	locale_api	lib/libc/tests/stdio/printfloat_test.c	338	"ATF_REQUIRE(setlocale(LC_NUMERIC, ""C""));"
+native_tests	locale_api	lib/libc/tests/stdio/scanfloat_test.c	157	"ATF_REQUIRE(setlocale(LC_NUMERIC, ""C""));"
+native_tests	locale_api	lib/libc/tests/stdio/scanfloat_test.c	206	"ATF_REQUIRE(setlocale(LC_NUMERIC, ""C""));"
+native_tests	locale_api	lib/libc/tests/stdio/scanfloat_test.c	284	"ATF_REQUIRE(setlocale(LC_NUMERIC, ""C""));"
+native_tests	locale_api	lib/libc/tests/stdlib/strfmon_test.c	235	"if (setlocale(LC_MONETARY, ""C"") == NULL)"
+native_tests	locale_api	lib/libc/tests/string/wcscasecmp_test.c	40	"ATF_REQUIRE(setlocale(LC_CTYPE, ""C"") != NULL);"
+native_tests	locale_api	lib/libc/tests/string/wcscasecmp_test.c	51	"ATF_REQUIRE(setlocale(LC_CTYPE, ""C"") != NULL);"
+native_tests	locale_api	lib/libc/tests/string/wcscasecmp_test.c	63	"ATF_REQUIRE(setlocale(LC_CTYPE, ""C"") != NULL);"
+native_tests	locale_api	lib/libc/tests/string/wcscasecmp_test.c	79	"ATF_REQUIRE(setlocale(LC_CTYPE, ""C"") != NULL);"
+native_tests	locale_api	lib/libc/tests/string/wcscasecmp_test.c	91	"ATF_REQUIRE(setlocale(LC_CTYPE, ""C"") != NULL);"
+native_tests	locale_api	lib/libc/tests/string/wcscasecmp_test.c	105	"ATF_REQUIRE(setlocale(LC_CTYPE, ""C"") != NULL);"
+native	locale_api	lib/libfetch/http.c	883	"setlocale(LC_TIME, ""C"");"
+native	environment	lib/libsysdecode/mkioctls	13	LC_ALL=C; export LC_ALL
+native	environment	lib/libsysdecode/mkioctls	28	LC_ALL=C sort | \
+native	environment	lib/libsysdecode/mklinuxtables	32	LC_ALL=C; export LC_ALL
+native	environment	lib/libsysdecode/mktables	35	LC_ALL=C; export LC_ALL
+native	environment	lib/ncurses/ncurses/Makefile	174	"LC_ALL=C sh ${NCURSES_DIR}/ncurses/base/MKlib_gen.sh ""${CPP:N${CCACHE_BIN}} ${CFLAGS}"" \"
+native	environment	lib/ncurses/tinfo/Makefile	236	"LC_ALL=C sh ${NCURSES_DIR}/ncurses/base/MKlib_gen.sh ""${CC:N${CCACHE_BIN}} -E ${CFLAGS}"" \"
+native	environment	lib/ncurses/tinfo/Makefile	273	${NCURSES_DIR}/include/Caps ${NCURSES_DIR}/include/Caps-ncurses | LC_ALL=C sort > keys.list
+native	environment	release/Makefile	173	env -i LC_COLLATE=C sort >> ${.OBJDIR}/${DISTDIR}/base.meta
+native	environment	release/tools/vmimage.subr	120	env -i LC_COLLATE=C sort >> ${DESTDIR}/METALOG
+native	environment	release/tools/vmimage.subr	305	env -i LC_COLLATE=C sort -u ${DESTDIR}/METALOG > ${DESTDIR}/METALOG.sorted
+native	environment	sbin/route/Makefile	33	LC_ALL=C awk '!/^#|^$$/ { \
+native	environment	share/zoneinfo/Makefile	103	LC_ALL=C awk \
+native	environment	share/zoneinfo/Makefile	108	LC_ALL=C awk \
+native	environment	share/zoneinfo/Makefile	115	(cd ${TZBUILDDIR} && find * -type f | LC_ALL=C sort) > ${.TARGET}
+native	environment	stand/common/newvers.sh	45	LC_ALL=C; export LC_ALL
+native	environment	sys/conf/Makefile.arm	95	LC_ALL=C \
+native	environment	sys/conf/Makefile.arm64	91	LC_ALL=C \
+native	environment	sys/conf/newvers.sh	185	LC_ALL=C; export LC_ALL
+vendor	locale_api	sys/contrib/openzfs/cmd/mount_zfs.c	165	"(void) setlocale(LC_NUMERIC, ""C"");"
+vendor	locale_api	sys/contrib/openzfs/cmd/zfs/zfs_main.c	9426	"(void) setlocale(LC_NUMERIC, ""C"");"
+vendor	locale_api	sys/contrib/openzfs/cmd/zpool/zpool_main.c	13827	"(void) setlocale(LC_NUMERIC, ""C"");"
+vendor	environment	sys/contrib/openzfs/config/ax_code_coverage.m4	148	"$(code_coverage_v_genhtml)LANG=C $(GENHTML) $(code_coverage_quiet) $(addprefix --prefix ,$(CODE_COVERAGE_DIRECTORY)) --output-directory ""$(CODE_COVERAGE_OUTPUT_DIRECTORY)"" --title ""$(PACKAGE_NAME)-$(PACKAGE_VERSION) Code Coverage"" --legend --show-details ""$(CODE_COVERAGE_OUTPUT_FILE)"" $(CODE_COVERAGE_GENHTML_OPTIONS)"
+vendor	environment	sys/contrib/openzfs/config/config.rpath	652	LC_ALL=C sed -e 's/^\([a-zA-Z0-9_]*\)=/acl_cv_\1=/' <<EOF
+vendor	environment	sys/contrib/openzfs/config/host-cpu-c-abi.m4	139	if LC_ALL=C grep 'd0,' conftest.$gl_asmext >/dev/null; then
+vendor	environment	sys/contrib/openzfs/config/lib-prefix.m4	216	&& LC_ALL=C /usr/bin/gcc -print-search-dirs >/dev/null 2>/dev/null; then \
+vendor	environment	sys/contrib/openzfs/config/lib-prefix.m4	217	LC_ALL=C /usr/bin/gcc -print-search-dirs; \
+vendor	environment	sys/contrib/openzfs/config/lib-prefix.m4	219	LC_ALL=C $CC -print-search-dirs; \
+vendor	environment	sys/contrib/openzfs/config/po.m4	81	if LC_ALL=C $MSGMERGE --help | grep ' --for-msgfmt ' >/dev/null; then
+vendor	environment	sys/contrib/openzfs/config/po.m4	85	if LC_ALL=C $MSGMERGE --help | grep ' --no-fuzzy-matching ' >/dev/null; then
+vendor	environment	sys/contrib/openzfs/config/rpm.am	85	LANG=C $(RPMBUILD) \
+vendor	environment	sys/contrib/openzfs/config/rpm.am	106	LANG=C ${RPMBUILD} \
+vendor	environment	sys/contrib/openzfs/scripts/kmodtool	70	"LANG=C rpmbuild --define ""_sourcedir %{_sourcedir}"" \\\"
+vendor_tests	environment	sys/contrib/openzfs/tests/zfs-tests/include/default.cfg.in	54	"export LC_ALL=""C"""
+vendor_tests	environment	sys/contrib/openzfs/tests/zfs-tests/include/default.cfg.in	55	"export LANG=""C"""
+vendor_tests	environment	sys/contrib/openzfs/tests/zfs-tests/tests/functional/cli_user/zfs_list/zfs_list_002_pos.ksh	97	LC_ALL=C; export LC_ALL
+native	environment	sys/dev/bhnd/tools/nvram_map_gen.sh	8	LC_ALL=C; export LC_ALL
+native_tests	environment	tests/sys/cddl/zfs/include/constants.cfg	38	"export LC_ALL=""C"""
+native_tests	environment	tests/sys/cddl/zfs/include/constants.cfg	39	"export LANG=""C"""
+native_tests	environment	tests/sys/cddl/zfs/tests/cli_root/zfs_diff/zfs_diff_001_pos.ksh	69	LC_ALL=C $ZFS diff $TESTPOOL/$TESTFS@1 $TESTPOOL/$TESTFS@2 | ${SORT} > $TESTDIR/zfs_diff_output.txt
+native_tests	environment	tests/sys/cddl/zfs/tests/cli_user/zfs_list/zfs_list_002_pos.ksh	105	LC_ALL=C; export LC_ALL
+native_tests	environment	tests/sys/cddl/zfs/tests/cli_user/zfs_list/zfs_list_005_pos.ksh	93	LC_ALL=C; export LC_ALL
+native	environment	tools/build/absolute-symlink.sh	24	"LANG=""C""; export LANG"
+native	environment	tools/make_libdeps.sh	32	"LC_ALL=C			# make sort deterministic"
+native_tests	environment	tools/test/sort/regression/Makefile	15	@LANG=C;${SORT} data/${f} >output/${f}
+native_tests	environment	tools/test/sort/regression/Makefile	16	@#LANG=C;${GNUSORT} data/${f} >ref/${f}
+native_tests	environment	tools/test/sort/regression/Makefile	21	@LANG=C;${SORT} -${opt} data/${f} >output/${f}${opt}
+native_tests	environment	tools/test/sort/regression/Makefile	22	@#LANG=C;${GNUSORT} -${opt} data/${f} >ref/${f}${opt}
+native_tests	environment	tools/test/stress2/default.cfg	70	"LANG=C egrep -q ""[A-Z][A-Z]""; then"
+native_tests	environment	tools/test/stress2/misc/bench.sh	34	export LANG=C
+native_tests	environment	tools/test/stress2/misc/burnin.sh	34	export LANG=C
+native_tests	environment	tools/test/stress2/misc/dumpfs.sh	32	export LANG=C
+native_tests	environment	tools/test/stress2/misc/fsck.sh	106	"LANG=C egrep -q ""[A-Z][A-Z]"" $log && clean=0"
+native_tests	environment	tools/test/stress2/misc/fsck10.sh	93	"LANG=C egrep -q ""[A-Z][A-Z]"" $log && clean=0"
+native_tests	environment	tools/test/stress2/misc/fsck11.sh	97	"LANG=C egrep -q ""[A-Z][A-Z]"" $log && clean=0"
+native_tests	environment	tools/test/stress2/misc/fsck12.sh	96	"LANG=C egrep -q ""[A-Z][A-Z]"" $log && clean=0"
+native_tests	environment	tools/test/stress2/misc/fsck13.sh	106	"LANG=C egrep -q ""[A-Z][A-Z]"" $log && clean=0"
+native_tests	environment	tools/test/stress2/misc/fsck8.sh	98	"LANG=C egrep -q ""[A-Z][A-Z]"" $log && clean=0"
+native_tests	environment	tools/test/stress2/misc/fsck9.sh	96	"LANG=C egrep -q ""[A-Z][A-Z]"" $log && clean=0"
+native_tests	environment	tools/test/stress2/misc/nullfs11.sh	35	export LANG=C
+native_tests	environment	tools/test/stress2/misc/pthread2.sh	33	export LANG=C
+native_tests	environment	tools/test/stress2/misc/pthread4.sh	33	export LANG=C
+native_tests	environment	tools/test/stress2/misc/pthread7.sh	33	export LANG=C
+native_tests	environment	tools/test/stress2/misc/sched.sh	54	export LANG=C
+native_tests	environment	tools/test/stress2/misc/snap10.sh	52	"egrep -v ""WARNING|WRITE"" $log | LANG=C grep -q ""[A-Z][A-Z]"" &&"
+native_tests	environment	tools/test/stress2/misc/snap11.sh	65	"egrep -v ""WARNING|WRITE"" $log | LANG=C grep -q ""[A-Z][A-Z]"" &&"
+native_tests	environment	tools/test/stress2/misc/split.sh	52	export LANG=C
+native_tests	environment	tools/test/stress2/misc/tar.sh	42	export LANG=C
+native_tests	environment	tools/test/stress2/tools/fast.sh	40	export LANG=C
+native_tests	environment	tools/test/stress2/tools/ministat.sh	36	export LANG=C
+native	environment	tools/tools/sysdoc/sysdoc.sh	27	"DATE=`LC_TIME=C date +""%B %d, %Y""`"
+native_tests	environment	usr.bin/bmake/unit-tests/Makefile	804	"LC_ALL=		C"
+native_tests	environment	usr.bin/bmake/unit-tests/Makefile	805	"LANG=		C"
+native	locale_api	usr.bin/ctags/ctags.c	138	"setlocale(LC_COLLATE, ""C"");"
+native	inherited_byte_mode	usr.bin/cut/cut.c	130	fcn = MB_CUR_MAX > 1 ? c_cut : b_cut;
+native	inherited_byte_mode	usr.bin/cut/cut.c	132	fcn = nflag && MB_CUR_MAX > 1 ? b_n_cut : b_cut;
+native	environment	usr.bin/getaddrinfo/Makefile	16	LC_ALL=C awk -f ${.ALLSRC} > ${.TARGET}
+native	environment	usr.bin/getconf/Makefile	19	LC_ALL=C awk -f ${FAKE_GPERF} ${.IMPSRC} >${.TARGET}
+native	environment	usr.bin/getconf/Makefile	22	LC_ALL=C awk '/^[_A-Z]/ { print; }' ${.IMPSRC} | \
+native	environment	usr.bin/getconf/Makefile	37	LC_ALL=C sort -u ${.ALLSRC} >${.TARGET}
+native_tests	environment	usr.bin/gh-bc/tests/Makefile	60	echo 'env LANG=C BC_TEST_OUTPUT_DIR=$$(pwd) \
+native_tests	environment	usr.bin/gh-bc/tests/Makefile	65	"echo ""env LANG=C BC_TEST_OUTPUT_DIR=\$pwd \"
+native	inherited_byte_mode	usr.bin/hexdump/conv.c	98	if (odmode && MB_CUR_MAX > 1) {
+native	locale_api	usr.bin/ident/ident.c	247	"setlocale(LC_CTYPE, ""C"");"
+native	inherited_byte_mode	usr.bin/join/join.c	397	if (MB_CUR_MAX == 1)
+native_tests	environment	usr.bin/locale/tests/locale_test.sh	36	"export LC_ALL=""C"""
+native_tests	environment	usr.bin/locale/tests/locale_test.sh	103	"export LC_ALL=""C"""
+native_tests	environment	usr.bin/locale/tests/locale_test.sh	170	"export LC_ALL=""C"""
+native	environment	usr.bin/lorder/lorder.sh	32	export LC_CTYPE=C
+native	environment	usr.bin/lorder/lorder.sh	33	export LC_COLLATE=C
+native_tests	environment	usr.bin/printf/tests/regress.sh	10	"REGRESSION_TEST(`l1', `LC_ALL=C printf ""%d\n"" $(printf \""\\344)')"
+native	inherited_byte_mode	usr.bin/sed/compile.c	802	if (MB_CUR_MAX == 1) {
+native	inherited_byte_mode	usr.bin/sed/process.c	498	if (MB_CUR_MAX == 1) {
+native	locale_api	usr.bin/sort/sort.c	346	"cclocale = setlocale(LC_COLLATE, ""C"");"
+native	locale_api	usr.bin/sort/sort.c	352	"pclocale = setlocale(LC_COLLATE, ""POSIX"");"
+native	inherited_byte_mode	usr.bin/tr/str.c	219	if (MB_CUR_MAX == 1 && strxfrm(dst, src, sizeof(dst)) == 1) {
+native	inherited_byte_mode	usr.bin/tr/str.c	259	if (octal || was_octal || MB_CUR_MAX > 1) {
+native	inherited_byte_mode	usr.bin/tr/tr.c	287	if (cflag || (Cflag && MB_CUR_MAX > 1)) {
+native	environment	usr.bin/vi/catalog/Makefile	37	"env LC_ALL=C sort -u ${.ALLSRC} |				\"
+native	environment	usr.bin/vi/catalog/Makefile	83	"`sed '/^$$/d' < $$f.base | LC_ALL=C sort -u |		\"
+native	environment	usr.bin/vi/catalog/Makefile	89	"sed '/^$$/d' < $$f.base | LC_ALL=C sort | uniq -c |		\"
+native	environment	usr.bin/vi/catalog/Makefile	99	LC_ALL=C sort -nu > $@
+native_tests	environment	usr.bin/wc/tests/wc_test.sh	12	export LC_MESSAGES=C
+native	inherited_byte_mode	usr.bin/wc/wc.c	224	if (doword || (domulti && MB_CUR_MAX != 1))
+native	inherited_byte_mode	usr.bin/wc/wc.c	299	if (!domulti || MB_CUR_MAX == 1) {
+native	inherited_byte_mode	usr.bin/wc/wc.c	336	if (domulti && MB_CUR_MAX > 1) {
+native	locale_api	usr.sbin/makefs/makefs.c	111	"if (setlocale(LC_COLLATE, ""C"") == NULL)"
+native	locale_api	usr.sbin/pw/psdate.c	124	"l = newlocale(LC_ALL_MASK, ""C"", NULL);"

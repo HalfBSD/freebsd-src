@@ -51,7 +51,6 @@ cd $top/stand
 
 # Build without GELI
 for i in \
-	arm64/aarch64 \
 	amd64/amd64 \
 	i386/i386 \
 	; do
@@ -62,8 +61,6 @@ done
 # Default build for a almost all architectures
 for i in \
 	amd64/amd64 \
-	arm/armv7 \
-	arm64/aarch64 \
 	i386/i386 \
 	; do
     ta=${i##*/}
@@ -72,7 +69,6 @@ done
 
 # Build w/o ZFS
 for i in \
-	arm64/aarch64 \
 	amd64/amd64 \
 	i386/i386 \
 	; do

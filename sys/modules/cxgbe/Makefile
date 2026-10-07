@@ -14,7 +14,7 @@ SUBDIR+=	t7_firmware
 SUBDIR+=	${_tom}
 SUBDIR+=	ccr
 
-.if ${MACHINE_CPUARCH} == "amd64" || ${MACHINE_CPUARCH} == "aarch64"
+.if ${MACHINE_CPUARCH} == "amd64"
 _tom=	tom
 .endif
 

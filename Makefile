@@ -320,12 +320,10 @@ MK_META_MODE= no
 # expanding to TARGET == TARGET_CPUARCH in recent times, with known
 # exceptions.
 .if !defined(TARGET_ARCH) && defined(TARGET)
-# T->TA mapping is usually TARGET with arm64 the odd man out
-_TARGET_ARCH=	${TARGET:S/arm64/aarch64/:S/arm/armv7/}
+_TARGET_ARCH=	${TARGET}
 .elif !defined(TARGET) && defined(TARGET_ARCH) && \
     ${TARGET_ARCH} != ${MACHINE_ARCH}
-# TA->T mapping is accidentally CPUARCH with aarch64 the odd man out
-_TARGET=	${TARGET_ARCH:${__TO_CPUARCH}:C/aarch64/arm64/}
+_TARGET=	${TARGET_ARCH:${__TO_CPUARCH}}
 .endif
 .if defined(TARGET) && !defined(_TARGET)
 _TARGET=${TARGET}
@@ -340,6 +338,11 @@ _TARGET=	${XDEV}
 .if defined(XDEV_ARCH)
 _TARGET_ARCH=	${XDEV_ARCH}
 .endif
+.if !empty(_TARGET:Marm*) || !empty(_TARGET_ARCH:Marm*) || \
+    !empty(_TARGET_ARCH:Maarch64*) || !empty(TARGETS:Marm*)
+.error HalfBSD no longer supports ARM hardware targets.
+.endif
+
 # Some targets require a set TARGET/TARGET_ARCH, check before the default
 # MACHINE and after the compatibility handling.
 .if !defined(_TARGET) || !defined(_TARGET_ARCH)
@@ -546,8 +549,6 @@ TARGET_ARCHES_${target}= ${MACHINE_ARCH_LIST_${target}}
 _DEFAULT_GCC_VERSION=	gcc15
 _GCC_VERSION=		${"${USE_GCC_TOOLCHAINS:Mgcc*}" != "":?${USE_GCC_TOOLCHAINS}:${_DEFAULT_GCC_VERSION}}
 TOOLCHAINS_amd64=	amd64-${_GCC_VERSION}
-TOOLCHAINS_arm=		armv7-${_GCC_VERSION}
-TOOLCHAINS_arm64=	aarch64-${_GCC_VERSION}
 TOOLCHAINS_i386=	i386-${_GCC_VERSION}
 .endif
 

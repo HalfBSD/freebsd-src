@@ -5,9 +5,7 @@ INCS=	pmc.h pmclog.h pmcformat.h
 
 CFLAGS+= -I${SRCTOP}/${RELDIR:H}/libpmcstat
 
-.if ${MACHINE_CPUARCH} == "aarch64"
-EVENT_ARCH="arm64"
-.elif ${MACHINE_CPUARCH} == "amd64" || ${MACHINE_CPUARCH} == "i386"
+.if ${MACHINE_CPUARCH} == "amd64" || ${MACHINE_CPUARCH} == "i386"
 EVENT_ARCH="x86"
 .else
 # This will generate an empty events table

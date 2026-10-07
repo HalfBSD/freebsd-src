@@ -15,28 +15,6 @@ SRCS=	bus_if.h \
 	ossl_sha512.c \
 	${SRCS.${MACHINE_CPUARCH}}
 
-SRCS.arm= \
-	aes-armv4.S \
-	bsaes-armv7.S \
-	chacha-armv4.S \
-	ghash-armv4.S \
-	poly1305-armv4.S  \
-	sha1-armv4-large.S \
-	sha256-armv4.S \
-	sha512-armv4.S \
-	ossl_arm.c \
-	ossl_aes_gcm_neon.c
-
-SRCS.aarch64= \
-	chacha-armv8.S \
-	chacha-armv8-sve.S \
-	poly1305-armv8.S \
-	sha1-armv8.S \
-	sha256-armv8.S \
-	sha512-armv8.S \
-	vpaes-armv8.S \
-	ossl_aarch64.c
-
 SRCS.amd64= \
 	aes-gcm-avx512.S \
 	aesni-x86_64.S \
@@ -62,23 +40,7 @@ SRCS.i386= \
 
 
 
-CFLAGS.bsaes-armv7.S+=	-D__KERNEL__
 
 CFLAGS+= -I${SRCTOP}/sys/crypto/openssl
-
-# For arm64, we are forced to rewrite the compiler invocation for the assembly
-# files, to remove -mgeneral-regs-only.
-${SRCS.aarch64:M*.S:S/S/o/}: ${.TARGET:R}.S
-	${CC} -c ${CFLAGS:N-mgeneral-regs-only} ${WERROR} ${PROF} ${.IMPSRC}
-	${CTFCONVERT_CMD}
-
-# Based on modules/armv8crypto/Makefile.
-# Clang doesn't recognize "aes*" instructions without -march set.
-aesv8-armx.o: aesv8-armx.S
-	${CC} -c ${CFLAGS:N-mgeneral-regs-only} ${WERROR} ${PROF} \
-	    -march=armv8-a+crypto ${.IMPSRC}
-	${CTFCONVERT_CMD}
-
-OBJS.aarch64= aesv8-armx.o
 
 .include <bsd.kmod.mk>

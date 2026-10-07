@@ -2,13 +2,11 @@
 .-include <site.sys.machine.mk>
 
 PSEUDO_MACHINE_LIST?= common host host32
-TARGET_MACHINE_LIST?= amd64 arm arm64 i386
+TARGET_MACHINE_LIST?= amd64 i386
 
 MACHINE_ARCH_host?= ${_HOST_ARCH}
 MACHINE_ARCH_host32?= ${_HOST_ARCH32}
 
-MACHINE_ARCH_LIST_arm?= armv7
-MACHINE_ARCH_LIST_arm64?= aarch64
 .for m in ${TARGET_MACHINE_LIST}
 MACHINE_ARCH_LIST_$m?= $m
 MACHINE_ARCH_$m?= ${MACHINE_ARCH_LIST_$m:[1]}

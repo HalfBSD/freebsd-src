@@ -75,12 +75,6 @@ _runfw=		runfw
 _urtw=		urtw
 .endif
 
-.if ${MACHINE_CPUARCH} == "arm"
-_atmegadci=	atmegadci
-_dwc_otg=	dwc_otg
-_musb=		musb
-_uss820dci=	uss820dci
-.endif
 
 .if ${MACHINE_CPUARCH} == "i386"
 _urtw=		urtw
@@ -90,12 +84,8 @@ _urtw=		urtw
 _avr32dci=	avr32dci
 .endif
 
-.if ${MACHINE_CPUARCH} == "aarch64"
-# The bcm2838_xhci shim is specific to the Raspberry Pi 4 SoC.
-_bcm2838_xhci=	bcm2838_xhci
-.endif
 
-.if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "amd64" || \
+.if ${MACHINE_CPUARCH} == "amd64" || \
     ${MACHINE_CPUARCH} == "i386"
 _uacpi=		uacpi
 .endif

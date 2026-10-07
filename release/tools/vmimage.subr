@@ -68,7 +68,7 @@ vm_base_packages_list() {
 	echo FreeBSD-set-kernels
 	[ -z "${WITHOUT_KERNEL_SYMBOLS}" ] && echo FreeBSD-set-kernels-dbg
 	case ${TARGET_ARCH} in
-	amd64 | aarch64)
+	amd64)
 		echo FreeBSD-set-lib32
 		[ -z "${WITHOUT_DEBUG_FILES}" ] && echo FreeBSD-set-lib32-dbg
 	esac
@@ -393,7 +393,7 @@ vm_create_disk() {
 	MAKEFSARGS="-s ${VMSIZE} -D"
 
 	case "${TARGET}:${TARGET_ARCH}" in
-		amd64:amd64 | arm:armv7 | arm64:aarch64)
+		amd64:amd64)
 			ESP=yes
 			BOOTPARTS=
 			ROOTFSPART="-p ${FSPARTTYPE}/rootfs:=${VMBASE}"

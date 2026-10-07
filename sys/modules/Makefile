@@ -35,9 +35,6 @@ SUBDIR=	\
 	${_amdsmn} \
 	${_amdtemp} \
 	${_arcmsr} \
-	${_allwinner} \
-	${_armv8crypto} \
-	${_armv8_rng} \
 	${_asmc} \
 	ata \
 	ath \
@@ -54,8 +51,6 @@ SUBDIR=	\
 	axgbe \
 	backlight \
 	${_bce} \
-	${_bcm283x_clkman} \
-	${_bcm283x_pwm} \
 	bfe \
 	bge \
 	bhnd \
@@ -79,7 +74,6 @@ SUBDIR=	\
 	${_chromebook_platform} \
 	${_ciss} \
 	${_coretemp} \
-	${_cpsw} \
 	${_cpuctl} \
 	${_cpufreq} \
 	${_crypto} \
@@ -136,7 +130,6 @@ SUBDIR=	\
 	if_edsc \
 	${_if_enc} \
 	if_epair \
-	${_genet} \
 	${_if_gif} \
 	${_if_gre} \
 	${_if_me} \
@@ -150,7 +143,6 @@ SUBDIR=	\
 	iflib \
 	${_igc} \
 	imgact_binmisc \
-	${_imx} \
 	${_intelspi} \
 	${_io} \
 	${_ioat} \
@@ -282,7 +274,6 @@ SUBDIR=	\
 	${_rdrand_rng} \
 	${_rdseed_rng} \
 	re \
-	${_rockchip} \
 	rtsx \
 	${_rtw88} \
 	${_rtw89} \
@@ -337,7 +328,6 @@ SUBDIR=	\
 	unionfs \
 	${_usb} \
 	${_vesa} \
-	${_vf_i2c} \
 	virtio \
 	vge \
 	${_viawd} \
@@ -393,7 +383,7 @@ SUBDIR+=	cuse
 .endif
 
 .if ${MK_EFI} != "no"
-.if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "amd64"
+.if ${MACHINE_CPUARCH} == "amd64"
 _efirt=		efirt
 .endif
 .endif
@@ -443,13 +433,12 @@ _fib_dxr=	fib_dxr
 _dpdk_lpm6=	dpdk_lpm6
 .endif
 
-
 .if !empty(OPT_FDT)
 SUBDIR+=	fdt
 .endif
 
 # Linuxulator
-.if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "amd64" || \
+.if ${MACHINE_CPUARCH} == "amd64" || \
     ${MACHINE_CPUARCH} == "i386"
 SUBDIR+=	linprocfs
 SUBDIR+=	linsysfs
@@ -457,13 +446,13 @@ SUBDIR+=	linsysfs
 .if ${MACHINE_CPUARCH} == "amd64" || ${MACHINE_CPUARCH} == "i386"
 SUBDIR+=	linux
 .endif
-.if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "amd64"
+.if ${MACHINE_CPUARCH} == "amd64"
 SUBDIR+=	linux64
 SUBDIR+=	linux_common
 .endif
 
 # LinuxKPI based wireless drivers.
-.if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "amd64" || \
+.if ${MACHINE_CPUARCH} == "amd64" || \
     ${MACHINE_CPUARCH} == "i386"
 _iwlwifi=	iwlwifi
 _rtw88=		rtw88
@@ -473,19 +462,19 @@ _rtw89=		rtw89
 .endif
 .endif
 
-.if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "amd64" || \
+.if ${MACHINE_CPUARCH} == "amd64" || \
     ${MACHINE_CPUARCH} == "i386"
 _ipmi=		ipmi
 .endif
 
-.if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "amd64" || \
+.if ${MACHINE_CPUARCH} == "amd64" || \
     ${MACHINE_CPUARCH} == "i386"
 _acpi=		acpi
 _igc=		igc
 .endif
 
-.if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "amd64" || \
-    ${MACHINE_CPUARCH} == "i386" || ${MACHINE_ARCH} == "armv7"
+.if ${MACHINE_CPUARCH} == "amd64" || \
+    ${MACHINE_CPUARCH} == "i386"
 _ossl=		ossl
 .endif
 
@@ -532,32 +521,19 @@ _ralfw=		ralfw
 _rtwnfw=	rtwnfw
 .endif
 
-.if ${MK_SOURCELESS_UCODE} != "no" && ${MACHINE_CPUARCH} != "arm"
+.if ${MK_SOURCELESS_UCODE} != "no"
 _cxgbe=		cxgbe
 .endif
 
-# This has only been tested on amd64 and arm64
-.if ${MACHINE_CPUARCH} == "amd64" || ${MACHINE_CPUARCH} == "aarch64"
+# This has only been tested on amd64
+.if ${MACHINE_CPUARCH} == "amd64"
 _mpi3mr=mpi3mr
 .endif
 
-# Specific to the Raspberry Pi.
-.if ${MACHINE_CPUARCH} == "aarch64"
-_genet=		genet
-.endif
-
-.if ${MACHINE_CPUARCH} == "amd64" || ${MACHINE_CPUARCH} == "aarch64"
+.if ${MACHINE_CPUARCH} == "amd64"
 _ice=		ice
 .if ${MK_SOURCELESS_UCODE} != "no"
 _ice_ddp=	ice_ddp
-.endif
-.endif
-
-.if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "arm"
-.if !empty(OPT_FDT)
-_allwinner=	allwinner
-_if_cgem=	if_cgem
-_sdhci_fdt=	sdhci_fdt
 .endif
 .endif
 
@@ -584,26 +560,6 @@ SUBDIR+=	zfs
 
 .if ${MK_SOURCELESS_UCODE} != "no"
 _cxgb=		cxgb
-.endif
-
-.if ${MACHINE_CPUARCH} == "aarch64"
-_armv8crypto=	armv8crypto
-_armv8_rng=	armv8_rng
-_dpaa2=		dpaa2
-_sff=		sff
-_em=		em
-_vf_i2c=	vf_i2c
-
-.if !empty(OPT_FDT)
-_dwwdt=		dwwdt
-_enetc=		enetc
-_felix=		felix
-_rockchip=	rockchip
-.endif
-.endif
-
-.if ${MACHINE_CPUARCH} == "arm"
-_imx=		imx
 .endif
 
 .if ${MACHINE_CPUARCH} == "i386" || ${MACHINE_CPUARCH} == "amd64"
@@ -713,11 +669,11 @@ _smartpqi=	smartpqi
 _p2sb=		p2sb
 .endif
 
-.if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "amd64"
+.if ${MACHINE_CPUARCH} == "amd64"
 _hwt=		hwt
 .endif
 
-.if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "amd64"
+.if ${MACHINE_CPUARCH} == "amd64"
 .if ${MK_BHYVE} != "no" || defined(ALL_MODULES)
 .if ${KERN_OPTS:MSMP}
 _vmm=		vmm
@@ -736,19 +692,7 @@ _pst=		pst
 _sbni=		sbni
 .endif
 
-.if ${MACHINE_ARCH} == "armv7"
-_cfi=		cfi
-_cpsw=		cpsw
-.endif
-
-.if ${MACHINE_CPUARCH} == "arm" || ${MACHINE_CPUARCH} == "aarch64"
-_bcm283x_clkman=  bcm283x_clkman
-_bcm283x_pwm=	bcm283x_pwm
-_neta=		neta
-.endif
-
-
-.if ${MACHINE_CPUARCH} == "amd64" || ${MACHINE_CPUARCH} == "aarch64"
+.if ${MACHINE_CPUARCH} == "amd64"
 _ufshci=ufshci
 .endif
 

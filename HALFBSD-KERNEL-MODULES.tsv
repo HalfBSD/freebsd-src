@@ -29,17 +29,7 @@ sys/modules/age/Makefile	if_age	outside default allowlist
 sys/modules/ahci/Makefile	ahci	candidate
 sys/modules/alc/Makefile	if_alc	outside default allowlist
 sys/modules/ale/Makefile	if_ale	outside default allowlist
-sys/modules/allwinner/aw_mmc/Makefile	aw_mmc	outside default allowlist
-sys/modules/allwinner/aw_pwm/Makefile	aw_pwm	outside default allowlist
-sys/modules/allwinner/aw_rsb/Makefile	aw_rsb	outside default allowlist
-sys/modules/allwinner/aw_rtc/Makefile	aw_rtc	outside default allowlist
-sys/modules/allwinner/aw_sid/Makefile	aw_sid	outside default allowlist
-sys/modules/allwinner/aw_spi/Makefile	aw_spi	outside default allowlist
-sys/modules/allwinner/aw_thermal/Makefile	aw_thermal	outside default allowlist
-sys/modules/allwinner/axp81x/Makefile	axp81x	outside default allowlist
-sys/modules/allwinner/if_awg/Makefile	if_awg	outside default allowlist
 sys/modules/alq/Makefile	alq	candidate
-sys/modules/am335x_dmtpps/Makefile	am335x_dmtpps	outside default allowlist
 sys/modules/amd_ecc_inject/Makefile	amd_ecc_inject	outside default allowlist
 sys/modules/amdgpio/Makefile	amdgpio	candidate
 sys/modules/amdsbwd/Makefile	amdsbwd	outside default allowlist
@@ -48,10 +38,6 @@ sys/modules/amdsmn/Makefile	amdsmn	candidate
 sys/modules/amdsmu/Makefile	amdsmu	candidate
 sys/modules/amdtemp/Makefile	amdtemp	candidate
 sys/modules/arcmsr/Makefile	arcmsr	outside default allowlist
-sys/modules/arm_ti/am335x_ehrpwm/Makefile	am335x_ehrpwm	outside default allowlist
-sys/modules/arm_ti/ti_i2c/Makefile	ti_i2c	outside default allowlist
-sys/modules/armv8_rng/Makefile	armv8_rng	outside default allowlist
-sys/modules/armv8crypto/Makefile	armv8crypto	outside default allowlist
 sys/modules/asmc/Makefile	asmc	candidate
 sys/modules/ata/atacore/Makefile	ata	outside default allowlist
 sys/modules/ata/ataisa/Makefile	ataisa	outside default allowlist
@@ -96,8 +82,6 @@ sys/modules/axgbe/if_axa/Makefile	if_axa	candidate
 sys/modules/axgbe/if_axp/Makefile	if_axp	candidate
 sys/modules/backlight/Makefile	backlight	candidate
 sys/modules/bce/Makefile	if_bce	candidate
-sys/modules/bcm283x_clkman/Makefile	bcm283x_clkman	outside default allowlist
-sys/modules/bcm283x_pwm/Makefile	bcm283x_pwm	outside default allowlist
 sys/modules/bfe/Makefile	if_bfe	outside default allowlist
 sys/modules/bge/Makefile	if_bge	candidate
 sys/modules/bhnd/Makefile	bhnd	candidate
@@ -141,7 +125,6 @@ sys/modules/chromebook_platform/Makefile	chromebook_platform	candidate
 sys/modules/chvgpio/Makefile	chvgpio	candidate
 sys/modules/ciss/Makefile	ciss	outside default allowlist
 sys/modules/coretemp/Makefile	coretemp	candidate
-sys/modules/cpsw/Makefile	if_cpsw	outside default allowlist
 sys/modules/cpuctl/Makefile	cpuctl	candidate
 sys/modules/cpufreq/Makefile	cpufreq	candidate
 sys/modules/crypto/Makefile	crypto	candidate
@@ -213,7 +196,6 @@ sys/modules/ftgpio/Makefile	ftgpio	outside default allowlist
 sys/modules/ftwd/Makefile	ftwd	outside default allowlist
 sys/modules/fusefs/Makefile	fusefs	candidate
 sys/modules/gem/Makefile	if_gem	outside default allowlist
-sys/modules/genet/Makefile	if_genet	outside default allowlist
 sys/modules/geom/geom_cache/Makefile	geom_cache	candidate
 sys/modules/geom/geom_ccd/Makefile	geom_ccd	outside default allowlist
 sys/modules/geom/geom_concat/Makefile	geom_concat	outside default allowlist
@@ -343,11 +325,6 @@ sys/modules/if_wg/Makefile	if_wg	candidate
 sys/modules/iflib/Makefile	iflib	candidate
 sys/modules/igc/Makefile	if_igc	candidate
 sys/modules/imgact_binmisc/Makefile	imgact_binmisc	outside default allowlist
-sys/modules/imx/imx6_ahci/Makefile	imx6_ahci	outside default allowlist
-sys/modules/imx/imx6_snvs/Makefile	imx6_snvs	outside default allowlist
-sys/modules/imx/imx_i2c/Makefile	imx_i2c	outside default allowlist
-sys/modules/imx/imx_spi/Makefile	imx_spi	outside default allowlist
-sys/modules/imx/imx_wdog/Makefile	imx_wdog	outside default allowlist
 sys/modules/intelspi/Makefile	intelspi	candidate
 sys/modules/io/Makefile	io	candidate
 sys/modules/ioat/Makefile	ioat	outside default allowlist
@@ -582,12 +559,6 @@ sys/modules/rdrand_rng/Makefile	rdrand_rng	candidate
 sys/modules/rdseed_rng/Makefile	rdseed_rng	candidate
 sys/modules/re/Makefile	if_re	candidate
 sys/modules/rndtest/Makefile	rndtest	outside default allowlist
-sys/modules/rockchip/rk805/Makefile	rk805	outside default allowlist
-sys/modules/rockchip/rk808/Makefile	rk808	outside default allowlist
-sys/modules/rockchip/rk_dwmmc/Makefile	rk_dwmmc	outside default allowlist
-sys/modules/rockchip/rk_i2c/Makefile	rk_i2c	outside default allowlist
-sys/modules/rockchip/rk_spi/Makefile	rk_spi	outside default allowlist
-sys/modules/rpi_ft5406/Makefile	rpi_ft5406	outside default allowlist
 sys/modules/rtsx/Makefile	rtsx	candidate
 sys/modules/rtw88/Makefile	if_rtw88	candidate
 sys/modules/rtw89/Makefile	if_rtw89	candidate
@@ -760,7 +731,6 @@ sys/modules/usb/xhci/Makefile	xhci	candidate
 sys/modules/usb/zyd/Makefile	if_zyd	candidate
 sys/modules/veriexec/Makefile	veriexec	outside default allowlist
 sys/modules/vesa/Makefile	vesa	outside default allowlist
-sys/modules/vf_i2c/Makefile	vf_i2c	outside default allowlist
 sys/modules/vge/Makefile	if_vge	outside default allowlist
 sys/modules/viawd/Makefile	viawd	outside default allowlist
 sys/modules/videomode/Makefile	videomode	candidate

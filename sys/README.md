@@ -1,11 +1,12 @@
-FreeBSD Kernel Source:
+HalfBSD Kernel Source:
 ----------------------
 
-This directory contains the source files and build glue that make up the FreeBSD
+This directory contains the source files and build glue that make up the HalfBSD
 kernel and its modules, including both original and contributed software.
 
 Kernel configuration files are located in the `conf/` subdirectory of each
-architecture. `GENERIC` is the configuration used in release builds. `NOTES`
+retained architecture. HalfBSD defaults to the amd64 `HALFBSD` configuration.
+ARM and arm64 hardware targets have been removed. `NOTES`
 contains documentation of all possible entries. `LINT` is a compile-only
 configuration used to maximize build coverage and detect regressions.
 
@@ -25,8 +26,6 @@ Source Roadmap:
 | Directory | Description |
 | --------- | ----------- |
 | amd64 | AMD64 (64-bit x86) architecture support |
-| arm | 32-bit ARM architecture support |
-| arm64 | 64-bit ARM (AArch64) architecture support |
 | cam | Common Access Method storage subsystem - `cam(4)` and `ctl(4)` |
 | cddl | CDDL-licensed optional sources such as DTrace |
 | conf | kernel build glue |
@@ -50,7 +49,6 @@ Source Roadmap:
 | netipsec | IPsec protocol implementation - `ipsec(4)` |
 | netpfil | IPFW packet filtering and dummynet traffic shaping |
 | opencrypto | OpenCrypto framework - `crypto(7)` |
-| riscv | 64-bit RISC-V architecture support |
 | security | security facilities - `audit(4)` and `mac(4)` |
 | sys | kernel headers |
 | tests | kernel unit tests |

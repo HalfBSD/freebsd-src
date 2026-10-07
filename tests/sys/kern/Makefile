@@ -133,9 +133,6 @@ CFLAGS.libkern_crc32+=	-DTESTING
 .if ${MACHINE_ARCH} == "amd64" || ${MACHINE_ARCH} == "i386"
 .PATH: ${SRCTOP}/sys/libkern/x86
 SRCS.libkern_crc32+=	crc32_sse42.c
-.elif ${MACHINE_CPUARCH} == "aarch64"
-.PATH: ${SRCTOP}/sys/libkern/arm64
-SRCS.libkern_crc32+=	crc32c_armv8.S
 .endif
 
 CFLAGS.subr_physmem.c+=	-D_WANT_FREEBSD_BITSET

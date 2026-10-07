@@ -9,10 +9,6 @@ SUBDIR= arpa protocols rpc ssp xlocale
 SUBDIR+=		i386
 INCLUDE_SUBDIRS+=	i386
 .endif
-.if ${MACHINE_CPUARCH} == "aarch64"
-SUBDIR+=		arm
-INCLUDE_SUBDIRS+=	arm
-.endif
 SUBDIR_PARALLEL=
 INCS=	a.out.h ar.h assert.h bitstring.h byteswap.h \
 	complex.h cpio.h _ctype.h ctype.h \

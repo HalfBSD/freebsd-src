@@ -154,17 +154,12 @@ env_check() {
 	SRC="${GITROOT}${GITSRC}"
 	PORT="${GITROOT}${GITPORTS}"
 
-	if [ -n "${EMBEDDEDBUILD}" ]; then
-		WITH_DVD=
-		WITH_COMPRESSED_IMAGES=
-		case ${EMBEDDED_TARGET}:${EMBEDDED_TARGET_ARCH} in
-			arm:arm*|arm64:aarch64)
-				chroot_build_release_cmd="chroot_arm_build_release"
-				;;
-			*)
-				;;
-		esac
-	fi
+	case ${TARGET}:${TARGET_ARCH}:${EMBEDDED_TARGET}:${EMBEDDED_TARGET_ARCH} in
+		arm*:*|*:arm*:*|*:aarch64*:*|*:*:arm*:*|*:*:*:arm*|*:*:*:aarch64*)
+			echo "HalfBSD no longer supports ARM hardware targets." >&2
+			exit 1
+			;;
+	esac
 
 	# If NOSRC and/or NOPORTS are unset, they must not pass to make
 	# as variables.  The release makefile verifies definedness of the
@@ -382,64 +377,11 @@ chroot_build_release() {
 efi_boot_name()
 {
 	case $1 in
-		arm)
-			echo "bootarm.efi"
-			;;
-		arm64)
-			echo "bootaa64.efi"
-			;;
 		amd64)
 			echo "bootx64.efi"
 			;;
 	esac
 }
-
-# chroot_arm_build_release(): Create arm SD card image.
-chroot_arm_build_release() {
-	load_target_env
-	case ${EMBEDDED_TARGET} in
-		arm|arm64)
-			if [ -e "${RELENGDIR}/tools/arm.subr" ]; then
-				. "${RELENGDIR}/tools/arm.subr"
-			fi
-			;;
-		*)
-			;;
-	esac
-	[ -n "${RELEASECONF}" ] && . "${RELEASECONF}"
-	export MAKE_FLAGS="${MAKE_FLAGS} TARGET=${EMBEDDED_TARGET}"
-	export MAKE_FLAGS="${MAKE_FLAGS} TARGET_ARCH=${EMBEDDED_TARGET_ARCH}"
-	export MAKE_FLAGS="${MAKE_FLAGS} ${CONF_FILES}"
-	eval chroot ${CHROOTDIR} env WITH_UNIFIED_OBJDIR=1 make ${MAKE_FLAGS} -C /usr/src/release obj
-	export WORLDDIR="$(eval chroot ${CHROOTDIR} make ${MAKE_FLAGS} -C /usr/src/release -V WORLDDIR)"
-	export OBJDIR="$(eval chroot ${CHROOTDIR} env WITH_UNIFIED_OBJDIR=1 make ${MAKE_FLAGS} -C /usr/src/release -V .OBJDIR)"
-	export DESTDIR="${OBJDIR}/${KERNEL}"
-	export IMGBASE="${CHROOTDIR}/${OBJDIR}/${BOARDNAME}.img"
-	export OSRELEASE="$(eval chroot ${CHROOTDIR} make ${MAKE_FLAGS} -C /usr/src/release \
-		TARGET=${EMBEDDED_TARGET} TARGET_ARCH=${EMBEDDED_TARGET_ARCH} \
-		-V OSRELEASE)"
-	chroot ${CHROOTDIR} mkdir -p ${DESTDIR}
-	chroot ${CHROOTDIR} truncate -s ${IMAGE_SIZE} ${IMGBASE##${CHROOTDIR}}
-	export mddev=$(chroot ${CHROOTDIR} \
-		mdconfig -f ${IMGBASE##${CHROOTDIR}} ${MD_ARGS})
-	arm_create_disk
-	arm_install_base
-	arm_install_boot
-	arm_install_uboot
-	mdconfig -d -u ${mddev}
-	chroot ${CHROOTDIR} rmdir ${DESTDIR}
-	mv ${IMGBASE} ${CHROOTDIR}/${OBJDIR}/${OSRELEASE}-${BOARDNAME}.img
-	chroot ${CHROOTDIR} mkdir -p /R
-	chroot ${CHROOTDIR} cp -p ${OBJDIR}/${OSRELEASE}-${BOARDNAME}.img \
-		/R/${OSRELEASE}-${BOARDNAME}.img
-	chroot ${CHROOTDIR} xz -T ${XZ_THREADS} /R/${OSRELEASE}-${BOARDNAME}.img
-	cd ${CHROOTDIR}/R && sha512 ${OSRELEASE}* \
-		> CHECKSUM.SHA512
-	cd ${CHROOTDIR}/R && sha256 ${OSRELEASE}* \
-		> CHECKSUM.SHA256
-
-	return 0
-} # chroot_arm_build_release()
 
 # chroot_cleanup(): Clean up resources setup in chroot_setup() at exit.
 #

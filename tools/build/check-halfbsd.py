@@ -41,6 +41,25 @@ def main():
                 assert result.returncode != 0, "unsupported policy override accepted"
             return result.stdout.splitlines(), result.stderr
 
+        # Exercise target rejection through the actual top-level Makefile.
+        # A packaged bmake needs an explicit system-makefile path in submakes.
+        top_common = common + [
+            "MAKE=" + args.make + " -m " + str(root / "share/mk"),
+        ]
+        for target in ["TARGET=arm", "TARGET=arm64", "TARGET_ARCH=armv7",
+                       "TARGET_ARCH=aarch64", "XDEV=arm", "XDEV_ARCH=aarch64", "TARGETS=arm arm64"]:
+            result = subprocess.run(top_common + [target, "-V", "${_TARGET}"],
+                                    cwd=root, text=True, capture_output=True)
+            assert result.returncode != 0, target
+            assert "HalfBSD no longer supports ARM hardware targets" in result.stderr, result.stderr
+        result = subprocess.run(top_common + ["-V", "${_TARGET}"], cwd=root,
+                                text=True, capture_output=True)
+        assert result.returncode == 0, result.stderr
+        assert result.stdout.strip() == "amd64", result.stdout
+        values, _ = evaluate("share/mk/local.sys.machine.mk", ["TARGET_MACHINE_LIST"])
+        assert values == ["amd64 i386"], values
+        print("PASS: ARM hardware targets rejected and retained x86 targets selected")
+
         opts = "share/mk/src.opts.mk"
         bootstrap = root / "tools/build"
         for host_os in ["FreeBSD", "Linux"]:

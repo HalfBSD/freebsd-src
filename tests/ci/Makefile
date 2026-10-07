@@ -287,10 +287,7 @@ ci-runtest: ci-buildimage-${TARGET_ARCH:tl} portinstall .PHONY
 .endif
 
 ci-checktarget: .PHONY
-.if ${TARGET_ARCH} != "aarch64" && \
-	${TARGET_ARCH} != "amd64" && \
-	${TARGET_ARCH} != "armv7" && \
-	${TARGET_ARCH} != "riscv64"
+.if ${TARGET_ARCH} != "amd64" && ${TARGET_ARCH} != "riscv64"
 	@false
 .ERROR:
 	@echo "Error: ${TARGET_ARCH} is not supported on ${TYPE} ${REVISION} ${BRANCH}"

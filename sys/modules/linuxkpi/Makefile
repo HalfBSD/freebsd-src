@@ -38,7 +38,7 @@ SRCS=	linux_compat.c \
 	linux_work.c \
 	linux_xarray.c
 
-.if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "amd64" || \
+.if ${MACHINE_CPUARCH} == "amd64" || \
     ${MACHINE_CPUARCH} == "i386"
 SRCS+=	opt_acpi.h acpi_if.h linux_acpi.c
 .endif

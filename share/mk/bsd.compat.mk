@@ -38,22 +38,6 @@ LIB32_MACHINE_ARCH=	i386
 LIB32WMAKEENV=	MACHINE_CPU="i686 mmx sse sse2"
 LIB32WMAKEFLAGS=	\
 		LD="${XLD} -m elf_i386_fbsd"
-
-.elif ${COMPAT_ARCH} == "aarch64"
-HAS_COMPAT+=	32
-.if empty(LIB32CPUTYPE)
-LIB32CPUFLAGS=	-march=armv7
-.else
-LIB32CPUFLAGS=	-mcpu=${LIB32CPUTYPE}
-.endif
-
-LIB32CPUFLAGS+=	-m32
-LIB32CPUFLAGS.clang+=	-target armv7-unknown-freebsd${OS_REVISION}-gnueabihf
-
-LIB32_MACHINE=	arm
-LIB32_MACHINE_ARCH=	armv7
-LIB32WMAKEFLAGS=	\
-		LD="${XLD} -m armelf_fbsd"
 .endif
 
 LIB32WMAKEFLAGS+= NM="${XNM}"

@@ -21,55 +21,7 @@ SRCS+=	vmm.c			\
 	vmm_stat.c		\
 	vmm_vm.c
 
-.if ${MACHINE_CPUARCH} == "aarch64"
-CFLAGS+= -I${SRCTOP}/sys/${MACHINE}/vmm/io
-DPSRCS+=	assym.inc
-
-# TODO: Add the new EL2 code
-SRCS+=	vmm_arm64.c \
-	vmm_reset.c \
-	vmm_call.S \
-	vmm_handlers.c \
-	vmm_mmu.c \
-	vmm_vhe_exception.S \
-	vmm_vhe.c \
-	vmm_hyp_el2.S
-
-.PATH: ${SRCTOP}/sys/${MACHINE}/vmm/io
-SRCS+=	vgic.c \
-	vgic_if.h \
-	vgic_if.c \
-	vgic_v3.c \
-	vtimer.c
-
-CLEANFILES+=	vmm_nvhe_exception.o vmm_nvhe.o
-
-CLEANFILES+=	vmm_hyp_blob.elf.full
-CLEANFILES+=	vmm_hyp_blob.elf vmm_hyp_blob.bin
-
-vmm_nvhe_exception.o: vmm_nvhe_exception.S vmm_hyp_exception.S
-	${CC} -c -x assembler-with-cpp -DLOCORE \
-	    ${NOSAN_CFLAGS:N-mbranch-protection*} ${.IMPSRC} -o ${.TARGET} -fpie
-
-vmm_nvhe.o: vmm_nvhe.c vmm_hyp.c
-	${CC} -c ${NOSAN_CFLAGS:N-mbranch-protection*} ${.IMPSRC} \
-	    -o ${.TARGET} -fpie
-
-vmm_hyp_blob.elf.full:	vmm_nvhe_exception.o vmm_nvhe.o
-	${LD} -m ${LD_EMULATION} -Bdynamic -L ${SYSDIR}/conf -T ${SYSDIR}/conf/ldscript.arm64 \
-	    ${_LDFLAGS:N-zbti-report*} --no-warn-mismatch --warn-common --export-dynamic \
-	    --dynamic-linker /red/herring -X -o ${.TARGET} ${.ALLSRC} \
-	    --defsym=_start='0x0' --defsym=text_start='0x0'
-
-vmm_hyp_blob.elf:	vmm_hyp_blob.elf.full
-	${OBJCOPY} --strip-debug ${.ALLSRC} ${.TARGET}
-
-vmm_hyp_blob.bin:	vmm_hyp_blob.elf
-	${OBJCOPY} --output-target=binary ${.ALLSRC} ${.TARGET}
-
-vmm_hyp_el2.o:	vmm_hyp_blob.bin
-
-.elif ${MACHINE_CPUARCH} == "amd64"
+.if ${MACHINE_CPUARCH} == "amd64"
 CFLAGS+= -I${SRCTOP}/sys/${MACHINE}/vmm/io
 DPSRCS+=	vmx_assym.h svm_assym.h
 DPSRCS+=	vmx_genassym.c svm_genassym.c offset.inc

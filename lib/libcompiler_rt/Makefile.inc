@@ -229,8 +229,7 @@ SRCF+=		comparedf2
 SRCF+=		comparesf2
 
 # Helper to reduce complexity of _Float16 and __bf16 statements below.
-.if ${MACHINE_CPUARCH} == "aarch64" || \
-    ${MACHINE_CPUARCH} == "amd64" || \
+.if ${MACHINE_CPUARCH} == "amd64" || \
     (${MACHINE_CPUARCH} == "i386" && !empty(MACHINE_CPU:Msse2))
 CRT_COMMON_F16_ARCH=t
 .endif
@@ -263,14 +262,6 @@ SRCF+=		truncdfbf2
 SRCF+=		truncsfbf2
 .endif
 
-# FreeBSD-specific atomic intrinsics.
-.if ${MACHINE_CPUARCH} == "arm"
-.PATH:		${SRCTOP}/sys/arm/arm
-
-SRCF+=		stdatomic
-CFLAGS+=	-DEMIT_SYNC_ATOMICS
-.endif
-
 .for file in ${SRCF}
 . if exists(${CRTSRC}/${CRTARCH}/${file}.S)
 SRCS+=		${file}.S
@@ -278,29 +269,3 @@ SRCS+=		${file}.S
 SRCS+=		${file}.c
 . endif
 .endfor
-
-.if ${MACHINE_CPUARCH} == "arm"
-SRCS+=		aeabi_cdcmp.S
-SRCS+=		aeabi_cdcmpeq_check_nan.c
-SRCS+=		aeabi_cfcmp.S
-SRCS+=		aeabi_cfcmpeq_check_nan.c
-SRCS+=		aeabi_dcmp.S
-SRCS+=		aeabi_div0.c
-SRCS+=		aeabi_drsub.c
-SRCS+=		aeabi_fcmp.S
-SRCS+=		aeabi_frsub.c
-SRCS+=		aeabi_idivmod.S
-SRCS+=		aeabi_ldivmod.S
-SRCS+=		aeabi_memcmp.S
-SRCS+=		aeabi_memcpy.S
-SRCS+=		aeabi_memmove.S
-SRCS+=		aeabi_memset.S
-SRCS+=		aeabi_uidivmod.S
-SRCS+=		aeabi_uldivmod.S
-
-SRCS+=		switch16.S
-SRCS+=		switch32.S
-SRCS+=		switch8.S
-SRCS+=		switchu8.S
-SRCS+=		sync_synchronize.S
-.endif

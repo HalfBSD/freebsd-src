@@ -1,14 +1,11 @@
 .PATH: ${SRCTOP}/sys/dev/uart
 
-.if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "amd64" || \
+.if ${MACHINE_CPUARCH} == "amd64" || \
     ${MACHINE_CPUARCH} == "i386"
 uart_bus_acpi=uart_bus_acpi.c
 uart_cpu_acpi=uart_cpu_acpi.c
 .endif
 
-.if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "arm"
-ofw_bus_if=	ofw_bus_if.h
-.endif
 
 .if ${MACHINE} == "i386" || ${MACHINE} == "amd64"
 _uart_cpu=uart_cpu_x86.c
@@ -19,12 +16,6 @@ _uart_cpu=uart_cpu_${MACHINE}.c
 uart_cpu_machine= ${_uart_cpu}
 .endif
 
-.if ${MACHINE} == "arm64"
-uart_dev_mvebu=uart_dev_mvebu.c
-.if !empty(OPT_FDT)
-uart_dev_mu=uart_dev_mu.c
-.endif
-.endif
 
 KMOD=	uart
 SRCS=	${uart_bus_acpi} uart_bus_isa.c \

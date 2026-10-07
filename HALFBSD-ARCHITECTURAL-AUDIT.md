@@ -42,6 +42,29 @@ They exclude Git history and build artifacts and are not estimates of installed
 size or executable attack surface. Subsets are not a complete deletion manifest
 and should not be summed as a promised reduction.
 
+## ARM platform removal (October 6, 2026)
+
+ARM and arm64 are no longer HalfBSD hardware platforms. The retained target
+list is amd64 and i386; i386 remains available for the existing 32-bit ABI and
+has not been removed by this change.
+
+Removed native ARM kernel implementations and configurations, boot-loader
+implementations, architecture-specific runtime libraries, bhyve backends,
+board release configurations, ARM device trees, and platform module build
+entries. Updated the module inventory to omit deleted modules. Top-level world,
+kernel, and xdev requests for ARM fail with an explicit unsupported-platform
+error; release tooling rejects ARM targets as well.
+
+Imported LLVM ARM/AArch64 compiler backends and portable third-party code remain
+available for cross-compiling applications. Shared driver and firmware
+infrastructure remains where it can serve retained platforms; remaining ARM
+preprocessor branches do not constitute a supported HalfBSD hardware target.
+
+Validation: HalfBSD build-policy checks, explicit ARM-target rejection, retained
+amd64 target evaluation, release/boot shell syntax, and Git whitespace checks.
+A complete buildworld/buildkernel and hardware boot test were not performed on
+this Linux host, which has no installed C compiler.
+
 ## Open groups
 
 Stable audit IDs are preserved for discussion and follow-up work.

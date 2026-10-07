@@ -17,12 +17,7 @@ LIBADD+=	compiler_rt
 
 VERSION_DEF=	${.CURDIR}/Versions.def
 SYMBOL_MAPS=	${.CURDIR}/Symbol.map
-# Export ARM AEABI unwind routines needed by libc and libthr.
-.if exists(${.CURDIR}/${MACHINE_CPUARCH}/Symbol.map)
-SYMBOL_MAPS+=	${.CURDIR}/${MACHINE_CPUARCH}/Symbol.map
-.else
 SYMBOL_MAPS+=	${.CURDIR}/SymbolDefault.map
-.endif
 
 .include "../libcompiler_rt/Makefile.inc"
 .include "../libgcc_eh/Makefile.inc"
@@ -46,12 +41,8 @@ SRCS+=		s_logbf.c
 SRCS+=		s_scalbn.c
 SRCS+=		s_scalbnf.c
 
-# Don't include long double routines on architectures where long double
-# is the same size as double.
-.if ${MACHINE_CPUARCH} != "arm"
 SRCS+=		s_fmaxl.c
 SRCS+=		s_logbl.c
 SRCS+=		s_scalbnl.c
-.endif
 
 .include <bsd.lib.mk>

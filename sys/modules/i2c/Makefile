@@ -34,7 +34,7 @@ SUBDIR += hym8563 \
 	  tmp461
 .endif
 
-.if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "amd64" || \
+.if ${MACHINE_CPUARCH} == "amd64" || \
     ${MACHINE_CPUARCH} == "i386"
 SUBDIR += iichid
 .endif

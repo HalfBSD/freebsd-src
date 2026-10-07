@@ -126,9 +126,6 @@ NOASM=
 .include "${LIBC_SRCTOP}/secure/Makefile.inc"
 .include "${LIBC_SRCTOP}/uuid/Makefile.inc"
 .include "${LIBC_SRCTOP}/xdr/Makefile.inc"
-.if (${LIBC_ARCH} == "arm" && (defined(CPUTYPE) && ${CPUTYPE:M*soft*}))
-.include "${LIBC_SRCTOP}/softfloat/Makefile.inc"
-.endif
 .if ${LIBC_ARCH} == "i386" || ${LIBC_ARCH} == "amd64"
 .include "${LIBC_SRCTOP}/x86/gen/Makefile.inc"
 .endif

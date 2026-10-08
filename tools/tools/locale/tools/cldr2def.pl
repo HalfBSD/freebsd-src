@@ -1090,7 +1090,7 @@ EOF
 
 	print FOUT <<EOF;
 
-FILES=		\${LOCALES:S/\$/.${SRCOUT2}/}
+FILES=		\${LOCALES:C/.+\$/&.${SRCOUT2}/}
 CLEANFILES=	\${FILES}
 
 .for f t in \${SAME}

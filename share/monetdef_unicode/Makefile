@@ -14,7 +14,7 @@ LOCALES=
 
 
 
-FILES=		${LOCALES:S/$/.out/}
+FILES=		${LOCALES:C/.+$/&.out/}
 CLEANFILES=	${FILES}
 
 .for f t in ${SAME}

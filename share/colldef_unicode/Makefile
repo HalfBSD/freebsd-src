@@ -22,7 +22,7 @@ LOCALES=
 
 
 
-FILES=		${LOCALES:S/$/.LC_COLLATE/}
+FILES=		${LOCALES:C/.+$/&.LC_COLLATE/}
 CLEANFILES=	${FILES}
 
 .for f t in ${SAME}

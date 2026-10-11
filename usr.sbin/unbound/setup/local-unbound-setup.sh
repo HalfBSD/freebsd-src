@@ -203,6 +203,30 @@ gen_unbound_conf() {
 	fi
 }
 
+# Remove obsolete client policy from the managed configuration during upgrade.
+# Preserve quoted local records, including strings spanning multiple lines.
+strip_client_policy() {
+	awk '
+	    {
+	        if (quote == "")
+	            drop = $0 ~ /^[[:space:]]*(access-control(-[a-z-]+)?|interface-(action|tag(-action|-data)?)|define-tag|local-zone-(tag|override)):/
+	        if (!drop) print
+	        escaped = 0
+	        for (i = 1; i <= length($0); i++) {
+	            ch = substr($0, i, 1)
+	            if (escaped) { escaped = 0; continue }
+	            if (ch == "\\") { escaped = 1; continue }
+	            if (quote != "") {
+	                if (ch == quote) quote = ""
+	            } else {
+	                if (ch == "#") break
+	                if (ch == "\"" || ch == sprintf("%c", 39)) quote = ch
+	            }
+	        }
+	    }
+	' "$1"
+}
+
 #
 # Rename a file we are about to replace.
 #
@@ -358,8 +382,9 @@ main() {
 		' "${D}${unbound_conf}")
 		# One-time migration: retain user settings, remove the legacy include.
 		# The obsolete file itself is left for the administrator to archive.
-		sed '/^[[:space:]]*include:[[:space:]]*"*[^[:space:]]*\/forward\.conf"*[[:space:]]*\(#.*\)\{0,1\}$/d' \
-		    "${D}${unbound_conf}" >"${tmp_unbound_conf}"
+		strip_client_policy "${D}${unbound_conf}" |
+		    sed '/^[[:space:]]*include:[[:space:]]*"*[^[:space:]]*\/forward\.conf"*[[:space:]]*\(#.*\)\{0,1\}$/d' \
+		    >"${tmp_unbound_conf}"
 		if [ "${legacy_tls}" = "yes" ] || [ "${use_tls}" = "yes" ] ; then
 			# Keep the former catch-all zone's authenticated TLS transport.
 			if ! sed -n '/^[[:space:]]*\(tls\|ssl\)-upstream:[[:space:]]*yes/p' \

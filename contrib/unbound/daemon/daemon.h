@@ -51,7 +51,6 @@ struct listen_port;
 struct slabhash;
 struct module_env;
 struct rrset_cache;
-struct acl_list;
 struct local_zones;
 struct ub_randstate;
 struct daemon_remote;
@@ -109,10 +108,8 @@ struct daemon {
 	struct module_stack mods;
 	/** The module stack has been inited */
 	int mods_inited;
-	/** access control, which client IPs are allowed to connect */
-	struct acl_list* acl;
-	/** access control, which interfaces are allowed to connect */
-	struct acl_list* acl_interface;
+
+
 	/** TCP connection limit, limit connections from client IPs */
 	struct tcl_list* tcl;
 	/** local authority zones */
@@ -197,13 +194,7 @@ void daemon_delete(struct daemon* daemon);
  */
 void daemon_apply_cfg(struct daemon* daemon, struct config_file* cfg);
 
-/**
- * Setup acl list to have entries for the port list.
- * @param list: the acl interface
- * @param port_list: list of open ports, or none.
- * @return false on failure
- */
-int setup_acl_for_ports(struct acl_list* list, struct listen_port* port_list);
+
 
 /* setups the needed ssl contexts, fatal_exit() on any failure */
 void daemon_setup_sslctxs(struct daemon* daemon, struct config_file* cfg);

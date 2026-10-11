@@ -32,7 +32,6 @@ END {
 	print "unbound_hits_queries{type=\"num.query.tls\"} " val["num.query.tls"];
 	print "unbound_hits_queries{type=\"num.query.tls.resume\"} " val["num.query.tls.resume"];
 	print "unbound_hits_queries{type=\"num.query.ipv6\"} " val["num.query.ipv6"];
-	print "unbound_hits_queries{type=\"unwanted.queries\"} " val["unwanted.queries"];
 	print ""
 
 	print "# HELP unbound_queue_queries Unbound requestlist size"

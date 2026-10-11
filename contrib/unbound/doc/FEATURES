@@ -42,8 +42,7 @@ RFC 4697: No DNS Resolution Misbehavior.
 RFC 5001: DNS Name Server Identifier (NSID) Option
 RFC 5011: update of trust anchors with timers.
 RFC 5155: NSEC3, NSEC3PARAM types
-RFC 5358: reflectors-are-evil: access control list for recursive
-  service. In fact for all DNS service so cache snooping is halted.
+RFC 5358: IPFW controls source-network access to HalfBSD DNS.
 RFC 5452: forgery resilience. all recommendations followed.
 RFC 5702: RSASHA256 signature algorithm. 
 RFC 5933: GOST signature algorithm.

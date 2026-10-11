@@ -65,7 +65,7 @@ extern const char** local_zones_default_reverse;
  * local-data directly.
  */
 enum localzone_type {
-	/** unset type, used for unset tag_action elements */
+	/** uninitialized local-zone type */
 	local_zone_unset = 0,
 	/** drop query */
 	local_zone_deny,
@@ -146,13 +146,7 @@ struct local_zone {
 
 	/** how to process zone */
 	enum localzone_type type;
-	/** tag bitlist */
-	uint8_t* taglist;
-	/** length of the taglist (in bytes) */
-	size_t taglen;
-	/** netblock addr_tree with struct local_zone_override information
-	 * or NULL if there are no override elements */
-	struct rbtree_type* override_tree;
+
 
 	/** in this region the zone's data is allocated.
 	 * the struct local_zone itself is malloced. */
@@ -195,15 +189,7 @@ struct local_rrset {
 	struct ub_packed_rrset_key* rrset;
 };
 
-/**
- * Local zone override information
- */
-struct local_zone_override {
-	/** node in addrtree */
-	struct addr_tree_node node;
-	/** override for local zone type */
-	enum localzone_type type;
-};
+
 
 /**
  * Create local zones storage
@@ -249,26 +235,7 @@ int local_data_cmp(const void* d1, const void* d2);
  */
 void local_zone_delete(struct local_zone* z);
 
-/**
- * Lookup zone that contains the given name, class and taglist.
- * User must lock the tree or result zone.
- * @param zones: the zones tree
- * @param name: dname to lookup
- * @param len: length of name.
- * @param labs: labelcount of name.
- * @param dclass: class to lookup.
- * @param dtype: type to lookup, if type DS a zone higher is used for zonecuts.
- * @param taglist: taglist to lookup.
- * @param taglen: length of taglist.
- * @param ignoretags: lookup zone by name and class, regardless the
- * local-zone's tags.
- * @param foradd: if the lookup is for addition or removal of the type.
- *	Used for type DS. The lookup for answers turns this off.
- * @return closest local_zone or NULL if no covering zone is found.
- */
-struct local_zone* local_zones_tags_lookup(struct local_zones* zones, 
-	uint8_t* name, size_t len, int labs, uint16_t dclass, uint16_t dtype,
-	uint8_t* taglist, size_t taglen, int ignoretags, int foradd);
+
 
 /**
  * Lookup zone that contains the given name, class.
@@ -305,14 +272,6 @@ void local_zones_print(struct local_zones* zones);
  * @param buf: buffer with query ID and flags, also for reply.
  * @param temp: temporary storage region.
  * @param repinfo: source address for checks. may be NULL.
- * @param taglist: taglist for checks. May be NULL.
- * @param taglen: length of the taglist.
- * @param tagactions: local zone actions for tags. May be NULL.
- * @param tagactionssize: length of the tagactions.
- * @param tag_datas: array per tag of strlist with rdata strings. or NULL.
- * @param tag_datas_size: size of tag_datas array.
- * @param tagname: array of tag name strings (for debug output).
- * @param num_tags: number of items in tagname array.
  * @return true if answer is in buffer. false if query is not answered 
  * by authority data. If the reply should be dropped altogether, the return 
  * value is true, but the buffer is cleared (empty).
@@ -327,10 +286,7 @@ void local_zones_print(struct local_zones* zones);
  */
 int local_zones_answer(struct local_zones* zones, struct module_env* env,
 	struct query_info* qinfo, struct edns_data* edns, struct sldns_buffer* buf,
-	struct regional* temp, struct comm_reply* repinfo, uint8_t* taglist,
-	size_t taglen, uint8_t* tagactions, size_t tagactionssize,
-	struct config_strlist** tag_datas, size_t tag_datas_size,
-	char** tagname, int num_tags);
+	struct regional* temp, struct comm_reply* repinfo);
 
 /** 
  * Answer using the local zone only (not local data used).
@@ -454,42 +410,9 @@ void local_zones_del_data(struct local_zones* zones,
  */
 int parse_dname(const char* str, uint8_t** res, size_t* len, int* labs);
 
-/**
- * Find local data tag string match for the given type (in qinfo) in the list.
- * If found, 'r' will be filled with corresponding rrset information.
- * @param qinfo: contains name, type, and class for the data
- * @param list: stores local tag data to be searched
- * @param r: rrset key to be filled for matched data
- * @param temp: region to allocate rrset in 'r'
- * @return 1 if a match is found and rrset is built; otherwise 0 including
- * errors.
- */
-int local_data_find_tag_datas(const struct query_info* qinfo,
-	struct config_strlist* list, struct ub_packed_rrset_key* r,
-	struct regional* temp);
 
-/**
- * See if two sets of tag lists (in the form of bitmap) have the same tag that
- * has an action.  If so, '*tag' will be set to the found tag index, and the
- * corresponding action will be returned in the form of local zone type.
- * Otherwise the passed type (lzt) will be returned as the default action.
- * Pointers except tagactions must not be NULL.
- * @param taglist: 1st list of tags
- * @param taglen: size of taglist in bytes
- * @param taglist2: 2nd list of tags
- * @param taglen2: size of taglist2 in bytes
- * @param tagactions: local data actions for tags. May be NULL.
- * @param tagactionssize: length of the tagactions.
- * @param lzt: default action (local zone type) if no tag action is found.
- * @param tag: see above.
- * @param tagname: array of tag name strings (for debug output).
- * @param num_tags: number of items in tagname array.
- * @return found tag action or the default action.
- */
-enum localzone_type local_data_find_tag_action(const uint8_t* taglist,
-	size_t taglen, const uint8_t* taglist2, size_t taglen2,
-	const uint8_t* tagactions, size_t tagactionssize,
-	enum localzone_type lzt, int* tag, char* const* tagname, int num_tags);
+
+
 
 /**
  * Enter defaults to local zone.
@@ -551,11 +474,6 @@ local_rrset_remove_rr(struct packed_rrset_data* pd, size_t index);
  * @param labs: number of labels in qname
  * @param ldp: where to store local data
  * @param lz_type: type of local zone
- * @param tag: matching tag index
- * @param tag_datas: alc specific tag data list
- * @param tag_datas_size: size of tag_datas
- * @param tagname: list of names of tags, for logging purpose
- * @param num_tags: number of tags
  * @return 1 on success
  */
 int
@@ -563,8 +481,7 @@ local_data_answer(struct local_zone* z, struct module_env* env,
 	struct query_info* qinfo, struct edns_data* edns,
 	struct comm_reply* repinfo, sldns_buffer* buf,
 	struct regional* temp, int labs, struct local_data** ldp,
-	enum localzone_type lz_type, int tag, struct config_strlist** tag_datas,
-	size_t tag_datas_size, char** tagname, int num_tags);
+	enum localzone_type lz_type);
 
 /**
  * Add RR to local zone.

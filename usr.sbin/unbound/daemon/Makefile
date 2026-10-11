@@ -6,7 +6,7 @@ LIBUNBOUNDDIR=${SRCTOP}/lib/libunbound
 .PATH: ${UNBOUNDDIR} ${UNBOUNDDIR}/daemon ${UNBOUNDDIR}/util ${UNBOUNDDIR}/util/shm_side ${UNBOUNDDIR}/doc
 
 PROG=	local-unbound
-SRCS=	acl_list.c cachedump.c daemon.c remote.c shm_main.c stats.c \
+SRCS=	cachedump.c daemon.c remote.c shm_main.c stats.c \
 	ub_event.c unbound.c worker.c
 CFLAGS+=	-I${UNBOUNDDIR} -I${LDNSDIR}
 CFLAGS+=	-I${LIBUNBOUNDDIR} -I${.CURDIR}

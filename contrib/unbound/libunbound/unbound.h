@@ -767,8 +767,6 @@ struct ub_server_stats {
 	long long queries_ratelimited;
 	/** unwanted traffic received on server-facing ports */
 	long long unwanted_replies;
-	/** unwanted traffic received on client-facing ports */
-	long long unwanted_queries;
 	/** usage of tcp accept list */
 	long long tcp_accept_usage;
 	/** expired answers served from cache */

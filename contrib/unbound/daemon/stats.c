@@ -384,7 +384,6 @@ void server_stats_add(struct ub_stats_info* total, struct ub_stats_info* a)
 		total->svr.ans_bogus += a->svr.ans_bogus;
 		total->svr.val_ops += a->svr.val_ops;
 		total->svr.unwanted_replies += a->svr.unwanted_replies;
-		total->svr.unwanted_queries += a->svr.unwanted_queries;
 		total->svr.tcp_accept_usage += a->svr.tcp_accept_usage;
 		for(i=0; i<UB_STATS_QTYPE_NUM; i++)
 			total->svr.qtype[i] += a->svr.qtype[i];

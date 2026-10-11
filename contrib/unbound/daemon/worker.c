@@ -46,7 +46,6 @@
 #include "daemon/worker.h"
 #include "daemon/daemon.h"
 #include "daemon/remote.h"
-#include "daemon/acl_list.h"
 #include "util/netevent.h"
 #include "util/config_file.h"
 #include "util/module.h"
@@ -154,7 +153,6 @@ worker_mem_report(struct worker* ATTR_UNUSED(worker),
 	if(worker->daemon->env->hints)
 		log_info("hints=%u", (unsigned)hints_get_mem(worker->env.hints));
 	if(worker->thread_num == 0)
-		me += acl_list_get_mem(worker->daemon->acl);
 	if(cur_serv) {
 		me += serviced_get_mem(cur_serv);
 	}
@@ -1080,192 +1078,11 @@ answer_notify(struct worker* w, struct query_info* qinfo,
 	LDNS_OPCODE_SET(sldns_buffer_begin(pkt), LDNS_PACKET_NOTIFY);
 }
 
-static int
-deny_refuse(struct comm_point* c, enum acl_access acl,
-	enum acl_access deny, enum acl_access refuse,
-	struct worker* worker, struct comm_reply* repinfo,
-	struct acl_addr* acladdr, int ede,
-	struct check_request_result* check_result)
-{
-	if(acl == deny) {
-		if(verbosity >= VERB_ALGO) {
-			log_acl_action("dropped", &repinfo->client_addr,
-				repinfo->client_addrlen, acl, acladdr);
-			log_buf(VERB_ALGO, "dropped", c->buffer);
-		}
-		comm_point_drop_reply(repinfo);
-		if(worker->stats.extended)
-			worker->stats.unwanted_queries++;
-		return 0;
-	} else if(acl == refuse) {
-		size_t opt_rr_mark;
 
-		if(verbosity >= VERB_ALGO) {
-			log_acl_action("refused", &repinfo->client_addr,
-				repinfo->client_addrlen, acl, acladdr);
-			log_buf(VERB_ALGO, "refuse", c->buffer);
-		}
 
-		if(worker->stats.extended)
-			worker->stats.unwanted_queries++;
-		worker_check_request(c->buffer, worker, check_result);
-		if(check_result->value != 0) {
-			if(check_result->value != -1) {
-				query_error(c->buffer, check_result->value, 0);
-				return 1;
-			}
-			comm_point_drop_reply(repinfo);
-			return 0;
-		}
-		/* worker_check_request() above guarantees that the buffer contains at
-		 * least a header and that qdcount == 1
-		 */
-		log_assert(sldns_buffer_limit(c->buffer) >= LDNS_HEADER_SIZE
-			&& LDNS_QDCOUNT(sldns_buffer_begin(c->buffer)) == 1);
 
-		sldns_buffer_set_position(c->buffer, LDNS_HEADER_SIZE); /* skip header */
 
-		/* check additional section is present and that we respond with EDEs */
-		if(LDNS_ARCOUNT(sldns_buffer_begin(c->buffer)) != 1
-			|| !ede) {
-			query_error(c->buffer, LDNS_RCODE_REFUSED, 0);
-			return 1;
-		}
 
-		if (!query_dname_len(c->buffer)) {
-			query_error(c->buffer, LDNS_RCODE_FORMERR, 0);
-			return 1;
-		}
-		/* space available for query type and class? */
-		if (sldns_buffer_remaining(c->buffer) < 2 * sizeof(uint16_t)) {
-			query_error(c->buffer, LDNS_RCODE_FORMERR, 0);
-			return 1;
-		}
-		LDNS_QR_SET(sldns_buffer_begin(c->buffer));
-		LDNS_RCODE_SET(sldns_buffer_begin(c->buffer),
-			LDNS_RCODE_REFUSED);
-
-		sldns_buffer_skip(c->buffer, (ssize_t)sizeof(uint16_t)); /* skip qtype */
-
-		sldns_buffer_skip(c->buffer, (ssize_t)sizeof(uint16_t)); /* skip qclass */
-
-		/* The OPT RR to be returned should come directly after
-		 * the query, so mark this spot.
-		 */
-		opt_rr_mark = sldns_buffer_position(c->buffer);
-
-		/* Skip through the RR records */
-		if(LDNS_ANCOUNT(sldns_buffer_begin(c->buffer)) != 0 ||
-			LDNS_NSCOUNT(sldns_buffer_begin(c->buffer)) != 0) {
-			if(!skip_pkt_rrs(c->buffer,
-				((int)LDNS_ANCOUNT(sldns_buffer_begin(c->buffer)))+
-				((int)LDNS_NSCOUNT(sldns_buffer_begin(c->buffer))))) {
-				query_error(c->buffer, LDNS_RCODE_FORMERR,
-					opt_rr_mark - LDNS_HEADER_SIZE
-					- 2 /* qtype */ - 2 /* qclass */);
-				return 1;
-			}
-		}
-		/* Do we have a valid OPT RR here? If not return REFUSED (could be a valid TSIG or something so no FORMERR) */
-		/* domain name must be the root of length 1. */
-		if(sldns_buffer_remaining(c->buffer) < 1 || *sldns_buffer_current(c->buffer) != 0) {
-			query_error(c->buffer, LDNS_RCODE_REFUSED,
-				opt_rr_mark - LDNS_HEADER_SIZE
-				- 2 /* qtype */ - 2 /* qclass */);
-			return 1;
-		} else {
-			sldns_buffer_skip(c->buffer, 1); /* skip root label */
-		}
-		if(sldns_buffer_remaining(c->buffer) < 2 ||
-			sldns_buffer_read_u16(c->buffer) != LDNS_RR_TYPE_OPT) {
-			query_error(c->buffer, LDNS_RCODE_REFUSED,
-				opt_rr_mark - LDNS_HEADER_SIZE
-				- 2 /* qtype */ - 2 /* qclass */);
-			return 1;
-		}
-		/* Write OPT RR directly after the query,
-		 * so without the (possibly skipped) Answer and NS RRs
-		 */
-		LDNS_ANCOUNT_SET(sldns_buffer_begin(c->buffer), 0);
-		LDNS_NSCOUNT_SET(sldns_buffer_begin(c->buffer), 0);
-		sldns_buffer_clear(c->buffer); /* reset write limit */
-		sldns_buffer_set_position(c->buffer, opt_rr_mark);
-
-		/* Check if OPT record can be written
-		 * 17 == root label (1) + RR type (2) + UDP Size (2)
-		 *     + Fields (4) + rdata len (2) + EDE Option code (2)
-		 *     + EDE Option length (2) + EDE info-code (2)
-		 */
-		if (sldns_buffer_available(c->buffer, 17) == 0) {
-			LDNS_ARCOUNT_SET(sldns_buffer_begin(c->buffer), 0);
-			sldns_buffer_flip(c->buffer);
-			return 1;
-		}
-
-		LDNS_ARCOUNT_SET(sldns_buffer_begin(c->buffer), 1);
-
-		/* root label */
-		sldns_buffer_write_u8(c->buffer, 0);
-		sldns_buffer_write_u16(c->buffer, LDNS_RR_TYPE_OPT);
-		sldns_buffer_write_u16(c->buffer, EDNS_ADVERTISED_SIZE);
-
-		/* write OPT Record TTL Field */
-		sldns_buffer_write_u32(c->buffer, 0);
-
-		/* write rdata len: EDE option + length + info-code */
-		sldns_buffer_write_u16(c->buffer, 6);
-
-		/* write OPTIONS; add EDE option code */
-		sldns_buffer_write_u16(c->buffer, LDNS_EDNS_EDE);
-
-		/* write single EDE option length (for just 1 info-code) */
-		sldns_buffer_write_u16(c->buffer, 2);
-
-		/* write single EDE info-code */
-		sldns_buffer_write_u16(c->buffer, LDNS_EDE_PROHIBITED);
-
-		sldns_buffer_flip(c->buffer);
-
-		verbose(VERB_ALGO, "attached EDE code: %d", LDNS_EDE_PROHIBITED);
-
-		return 1;
-
-	}
-
-	return -1;
-}
-
-static int
-deny_refuse_all(struct comm_point* c, enum acl_access* acl,
-	struct worker* worker, struct comm_reply* repinfo,
-	struct acl_addr** acladdr, int ede, int check_proxy,
-	struct check_request_result* check_result)
-{
-	if(check_proxy) {
-		*acladdr = acl_addr_lookup(worker->daemon->acl,
-			&repinfo->remote_addr, repinfo->remote_addrlen);
-	} else {
-		*acladdr = acl_addr_lookup(worker->daemon->acl,
-			&repinfo->client_addr, repinfo->client_addrlen);
-	}
-	/* If there is no ACL based on client IP use the interface ACL. */
-	if(!(*acladdr) && c->socket) {
-		*acladdr = c->socket->acl;
-	}
-	*acl = acl_get_control(*acladdr);
-	return deny_refuse(c, *acl, acl_deny, acl_refuse, worker, repinfo,
-		*acladdr, ede, check_result);
-}
-
-static int
-deny_refuse_non_local(struct comm_point* c, enum acl_access acl,
-	struct worker* worker, struct comm_reply* repinfo,
-	struct acl_addr* acladdr, int ede,
-	struct check_request_result* check_result)
-{
-	return deny_refuse(c, acl, acl_deny_non_local, acl_refuse_non_local,
-		worker, repinfo, acladdr, ede, check_result);
-}
 
 /* Check if the query is blocked by source IP rate limiting.
  * Returns 1 if it passes the check, 0 otherwise. */
@@ -1320,8 +1137,6 @@ worker_handle_request(struct comm_point* c, void* arg, int error,
 	struct lruhash_entry* e;
 	struct query_info qinfo;
 	struct edns_data edns;
-	enum acl_access acl;
-	struct acl_addr* acladdr;
 	int pre_edns_ip_ratelimit = 1;
 	int rc = 0;
 	int is_expired_answer = 0;
@@ -1348,22 +1163,6 @@ worker_handle_request(struct comm_point* c, void* arg, int error,
 			worker->stats.num_queries_timed_out++;
 			return 0;
 		}
-	}
-
-	/* Check deny/refuse ACLs */
-	if(repinfo->is_proxied) {
-		if((ret=deny_refuse_all(c, &acl, worker, repinfo, &acladdr,
-			worker->env.cfg->ede, 1, &check_result)) != -1) {
-			if(ret == 1)
-				goto send_reply;
-			return ret;
-		}
-	}
-	if((ret=deny_refuse_all(c, &acl, worker, repinfo, &acladdr,
-		worker->env.cfg->ede, 0, &check_result)) != -1) {
-		if(ret == 1)
-			goto send_reply;
-		return ret;
 	}
 
 	worker_check_request(c->buffer, worker, &check_result);
@@ -1514,17 +1313,9 @@ worker_handle_request(struct comm_point* c, void* arg, int error,
 		}
 	}
 
-	/* "if, else if" sequence below deals with downstream DNS Cookies */
-	if(acl != acl_allow_cookie)
-		; /* pass; No cookie downstream processing whatsoever */
-
-	else if(edns.cookie_valid)
-		; /* pass; Valid cookie is good! */
-
-	else if(c->type != comm_udp)
-		; /* pass; Stateful transport */
-
-	else if(edns.cookie_present) {
+	/* Challenge invalid supplied server cookies; cookies are optional. */
+	if(worker->env.cfg->do_answer_cookie && c->type == comm_udp &&
+		edns.cookie_present && !edns.cookie_valid && !edns.cookie_client) {
 		/* Cookie present, but not valid: Cookie was bad! */
 		if(worker_err_ratelimit(worker, LDNS_EXT_RCODE_BADCOOKIE) == -1) {
 			comm_point_drop_reply(repinfo);
@@ -1539,28 +1330,7 @@ worker_handle_request(struct comm_point* c, void* arg, int error,
 			0, &edns);
 		regional_free_all(worker->scratchpad);
 		goto send_reply;
-	} else {
-		/* Cookie required, but no cookie present on UDP */
-		verbose(VERB_ALGO, "worker request: "
-			"need cookie or stateful transport");
-		log_addr(VERB_ALGO, "from",&repinfo->remote_addr
-		                          , repinfo->remote_addrlen);
-		if(worker_err_ratelimit(worker, LDNS_RCODE_REFUSED) == -1) {
-			comm_point_drop_reply(repinfo);
-			regional_free_all(worker->scratchpad);
-			return 0;
-		}
-		EDNS_OPT_LIST_APPEND_EDE(&edns.opt_list_out,
-			worker->scratchpad, LDNS_EDE_OTHER,
-			"DNS Cookie needed for UDP replies");
-		error_encode(c->buffer,
-			(LDNS_RCODE_REFUSED|BIT_TC), &qinfo,
-			*(uint16_t*)(void *)
-			sldns_buffer_begin(c->buffer),
-			sldns_buffer_read_u16_at(c->buffer, 2),
-			&edns);
-		regional_free_all(worker->scratchpad);
-		goto send_reply;
+
 	}
 
 	if(edns.udp_size > worker->daemon->cfg->max_udp_size &&
@@ -1605,11 +1375,7 @@ worker_handle_request(struct comm_point* c, void* arg, int error,
 		goto send_reply;
 	}
 	if(local_zones_answer(worker->daemon->local_zones, &worker->env, &qinfo,
-		&edns, c->buffer, worker->scratchpad, repinfo, acladdr->taglist,
-		acladdr->taglen, acladdr->tag_actions,
-		acladdr->tag_actions_size, acladdr->tag_datas,
-		acladdr->tag_datas_size, worker->daemon->cfg->tagname,
-		worker->daemon->cfg->num_tags)) {
+		&edns, c->buffer, worker->scratchpad, repinfo)) {
 		regional_free_all(worker->scratchpad);
 		if(sldns_buffer_limit(c->buffer) == 0) {
 			comm_point_drop_reply(repinfo);
@@ -1626,53 +1392,9 @@ worker_handle_request(struct comm_point* c, void* arg, int error,
 			comm_point_drop_reply(repinfo);
 			return 0;
 		}
-		/* set RA for everyone that can have recursion (based on
-		 * access control list) */
-		if(LDNS_RD_WIRE(sldns_buffer_begin(c->buffer)) &&
-		   acl != acl_deny_non_local && acl != acl_refuse_non_local)
+		/* Advertise forwarding availability when recursion was requested. */
+		if(LDNS_RD_WIRE(sldns_buffer_begin(c->buffer)))
 			LDNS_RA_SET(sldns_buffer_begin(c->buffer));
-		goto send_reply;
-	}
-
-	/* We've looked in our local zones. If the answer isn't there, we
-	 * might need to bail out based on ACLs now. */
-	if((ret=deny_refuse_non_local(c, acl, worker, repinfo, acladdr,
-		worker->env.cfg->ede, &check_result)) != -1)
-	{
-		regional_free_all(worker->scratchpad);
-		if(ret == 1)
-			goto send_reply;
-		return ret;
-	}
-
-	/* If this request does not have the recursion bit set, verify
-	 * ACLs allow the recursion bit to be treated as set. */
-	if(!(LDNS_RD_WIRE(sldns_buffer_begin(c->buffer))) &&
-		acl == acl_allow_setrd ) {
-		LDNS_RD_SET(sldns_buffer_begin(c->buffer));
-	}
-
-	/* If this request does not have the recursion bit set, verify
-	 * ACLs allow the snooping. */
-	if(!(LDNS_RD_WIRE(sldns_buffer_begin(c->buffer))) &&
-		acl != acl_allow_snoop ) {
-		log_addr(VERB_ALGO, "refused nonrec (cache snoop) query from",
-			&repinfo->client_addr, repinfo->client_addrlen);
-		/* This ratelimited error query is accounted in the stats,
-		 * as an incoming query. */
-		if(worker_err_ratelimit(worker, LDNS_RCODE_REFUSED) == -1) {
-			comm_point_drop_reply(repinfo);
-			regional_free_all(worker->scratchpad);
-			return 0;
-		}
-		if(worker->env.cfg->ede) {
-			EDNS_OPT_LIST_APPEND_EDE(&edns.opt_list_out,
-				worker->scratchpad, LDNS_EDE_NOT_AUTHORITATIVE, "");
-		}
-		error_encode(c->buffer, LDNS_RCODE_REFUSED, &qinfo,
-			*(uint16_t*)(void *)sldns_buffer_begin(c->buffer),
-			sldns_buffer_read_u16_at(c->buffer, 2), &edns);
-		regional_free_all(worker->scratchpad);
 		goto send_reply;
 	}
 

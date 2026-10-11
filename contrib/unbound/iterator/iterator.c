@@ -1530,7 +1530,7 @@ processInitRequest(struct module_qstate* qstate, struct iter_qstate* iq,
 			 * with RD=1, then if the server is listed as an NS
 			 * entry, it starts query loops. Stop that loop by
 			 * disallowing the query. The RD=0 was previously used
-			 * to check the cache with allow_snoop. For stubs,
+			 * to check the cache with a non-recursive query. For stubs,
 			 * the iterator pass would have primed the stub and
 			 * then cached information can be used for further
 			 * queries. */

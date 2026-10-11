@@ -238,76 +238,7 @@ localzonechecks(struct config_file* cfg)
 	local_zones_delete(zs);
 }
 
-/** checks for ACL tags */
-static void
-acl_tag_checks(struct config_file* cfg)
-{
-	int d;
-	struct sockaddr_storage a;
-	socklen_t alen;
-	struct config_str2list* acl;
-	struct config_str3list* s3;
-	struct config_strbytelist* sb;
 
-	/* acl_tags */
-	for(sb=cfg->acl_tags; sb; sb = sb->next) {
-		if(!netblockstrtoaddr(sb->str, UNBOUND_DNS_PORT, &a, &alen,
-			&d)) {
-			fatal_exit("cannot parse access-control-tags "
-				"address %s", sb->str);
-		}
-	}
-
-	/* acl_tag_actions */
-	for(s3=cfg->acl_tag_actions; s3; s3 = s3->next) {
-		enum localzone_type t;
-		if(!netblockstrtoaddr(s3->str, UNBOUND_DNS_PORT, &a, &alen,
-			&d)) {
-			fatal_exit("cannot parse access-control-tag-actions "
-				"address %s %s %s",
-				s3->str, s3->str2, s3->str3);
-		}
-		if(find_tag_id(cfg, s3->str2) == -1) {
-			fatal_exit("cannot parse tag %s (define-tag it), "
-				"for access-control-tag-actions: %s %s %s",
-				s3->str2, s3->str, s3->str2, s3->str3);
-		}
-		if(!local_zone_str2type(s3->str3, &t)) {
-			fatal_exit("cannot parse access control action type %s"
-				" for access-control-tag-actions: %s %s %s",
-				s3->str3, s3->str, s3->str2, s3->str3);
-		}
-	}
-
-	/* acl_tag_datas */
-	for(s3=cfg->acl_tag_datas; s3; s3 = s3->next) {
-		char buf[65536];
-		uint8_t rr[LDNS_RR_BUF_SIZE];
-		size_t len = sizeof(rr);
-		int res;
-		if(!netblockstrtoaddr(s3->str, UNBOUND_DNS_PORT, &a, &alen,
-			&d)) {
-			fatal_exit("cannot parse access-control-tag-datas address %s %s '%s'",
-				s3->str, s3->str2, s3->str3);
-		}
-		if(find_tag_id(cfg, s3->str2) == -1) {
-			fatal_exit("cannot parse tag %s (define-tag it), "
-				"for access-control-tag-datas: %s %s '%s'",
-				s3->str2, s3->str, s3->str2, s3->str3);
-		}
-		/* '.' is sufficient for validation, and it makes the call to
-		 * sldns_wirerr_get_type() simpler below. */
-		snprintf(buf, sizeof(buf), "%s %s", ".", s3->str3);
-		res = sldns_str2wire_rr_buf(buf, rr, &len, NULL, 3600, NULL,
-			0, NULL, 0);
-		if(res != 0) {
-			fatal_exit("cannot parse rr data [char %d] parse error %s, for access-control-tag-datas: %s %s '%s'",
-				(int)LDNS_WIREPARSE_OFFSET(res)-2,
-				sldns_get_errorstr_parse(res),
-				s3->str, s3->str2, s3->str3);
-		}
-	}
-}
 
 /** emit warnings for IP in hosts */
 static void
@@ -466,22 +397,7 @@ controlinterfacechecks(struct config_file* cfg)
 	}
 }
 
-/** check acl ips */
-static void
-aclchecks(struct config_file* cfg)
-{
-	int d;
-	struct sockaddr_storage a;
-	socklen_t alen;
-	struct config_str2list* acl;
-	for(acl=cfg->acls; acl; acl = acl->next) {
-		if(!netblockstrtoaddr(acl->str, UNBOUND_DNS_PORT, &a, &alen,
-			&d)) {
-			fatal_exit("cannot parse access control address %s %s",
-				acl->str, acl->str2);
-		}
-	}
-}
+
 
 /** check tcp connection limit ips */
 static void
@@ -656,7 +572,6 @@ morechecks(struct config_file* cfg)
 	warn_hosts("forward-host", cfg->forwards);
 	interfacechecks(cfg);
 	ifautomaticportschecks(cfg->if_automatic_ports);
-	aclchecks(cfg);
 	tcpconnlimitchecks(cfg);
 
 	if(cfg->verbosity < 0)

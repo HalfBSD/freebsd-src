@@ -98,12 +98,9 @@ server:
     # logfile: \(dq/var/unbound/unbound.log\(dq  #uncomment to use logfile.
     pidfile: \(dq/var/unbound/unbound.pid\(dq
     # verbosity: 1      # uncomment and increase to get more logging.
-    # listen on all interfaces, answer queries from the local subnet.
+    # IPFW controls which clients can reach DNS.
     interface: 0.0.0.0
-    interface: ::0
-    access\-control: 10.0.0.0/8 allow
-    access\-control: 2001:db8::/64 allow
-.ft P
+    .ft P
 .fi
 .UNINDENT
 .UNINDENT
@@ -256,7 +253,8 @@ Interface to use to connect to the network.
 This interface is listened to for queries from clients, and answers to
 clients are given from it.
 Can be given multiple times to work on several interfaces.
-If none are given the default is to listen on localhost.
+If none are given, HalfBSD listens on 0.0.0.0:53 over IPv4 UDP and TCP.
+IPFW owns source-network access policy; DNS requests have no client ACL stage.
 .sp
 If an interface name is used instead of an IP address, the list of IP
 addresses on that interface are used.
@@ -881,14 +879,6 @@ Default: no
 .UNINDENT
 .INDENT 0.0
 .TP
-.B define\-tag: \fI\(dq<list of tags>\(dq\fP 
-Define the tags that can be used with
-\fI\%local\-zone\fP and
-\fI\%access\-control\fP\&.
-Enclose the list between quotes (\fB\(dq\(dq\fP) and put spaces between tags.
-.UNINDENT
-.INDENT 0.0
-.TP
 .B do\-ip4: \fI<yes or no>\fP 
 Enable or disable whether IPv4 queries are answered or issued.
 .sp
@@ -904,7 +894,7 @@ With this option you can disable the IPv6 transport for sending DNS
 traffic, it does not impact the contents of the DNS traffic, which may have
 IPv4 (A) and IPv6 (AAAA) addresses in it.
 .sp
-Default: yes
+Default: no
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -1239,11 +1229,10 @@ interfaces are defined, eg. with the @port suffix, as this port number,
 they support and expect PROXYv2.
 .sp
 In this case the proxy address will only be used for the network
-communication and initial ACL (check if the proxy itself is denied/refused
-by configuration).
+communication.
 .sp
 The proxied address (if any) will then be used as the true client address
-and will be used where applicable for logging, ACL and IP
+and will be used where applicable for logging and IP
 ratelimiting.
 .sp
 PROXYv2 is supported for UDP and TCP listening interfaces.
@@ -1279,246 +1268,6 @@ When at the limit, further connections are accepted but closed immediately.
 This option is experimental at this time.
 .sp
 Default: (disabled)
-.UNINDENT
-.INDENT 0.0
-.TP
-.B access\-control: \fI<IP netblock> <action>\fP 
-Specify treatment of incoming queries from their originating IP address.
-Queries can be allowed to have access to this server that gives DNS
-answers, or refused, with other actions possible.
-The IP address range can be specified as a netblock, it is possible to give
-the statement several times in order to specify the treatment of different
-netblocks.
-The netblock is given as an IPv4 or IPv6 address with /size appended for a
-classless network block.
-The most specific netblock match is used, if none match
-\fI\%refuse\fP is used.
-The order of the access\-control statements therefore does not matter.
-The action can be
-\fI\%deny\fP,
-\fI\%refuse\fP,
-\fI\%allow\fP,
-\fI\%allow_setrd\fP,
-\fI\%allow_snoop\fP,
-\fI\%allow_cookie\fP,
-\fI\%deny_non_local\fP or
-\fI\%refuse_non_local\fP\&.
-.INDENT 7.0
-.TP
-.B deny 
-Stops queries from hosts from that netblock.
-.UNINDENT
-.INDENT 7.0
-.TP
-.B refuse 
-Stops queries too, but sends a DNS rcode REFUSED error message back.
-.UNINDENT
-.INDENT 7.0
-.TP
-.B allow 
-Gives access to clients from that netblock.
-It gives only access for recursion clients (which is what almost all
-clients need).
-Non\-recursive queries are refused.
-.sp
-The \fI\%allow\fP action does
-allow non\-recursive queries to access the local\-data that is
-configured.
-The reason is that this does not involve the Unbound server recursive
-lookup algorithm, and static data is served in the reply.
-This supports normal operations where non\-recursive queries are made
-for the authoritative data.
-For non\-recursive queries any replies from the dynamic cache are
-refused.
-.UNINDENT
-.INDENT 7.0
-.TP
-.B allow_setrd 
-Ignores the recursion desired (RD) bit and treats all requests as if
-the recursion desired bit is set.
-.sp
-Note that this behavior violates \fI\%RFC 1034\fP which states that a name
-server should never perform recursive service unless asked via the RD
-bit since this interferes with trouble shooting of name servers and
-their databases.
-This prohibited behavior may be useful if another DNS server must
-forward requests for specific zones to a resolver DNS server, but only
-supports stub domains and sends queries to the resolver DNS server with
-the RD bit cleared.
-.UNINDENT
-.INDENT 7.0
-.TP
-.B allow_snoop 
-Gives non\-recursive access too.
-This gives both recursive and non recursive access.
-The name \fIallow_snoop\fP refers to cache snooping, a technique to use
-non\-recursive queries to examine the cache contents (for malicious
-acts).
-However, non\-recursive queries can also be a valuable debugging tool
-(when you want to examine the cache contents).
-.sp
-In that case use
-\fI\%allow_snoop\fP for
-your administration host.
-.UNINDENT
-.INDENT 7.0
-.TP
-.B allow_cookie 
-Allows access only to UDP queries that contain a valid DNS Cookie as
-specified in RFC 7873 and RFC 9018, when the
-\fI\%answer\-cookie\fP option is enabled.
-UDP queries containing only a DNS Client Cookie and no Server Cookie,
-or an invalid DNS Cookie, will receive a BADCOOKIE response including a
-newly generated DNS Cookie, allowing clients to retry with that DNS
-Cookie.
-The \fIallow_cookie\fP action will also accept requests over stateful
-transports, regardless of the presence of an DNS Cookie and regardless
-of the \fI\%answer\-cookie\fP setting.
-UDP queries without a DNS Cookie receive REFUSED responses with the TC
-flag set, that may trigger fall back to TCP for those clients.
-.UNINDENT
-.INDENT 7.0
-.TP
-.B deny_non_local 
-The
-\fI\%deny_non_local\fP
-action is for hosts that are only allowed to query for the
-authoritative \fI\%local\-data\fP, they are not
-allowed full recursion but only the static data.
-Messages that are disallowed are dropped.
-.UNINDENT
-.INDENT 7.0
-.TP
-.B refuse_non_local 
-The
-\fI\%refuse_non_local\fP
-action is for hosts that are only allowed to query for the
-authoritative \fI\%local\-data\fP, they are not
-allowed full recursion but only the static data.
-Messages that are disallowed receive error code REFUSED.
-.UNINDENT
-.sp
-By default only localhost (the 127.0.0.0/8 IP netblock, not the loopback
-interface) is implicitly \fIallowed\fP, the rest is refused.
-The default is \fIrefused\fP, because that is protocol\-friendly.
-The DNS protocol is not designed to handle dropped packets due to policy,
-and dropping may result in (possibly excessive) retried queries.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B access\-control\-tag: \fI<IP netblock> \(dq<list of tags>\(dq\fP 
-Assign tags to \fI\%access\-control\fP
-elements.
-Clients using this access control element use localzones that are tagged
-with one of these tags.
-.sp
-Tags must be defined in \fI\%define\-tag\fP\&.
-Enclose list of tags in quotes (\fB\(dq\(dq\fP) and put spaces between tags.
-.sp
-If \fI\%access\-control\-tag\fP is
-configured for a netblock that does not have an
-\fI\%access\-control\fP, an access\-control
-element with action \fI\%allow\fP
-is configured for this netblock.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B access\-control\-tag\-action: \fI<IP netblock> <tag> <action>\fP 
-Set action for particular tag for given access control element.
-If you have multiple tag values, the tag used to lookup the action is the
-first tag match between
-\fI\%access\-control\-tag\fP and
-\fI\%local\-zone\-tag\fP where \(dqfirst\(dq comes
-from the order of the \fI\%define\-tag\fP values.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B access\-control\-tag\-data: \fI<IP netblock> <tag> \(dq<resource record string>\(dq\fP 
-Set redirect data for particular tag for given access control element.
-.UNINDENT
-.INDENT 0.0
-.UNINDENT
-.INDENT 0.0
-.TP
-.B interface\-action: \fI<ip address or interface name [@port]> <action>\fP 
-Similar to \fI\%access\-control\fP but for
-interfaces.
-.sp
-The action is the same as the ones defined under
-\fI\%access\-control\fP\&.
-.sp
-Default action for interfaces is
-\fI\%refuse\fP\&.
-By default only localhost (the 127.0.0.0/8 IP netblock, not the loopback
-interface) is implicitly allowed through the default
-\fI\%access\-control\fP behavior.
-This also means that any attempt to use the \fBinterface\-*:\fP options for
-the loopback interface will not work as they will be overridden by the
-implicit default \(dqaccess\-control: 127.0.0.0/8 allow\(dq option.
-.sp
-\fBNOTE:\fP
-.INDENT 7.0
-.INDENT 3.5
-The interface needs to be already specified with
-\fI\%interface\fP and that any
-\fBaccess\-control*:\fP option overrides all \fBinterface\-*:\fP
-options for targeted clients.
-.UNINDENT
-.UNINDENT
-.UNINDENT
-.INDENT 0.0
-.TP
-.B interface\-tag: \fI<ip address or interface name [@port]> <\(dqlist of tags\(dq>\fP 
-Similar to \fI\%access\-control\-tag\fP but
-for interfaces.
-.sp
-\fBNOTE:\fP
-.INDENT 7.0
-.INDENT 3.5
-The interface needs to be already specified with
-\fI\%interface\fP and that any
-\fBaccess\-control*:\fP option overrides all \fBinterface\-*:\fP
-options for targeted clients.
-.UNINDENT
-.UNINDENT
-.UNINDENT
-.INDENT 0.0
-.TP
-.B interface\-tag\-action: \fI<ip address or interface name [@port]> <tag> <action>\fP 
-Similar to
-\fI\%access\-control\-tag\-action\fP
-but for interfaces.
-.sp
-\fBNOTE:\fP
-.INDENT 7.0
-.INDENT 3.5
-The interface needs to be already specified with
-\fI\%interface\fP and that any
-\fBaccess\-control*:\fP option overrides all \fBinterface\-*:\fP
-options for targeted clients.
-.UNINDENT
-.UNINDENT
-.UNINDENT
-.INDENT 0.0
-.TP
-.B interface\-tag\-data: \fI<ip address or interface name [@port]> <tag> <\(dqresource record string\(dq>\fP 
-Similar to
-\fI\%access\-control\-tag\-data\fP but
-for interfaces.
-.sp
-\fBNOTE:\fP
-.INDENT 7.0
-.INDENT 3.5
-The interface needs to be already specified with
-\fI\%interface\fP and that any
-\fBaccess\-control*:\fP option overrides all \fBinterface\-*:\fP
-options for targeted clients.
-.UNINDENT
-.UNINDENT
-.UNINDENT
-.INDENT 0.0
-.UNINDENT
-.UNINDENT
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -3185,27 +2934,6 @@ TTL can be inserted like this: \fB\(dq2001:db8::4 7200 www.example.com\(dq\fP
 .UNINDENT
 .INDENT 0.0
 .TP
-.B local\-zone\-tag: \fI<zone> <\(dqlist of tags\(dq>\fP 
-Assign tags to local zones.
-Tagged localzones will only be applied when the used
-\fI\%access\-control\fP element has a matching
-tag.
-Tags must be defined in \fI\%define\-tag\fP\&.
-Enclose list of tags in quotes (\fB\(dq\(dq\fP) and put spaces between tags.
-When there are multiple tags it checks if the intersection of the list of
-tags for the query and \fI\%local\-zone\-tag\fP
-is non\-empty.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B local\-zone\-override: \fI<zone> <IP netblock> <type>\fP 
-Override the local zone type for queries from addresses matching netblock.
-Use this localzone type, regardless the type configured for the local zone
-(both tagged and untagged) and regardless the type configured using
-\fI\%access\-control\-tag\-action\fP\&.
-.UNINDENT
-.INDENT 0.0
-.TP
 .B ratelimit: \fI<number or 0>\fP 
 Enable ratelimiting of queries sent to nameserver for performing recursion.
 0 disables the feature.
@@ -3336,11 +3064,7 @@ The ratelimit is in queries per second that are allowed.
 More queries are completely dropped and will not receive a reply, SERVFAIL
 or otherwise.
 IP ratelimiting happens before looking in the cache.
-This option could be useful in combination with
-\fI\%allow_cookie\fP, in an
-attempt to mitigate other amplification attacks than UDP reflections (e.g.,
-attacks targeting Unbound itself) which are already handled with DNS
-Cookies.
+This separately limits clients presenting valid DNS Cookies.
 If used, the value is suggested to be higher than
 \fI\%ip\-ratelimit\fP e.g., tenfold.
 .sp

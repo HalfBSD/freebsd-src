@@ -176,10 +176,7 @@ o authority features.
   unbound.conf as stub for those zones, this allows clients to access data 
   from the server without making unbound authoritative for the zones.
 
-o the access control denies queries before any other processing.
-  This denies queries that are not authoritative, or version.bind, or any.
-  And thus prevents cache-snooping (denied hosts cannot make non-recursive
-  queries and get answers from the cache).
+o HalfBSD uses IPFW for source-network DNS access policy.
 
 o If a client makes a query without RD bit, in the case of a returned 
   message from cache which is:

@@ -173,22 +173,50 @@ class Upstream:
             server.server_close()
 
 
-def query(port, name, rtype=1, tcp=False, cd=False, options=b'', source=None):
-    flags = 0x100 | (0x10 if cd else 0)
-    packet = struct.pack('!HHHHHH', 1234, flags, 1, 0, 0, 1)
-    packet += wire_name(name) + struct.pack('!HH', rtype, 1)
-    packet += b'\0' + struct.pack('!HHIH', 41, 1232, 0x8000, len(options)) + options
+def exchange(port, packet, tcp=False, source=None, destination='127.0.0.1', timeout=10):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM if tcp else socket.SOCK_DGRAM) as sock:
-        sock.settimeout(10)
+        sock.settimeout(timeout)
         if source:
             sock.bind((source, 0))
-        sock.connect(('127.0.0.1', port))
+        sock.connect((destination, port))
         if tcp:
             sock.sendall(struct.pack('!H', len(packet)) + packet)
             response = recv_exact(sock, struct.unpack('!H', recv_exact(sock, 2))[0])
         else:
             sock.send(packet)
             response = sock.recv(65535)
+    return response
+
+
+def edns_response(packet):
+    header = struct.unpack('!HHHHHH', packet[:12])
+    offset = 12
+    for _ in range(header[2]):
+        _, offset = read_name(packet, offset)
+        offset += 4
+    rcode, options = header[1] & 15, {}
+    for _ in range(sum(header[3:])):
+        _, offset = read_name(packet, offset)
+        rtype, _, ttl, size = struct.unpack('!HHIH', packet[offset:offset + 10])
+        offset += 10
+        if rtype == 41:
+            rcode |= (ttl >> 24) << 4
+            data = packet[offset:offset + size]
+            while data:
+                kind, length = struct.unpack('!HH', data[:4])
+                options[kind] = data[4:4 + length]
+                data = data[4 + length:]
+        offset += size
+    return rcode, options
+
+
+def query(port, name, rtype=1, tcp=False, cd=False, options=b'', source=None,
+          destination='127.0.0.1', rd=True):
+    flags = (0x100 if rd else 0) | (0x10 if cd else 0)
+    packet = struct.pack('!HHHHHH', 1234, flags, 1, 0, 0, 1)
+    packet += wire_name(name) + struct.pack('!HH', rtype, 1)
+    packet += b'\0' + struct.pack('!HHIH', 41, 1232, 0x8000, len(options)) + options
+    response = exchange(port, packet, tcp, source, destination)
     header = struct.unpack('!HHHHHH', response[:12])
     offset = 12
     for _ in range(header[2]):
@@ -229,9 +257,9 @@ def main():
             key = base64.b64decode(fixture['dnskey'])
             trust = base64.b64encode(key[4:]).decode()
 
-            def write_config(upstream_port, local='192.0.2.10', expired_timeout=0):
+            def write_config(upstream_port, local='192.0.2.10', expired_timeout=0, cache_size='4m'):
                 config.write_text(f'''server:
-    interface: 127.0.0.1@{port}
+    port: {port}
     do-ip6: no
     do-not-query-localhost: no
     username: ""
@@ -241,9 +269,9 @@ def main():
     logfile: "{log}"
     use-syslog: no
     module-config: "validator iterator"
-    access-control: 127.0.0.0/8 allow
-    access-control: 127.0.0.3/32 refuse
+    answer-cookie: yes
     prefetch: yes
+    msg-cache-size: {cache_size}
     serve-expired: yes
     serve-expired-client-timeout: {expired_timeout}
     statistics-cumulative: yes
@@ -294,6 +322,94 @@ forward-zone:
             assert any(t == 12 for t, _ in query(port, '10.2.0.192.in-addr.arpa.', 12)[1])
             print('PASS local A/CNAME/PTR and incoming UDP/TCP')
 
+            # Verify compiled listener settings without binding privileged port 53.
+            defaults = root / 'defaults.conf'
+            defaults.write_text('server:\n')
+            for name, expected in (('port', '53'), ('do-ip4', 'yes'),
+                                   ('do-ip6', 'no'), ('do-udp', 'yes'), ('do-tcp', 'yes')):
+                value = subprocess.check_output([str(bindir / 'unbound-checkconf'),
+                                                  '-o', name, str(defaults)], text=True).strip()
+                assert value == expected, (name, value)
+            print('PASS compiled IPv4 UDP/TCP port-53 defaults')
+
+            question = wire_name('host.home.test.') + struct.pack('!HH', 1, 1)
+            ordinary = struct.pack('!HHHHHH', 4242, 0x100, 1, 0, 0, 0) + question
+            # Short headers and packets masquerading as replies must be dropped.
+            for tcp in (False, True):
+                for packet in (b'\x01\x02', struct.pack('!HHHHHH', 4242, 0x8100, 1, 0, 0, 0) + question):
+                    try:
+                        response = exchange(port, packet, tcp=tcp, source='127.0.0.3', timeout=.3)
+                    except (OSError, EOFError):
+                        response = b''
+                    assert not response, response
+                for packet in (struct.pack('!HHHHHH', 4242, 0x100, 0, 0, 0, 0),
+                               struct.pack('!HHHHHH', 4242, 0x100, 1, 0, 0, 0) + b'\xc0\x0c' + struct.pack('!HH', 1, 1)):
+                    response = exchange(port, packet, tcp=tcp, source='127.0.0.3')
+                    assert struct.unpack('!H', response[2:4])[0] & 15 == 1
+            assert query(port, 'host.home.test.')[0] & 15 == 0
+            print('PASS malformed UDP/TCP packets rejected safely, resolver remains available')
+
+            def cookie_request(cookie):
+                option = struct.pack('!HH', 10, len(cookie)) + cookie
+                return (struct.pack('!HHHHHH', 4242, 0x100, 1, 0, 0, 1) + question
+                        + b'\0' + struct.pack('!HHIH', 41, 1232, 0, len(option)) + option)
+            client_cookie = b'HalfBSD!'
+            rcode, options = edns_response(exchange(port, cookie_request(client_cookie), source='127.0.0.3'))
+            assert rcode == 0 and options[10].startswith(client_cookie)
+            cookie = options[10]
+            assert 16 <= len(cookie) <= 40
+            assert edns_response(exchange(port, cookie_request(cookie), source='127.0.0.3'))[0] == 0
+            assert edns_response(exchange(port, cookie_request(cookie), source='127.0.0.4'))[0] == 23
+            assert edns_response(exchange(port, cookie_request(client_cookie + b'\0' * 16), source='127.0.0.3'))[0] == 23
+            assert edns_response(exchange(port, cookie_request(b'short'), source='127.0.0.3'))[0] == 1
+            assert query(port, 'host.home.test.', source='127.0.0.4')[0] & 15 == 0
+            print('PASS optional DNS Cookies, bootstrap/reuse, BADCOOKIE challenge, and malformed-cookie rejection')
+
+            # Per-client resource protection remains independent of admission.
+            write_config(upstream.port)
+            config.write_text(config.read_text() + '\nserver:\n    ip-ratelimit: 1\n    ip-ratelimit-factor: 0\n')
+            assert 'ok' in control('reload')
+            time.sleep(.3)
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as burst:
+                burst.bind(('127.0.0.5', 0))
+                burst.connect(('127.0.0.1', port))
+                burst.settimeout(.3)
+                for _ in range(16):
+                    burst.send(ordinary)
+                responses = 0
+                try:
+                    while burst.recv(65535):
+                        responses += 1
+                except OSError:
+                    pass
+            assert 1 <= responses < 16, responses
+            counters = dict(line.split('=', 1) for line in control('stats_noreset').splitlines() if '=' in line)
+            assert int(counters['total.num.queries_ip_ratelimited']) > 0
+            assert query(port, 'host.home.test.', source='127.0.0.6')[0] & 15 == 0
+            print('PASS retained per-client rate limiting and independent client access')
+
+            write_config(upstream.port)
+            config.write_text(config.read_text() + '\nserver:\n    tcp-connection-limit: 127.0.0.5/32 1\n')
+            assert 'ok' in control('reload')
+            time.sleep(.3)
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as held:
+                held.bind(('127.0.0.5', 0))
+                held.connect(('127.0.0.1', port))
+                time.sleep(.1)
+                try:
+                    response = exchange(port, ordinary, tcp=True, source='127.0.0.5', timeout=.3)
+                except (OSError, EOFError):
+                    response = b''
+                assert not response, response
+                assert query(port, 'host.home.test.', source='127.0.0.5')[0] & 15 == 0
+            # The existing limiter does not release this quota on close in
+            # either baseline or reduced builds; that separate bug is reported.
+            write_config(upstream.port)
+            assert 'ok' in control('reload')
+            time.sleep(.3)
+            assert query(port, 'host.home.test.', tcp=True, source='127.0.0.5')[0] & 15 == 0
+            print('PASS retained TCP connection cap, ordinary UDP, and removing the cap by reload')
+
             for tcp in (False, True):
                 assert (1, socket.inet_aton('192.0.2.44')) in query(
                     port, 'host.authority.test.', tcp=tcp)[1]
@@ -308,7 +424,8 @@ forward-zone:
             for tcp in (False, True):
                 assert (1, socket.inet_aton('192.0.2.10')) in query(
                     port, 'host.home.test.', tcp=tcp, source='127.0.0.2')[1]
-                assert query(port, 'host.home.test.', tcp=tcp, source='127.0.0.3')[0] & 15 == 5
+                assert (1, socket.inet_aton('192.0.2.10')) in query(
+                    port, 'host.home.test.', tcp=tcp, source='127.0.0.3', destination='127.0.0.2')[1]
             assert 'ok' in control('local_zone', 'admin.home.test.', 'static')
             assert 'ok' in control('local_data', 'admin.home.test. 60 IN A 192.0.2.14')
             for tcp in (False, True):
@@ -321,7 +438,7 @@ forward-zone:
                 result = subprocess.run([str(bindir / 'unbound-control'), '-c', str(config),
                                          command, 'private'], capture_output=True)
                 assert result.returncode != 0, command
-            print('PASS LAN-style source ACLs and global local-zone/data administration')
+            print('PASS multiple client sources, wildcard IPv4 UDP/TCP, and global local-zone/data administration')
 
             flags, answers = query(port, 'answer.forward.test.')
             assert flags & 15 == 0 and (1, socket.inet_aton('192.0.2.80')) in answers
@@ -334,7 +451,12 @@ forward-zone:
             assert query(port, 'negative.forward.test.')[0] & 15 == 3
             assert sum(upstream.count.values()) == count
             assert any(t == 5 for t, _ in query(port, 'alias.forward.test.')[1])
-            print('PASS forwarding, CNAME chain, positive and negative cache hits')
+            for tcp in (False, True):
+                count = sum(upstream.count.values())
+                assert query(port, 'answer.forward.test.', tcp=tcp, source='127.0.0.3')[0] & 15 == 0
+                assert sum(upstream.count.values()) == count
+                assert query(port, 'answer.forward.test.', tcp=tcp, source='127.0.0.4', rd=False)[0] & 15 == 0
+            print('PASS forwarding, CNAME chain, positive/negative and cross-client RD/CD cache hits')
 
             # CNAME-only upstream packets require iterator query restarts.
             # Repeat after dropping just the terminal answer to exercise cached
@@ -475,6 +597,12 @@ forward-zone:
             stats = control('stats_noreset')
             assert 'total.num.cachehits=' in stats and 'total.num.cachemiss=' in stats
             assert 'num.rpz.action' not in stats and 'mem.mod.respip' not in stats
+            assert 'unwanted.queries=' not in stats
+            for option in ('access-control', 'access-control-tag', 'interface-action', 'define-tag'):
+                for command in ('get_option', 'set_option'):
+                    result = subprocess.run([str(bindir / 'unbound-control'), '-c', str(config),
+                                             command, option], capture_output=True)
+                    assert result.returncode != 0, (command, option)
             for command in ('rpz_enable', 'rpz_disable'):
                 result = subprocess.run([str(bindir / 'unbound-control'), '-c',
                                          str(config), command, 'policy.test.'], capture_output=True)
@@ -491,15 +619,18 @@ forward-zone:
             assert replacement.count[('reload.forward.test.', 1, False)]
             print('PASS statistics, authenticated-by-filesystem control, reload and forwarding change')
 
-            write_config(replacement.port, '192.0.2.12')
+            write_config(replacement.port, '192.0.2.12', cache_size='8m')
             control('fast_reload', '+v')
             assert (1, socket.inet_aton('192.0.2.12')) in query(port, 'host.home.test.')[1]
             for tcp in (False, True):
                 assert (1, socket.inet_aton('192.0.2.12')) in query(
                     port, 'host.home.test.', tcp=tcp, source='127.0.0.2')[1]
-                assert query(port, 'host.home.test.', tcp=tcp, source='127.0.0.3')[0] & 15 == 5
+                assert (1, socket.inet_aton('192.0.2.12')) in query(
+                    port, 'host.home.test.', tcp=tcp, source='127.0.0.3', destination='127.0.0.2')[1]
             assert (1, socket.inet_aton('192.0.2.45')) in query(port, 'host.authority.test.')[1]
-            print('PASS fast reload preserving global records, authority zones, and source ACLs')
+            assert control('get_option', 'msg-cache-size').strip() == '8388608'
+            assert '192.0.2.12' in control('list_local_data')
+            print('PASS fast reload preserving cache settings, global records, authority zones, and unrestricted client access')
 
             # Use a private test CA to exercise both acceptance and rejection
             # of upstream certificates, without external network access.
@@ -605,7 +736,19 @@ forward-zone:
             process.wait(timeout=10)
             print('PASS remote-control mutual TLS, reload/fast_reload, and missing certificate rejection')
 
-            for text in ('server:\n response-ip: 192.0.2.0/24 deny\n',
+            for text in ('server:\n access-control: 127.0.0.0/8 allow\n',
+                         'server:\n access-control-tag: 127.0.0.0/8 \"trusted\"\n',
+                         'server:\n access-control-tag-action: 127.0.0.0/8 trusted refuse\n',
+                         'server:\n access-control-tag-data: 127.0.0.0/8 trusted \"A 192.0.2.1\"\n',
+                         'server:\n access-control-interface: 127.0.0.1 allow\n',
+                         'server:\n interface-action: 127.0.0.1 allow\n',
+                         'server:\n interface-tag: 127.0.0.1 \"trusted\"\n',
+                         'server:\n interface-tag-action: 127.0.0.1 trusted refuse\n',
+                         'server:\n interface-tag-data: 127.0.0.1 trusted \"A 192.0.2.1\"\n',
+                         'server:\n define-tag: \"trusted\"\n',
+                         'server:\n local-zone-tag: home.test. \"trusted\"\n',
+                         'server:\n local-zone-override: home.test. 127.0.0.0/8 refuse\n',
+                         'server:\n response-ip: 192.0.2.0/24 deny\n',
                          'server:\n response-ip-data: 192.0.2.0/24 \"test. A 192.0.2.1\"\n',
                          'server:\n response-ip-tag: 192.0.2.0/24 \"tag\"\n',
                          'server:\n module-config: \"respip validator iterator\"\n',

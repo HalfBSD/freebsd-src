@@ -340,8 +340,6 @@ for-upstream{COLON}		{ YDVAR(1, VAR_FOR_UPSTREAM) }
 fallback-enabled{COLON}		{ YDVAR(1, VAR_FALLBACK_ENABLED) }
 do-not-query-address{COLON}	{ YDVAR(1, VAR_DO_NOT_QUERY_ADDRESS) }
 do-not-query-localhost{COLON}	{ YDVAR(1, VAR_DO_NOT_QUERY_LOCALHOST) }
-access-control{COLON}		{ YDVAR(2, VAR_ACCESS_CONTROL) }
-interface-action{COLON}		{ YDVAR(2, VAR_INTERFACE_ACTION) }
 hide-identity{COLON}		{ YDVAR(1, VAR_HIDE_IDENTITY) }
 hide-version{COLON}		{ YDVAR(1, VAR_HIDE_VERSION) }
 hide-trustanchor{COLON}		{ YDVAR(1, VAR_HIDE_TRUSTANCHOR) }
@@ -432,15 +430,6 @@ wait-limit-netblock{COLON}	{ YDVAR(2, VAR_WAIT_LIMIT_NETBLOCK) }
 wait-limit-cookie-netblock{COLON} { YDVAR(2, VAR_WAIT_LIMIT_COOKIE_NETBLOCK) }
 max-udp-size{COLON}		{ YDVAR(1, VAR_MAX_UDP_SIZE) }
 nat64-prefix{COLON}		{ YDVAR(1, VAR_NAT64_PREFIX) }
-define-tag{COLON}		{ YDVAR(1, VAR_DEFINE_TAG) }
-local-zone-tag{COLON}		{ YDVAR(2, VAR_LOCAL_ZONE_TAG) }
-access-control-tag{COLON}	{ YDVAR(2, VAR_ACCESS_CONTROL_TAG) }
-access-control-tag-action{COLON} { YDVAR(3, VAR_ACCESS_CONTROL_TAG_ACTION) }
-access-control-tag-data{COLON}	{ YDVAR(3, VAR_ACCESS_CONTROL_TAG_DATA) }
-interface-tag{COLON}		{ YDVAR(2, VAR_INTERFACE_TAG) }
-interface-tag-action{COLON}	{ YDVAR(3, VAR_INTERFACE_TAG_ACTION) }
-interface-tag-data{COLON}	{ YDVAR(3, VAR_INTERFACE_TAG_DATA) }
-local-zone-override{COLON}	{ YDVAR(3, VAR_LOCAL_ZONE_OVERRIDE) }
 disable-dnssec-lame-check{COLON} { YDVAR(1, VAR_DISABLE_DNSSEC_LAME_CHECK) }
 ip-ratelimit{COLON}		{ YDVAR(1, VAR_IP_RATELIMIT) }
 ip-ratelimit-cookie{COLON}	{ YDVAR(1, VAR_IP_RATELIMIT_COOKIE) }

@@ -106,7 +106,7 @@ config_create(void)
 	cfg->num_threads = 1;
 	cfg->port = UNBOUND_DNS_PORT;
 	cfg->do_ip4 = 1;
-	cfg->do_ip6 = 1;
+	cfg->do_ip6 = 0;
 	cfg->do_udp = 1;
 	cfg->do_tcp = 1;
 	cfg->tcp_reuse_timeout = 60 * 1000; /* 60s in milisecs */
@@ -211,7 +211,6 @@ config_create(void)
 	cfg->stubs = NULL;
 	cfg->forwards = NULL;
 	cfg->auths = NULL;
-	cfg->acls = NULL;
 	cfg->tcp_connection_limits = NULL;
 	cfg->harden_short_bufsize = 1;
 	cfg->harden_large_queries = 0;
@@ -276,7 +275,6 @@ config_create(void)
 #endif
 	cfg->local_zones_disable_default = 0;
 	cfg->local_data = NULL;
-	cfg->local_zone_overrides = NULL;
 	cfg->unblock_lan_zones = 0;
 	cfg->insecure_lan_zones = 0;
 	cfg->remote_control_enable = 0;
@@ -752,11 +750,9 @@ int config_set_option(struct config_file* cfg, const char* opt,
 #endif
 	else S_YNO("answer-cookie:", do_answer_cookie)
 	else S_STR("cookie-secret-file:", cookie_secret_file)
-	else if(strcmp(opt, "define-tag:") ==0) {
-		return config_add_tag(cfg, val);
 	/* val_sig_skew_min, max and val_max_restart are copied into val_env
 	 * during init so this does not update val_env with set_option */
-	} else if(strcmp(opt, "val-sig-skew-min:") == 0)
+	else if(strcmp(opt, "val-sig-skew-min:") == 0)
 	{ IS_NUMBER_OR_ZERO; cfg->val_sig_skew_min = (int32_t)atoi(val); }
 	else if(strcmp(opt, "val-sig-skew-max:") == 0)
 	{ IS_NUMBER_OR_ZERO; cfg->val_sig_skew_max = (int32_t)atoi(val); }
@@ -775,13 +771,12 @@ int config_set_option(struct config_file* cfg, const char* opt,
 		cfg->out_ifs = oi;
 	} else {
 		/* unknown or unsupported (from the set_option interface):
-		 * interface, outgoing-interface, access-control,
+		 * interface, outgoing-interface,
 		 * stub-zone, name, stub-addr, stub-host, stub-prime
 		 * forward-first, stub-first, forward-ssl-upstream,
 		 * stub-ssl-upstream, forward-zone, auth-zone
 		 * name, forward-addr, forward-host,
 		 * ratelimit-for-domain, ratelimit-below-domain,
-		 * local-zone-tag, interface-*,
 		 * ipsecmod_hook,
 		 * ipsecmod_whitelist. */
 		return 0;
@@ -910,27 +905,6 @@ config_collate_cat(struct config_strlist* list)
 	for(p = cfg->lst; p; p = p->next) { \
 		snprintf(buf, len, "%s %s", p->str, p->str2); \
 		func(buf, arg); \
-	} \
-	}
-/** compare and print list option */
-#define O_LS3(opt, name, lst) if(strcmp(opt, name)==0) { \
-	struct config_str3list* p = cfg->lst; \
-	for(p = cfg->lst; p; p = p->next) { \
-		snprintf(buf, len, "%s %s %s", p->str, p->str2, p->str3); \
-		func(buf, arg); \
-	} \
-	}
-/** compare and print taglist option */
-#define O_LTG(opt, name, lst) if(strcmp(opt, name)==0) { \
-	char* tmpstr = NULL; \
-	struct config_strbytelist *p = cfg->lst; \
-	for(p = cfg->lst; p; p = p->next) {\
-		tmpstr = config_taglist2str(cfg, p->str2, p->str2len); \
-		if(tmpstr) {\
-			snprintf(buf, len, "%s %s", p->str, tmpstr); \
-			func(buf, arg); \
-			free(tmpstr); \
-		} \
 	} \
 	}
 
@@ -1096,7 +1070,6 @@ config_get_option(struct config_file* cfg, const char* opt,
 	else O_STR(opt, "control-key-file", control_key_file)
 	else O_STR(opt, "control-cert-file", control_cert_file)
 	else O_LST(opt, "root-hints", root_hints)
-	else O_LS2(opt, "access-control", acls)
 	else O_LS2(opt, "tcp-connection-limit", tcp_connection_limits)
 	else O_LST(opt, "do-not-query-address", donotqueryaddrs)
 	else O_LST(opt, "private-address", private_address)
@@ -1145,16 +1118,6 @@ config_get_option(struct config_file* cfg, const char* opt,
 	else O_DEC(opt, "val-max-restart", val_max_restart)
 	else O_YNO(opt, "qname-minimisation", qname_minimisation)
 	else O_YNO(opt, "qname-minimisation-strict", qname_minimisation_strict)
-	else O_IFC(opt, "define-tag", num_tags, tagname)
-	else O_LTG(opt, "local-zone-tag", local_zone_tags)
-	else O_LTG(opt, "access-control-tag", acl_tags)
-	else O_LS3(opt, "local-zone-override", local_zone_overrides)
-	else O_LS3(opt, "access-control-tag-action", acl_tag_actions)
-	else O_LS3(opt, "access-control-tag-data", acl_tag_datas)
-	else O_LS2(opt, "interface-action", interface_actions)
-	else O_LTG(opt, "interface-tag", interface_tags)
-	else O_LS3(opt, "interface-tag-action", interface_tag_actions)
-	else O_LS3(opt, "interface-tag-data", interface_tag_datas)
 	else O_YNO(opt, "pad-queries", pad_queries)
 	else O_DEC(opt, "pad-queries-block-size", pad_queries_block_size)
 	else O_LS2(opt, "edns-client-strings", edns_client_strings)
@@ -1359,19 +1322,7 @@ config_deldblstrlist(struct config_str2list* p)
 	}
 }
 
-void
-config_deltrplstrlist(struct config_str3list* p)
-{
-	struct config_str3list *np;
-	while(p) {
-		np = p->next;
-		free(p->str);
-		free(p->str2);
-		free(p->str3);
-		free(p);
-		p = np;
-	}
-}
+
 
 void
 config_delauth(struct config_auth* p)
@@ -1429,18 +1380,7 @@ config_del_strarray(char** array, int num)
 	free(array);
 }
 
-void
-config_del_strbytelist(struct config_strbytelist* p)
-{
-	struct config_strbytelist* np;
-	while(p) {
-		np = p->next;
-		free(p->str);
-		free(p->str2);
-		free(p);
-		p = np;
-	}
-}
+
 
 void
 config_delete(struct config_file* cfg)
@@ -1481,7 +1421,6 @@ config_delete(struct config_file* cfg)
 	config_delstrlist(cfg->trusted_keys_file_list);
 	config_delstrlist(cfg->trust_anchor_list);
 	config_delstrlist(cfg->domain_insecure);
-	config_deldblstrlist(cfg->acls);
 	config_deldblstrlist(cfg->tcp_connection_limits);
 	free(cfg->val_nsec3_key_iterations);
 	config_deldblstrlist(cfg->local_zones);
@@ -1490,16 +1429,6 @@ config_delete(struct config_file* cfg)
 	config_delstrlist(cfg->local_zones_ipset);
 #endif
 	config_delstrlist(cfg->local_data);
-	config_deltrplstrlist(cfg->local_zone_overrides);
-	config_del_strarray(cfg->tagname, cfg->num_tags);
-	config_del_strbytelist(cfg->local_zone_tags);
-	config_del_strbytelist(cfg->acl_tags);
-	config_deltrplstrlist(cfg->acl_tag_actions);
-	config_deltrplstrlist(cfg->acl_tag_datas);
-	config_deldblstrlist(cfg->interface_actions);
-	config_del_strbytelist(cfg->interface_tags);
-	config_deltrplstrlist(cfg->interface_tag_actions);
-	config_deltrplstrlist(cfg->interface_tag_datas);
 	config_delstrlist(cfg->control_ifs.first);
 	config_deldblstrlist(cfg->wait_limit_netblock);
 	config_deldblstrlist(cfg->wait_limit_cookie_netblock);
@@ -1864,41 +1793,9 @@ cfg_str2list_insert(struct config_str2list** head, char* item, char* i2)
 	return 1;
 }
 
-int
-cfg_str3list_insert(struct config_str3list** head, char* item, char* i2,
-	char* i3)
-{
-	struct config_str3list *s;
-	if(!item || !i2 || !i3 || !head)
-		return 0;
-	s = (struct config_str3list*)calloc(1, sizeof(struct config_str3list));
-	if(!s)
-		return 0;
-	s->str = item;
-	s->str2 = i2;
-	s->str3 = i3;
-	s->next = *head;
-	*head = s;
-	return 1;
-}
 
-int
-cfg_strbytelist_insert(struct config_strbytelist** head, char* item,
-	uint8_t* i2, size_t i2len)
-{
-	struct config_strbytelist* s;
-	if(!item || !i2 || !head)
-		return 0;
-	s = (struct config_strbytelist*)calloc(1, sizeof(*s));
-	if(!s)
-		return 0;
-	s->str = item;
-	s->str2 = i2;
-	s->str2len = i2len;
-	s->next = *head;
-	*head = s;
-	return 1;
-}
+
+
 
 time_t
 cfg_convert_timeval(const char* str)
@@ -2004,40 +1901,9 @@ cfg_parse_memsize(const char* str, size_t* res)
 	return 1;
 }
 
-int
-find_tag_id(struct config_file* cfg, const char* tag)
-{
-	int i;
-	for(i=0; i<cfg->num_tags; i++) {
-		if(strcmp(cfg->tagname[i], tag) == 0)
-			return i;
-	}
-	return -1;
-}
 
-int
-config_add_tag(struct config_file* cfg, const char* tag)
-{
-	char** newarray;
-	char* newtag;
-	if(find_tag_id(cfg, tag) != -1)
-		return 1; /* nothing to do */
-	newarray = (char**)malloc(sizeof(char*)*(cfg->num_tags+1));
-	if(!newarray)
-		return 0;
-	newtag = strdup(tag);
-	if(!newtag) {
-		free(newarray);
-		return 0;
-	}
-	if(cfg->tagname) {
-		memcpy(newarray, cfg->tagname, sizeof(char*)*cfg->num_tags);
-		free(cfg->tagname);
-	}
-	newarray[cfg->num_tags++] = newtag;
-	cfg->tagname = newarray;
-	return 1;
-}
+
+
 
 /** set a bit in a bit array */
 static void
@@ -2049,43 +1915,7 @@ cfg_set_bit(uint8_t* bitlist, size_t len, int id)
 	bitlist[pos] |= 1<<(id%8);
 }
 
-uint8_t* config_parse_taglist(struct config_file* cfg, char* str,
-        size_t* listlen)
-{
-	uint8_t* taglist = NULL;
-	size_t len = 0;
-	char* p, *s;
 
-	/* allocate */
-	if(cfg->num_tags == 0) {
-		log_err("parse taglist, but no tags defined");
-		return 0;
-	}
-	len = (size_t)(cfg->num_tags+7)/8;
-	taglist = calloc(1, len);
-	if(!taglist) {
-		log_err("out of memory");
-		return 0;
-	}
-
-	/* parse */
-	s = str;
-	while((p=strsep(&s, " \t\n")) != NULL) {
-		if(*p) {
-			int id = find_tag_id(cfg, p);
-			/* set this bit in the bitlist */
-			if(id == -1) {
-				log_err("unknown tag: %s", p);
-				free(taglist);
-				return 0;
-			}
-			cfg_set_bit(taglist, len, id);
-		}
-	}
-
-	*listlen = len;
-	return taglist;
-}
 
 uint8_t* cfg_parse_nsid(const char* str, uint16_t* nsid_len)
 {
@@ -2119,39 +1949,9 @@ uint8_t* cfg_parse_nsid(const char* str, uint16_t* nsid_len)
 }
 
 
-char* config_taglist2str(struct config_file* cfg, uint8_t* taglist,
-        size_t taglen)
-{
-	char buf[10240];
-	size_t i, j, len = 0;
-	buf[0] = 0;
-	for(i=0; i<taglen; i++) {
-		if(taglist[i] == 0)
-			continue;
-		for(j=0; j<8; j++) {
-			if((taglist[i] & (1<<j)) != 0) {
-				size_t id = i*8 + j;
-				snprintf(buf+len, sizeof(buf)-len, "%s%s",
-					(len==0?"":" "), cfg->tagname[id]);
-				len += strlen(buf+len);
-			}
-		}
-	}
-	return strdup(buf);
-}
 
-int taglist_intersect(uint8_t* list1, size_t list1len, const uint8_t* list2,
-	size_t list2len)
-{
-	size_t i;
-	if(!list1 || !list2)
-		return 0;
-	for(i=0; i<list1len && i<list2len; i++) {
-		if((list1[i] & list2[i]) != 0)
-			return 1;
-	}
-	return 0;
-}
+
+
 
 void
 config_apply(struct config_file* config)

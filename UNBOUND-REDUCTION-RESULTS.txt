@@ -627,3 +627,49 @@ were not tested. Shared security mechanisms remain. No tools were installed.
 No configuration-directory migration or Capsicum implementation occurred.
 This update accompanies the authorized implementation commit; nothing pushed.
 Authoritative handoff and complete file inventory: UNBOUND-POLICY-REMOVAL-HANDOFF.txt.
+
+
+2026-10-11: fourth pass — remove DNS client ACLs
+-----------------------------------------------
+Baseline: clean halfbsd2 commit 30fbbb37ffef, with RPZ/response-IP removed and
+independently tested. Deleted daemon/acl_list.c (745 lines) and acl_list.h
+(205 lines). Removed admission callbacks/tables/interface policies, client tags,
+network local-zone overrides, parser/generated support, option administration,
+reload handling, ACL counters/diagnostics/documentation and orphaned helpers.
+Global local-zone actions, records and independent DNS/resource security remain.
+Default IPv4 listener is 0.0.0.0:53 UDP/TCP; existing packet-destination handling
+keeps wildcard UDP replies on the queried local address. IPv6 transport defaults
+to no but remains configurable. No interface discovery service was added.
+Iterator has only an obsolete-comment edit; provider code is unchanged.
+Managed-main setup migration removes obsolete policy while preserving records
+and TLS. Configuration directories and DHCP/addressing behavior are unchanged.
+
+Metric                       Before        After       Net removed
+Unbound files                   322          320                 2
+C/H/Y/LEX files                 212          210                 2
+Handwritten C/H/Y/LEX lines  145155       142664              2491
+Total C/H/Y/LEX lines        158082       155187              2895
+Stripped Linux daemon bytes 1214976      1190464             24512
+950 lines are in physically deleted files; generated-code differences account
+for part of the total. No linked library was removed or added. Four utilities
+and required libunbound remain. These are Linux GCC -O2/LTO measurements.
+
+All four utilities compile. Final suites pass 25 forwarding groups, 9 provider
+groups and 3 setup/migration groups, plus the provider-health/failed-allocation
+unit executable. All 15 modified retained C files pass -Wall syntax checks with
+misleading indentation and unused functions treated as errors. Diff/reference
+checks pass; existing const-discard/flex warnings remain. Tests include wildcard
+secondary-address replies, formerly refused sources, malformed packets, cookies,
+rate/TCP limits, DNSSEC, caches, reloads, fast_reload cache-size changes, control
+TLS and all-provider outage/recovery. TCP quota release is broken in both baseline
+and reduced builds; enforcement and removing the cap by reload were verified.
+
+IPFW audit: 3 source/mock groups, not native packet-filter validation. HALFBSD
+builds IPFW, and metadata orders ipfw -> netwait -> local_unbound and before SSH.
+The shipped firewall_mode is open and the kernel fallback accepts. Failed
+policy loads can leave the resolver exposed, and workstation lacks trusted-LAN
+DNS/SSH allowances. No firewall/SSH/kernel changes were made; precise corrections
+and native verification requirements are in UNBOUND-FOURTH-PASS-HANDOFF.txt.
+Native buildworld/buildkernel, privileged port-53 binding, active firewall/packet
+checks and deployed chroot/privilege-drop/RFC5011 were not run on this Linux host.
+No tools were installed. No Capsicum or directory migration occurred. Included in the user-authorized fourth-pass implementation commit; not pushed.

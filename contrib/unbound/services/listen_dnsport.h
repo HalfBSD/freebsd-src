@@ -45,7 +45,6 @@
 #include "util/netevent.h"
 #include "util/rbtree.h"
 #include "util/locks.h"
-#include "daemon/acl_list.h"
 struct listen_list;
 struct config_file;
 struct addrinfo;
@@ -101,8 +100,6 @@ struct unbound_socket {
 	int s;
 	/** address family (AF_INET/AF_INET6) */
 	int fam;
-	/** ACL on the socket (listening interface) */
-	struct acl_addr* acl;
 };
 
 /**

@@ -52,7 +52,6 @@
 int ub_c_lex(void);
 void ub_c_error(const char *message);
 
-static void validate_acl_action(const char* action);
 
 /* these need to be global, otherwise they cannot be used inside yacc */
 extern struct config_parser_state* cfg_parser;
@@ -93,7 +92,7 @@ extern struct config_parser_state* cfg_parser;
 %token VAR_KEY_CACHE_SLABS VAR_TRUSTED_KEYS_FILE
 %token VAR_VAL_NSEC3_KEYSIZE_ITERATIONS VAR_USE_SYSLOG
 %token VAR_OUTGOING_INTERFACE VAR_ROOT_HINTS VAR_DO_NOT_QUERY_LOCALHOST
-%token VAR_CACHE_MAX_TTL VAR_HARDEN_DNSSEC_STRIPPED VAR_ACCESS_CONTROL
+%token VAR_CACHE_MAX_TTL VAR_HARDEN_DNSSEC_STRIPPED
 %token VAR_LOCAL_ZONE VAR_LOCAL_DATA VAR_INTERFACE_AUTOMATIC
 %token VAR_STATISTICS_INTERVAL VAR_DO_DAEMONIZE VAR_USE_CAPS_FOR_ID
 %token VAR_STATISTICS_CUMULATIVE VAR_OUTGOING_PORT_PERMIT
@@ -133,9 +132,6 @@ extern struct config_parser_state* cfg_parser;
 %token VAR_CAPS_WHITELIST VAR_CACHE_MAX_NEGATIVE_TTL VAR_PERMIT_SMALL_HOLDDOWN
 %token VAR_CACHE_MIN_NEGATIVE_TTL
 %token VAR_QNAME_MINIMISATION VAR_QNAME_MINIMISATION_STRICT VAR_IP_FREEBIND
-%token VAR_DEFINE_TAG VAR_LOCAL_ZONE_TAG VAR_ACCESS_CONTROL_TAG
-%token VAR_LOCAL_ZONE_OVERRIDE VAR_ACCESS_CONTROL_TAG_ACTION
-%token VAR_ACCESS_CONTROL_TAG_DATA
 %token  VAR_SERVE_EXPIRED VAR_SERVE_EXPIRED_TTL
 %token VAR_SERVE_EXPIRED_TTL_RESET VAR_SERVE_EXPIRED_REPLY_TTL
 %token VAR_SERVE_EXPIRED_CLIENT_TIMEOUT VAR_EDE_SERVE_EXPIRED
@@ -165,8 +161,6 @@ extern struct config_parser_state* cfg_parser;
 %token VAR_ZONEMD_PERMISSIVE_MODE VAR_ZONEMD_CHECK VAR_ZONEMD_REJECT_ABSENCE
 %token  VAR_INTERFACE_AUTOMATIC_PORTS VAR_EDE
 %token VAR_DNS_ERROR_REPORTING
-%token VAR_INTERFACE_ACTION  VAR_INTERFACE_TAG
-%token VAR_INTERFACE_TAG_ACTION VAR_INTERFACE_TAG_DATA
 %token VAR_PROXY_PROTOCOL_PORT VAR_STATISTICS_INHIBIT_ZERO
 %token VAR_HARDEN_UNKNOWN_ADDITIONAL VAR_DISABLE_EDNS_DO
 %token VAR_LOG_DESTADDR
@@ -224,8 +218,7 @@ content_server: server_num_threads | server_verbosity | server_port |
 	server_trusted_keys_file | server_val_nsec3_keysize_iterations |
 	server_use_syslog | server_outgoing_interface | server_root_hints |
 	server_do_not_query_localhost | server_cache_max_ttl |
-	server_harden_dnssec_stripped | server_access_control |
-	server_local_zone | server_local_data | server_interface_automatic |
+	server_harden_dnssec_stripped | server_local_zone | server_local_data | server_interface_automatic |
 	server_statistics_interval | server_do_daemonize |
 	server_use_caps_for_id | server_statistics_cumulative |
 	server_outgoing_port_permit | server_outgoing_port_avoid |
@@ -260,12 +253,7 @@ content_server: server_num_threads | server_verbosity | server_port |
 	server_caps_whitelist | server_cache_max_negative_ttl |
 	server_cache_min_negative_ttl |
 	server_permit_small_holddown | server_qname_minimisation |
-	server_ip_freebind | server_define_tag | server_local_zone_tag |
-	server_disable_dnssec_lame_check | server_access_control_tag |
-	server_local_zone_override | server_access_control_tag_action |
-	server_access_control_tag_data | server_interface_action | server_interface_tag |
-	server_interface_tag_action | server_interface_tag_data |
-	server_qname_minimisation_strict |
+	server_ip_freebind | server_disable_dnssec_lame_check | server_qname_minimisation_strict |
 	server_pad_queries | server_pad_queries_block_size |
 	server_serve_expired |
 	server_serve_expired_ttl | server_serve_expired_ttl_reset |
@@ -1545,23 +1533,8 @@ server_do_not_query_localhost: VAR_DO_NOT_QUERY_LOCALHOST STRING_ARG
 		free($2);
 	}
 	;
-server_access_control: VAR_ACCESS_CONTROL STRING_ARG STRING_ARG
-	{
-		OUTYY(("P(server_access_control:%s %s)\n", $2, $3));
-		validate_acl_action($3);
-		if(!cfg_str2list_insert(&cfg_parser->cfg->acls, $2, $3))
-			fatal_exit("out of memory adding acl");
-	}
-	;
-server_interface_action: VAR_INTERFACE_ACTION STRING_ARG STRING_ARG
-	{
-		OUTYY(("P(server_interface_action:%s %s)\n", $2, $3));
-		validate_acl_action($3);
-		if(!cfg_str2list_insert(
-			&cfg_parser->cfg->interface_actions, $2, $3))
-			fatal_exit("out of memory adding acl");
-	}
-	;
+
+
 server_module_conf: VAR_MODULE_CONF STRING_ARG
 	{
 		OUTYY(("P(server_module_conf:%s)\n", $2));
@@ -2069,143 +2042,15 @@ server_nat64_prefix: VAR_NAT64_PREFIX STRING_ARG
 		cfg_parser->cfg->nat64_prefix = $2;
 	}
 	;
-server_define_tag: VAR_DEFINE_TAG STRING_ARG
-	{
-		char* p, *s = $2;
-		OUTYY(("P(server_define_tag:%s)\n", $2));
-		while((p=strsep(&s, " \t\n")) != NULL) {
-			if(*p) {
-				if(!config_add_tag(cfg_parser->cfg, p))
-					yyerror("could not define-tag, "
-						"out of memory");
-			}
-		}
-		free($2);
-	}
-	;
-server_local_zone_tag: VAR_LOCAL_ZONE_TAG STRING_ARG STRING_ARG
-	{
-		size_t len = 0;
-		uint8_t* bitlist = config_parse_taglist(cfg_parser->cfg, $3,
-			&len);
-		free($3);
-		OUTYY(("P(server_local_zone_tag:%s)\n", $2));
-		if(!bitlist) {
-			yyerror("could not parse tags, (define-tag them first)");
-			free($2);
-		}
-		if(bitlist) {
-			if(!cfg_strbytelist_insert(
-				&cfg_parser->cfg->local_zone_tags,
-				$2, bitlist, len)) {
-				yyerror("out of memory");
-				free($2);
-			}
-		}
-	}
-	;
-server_access_control_tag: VAR_ACCESS_CONTROL_TAG STRING_ARG STRING_ARG
-	{
-		size_t len = 0;
-		uint8_t* bitlist = config_parse_taglist(cfg_parser->cfg, $3,
-			&len);
-		free($3);
-		OUTYY(("P(server_access_control_tag:%s)\n", $2));
-		if(!bitlist) {
-			yyerror("could not parse tags, (define-tag them first)");
-			free($2);
-		}
-		if(bitlist) {
-			if(!cfg_strbytelist_insert(
-				&cfg_parser->cfg->acl_tags,
-				$2, bitlist, len)) {
-				yyerror("out of memory");
-				free($2);
-			}
-		}
-	}
-	;
-server_access_control_tag_action: VAR_ACCESS_CONTROL_TAG_ACTION STRING_ARG STRING_ARG STRING_ARG
-	{
-		OUTYY(("P(server_access_control_tag_action:%s %s %s)\n", $2, $3, $4));
-		if(!cfg_str3list_insert(&cfg_parser->cfg->acl_tag_actions,
-			$2, $3, $4)) {
-			yyerror("out of memory");
-			free($2);
-			free($3);
-			free($4);
-		}
-	}
-	;
-server_access_control_tag_data: VAR_ACCESS_CONTROL_TAG_DATA STRING_ARG STRING_ARG STRING_ARG
-	{
-		OUTYY(("P(server_access_control_tag_data:%s %s %s)\n", $2, $3, $4));
-		if(!cfg_str3list_insert(&cfg_parser->cfg->acl_tag_datas,
-			$2, $3, $4)) {
-			yyerror("out of memory");
-			free($2);
-			free($3);
-			free($4);
-		}
-	}
-	;
-server_local_zone_override: VAR_LOCAL_ZONE_OVERRIDE STRING_ARG STRING_ARG STRING_ARG
-	{
-		OUTYY(("P(server_local_zone_override:%s %s %s)\n", $2, $3, $4));
-		if(!cfg_str3list_insert(&cfg_parser->cfg->local_zone_overrides,
-			$2, $3, $4)) {
-			yyerror("out of memory");
-			free($2);
-			free($3);
-			free($4);
-		}
-	}
-	;
-server_interface_tag: VAR_INTERFACE_TAG STRING_ARG STRING_ARG
-	{
-		size_t len = 0;
-		uint8_t* bitlist = config_parse_taglist(cfg_parser->cfg, $3,
-			&len);
-		free($3);
-		OUTYY(("P(server_interface_tag:%s)\n", $2));
-		if(!bitlist) {
-			yyerror("could not parse tags, (define-tag them first)");
-			free($2);
-		}
-		if(bitlist) {
-			if(!cfg_strbytelist_insert(
-				&cfg_parser->cfg->interface_tags,
-				$2, bitlist, len)) {
-				yyerror("out of memory");
-				free($2);
-			}
-		}
-	}
-	;
-server_interface_tag_action: VAR_INTERFACE_TAG_ACTION STRING_ARG STRING_ARG STRING_ARG
-	{
-		OUTYY(("P(server_interface_tag_action:%s %s %s)\n", $2, $3, $4));
-		if(!cfg_str3list_insert(&cfg_parser->cfg->interface_tag_actions,
-			$2, $3, $4)) {
-			yyerror("out of memory");
-			free($2);
-			free($3);
-			free($4);
-		}
-	}
-	;
-server_interface_tag_data: VAR_INTERFACE_TAG_DATA STRING_ARG STRING_ARG STRING_ARG
-	{
-		OUTYY(("P(server_interface_tag_data:%s %s %s)\n", $2, $3, $4));
-		if(!cfg_str3list_insert(&cfg_parser->cfg->interface_tag_datas,
-			$2, $3, $4)) {
-			yyerror("out of memory");
-			free($2);
-			free($3);
-			free($4);
-		}
-	}
-	;
+
+
+
+
+
+
+
+
+
 server_ip_ratelimit: VAR_IP_RATELIMIT STRING_ARG
 	{
 		OUTYY(("P(server_ip_ratelimit:%s)\n", $2));
@@ -3001,20 +2846,3 @@ ipset_name_v6: VAR_IPSET_NAME_V6 STRING_ARG
 %%
 
 /* parse helper routines could be here */
-static void
-validate_acl_action(const char* action)
-{
-	if(strcmp(action, "deny")!=0 &&
-		strcmp(action, "refuse")!=0 &&
-		strcmp(action, "deny_non_local")!=0 &&
-		strcmp(action, "refuse_non_local")!=0 &&
-		strcmp(action, "allow_setrd")!=0 &&
-		strcmp(action, "allow")!=0 &&
-		strcmp(action, "allow_snoop")!=0 &&
-		strcmp(action, "allow_cookie")!=0)
-	{
-		yyerror("expected deny, refuse, deny_non_local, "
-			"refuse_non_local, allow, allow_setrd, "
-			"allow_snoop or allow_cookie as access control action");
-	}
-}

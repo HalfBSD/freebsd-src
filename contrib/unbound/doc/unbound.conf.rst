@@ -98,11 +98,8 @@ all the options.
         # logfile: "@UNBOUND_RUN_DIR@/unbound.log"  #uncomment to use logfile.
         pidfile: "@UNBOUND_PIDFILE@"
         # verbosity: 1      # uncomment and increase to get more logging.
-        # listen on all interfaces, answer queries from the local subnet.
+        # IPFW controls which clients can reach DNS.
         interface: 0.0.0.0
-        interface: ::0
-        access-control: 10.0.0.0/8 allow
-        access-control: 2001:db8::/64 allow
 
 .. _unbound.conf.clauses:
 
@@ -252,7 +249,8 @@ These options are part of the ``server:`` section.
     This interface is listened to for queries from clients, and answers to
     clients are given from it.
     Can be given multiple times to work on several interfaces.
-    If none are given the default is to listen on localhost.
+    If none are given, HalfBSD listens on 0.0.0.0:53 over IPv4 UDP and TCP.
+    IPFW owns source-network access policy; DNS requests have no client ACL stage.
 
     If an interface name is used instead of an IP address, the list of IP
     addresses on that interface are used.
@@ -808,13 +806,6 @@ These options are part of the ``server:`` section.
     Default: no
 
 
-@@UAHL@unbound.conf@define-tag@@: *"<list of tags>"*
-    Define the tags that can be used with
-    :ref:`local-zone<unbound.conf.local-zone>` and
-    :ref:`access-control<unbound.conf.access-control>`.
-    Enclose the list between quotes (``""``) and put spaces between tags.
-
-
 @@UAHL@unbound.conf@do-ip4@@: *<yes or no>*
     Enable or disable whether IPv4 queries are answered or issued.
 
@@ -829,7 +820,7 @@ These options are part of the ``server:`` section.
     traffic, it does not impact the contents of the DNS traffic, which may have
     IPv4 (A) and IPv6 (AAAA) addresses in it.
 
-    Default: yes
+    Default: no
 
 
 @@UAHL@unbound.conf@prefer-ip4@@: *<yes or no>*
@@ -1081,11 +1072,10 @@ These options are part of the ``server:`` section.
     they support and expect PROXYv2.
 
     In this case the proxy address will only be used for the network
-    communication and initial ACL (check if the proxy itself is denied/refused
-    by configuration).
+    communication.
 
     The proxied address (if any) will then be used as the true client address
-    and will be used where applicable for logging, ACL and IP
+    and will be used where applicable for logging and IP
     ratelimiting.
 
     PROXYv2 is supported for UDP and TCP listening interfaces.
@@ -1113,202 +1103,6 @@ These options are part of the ``server:`` section.
     This option is experimental at this time.
 
     Default: (disabled)
-
-
-@@UAHL@unbound.conf@access-control@@: *<IP netblock> <action>*
-    Specify treatment of incoming queries from their originating IP address.
-    Queries can be allowed to have access to this server that gives DNS
-    answers, or refused, with other actions possible.
-    The IP address range can be specified as a netblock, it is possible to give
-    the statement several times in order to specify the treatment of different
-    netblocks.
-    The netblock is given as an IPv4 or IPv6 address with /size appended for a
-    classless network block.
-    The most specific netblock match is used, if none match
-    :ref:`refuse<unbound.conf.access-control.action.refuse>` is used.
-    The order of the access-control statements therefore does not matter.
-    The action can be
-    :ref:`deny<unbound.conf.access-control.action.deny>`,
-    :ref:`refuse<unbound.conf.access-control.action.refuse>`,
-    :ref:`allow<unbound.conf.access-control.action.allow>`,
-    :ref:`allow_setrd<unbound.conf.access-control.action.allow_setrd>`,
-    :ref:`allow_snoop<unbound.conf.access-control.action.allow_snoop>`,
-    :ref:`allow_cookie<unbound.conf.access-control.action.allow_cookie>`,
-    :ref:`deny_non_local<unbound.conf.access-control.action.deny_non_local>` or
-    :ref:`refuse_non_local<unbound.conf.access-control.action.refuse_non_local>`.
-
-
-    @@UAHL@unbound.conf.access-control.action@deny@@
-        Stops queries from hosts from that netblock.
-
-    @@UAHL@unbound.conf.access-control.action@refuse@@
-        Stops queries too, but sends a DNS rcode REFUSED error message back.
-
-    @@UAHL@unbound.conf.access-control.action@allow@@
-        Gives access to clients from that netblock.
-        It gives only access for recursion clients (which is what almost all
-        clients need).
-        Non-recursive queries are refused.
-
-        The :ref:`allow<unbound.conf.access-control.action.allow>` action does
-        allow non-recursive queries to access the local-data that is
-        configured.
-        The reason is that this does not involve the Unbound server recursive
-        lookup algorithm, and static data is served in the reply.
-        This supports normal operations where non-recursive queries are made
-        for the authoritative data.
-        For non-recursive queries any replies from the dynamic cache are
-        refused.
-
-    @@UAHL@unbound.conf.access-control.action@allow_setrd@@
-        Ignores the recursion desired (RD) bit and treats all requests as if
-        the recursion desired bit is set.
-
-        Note that this behavior violates :rfc:`1034` which states that a name
-        server should never perform recursive service unless asked via the RD
-        bit since this interferes with trouble shooting of name servers and
-        their databases.
-        This prohibited behavior may be useful if another DNS server must
-        forward requests for specific zones to a resolver DNS server, but only
-        supports stub domains and sends queries to the resolver DNS server with
-        the RD bit cleared.
-
-    @@UAHL@unbound.conf.access-control.action@allow_snoop@@
-        Gives non-recursive access too.
-        This gives both recursive and non recursive access.
-        The name *allow_snoop* refers to cache snooping, a technique to use
-        non-recursive queries to examine the cache contents (for malicious
-        acts).
-        However, non-recursive queries can also be a valuable debugging tool
-        (when you want to examine the cache contents).
-
-        In that case use
-        :ref:`allow_snoop<unbound.conf.access-control.action.allow_snoop>` for
-        your administration host.
-
-    @@UAHL@unbound.conf.access-control.action@allow_cookie@@
-        Allows access only to UDP queries that contain a valid DNS Cookie as
-        specified in RFC 7873 and RFC 9018, when the
-        :ref:`answer-cookie<unbound.conf.answer-cookie>` option is enabled.
-        UDP queries containing only a DNS Client Cookie and no Server Cookie,
-        or an invalid DNS Cookie, will receive a BADCOOKIE response including a
-        newly generated DNS Cookie, allowing clients to retry with that DNS
-        Cookie.
-        The *allow_cookie* action will also accept requests over stateful
-        transports, regardless of the presence of an DNS Cookie and regardless
-        of the :ref:`answer-cookie<unbound.conf.answer-cookie>` setting.
-        UDP queries without a DNS Cookie receive REFUSED responses with the TC
-        flag set, that may trigger fall back to TCP for those clients.
-
-    @@UAHL@unbound.conf.access-control.action@deny_non_local@@
-        The
-        :ref:`deny_non_local<unbound.conf.access-control.action.deny_non_local>`
-        action is for hosts that are only allowed to query for the
-        authoritative :ref:`local-data<unbound.conf.local-data>`, they are not
-        allowed full recursion but only the static data.
-        Messages that are disallowed are dropped.
-
-    @@UAHL@unbound.conf.access-control.action@refuse_non_local@@
-        The
-        :ref:`refuse_non_local<unbound.conf.access-control.action.refuse_non_local>`
-        action is for hosts that are only allowed to query for the
-        authoritative :ref:`local-data<unbound.conf.local-data>`, they are not
-        allowed full recursion but only the static data.
-        Messages that are disallowed receive error code REFUSED.
-
-
-    By default only localhost (the 127.0.0.0/8 IP netblock, not the loopback
-    interface) is implicitly *allowed*, the rest is refused.
-    The default is *refused*, because that is protocol-friendly.
-    The DNS protocol is not designed to handle dropped packets due to policy,
-    and dropping may result in (possibly excessive) retried queries.
-
-
-@@UAHL@unbound.conf@access-control-tag@@: *<IP netblock> "<list of tags>"*
-    Assign tags to :ref:`access-control<unbound.conf.access-control>`
-    elements.
-    Clients using this access control element use localzones that are tagged
-    with one of these tags.
-
-    Tags must be defined in :ref:`define-tag<unbound.conf.define-tag>`.
-    Enclose list of tags in quotes (``""``) and put spaces between tags.
-
-    If :ref:`access-control-tag<unbound.conf.access-control-tag>` is
-    configured for a netblock that does not have an
-    :ref:`access-control<unbound.conf.access-control>`, an access-control
-    element with action :ref:`allow<unbound.conf.access-control.action.allow>`
-    is configured for this netblock.
-
-
-@@UAHL@unbound.conf@access-control-tag-action@@: *<IP netblock> <tag> <action>*
-    Set action for particular tag for given access control element.
-    If you have multiple tag values, the tag used to lookup the action is the
-    first tag match between
-    :ref:`access-control-tag<unbound.conf.access-control-tag>` and
-    :ref:`local-zone-tag<unbound.conf.local-zone-tag>` where "first" comes
-    from the order of the :ref:`define-tag<unbound.conf.define-tag>` values.
-
-
-@@UAHL@unbound.conf@access-control-tag-data@@: *<IP netblock> <tag> "<resource record string>"*
-    Set redirect data for particular tag for given access control element.
-
-
-@@UAHL@unbound.conf@interface-action@@: *<ip address or interface name [@port]> <action>*
-    Similar to :ref:`access-control<unbound.conf.access-control>` but for
-    interfaces.
-
-    The action is the same as the ones defined under
-    :ref:`access-control<unbound.conf.access-control>`.
-
-    Default action for interfaces is
-    :ref:`refuse<unbound.conf.access-control.action.refuse>`.
-    By default only localhost (the 127.0.0.0/8 IP netblock, not the loopback
-    interface) is implicitly allowed through the default
-    :ref:`access-control<unbound.conf.access-control>` behavior.
-    This also means that any attempt to use the **interface-\*:** options for
-    the loopback interface will not work as they will be overridden by the
-    implicit default "access-control: 127.0.0.0/8 allow" option.
-
-    .. note::
-        The interface needs to be already specified with
-        :ref:`interface<unbound.conf.interface>` and that any
-        **access-control\*:** option overrides all **interface-\*:**
-        options for targeted clients.
-
-
-@@UAHL@unbound.conf@interface-tag@@: *<ip address or interface name [@port]> <"list of tags">*
-    Similar to :ref:`access-control-tag<unbound.conf.access-control-tag>` but
-    for interfaces.
-
-    .. note::
-        The interface needs to be already specified with
-        :ref:`interface<unbound.conf.interface>` and that any
-        **access-control\*:** option overrides all **interface-\*:**
-        options for targeted clients.
-
-
-@@UAHL@unbound.conf@interface-tag-action@@: *<ip address or interface name [@port]> <tag> <action>*
-    Similar to
-    :ref:`access-control-tag-action<unbound.conf.access-control-tag-action>`
-    but for interfaces.
-
-    .. note::
-        The interface needs to be already specified with
-        :ref:`interface<unbound.conf.interface>` and that any
-        **access-control\*:** option overrides all **interface-\*:**
-        options for targeted clients.
-
-
-@@UAHL@unbound.conf@interface-tag-data@@: *<ip address or interface name [@port]> <tag> <"resource record string">*
-    Similar to
-    :ref:`access-control-tag-data<unbound.conf.access-control-tag-data>` but
-    for interfaces.
-
-    .. note::
-        The interface needs to be already specified with
-        :ref:`interface<unbound.conf.interface>` and that any
-        **access-control\*:** option overrides all **interface-\*:**
-        options for targeted clients.
 
 
 @@UAHL@unbound.conf@chroot@@: *<directory>*
@@ -2678,25 +2472,6 @@ These options are part of the ``server:`` section.
     TTL can be inserted like this: ``"2001:db8::4 7200 www.example.com"``
 
 
-@@UAHL@unbound.conf@local-zone-tag@@: *<zone> <"list of tags">*
-    Assign tags to local zones.
-    Tagged localzones will only be applied when the used
-    :ref:`access-control<unbound.conf.access-control>` element has a matching
-    tag.
-    Tags must be defined in :ref:`define-tag<unbound.conf.define-tag>`.
-    Enclose list of tags in quotes (``""``) and put spaces between tags.
-    When there are multiple tags it checks if the intersection of the list of
-    tags for the query and :ref:`local-zone-tag<unbound.conf.local-zone-tag>`
-    is non-empty.
-
-
-@@UAHL@unbound.conf@local-zone-override@@: *<zone> <IP netblock> <type>*
-    Override the local zone type for queries from addresses matching netblock.
-    Use this localzone type, regardless the type configured for the local zone
-    (both tagged and untagged) and regardless the type configured using
-    :ref:`access-control-tag-action<unbound.conf.access-control-tag-action>`.
-
-
 @@UAHL@unbound.conf@ratelimit@@: *<number or 0>*
     Enable ratelimiting of queries sent to nameserver for performing recursion.
     0 disables the feature.
@@ -2814,11 +2589,7 @@ These options are part of the ``server:`` section.
     More queries are completely dropped and will not receive a reply, SERVFAIL
     or otherwise.
     IP ratelimiting happens before looking in the cache.
-    This option could be useful in combination with
-    :ref:`allow_cookie<unbound.conf.access-control.action.allow_cookie>`, in an
-    attempt to mitigate other amplification attacks than UDP reflections (e.g.,
-    attacks targeting Unbound itself) which are already handled with DNS
-    Cookies.
+    This separately limits clients presenting valid DNS Cookies.
     If used, the value is suggested to be higher than
     :ref:`ip-ratelimit<unbound.conf.ip-ratelimit>` e.g., tenfold.
 

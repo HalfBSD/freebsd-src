@@ -33,18 +33,29 @@ with tempfile.TemporaryDirectory(prefix='unbound-setup-') as directory:
     legacy = root / 'var/unbound/forward.conf'
     legacy.write_text('forward-zone:\n name: .\n forward-tls-upstream: yes\n'
                       ' forward-addr: 192.0.2.53@853#old.test\n')
-    custom = ('server:\n    access-control: 192.0.2.0/24 allow\n'
-              '    local-data: "custom.home.test. IN A 192.0.2.10"\n'
-              '    tls-cert-bundle: /etc/ssl/cert.pem\n')
+    policy = ('    access-control: 192.0.2.0/24 allow\n'
+              '    interface-action: 0.0.0.0 allow\n'
+              '    local-zone-override: home.test. 192.0.2.0/24 refuse\n'
+              '    define-tag: "trusted\nold"\n'
+              '    access-control-tag-data: 192.0.2.0/24 trusted "TXT\nold"\n')
+    records = ('    local-data: "custom.home.test. IN A 192.0.2.10"\n'
+               '    local-data: "meta.home.test. IN TXT access-control:literal"\n'
+               '    local-data: "multi.home.test. IN TXT first\naccess-control:literal"\n'
+               '    tls-cert-bundle: /etc/ssl/cert.pem\n')
+    custom = 'server:\n' + policy + records
     config.write_text(custom + 'include: "/var/unbound/forward.conf" # legacy\n')
     subprocess.run(['sh', str(script), '-n'], env=environment, check=True)
     result = config.read_text()
-    assert custom in result and 'forward.conf' not in result
+    assert 'server:\n' + records in result and 'forward.conf' not in result
+    assert 'access-control: 192.0.2.0/24' not in result
+    assert 'interface-action:' not in result and 'local-zone-override:' not in result
+    assert 'define-tag:' not in result and 'access-control-tag-data:' not in result
+    assert '\nold' not in result
     assert 'tls-upstream: yes' in result
     assert legacy.exists()  # Archive, never replace administrator's file.
     subprocess.run(['sh', str(script), '-n'], env=environment, check=True)
     assert config.read_text() == result
-    print('PASS upgrade preserves local records, ACLs and TLS; setup is idempotent')
+    print('PASS upgrade removes client policy, preserves quoted local records/TLS, and is idempotent')
 
     # Exercise the actual service setup function with mocked rc.subr actions.
     # This checks restart policy without running a FreeBSD service on Linux.

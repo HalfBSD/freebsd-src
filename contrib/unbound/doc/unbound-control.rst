@@ -132,14 +132,10 @@ There are several commands that the server understands.
     :ref:`authority zones<unbound.conf.auth>`,
     :ref:`local zones<unbound.conf.local-zone>`.
 
+
+
     Also
-    :ref:`access-control<unbound.conf.access-control>` and similar options,
-    :ref:`interface-action<unbound.conf.interface-action>` and similar
-    options and
     :ref:`tcp-connection-limit<unbound.conf.tcp-connection-limit>`.
-    It can reload some
-    :ref:`define-tag<unbound.conf.define-tag>`
-    changes, more on that below.
     Further options include
     :ref:`insecure-lan-zones<unbound.conf.insecure-lan-zones>`,
     :ref:`domain-insecure<unbound.conf.domain-insecure>`,
@@ -238,17 +234,6 @@ There are several commands that the server understands.
     those queries that are currently processed.
     The drop makes it so that queries during the life time of the
     query processing see only old, or only new config options.
-
-    When there are changes to the config tags, from the
-    :ref:`define-tag<unbound.conf.define-tag>` option,
-    then the ``+d`` option is implicitly turned on with a warning printout, and
-    queries are dropped.
-    This is to stop references to the old tag information, by the old
-    queries.
-    If the number of tags is increased in the newly loaded config, by
-    adding tags at the end, then the implicit ``+d`` option is not needed.
-
-
 
 @@UAHL@unbound-control.commands@verbosity@@ *number*
     Change verbosity value for logging.
@@ -1077,11 +1062,6 @@ Extended Statistics
     validation result.
     The RRSIG and key combination needs to first pass some sanity checks before
     Unbound even performs the verification, e.g., length/protocol checks.
-
-
-@@UAHL@unbound-control.stats@unwanted.queries@@
-    Number of queries that were refused or dropped because they failed the
-    access control settings.
 
 
 @@UAHL@unbound-control.stats@unwanted.replies@@

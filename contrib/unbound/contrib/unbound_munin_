@@ -257,7 +257,6 @@ if test "$1" = "config" ; then
 		p_config "num.query.tls" "TLS queries" "ABSOLUTE"
 		p_config "num.query.tls.resume" "TLS resumes" "ABSOLUTE"
 		p_config "num.query.ipv6" "IPv6 queries" "ABSOLUTE"
-		p_config "unwanted.queries" "queries that failed acl" "ABSOLUTE"
 		p_config "unwanted.replies" "unwanted or unsolicited replies" "ABSOLUTE"
 		echo "u_replies.warning $warn"
 		echo "u_replies.critical $crit"
@@ -454,7 +453,7 @@ hits)
 		sed -e 's/=.*//'` total.num.queries \
 		total.num.cachehits total.num.prefetch num.query.tcp \
 		num.query.tcpout num.query.udpout num.query.tls num.query.tls.resume \
-		num.query.ipv6 unwanted.queries \
+		num.query.ipv6 \
 		unwanted.replies; do
 		if grep "^"$x"=" $state >/dev/null 2>&1; then
 			print_value $x

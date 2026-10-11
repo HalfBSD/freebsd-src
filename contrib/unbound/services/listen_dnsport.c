@@ -149,9 +149,8 @@ verbose_print_unbound_socket(struct unbound_socket* ub_sock)
 		log_info("listing of unbound_socket structure:");
 		addr_to_str((void*)ub_sock->addr, ub_sock->addrlen, buf,
 			sizeof(buf));
-		log_info("%s s is: %d, fam is: %s, acl: %s", buf, ub_sock->s,
-			ub_sock->fam == AF_INET?"AF_INET":"AF_INET6",
-			ub_sock->acl?"yes":"no");
+		log_info("%s s is: %d, fam is: %s", buf, ub_sock->s,
+			ub_sock->fam == AF_INET?"AF_INET":"AF_INET6");
 	}
 }
 
@@ -1089,7 +1088,6 @@ make_sock(int stype, const char* ifname, int port,
 
 	ub_sock->s = s;
 	ub_sock->fam = hints->ai_family;
-	ub_sock->acl = NULL;
 
 	return s;
 }
@@ -1287,7 +1285,8 @@ ports_create_if(const char* ifname, int do_auto, int do_udp, int do_tcp,
 	 * at the same port is not desired. */
 
 
-	if(do_auto) {
+	/* Wildcard UDP replies must use the address the client queried. */
+	if(do_auto || (do_udp && strcmp(ifname, "0.0.0.0") == 0)) {
 		ub_sock = calloc(1, sizeof(struct unbound_socket));
 		if(!ub_sock)
 			return 0;
@@ -1817,7 +1816,7 @@ listening_ports_open(struct config_file* cfg, char** ifs, int num_ifs,
 		}
 		if(do_ip4) {
 			hints.ai_family = AF_INET;
-			if(!ports_create_if(do_auto?"0.0.0.0":"127.0.0.1",
+			if(!ports_create_if("0.0.0.0",
 				do_auto, cfg->do_udp, do_tcp,
 				&hints, cfg->port, &list,
 				cfg->so_rcvbuf, cfg->so_sndbuf,

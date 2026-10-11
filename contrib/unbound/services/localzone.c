@@ -153,7 +153,6 @@ local_zone_delete(struct local_zone* z)
 	lock_rw_destroy(&z->lock);
 	regional_destroy(z->region);
 	free(z->name);
-	free(z->taglist);
 	free(z);
 }
 
@@ -681,122 +680,9 @@ lz_enter_rr_str(struct local_zones* zones, const char* rr)
 	return r;
 }
 
-/** enter tagstring into zone */
-static int
-lz_enter_zone_tag(struct local_zones* zones, char* zname, uint8_t* list,
-	size_t len, uint16_t rr_class)
-{
-	uint8_t dname[LDNS_MAX_DOMAINLEN+1];
-	size_t dname_len = sizeof(dname);
-	int dname_labs, r = 0;
-	struct local_zone* z;
 
-	if(sldns_str2wire_dname_buf(zname, dname, &dname_len) != 0) {
-		log_err("cannot parse zone name in local-zone-tag: %s", zname);
-		return 0;
-	}
-	dname_labs = dname_count_labels(dname);
 
-	lock_rw_rdlock(&zones->lock);
-	z = local_zones_find(zones, dname, dname_len, dname_labs, rr_class);
-	if(!z) {
-		lock_rw_unlock(&zones->lock);
-		log_err("no local-zone for tag %s", zname);
-		return 0;
-	}
-	lock_rw_wrlock(&z->lock);
-	lock_rw_unlock(&zones->lock);
-	free(z->taglist);
-	z->taglist = memdup(list, len);
-	z->taglen = len;
-	if(z->taglist)
-		r = 1;
-	lock_rw_unlock(&z->lock);
-	return r;
-}
 
-/** enter override into zone */
-static int
-lz_enter_override(struct local_zones* zones, char* zname, char* netblock,
-	char* type, uint16_t rr_class)
-{
-	uint8_t dname[LDNS_MAX_DOMAINLEN+1];
-	size_t dname_len = sizeof(dname);
-	int dname_labs;
-	struct sockaddr_storage addr;
-	int net;
-	socklen_t addrlen;
-	struct local_zone* z;
-	enum localzone_type t;
-
-	/* parse zone name */
-	if(sldns_str2wire_dname_buf(zname, dname, &dname_len) != 0) {
-		log_err("cannot parse zone name in local-zone-override: %s %s",
-			zname, netblock);
-		return 0;
-	}
-	dname_labs = dname_count_labels(dname);
-
-	/* parse netblock */
-	if(!netblockstrtoaddr(netblock, UNBOUND_DNS_PORT, &addr, &addrlen,
-		&net)) {
-		log_err("cannot parse netblock in local-zone-override: %s %s",
-			zname, netblock);
-		return 0;
-	}
-
-	/* parse zone type */
-	if(!local_zone_str2type(type, &t)) {
-		log_err("cannot parse type in local-zone-override: %s %s %s",
-			zname, netblock, type);
-		return 0;
-	}
-
-	/* find localzone entry */
-	lock_rw_rdlock(&zones->lock);
-	z = local_zones_find(zones, dname, dname_len, dname_labs, rr_class);
-	if(!z) {
-		lock_rw_unlock(&zones->lock);
-		log_err("no local-zone for local-zone-override %s", zname);
-		return 0;
-	}
-	lock_rw_wrlock(&z->lock);
-	lock_rw_unlock(&zones->lock);
-
-	/* create netblock addr_tree if not present yet */
-	if(!z->override_tree) {
-		z->override_tree = (struct rbtree_type*)regional_alloc_zero(
-			z->region, sizeof(*z->override_tree));
-		if(!z->override_tree) {
-			lock_rw_unlock(&z->lock);
-			log_err("out of memory");
-			return 0;
-		}
-		addr_tree_init(z->override_tree);
-	}
-	/* add new elem to tree */
-	if(z->override_tree) {
-		struct local_zone_override* n;
-		n = (struct local_zone_override*)regional_alloc_zero(
-			z->region, sizeof(*n));
-		if(!n) {
-			lock_rw_unlock(&z->lock);
-			log_err("out of memory");
-			return 0;
-		}
-		n->type = t;
-		if(!addr_tree_insert(z->override_tree,
-			(struct addr_tree_node*)n, &addr, addrlen, net)) {
-			lock_rw_unlock(&z->lock);
-			log_err("duplicate local-zone-override %s %s",
-				zname, netblock);
-			return 1;
-		}
-	}
-
-	lock_rw_unlock(&z->lock);
-	return 1;
-}
 
 /** parse local-zone: statements */
 static int
@@ -988,18 +874,7 @@ int local_zone_enter_defaults(struct local_zones* zones, struct config_file* cfg
 	return 1;
 }
 
-/** parse local-zone-override: statements */
-static int
-lz_enter_overrides(struct local_zones* zones, struct config_file* cfg)
-{
-	struct config_str3list* p;
-	for(p = cfg->local_zone_overrides; p; p = p->next) {
-		if(!lz_enter_override(zones, p->str, p->str2, p->str3,
-			LDNS_RR_CLASS_IN))
-			return 0;
-	}
-	return 1;
-}
+
 
 /* return closest parent in the tree, NULL if none */
 static struct local_zone* find_closest_parent(struct local_zone* curr,
@@ -1034,8 +909,7 @@ lz_init_parents(struct local_zones* zones)
 		lock_rw_wrlock(&node->lock);
 		node->parent = find_closest_parent(node, prev);
 		prev = node;
-		if(node->override_tree)
-			addr_tree_init_parents(node->override_tree);
+
 		lock_rw_unlock(&node->lock);
 	}
 	lock_rw_unlock(&zones->lock);
@@ -1163,21 +1037,7 @@ lz_setup_implicit(struct local_zones* zones, struct config_file* cfg)
 	return 1;
 }
 
-/** enter local-zone-tag info */
-static int
-lz_enter_zone_tags(struct local_zones* zones, struct config_file* cfg)
-{
-	struct config_strbytelist* p;
-	int c = 0;
-	for(p = cfg->local_zone_tags; p; p = p->next) {
-		if(!lz_enter_zone_tag(zones, p->str, p->str2, p->str2len,
-			LDNS_RR_CLASS_IN))
-			return 0;
-		c++;
-	}
-	if(c) verbose(VERB_ALGO, "applied tags to %d local zones", c);
-	return 1;
-}
+
 
 /** enter auth data */
 static int
@@ -1214,10 +1074,6 @@ local_zones_apply_cfg(struct local_zones* zones, struct config_file* cfg)
 	if(!local_zone_enter_defaults(zones, cfg)) {
 		return 0;
 	}
-	/* enter local zone overrides */
-	if(!lz_enter_overrides(zones, cfg)) {
-		return 0;
-	}
 	/* create implicit transparent zone from data. */
 	if(!lz_setup_implicit(zones, cfg)) {
 		return 0;
@@ -1225,10 +1081,6 @@ local_zones_apply_cfg(struct local_zones* zones, struct config_file* cfg)
 
 	/* setup parent ptrs for lookup during data entry */
 	lz_init_parents(zones);
-	/* insert local zone tags */
-	if(!lz_enter_zone_tags(zones, cfg)) {
-		return 0;
-	}
 	/* insert local data */
 	if(!lz_enter_data(zones, cfg)) {
 		return 0;
@@ -1242,15 +1094,6 @@ struct local_zone*
 local_zones_lookup(struct local_zones* zones,
         uint8_t* name, size_t len, int labs, uint16_t dclass, uint16_t dtype,
 	int foradd)
-{
-	return local_zones_tags_lookup(zones, name, len, labs,
-		dclass, dtype, NULL, 0, 1, foradd);
-}
-
-struct local_zone* 
-local_zones_tags_lookup(struct local_zones* zones,
-        uint8_t* name, size_t len, int labs, uint16_t dclass, uint16_t dtype,
-	uint8_t* taglist, size_t taglen, int ignoretags, int foradd)
 {
 	rbnode_type* res = NULL;
 	struct local_zone *result;
@@ -1295,10 +1138,7 @@ local_zones_tags_lookup(struct local_zones* zones,
 		key.namelabs, &m);
 	while(result) { /* go up until qname is zone or subdomain of zone */
 		if(result->namelabs <= m)
-			if(ignoretags || !result->taglist ||
-				taglist_intersect(result->taglist, 
-				result->taglen, taglist, taglen))
-				break;
+			break;
 		result = result->parent;
 	}
 	return result;
@@ -1394,125 +1234,16 @@ local_error_encode(struct query_info* qinfo, struct module_env* env,
 		sldns_buffer_read_u16_at(buf, 2), edns);
 }
 
-/** find local data tag string match for the given type in the list */
-int
-local_data_find_tag_datas(const struct query_info* qinfo,
-	struct config_strlist* list, struct ub_packed_rrset_key* r,
-	struct regional* temp)
-{
-	struct config_strlist* p;
-	char buf[65536];
-	uint8_t rr[LDNS_RR_BUF_SIZE];
-	size_t len;
-	int res;
-	struct packed_rrset_data* d;
-	for(p=list; p; p=p->next) {
-		uint16_t rdr_type;
 
-		len = sizeof(rr);
-		/* does this element match the type? */
-		snprintf(buf, sizeof(buf), ". %s", p->str);
-		res = sldns_str2wire_rr_buf(buf, rr, &len, NULL, 3600,
-			NULL, 0, NULL, 0);
-		if(res != 0)
-			/* parse errors are already checked before, in
-			 * acllist check_data, skip this for robustness */
-			continue;
-		if(len < 1 /* . */ + 8 /* typeclassttl*/ + 2 /*rdatalen*/)
-			continue;
-		rdr_type = sldns_wirerr_get_type(rr, len, 1);
-		if(rdr_type != qinfo->qtype && rdr_type != LDNS_RR_TYPE_CNAME)
-			continue;
 
-		/* do we have entries already? if not setup key */
-		if(r->rk.dname == NULL) {
-			r->entry.key = r;
-			r->rk.dname = qinfo->qname;
-			r->rk.dname_len = qinfo->qname_len;
-			r->rk.type = htons(rdr_type);
-			r->rk.rrset_class = htons(qinfo->qclass);
-			r->rk.flags = 0;
-			d = (struct packed_rrset_data*)regional_alloc_zero(
-				temp, sizeof(struct packed_rrset_data)
-				+ sizeof(size_t) + sizeof(uint8_t*) +
-				sizeof(time_t));
-			if(!d) return 0; /* out of memory */
-			r->entry.data = d;
-			d->ttl = sldns_wirerr_get_ttl(rr, len, 1);
-			d->rr_len = (size_t*)((uint8_t*)d +
-				sizeof(struct packed_rrset_data));
-			d->rr_data = (uint8_t**)&(d->rr_len[1]);
-			d->rr_ttl = (time_t*)&(d->rr_data[1]);
-		}
-		d = (struct packed_rrset_data*)r->entry.data;
-		/* add entry to the data */
-		if(d->count != 0) {
-			size_t* oldlen = d->rr_len;
-			uint8_t** olddata = d->rr_data;
-			time_t* oldttl = d->rr_ttl;
-			/* increase arrays for lookup */
-			/* this is of course slow for very many records,
-			 * but most redirects are expected with few records */
-			d->rr_len = (size_t*)regional_alloc_zero(temp,
-				(d->count+1)*sizeof(size_t));
-			d->rr_data = (uint8_t**)regional_alloc_zero(temp,
-				(d->count+1)*sizeof(uint8_t*));
-			d->rr_ttl = (time_t*)regional_alloc_zero(temp,
-				(d->count+1)*sizeof(time_t));
-			if(!d->rr_len || !d->rr_data || !d->rr_ttl)
-				return 0; /* out of memory */
-			/* first one was allocated after struct d, but new
-			 * ones get their own array increment alloc, so
-			 * copy old content */
-			memmove(d->rr_len, oldlen, d->count*sizeof(size_t));
-			memmove(d->rr_data, olddata, d->count*sizeof(uint8_t*));
-			memmove(d->rr_ttl, oldttl, d->count*sizeof(time_t));
-		}
 
-		d->rr_len[d->count] = sldns_wirerr_get_rdatalen(rr, len, 1)+2;
-		d->rr_ttl[d->count] = sldns_wirerr_get_ttl(rr, len, 1);
-		d->rr_data[d->count] = regional_alloc_init(temp,
-			sldns_wirerr_get_rdatawl(rr, len, 1),
-			d->rr_len[d->count]);
-		if(!d->rr_data[d->count])
-			return 0; /* out of memory */
-		d->count++;
-	}
-	if(r->rk.dname)
-		return 1;
-	return 0;
-}
-
-static int
-find_tag_datas(struct query_info* qinfo, struct config_strlist* list,
-	struct ub_packed_rrset_key* r, struct regional* temp)
-{
-	int result = local_data_find_tag_datas(qinfo, list, r, temp);
-
-	/* If we've found a non-exact alias type of local data, make a shallow
-	 * copy of the RRset and remember it in qinfo to complete the alias
-	 * chain later. */
-	if(result && qinfo->qtype != LDNS_RR_TYPE_CNAME &&
-		r->rk.type == htons(LDNS_RR_TYPE_CNAME)) {
-		qinfo->local_alias =
-			regional_alloc_zero(temp, sizeof(struct local_rrset));
-		if(!qinfo->local_alias)
-			return 0; /* out of memory */
-		qinfo->local_alias->rrset =
-			regional_alloc_init(temp, r, sizeof(*r));
-		if(!qinfo->local_alias->rrset)
-			return 0; /* out of memory */
-	}
-	return result;
-}
 
 int
 local_data_answer(struct local_zone* z, struct module_env* env,
 	struct query_info* qinfo, struct edns_data* edns,
 	struct comm_reply* repinfo, sldns_buffer* buf,
 	struct regional* temp, int labs, struct local_data** ldp,
-	enum localzone_type lz_type, int tag, struct config_strlist** tag_datas,
-	size_t tag_datas_size, char** tagname, int num_tags)
+	enum localzone_type lz_type)
 {
 	struct local_data key;
 	struct local_data* ld;
@@ -1526,23 +1257,6 @@ local_data_answer(struct local_zone* z, struct module_env* env,
 		key.name = z->name;
 		key.namelen = z->namelen;
 		key.namelabs = z->namelabs;
-		if(tag != -1 && (size_t)tag<tag_datas_size && tag_datas[tag]) {
-			struct ub_packed_rrset_key r;
-			memset(&r, 0, sizeof(r));
-			if(find_tag_datas(qinfo, tag_datas[tag], &r, temp)) {
-				verbose(VERB_ALGO, "redirect with tag data [%d] %s",
-					tag, (tag<num_tags?tagname[tag]:"null"));
-
-				/* If we found a matching alias, we should
-				 * use it as part of the answer, but we can't
-				 * encode it until we complete the alias
-				 * chain. */
-				if(qinfo->local_alias)
-					return 1;
-				return local_encode(qinfo, env, edns, repinfo, buf, temp,
-					&r, 1, LDNS_RCODE_NOERROR);
-			}
-		}
 	}
 	ld = (struct local_data*)rbtree_search(&z->data, &key.node);
 	*ldp = ld;
@@ -1813,70 +1527,14 @@ lz_inform_print(struct local_zone* z, struct query_info* qinfo,
 	log_nametypeclass(NO_VERBOSE, txt, qinfo->qname, qinfo->qtype, qinfo->qclass);
 }
 
-static enum localzone_type
-lz_type(uint8_t *taglist, size_t taglen, uint8_t *taglist2, size_t taglen2,
-	uint8_t *tagactions, size_t tagactionssize, enum localzone_type lzt,
-	struct comm_reply* repinfo, struct rbtree_type* override_tree,
-	int* tag, char** tagname, int num_tags)
-{
-	struct local_zone_override* lzo;	
-	if(repinfo && override_tree) {
-		lzo = (struct local_zone_override*)addr_tree_lookup(
-			override_tree, &repinfo->client_addr,
-			repinfo->client_addrlen);
-		if(lzo && lzo->type) {
-			verbose(VERB_ALGO, "local zone override to type %s",
-				local_zone_type2str(lzo->type));
-			return lzo->type;
-		}
-	}
-	if(!taglist || !taglist2)
-		return lzt;
-	return local_data_find_tag_action(taglist, taglen, taglist2, taglen2,
-		tagactions, tagactionssize, lzt, tag, tagname, num_tags);
-}
 
-enum localzone_type
-local_data_find_tag_action(const uint8_t* taglist, size_t taglen,
-	const uint8_t* taglist2, size_t taglen2, const uint8_t* tagactions,
-	size_t tagactionssize, enum localzone_type lzt, int* tag,
-	char* const* tagname, int num_tags)
-{
-	size_t i, j;
-	uint8_t tagmatch;
 
-	for(i=0; i<taglen && i<taglen2; i++) {
-		tagmatch = (taglist[i] & taglist2[i]);
-		for(j=0; j<8 && tagmatch>0; j++) {
-			if((tagmatch & 0x1)) {
-				*tag = (int)(i*8+j);
-				verbose(VERB_ALGO, "matched tag [%d] %s",
-					*tag, (*tag<num_tags?tagname[*tag]:"null"));
-				/* does this tag have a tag action? */
-				if(i*8+j < tagactionssize && tagactions
-				   && tagactions[i*8+j] != 0) {
-				  verbose(VERB_ALGO, "tag action [%d] %s to type %s",
-					*tag, (*tag<num_tags?tagname[*tag]:"null"),
-				  	local_zone_type2str(
-					(enum localzone_type)
-					tagactions[i*8+j]));
-				  return (enum localzone_type)tagactions[i*8+j];
-				}
-				return lzt;
-			}
-			tagmatch >>= 1;	
-		}
-	}
-	return lzt;
-}
+
 
 int 
 local_zones_answer(struct local_zones* zones, struct module_env* env,
 	struct query_info* qinfo, struct edns_data* edns, sldns_buffer* buf,
-	struct regional* temp, struct comm_reply* repinfo, uint8_t* taglist,
-	size_t taglen, uint8_t* tagactions, size_t tagactionssize,
-	struct config_strlist** tag_datas, size_t tag_datas_size,
-	char** tagname, int num_tags)
+	struct regional* temp, struct comm_reply* repinfo)
 {
 	/* see if query is covered by a zone,
 	 * 	if so:	- try to match (exact) local data 
@@ -1885,22 +1543,19 @@ local_zones_answer(struct local_zones* zones, struct module_env* env,
 	struct local_data* ld = NULL;
 	struct local_zone* z = NULL;
 	enum localzone_type lzt = local_zone_transparent;
-	int r, tag = -1;
+	int r;
 
 
 	if(!z) {
 		/* try global local_zones tree */
 		lock_rw_rdlock(&zones->lock);
-		if(!(z = local_zones_tags_lookup(zones, qinfo->qname,
-			qinfo->qname_len, labs, qinfo->qclass, qinfo->qtype,
-			taglist, taglen, 0, 0))) {
+		if(!(z = local_zones_lookup(zones, qinfo->qname,
+			qinfo->qname_len, labs, qinfo->qclass, qinfo->qtype, 0))) {
 			lock_rw_unlock(&zones->lock);
 			return 0;
 		}
 		lock_rw_rdlock(&z->lock);
-		lzt = lz_type(taglist, taglen, z->taglist, z->taglen,
-			tagactions, tagactionssize, z->type, repinfo,
-			z->override_tree, &tag, tagname, num_tags);
+		lzt = z->type;
 		lock_rw_unlock(&zones->lock);
 		if(z && verbosity >= VERB_ALGO) {
 			char zname[LDNS_MAX_DOMAINLEN];
@@ -1924,7 +1579,7 @@ local_zones_answer(struct local_zones* zones, struct module_env* env,
 		&& lzt != local_zone_always_nodata
 		&& lzt != local_zone_always_deny
 		&& local_data_answer(z, env, qinfo, edns, repinfo, buf, temp, labs,
-			&ld, lzt, tag, tag_datas, tag_datas_size, tagname, num_tags)) {
+			&ld, lzt)) {
 		lock_rw_unlock(&z->lock);
 		/* We should tell the caller that encode is deferred if we found
 		 * a local alias. */
@@ -2222,7 +1877,7 @@ local_zone_get_mem(struct local_zone* z)
 {
 	size_t m = sizeof(*z);
 	lock_rw_rdlock(&z->lock);
-	m += z->namelen + z->taglen + regional_get_mem(z->region);
+	m += z->namelen + regional_get_mem(z->region);
 	lock_rw_unlock(&z->lock);
 	return m;
 }

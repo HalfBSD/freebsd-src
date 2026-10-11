@@ -173,3 +173,24 @@ No configuration-directory migration or Capsicum implementation was performed.
 This update accompanies the authorized implementation commit; nothing pushed.
 Full inventory, measurements, stage results and handoff context are in
 UNBOUND-POLICY-REMOVAL-HANDOFF.txt.
+
+
+2026-10-11: fourth pass — DNS client ACLs removed
+------------------------------------------------
+Started from clean committed checkpoint 30fbbb37ffef after independent RPZ and
+response-IP tests. Removed source/interface DNS admission, client tags and
+network-specific local-zone overrides, parser/option interfaces, reload tables,
+statistics and the ACL implementation files. Default IPv4 DNS now binds
+0.0.0.0:53 for UDP/TCP using existing packet-destination support; no interface
+discovery service was introduced. Global local records, DNSSEC, forwarding,
+caches, cookies, resource limits and authenticated control remain.
+Managed-main configuration migration strips obsolete policy entries without
+changing directories. Custom includes require administrator cleanup.
+All four utilities build; 25 forwarding, 9 provider and 3 setup groups pass.
+IPFW audit has 3 source/mock groups, not native packet-filter tests. Source
+ordering is ipfw -> netwait -> local_unbound, but default policy is open and
+failed rule loads can leave the accepting fallback. Trusted-LAN DNS/SSH rules
+are missing from workstation mode. Firewall corrections remain a separate task.
+A TCP quota-release issue was reproduced in baseline and reduced builds and is
+reported separately, not introduced or fixed here. Included in the user-authorized fourth-pass implementation commit; not pushed.
+Measurements and complete handoff: UNBOUND-FOURTH-PASS-HANDOFF.txt.

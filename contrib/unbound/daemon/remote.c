@@ -1103,8 +1103,6 @@ print_ext(RES* ssl, struct ub_stats_info* s, int inhibit_zero)
 	if(!ssl_printf(ssl, "num.query.aggressive.NXDOMAIN"SQ"%lu\n",
 		(unsigned long)s->svr.num_neg_cache_nxdomain)) return 0;
 	/* threat detection */
-	if(!ssl_printf(ssl, "unwanted.queries"SQ"%lu\n",
-		(unsigned long)s->svr.unwanted_queries)) return 0;
 	if(!ssl_printf(ssl, "unwanted.replies"SQ"%lu\n",
 		(unsigned long)s->svr.unwanted_replies)) return 0;
 	/* cache counts */
@@ -4046,10 +4044,6 @@ struct fast_reload_construct {
 	struct iter_forwards* fwds;
 	/** construct for stubs */
 	struct iter_hints* hints;
-	/** construct for access control */
-	struct acl_list* acl;
-	/** construct for access control interface */
-	struct acl_list* acl_interface;
 	/** construct for tcp connection limit */
 	struct tcl_list* tcl;
 	/** construct for local zones */
@@ -4131,65 +4125,11 @@ fr_read_config(struct fast_reload_thread* fr, struct config_file** newcfg)
 	return 1;
 }
 
-/** Check if two taglists are equal. */
-static int
-taglist_equal(char** tagname_a, int num_tags_a, char** tagname_b,
-	int num_tags_b)
-{
-	int i;
-	if(num_tags_a != num_tags_b)
-		return 0;
-	for(i=0; i<num_tags_a; i++) {
-		if(strcmp(tagname_a[i], tagname_b[i]) != 0)
-			return 0;
-	}
-	return 1;
-}
 
-/** Check the change from a to b is only new entries at the end. */
-static int
-taglist_change_at_end(char** tagname_a, int num_tags_a, char** tagname_b,
-	int num_tags_b)
-{
-	if(num_tags_a < 0 || num_tags_b < 0)
-		return 0;
-	if(num_tags_a >= num_tags_b)
-		return 0;
-	/* So, b is longer than a. Check if the initial start of the two
-	 * taglists is the same. */
-	if(!taglist_equal(tagname_a, num_tags_a, tagname_b, num_tags_a))
-		return 0;
-	return 1;
-}
 
-/** fast reload thread, check tag defines. */
-static int
-fr_check_tag_defines(struct fast_reload_thread* fr, struct config_file* newcfg)
-{
-	/* The tags are kept in a bitlist for items. Some of them are stored
-	 * in query info. If the tags change, then the old values are
-	 * inaccurate. The solution is to then flush the query list.
-	 * Unless the change only involves adding new tags at the end, that
-	 * needs no changes. */
-	if(!taglist_equal(fr->worker->daemon->cfg->tagname,
-			fr->worker->daemon->cfg->num_tags, newcfg->tagname,
-			newcfg->num_tags) &&
-		!taglist_change_at_end(fr->worker->daemon->cfg->tagname,
-			fr->worker->daemon->cfg->num_tags, newcfg->tagname,
-			newcfg->num_tags)) {
-		/* The tags have changed too much, the define-tag config. */
-		if(fr->fr_drop_mesh)
-			return 1; /* already dropping queries */
-		fr->fr_drop_mesh = 1;
-		fr->worker->daemon->fast_reload_drop_mesh = fr->fr_drop_mesh;
-		if(!fr_output_printf(fr, "tags have changed, with "
-			"'define-tag', and the queries have to be dropped "
-			"for consistency, setting '+d'\n"))
-			return 0;
-		fr_send_notification(fr, fast_reload_notification_printout);
-	}
-	return 1;
-}
+
+
+
 
 /** fast reload thread, add incompatible option to the explanatory string */
 static void
@@ -4416,8 +4356,6 @@ fr_construct_clear(struct fast_reload_construct* ct)
 	forwards_delete(ct->fwds);
 	hints_delete(ct->hints);
 	local_zones_delete(ct->local_zones);
-	acl_list_delete(ct->acl);
-	acl_list_delete(ct->acl_interface);
 	tcl_list_delete(ct->tcl);
 	edns_strings_delete(ct->edns_strings);
 	anchors_delete(ct->anchors);
@@ -4467,28 +4405,9 @@ getmem_config_str2list(struct config_str2list* p)
 	return m;
 }
 
-/** get memory for str3list */
-static size_t
-getmem_config_str3list(struct config_str3list* p)
-{
-	size_t m = 0;
-	struct config_str3list* s;
-	for(s = p; s; s = s->next)
-		m += sizeof(*s) + getmem_str(s->str) + getmem_str(s->str2)
-			+ getmem_str(s->str3);
-	return m;
-}
 
-/** get memory for strbytelist */
-static size_t
-getmem_config_strbytelist(struct config_strbytelist* p)
-{
-	size_t m = 0;
-	struct config_strbytelist* s;
-	for(s = p; s; s = s->next)
-		m += sizeof(*s) + getmem_str(s->str) + (s->str2?s->str2len:0);
-	return m;
-}
+
+
 
 /** get memory used by ifs array */
 static size_t
@@ -4549,7 +4468,6 @@ config_file_getmem(struct config_file* cfg)
 	m += getmem_config_stub(cfg->forwards);
 	m += getmem_config_auth(cfg->auths);
 	m += getmem_config_strlist(cfg->donotqueryaddrs);
-	m += getmem_config_str2list(cfg->acls);
 	m += getmem_config_str2list(cfg->tcp_connection_limits);
 	m += getmem_config_strlist(cfg->caps_whitelist);
 	m += getmem_config_strlist(cfg->private_address);
@@ -4578,16 +4496,6 @@ config_file_getmem(struct config_file* cfg)
 	m += getmem_config_strlist(cfg->local_zones_ipset);
 #endif
 	m += getmem_config_strlist(cfg->local_data);
-	m += getmem_config_str3list(cfg->local_zone_overrides);
-	m += getmem_config_strbytelist(cfg->local_zone_tags);
-	m += getmem_config_strbytelist(cfg->acl_tags);
-	m += getmem_config_str3list(cfg->acl_tag_actions);
-	m += getmem_config_str3list(cfg->acl_tag_datas);
-	m += getmem_config_str2list(cfg->interface_actions);
-	m += getmem_config_strbytelist(cfg->interface_tags);
-	m += getmem_config_str3list(cfg->interface_tag_actions);
-	m += getmem_config_str3list(cfg->interface_tag_datas);
-	m += getmem_ifs(cfg->num_tags, cfg->tagname);
 	m += getmem_config_strlist(cfg->control_ifs.first);
 	m += getmem_str(cfg->server_key_file);
 	m += getmem_str(cfg->server_cert_file);
@@ -4620,8 +4528,6 @@ fr_printmem(struct fast_reload_thread* fr,
 	mem += forwards_get_mem(ct->fwds);
 	mem += hints_get_mem(ct->hints);
 	mem += local_zones_get_mem(ct->local_zones);
-	mem += acl_list_get_mem(ct->acl);
-	mem += acl_list_get_mem(ct->acl_interface);
 	mem += tcl_list_get_mem(ct->tcl);
 	mem += edns_strings_get_mem(ct->edns_strings);
 	mem += anchors_get_mem(ct->anchors);
@@ -4635,26 +4541,7 @@ fr_printmem(struct fast_reload_thread* fr,
 	return 1;
 }
 
-/** fast reload thread, setup the acl_interface for the ports that
- * the server has. */
-static int
-ct_acl_interface_setup_ports(struct acl_list* acl_interface,
-	struct daemon* daemon)
-{
-	/* clean acl_interface */
-	acl_interface_init(acl_interface);
-	if(!setup_acl_for_ports(acl_interface, daemon->ports[0]))
-		return 0;
-	if(daemon->reuseport) {
-		size_t i;
-		for(i=1; i<daemon->num_ports; i++) {
-			if(!setup_acl_for_ports(acl_interface,
-				daemon->ports[i]))
-				return 0;
-		}
-	}
-	return 1;
-}
+
 
 /** fast reload, add new change to list of auth zones */
 static int
@@ -4885,30 +4772,9 @@ fr_construct_from_config(struct fast_reload_thread* fr,
 	if(fr_poll_for_quit(fr))
 		return 1;
 
-	if(!(ct->acl = acl_list_create())) {
-		fr_construct_clear(ct);
-		return 0;
-	}
-	if(!acl_list_apply_cfg(ct->acl, newcfg)) {
-		fr_construct_clear(ct);
-		return 0;
-	}
 	if(fr_poll_for_quit(fr))
 		return 1;
 
-	if(!(ct->acl_interface = acl_list_create())) {
-		fr_construct_clear(ct);
-		return 0;
-	}
-	if(!ct_acl_interface_setup_ports(ct->acl_interface,
-		fr->worker->daemon)) {
-		fr_construct_clear(ct);
-		return 0;
-	}
-	if(!acl_interface_apply_cfg(ct->acl_interface, newcfg)) {
-		fr_construct_clear(ct);
-		return 0;
-	}
 	if(fr_poll_for_quit(fr))
 		return 1;
 
@@ -5254,7 +5120,6 @@ fr_atomic_copy_cfg(struct config_file* oldcfg, struct config_file* cfg,
 	COPY_VAR_ptr(forwards);
 	COPY_VAR_ptr(auths);
 	COPY_VAR_ptr(donotqueryaddrs);
-	COPY_VAR_ptr(acls);
 	COPY_VAR_int(donotquery_localhost);
 	COPY_VAR_ptr(tcp_connection_limits);
 	COPY_VAR_int(harden_short_bufsize);
@@ -5348,26 +5213,11 @@ fr_atomic_copy_cfg(struct config_file* oldcfg, struct config_file* cfg,
 #endif
 	COPY_VAR_int(local_zones_disable_default);
 	COPY_VAR_ptr(local_data);
-	COPY_VAR_ptr(local_zone_overrides);
 	COPY_VAR_int(unblock_lan_zones);
 	COPY_VAR_int(insecure_lan_zones);
-	/* These reference tags
-	COPY_VAR_ptr(local_zone_tags);
-	COPY_VAR_ptr(acl_tags);
-	COPY_VAR_ptr(acl_tag_actions);
-	COPY_VAR_ptr(acl_tag_datas);
-	*/
-	COPY_VAR_ptr(interface_actions);
-	/* These reference tags
-	COPY_VAR_ptr(interface_tags);
-	COPY_VAR_ptr(interface_tag_actions);
-	COPY_VAR_ptr(interface_tag_datas);
-	*/
-	/* This references tags
-	*/
-	/* Not copied because the length and items could then not match.
-	   tagname, num_tags
-	*/
+
+
+
 	COPY_VAR_int(remote_control_enable);
 	/* The first is used to walk through the list but last is
 	 * only used during config read. */
@@ -5651,8 +5501,6 @@ fr_reload_config(struct fast_reload_thread* fr, struct config_file* newcfg,
 	 * towards the state machine for query resolution. */
 	forwards_swap_tree(env->fwds, ct->fwds);
 	hints_swap_tree(env->hints, ct->hints);
-	acl_list_swap_tree(daemon->acl, ct->acl);
-	acl_list_swap_tree(daemon->acl_interface, ct->acl_interface);
 	tcl_list_swap_tree(daemon->tcl, ct->tcl);
 	local_zones_swap_tree(daemon->local_zones, ct->local_zones);
 	auth_zones_swap(env->auth_zones, ct->auth_zones);
@@ -5788,10 +5636,6 @@ fr_load_config(struct fast_reload_thread* fr, struct timeval* time_read,
 	}
 
 	/* Check if the config can be loaded */
-	if(!fr_check_tag_defines(fr, newcfg)) {
-		config_delete(newcfg);
-		return 0;
-	}
 	if(!fr_check_compat_cfg(fr, newcfg)) {
 		config_delete(newcfg);
 		return 0;

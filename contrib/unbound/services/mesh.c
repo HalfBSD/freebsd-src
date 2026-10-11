@@ -73,20 +73,6 @@
 #include <netdb.h>
 #endif
 
-/** Compare two views by name */
-static int
-view_name_compare(const char* v_a, const char* v_b)
-{
-	if(v_a == NULL && v_b == NULL)
-		return 0;
-	/* The NULL name is smaller than if the name is set. */
-	if(v_a == NULL)
-		return -1;
-	if(v_b == NULL)
-		return 1;
-	return strcmp(v_a, v_b);
-}
-
 /**
  * Compare two response-ip client info entries for the purpose of mesh state
  * compare.  It returns 0 if ci_a and ci_b are considered equal; otherwise
@@ -100,9 +86,6 @@ view_name_compare(const char* v_a, const char* v_b)
  * expensive; unless tag data are not defined for both or they point to the
  * exact same data in memory (i.e., they come from the same ACL entry), we
  * consider these data different.
- * Likewise, if the client info is associated with views, we don't look into
- * the views.  They are considered different unless they are exactly the same
- * even if the views only differ in the names.
  */
 static int
 client_info_compare(const struct respip_client_info* ci_a,
@@ -142,14 +125,7 @@ client_info_compare(const struct respip_client_info* ci_a,
 	}
 	if(ci_a->tag_datas != ci_b->tag_datas)
 		return ci_a->tag_datas < ci_b->tag_datas ? -1 : 1;
-	if(ci_a->view || ci_a->view_name || ci_b->view || ci_b->view_name) {
-		/* Compare the views by name. */
-		cmp = view_name_compare(
-			(ci_a->view?ci_a->view->name:ci_a->view_name),
-			(ci_b->view?ci_b->view->name:ci_b->view_name));
-		if(cmp != 0)
-			return cmp;
-	}
+
 	return 0;
 }
 
@@ -833,16 +809,7 @@ mesh_copy_client_info(struct regional* region, struct respip_client_info* cinfo)
 			}
 		}
 	}
-	if(cinfo->view) {
-		/* Do not copy the view pointer but store a name instead.
-		 * The name is looked up later when done, this means that
-		 * the view tree can be changed, by reloads. */
-		client_info->view = NULL;
-		client_info->view_name = regional_strdup(region,
-			cinfo->view->name);
-		if(!client_info->view_name)
-			return NULL;
-	}
+
 	return client_info;
 }
 
@@ -2205,7 +2172,6 @@ void mesh_state_remove_reply(struct mesh_area* mesh, struct mesh_state* m,
 				&n->query_reply, mesh->env->cfg);
 
 
-
 			/* prev = prev; */
 			n = n->next;
 			continue;
@@ -2239,8 +2205,7 @@ apply_respip_action(struct module_qstate* qstate,
 		return 1;
 
 	if(!respip_rewrite_reply(qinfo, cinfo, rep, encode_repp, actinfo,
-		alias_rrset, 0, qstate->region, az, NULL, qstate->env->views,
-		qstate->env->respip_set))
+		alias_rrset, 0, qstate->region, az, NULL, qstate->env->respip_set))
 		return 0;
 
 	/* xxx_deny actions mean dropping the reply, unless the original reply
@@ -2314,8 +2279,7 @@ mesh_serve_expired_callback(void* arg)
 		} else if(partial_rep &&
 			!respip_merge_cname(partial_rep, &qstate->qinfo, msg->rep,
 			qstate->client_info, must_validate, &encode_rep, qstate->region,
-			qstate->env->auth_zones, qstate->env->views,
-			qstate->env->respip_set)) {
+			qstate->env->auth_zones, 	qstate->env->respip_set)) {
 			return;
 		}
 		if(!encode_rep || alias_rrset) {

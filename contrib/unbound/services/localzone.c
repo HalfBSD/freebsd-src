@@ -696,7 +696,7 @@ lz_enter_zone_tag(struct local_zones* zones, char* zname, uint8_t* list,
 		return 0;
 	}
 	dname_labs = dname_count_labels(dname);
-	
+
 	lock_rw_rdlock(&zones->lock);
 	z = local_zones_find(zones, dname, dname_len, dname_labs, rr_class);
 	if(!z) {
@@ -1178,7 +1178,7 @@ lz_enter_zone_tags(struct local_zones* zones, struct config_file* cfg)
 	if(c) verbose(VERB_ALGO, "applied tags to %d local zones", c);
 	return 1;
 }
-	
+
 /** enter auth data */
 static int
 lz_enter_data(struct local_zones* zones, struct config_file* cfg)
@@ -1423,7 +1423,7 @@ local_data_find_tag_datas(const struct query_info* qinfo,
 		rdr_type = sldns_wirerr_get_type(rr, len, 1);
 		if(rdr_type != qinfo->qtype && rdr_type != LDNS_RR_TYPE_CNAME)
 			continue;
-		
+
 		/* do we have entries already? if not setup key */
 		if(r->rk.dname == NULL) {
 			r->entry.key = r;
@@ -1876,7 +1876,7 @@ local_zones_answer(struct local_zones* zones, struct module_env* env,
 	struct regional* temp, struct comm_reply* repinfo, uint8_t* taglist,
 	size_t taglen, uint8_t* tagactions, size_t tagactionssize,
 	struct config_strlist** tag_datas, size_t tag_datas_size,
-	char** tagname, int num_tags, struct view* view)
+	char** tagname, int num_tags)
 {
 	/* see if query is covered by a zone,
 	 * 	if so:	- try to match (exact) local data 
@@ -1887,40 +1887,7 @@ local_zones_answer(struct local_zones* zones, struct module_env* env,
 	enum localzone_type lzt = local_zone_transparent;
 	int r, tag = -1;
 
-	if(view) {
-		lock_rw_rdlock(&view->lock);
-		if(view->local_zones &&
-			(z = local_zones_lookup(view->local_zones,
-			qinfo->qname, qinfo->qname_len, labs,
-			qinfo->qclass, qinfo->qtype, 0))) {
-			lock_rw_rdlock(&z->lock);
-			lzt = z->type;
-		}
-		if(lzt == local_zone_noview) {
-			lock_rw_unlock(&z->lock);
-			z = NULL;
-		}
-		if(z && (lzt == local_zone_transparent ||
-			lzt == local_zone_typetransparent ||
-			lzt == local_zone_inform ||
-			lzt == local_zone_always_transparent ||
-			lzt == local_zone_block_a) &&
-			local_zone_does_not_cover(z, qinfo, labs)) {
-			lock_rw_unlock(&z->lock);
-			z = NULL;
-		}
-		if(view->local_zones && !z && !view->isfirst){
-			lock_rw_unlock(&view->lock);
-			return 0;
-		}
-		if(z && verbosity >= VERB_ALGO) {
-			char zname[LDNS_MAX_DOMAINLEN];
-			dname_str(z->name, zname);
-			verbose(VERB_ALGO, "using localzone %s %s from view %s", 
-				zname, local_zone_type2str(lzt), view->name);
-		}
-		lock_rw_unlock(&view->lock);
-	}
+
 	if(!z) {
 		/* try global local_zones tree */
 		lock_rw_rdlock(&zones->lock);
@@ -1989,7 +1956,6 @@ const char* local_zone_type2str(enum localzone_type t)
 		case local_zone_always_nodata: return "always_nodata";
 		case local_zone_always_deny: return "always_deny";
 		case local_zone_always_null: return "always_null";
-		case local_zone_noview: return "noview";
 		case local_zone_truncate: return "truncate";
 		case local_zone_invalid: return "invalid";
 	}
@@ -2030,8 +1996,6 @@ int local_zone_str2type(const char* type, enum localzone_type* t)
 		*t = local_zone_always_deny;
 	else if(strcmp(type, "always_null") == 0)
 		*t = local_zone_always_null;
-	else if(strcmp(type, "noview") == 0)
-		*t = local_zone_noview;
 	else if(strcmp(type, "truncate") == 0)
 		*t = local_zone_truncate;
 	else if(strcmp(type, "nodefault") == 0)

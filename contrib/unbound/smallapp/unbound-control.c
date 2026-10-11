@@ -184,15 +184,7 @@ usage(void)
 	printf("  list_auth_zones		list auth zones (includes RPZ zones)\n");
 	printf("  auth_zone_reload zone		reload auth zone (or RPZ zone) from zonefile\n");
 	printf("  auth_zone_transfer zone	transfer auth zone (or RPZ zone) from master\n");
-	printf("  view_list_local_zones	view	list local-zones in view\n");
-	printf("  view_list_local_data	view	list local-data RRs in view\n");
-	printf("  view_local_zone view name type  	add local-zone in view\n");
-	printf("  view_local_zone_remove view name  	remove local-zone in view\n");
-	printf("  view_local_data view RR...		add local-data in view\n");
-	printf("  view_local_datas view 		add list of local-data to view\n");
 	printf("  					one entry per line read from stdin\n");
-	printf("  view_local_data_remove view name  	remove local-data in view\n");
-	printf("  view_local_datas_remove view 		remove list of local-data from view\n");
 	printf("  					one entry per line read from stdin\n");
 	printf("  rpz_enable zone		Enable the RPZ zone if it had previously\n");
 	printf("  				been disabled\n");
@@ -352,8 +344,6 @@ static void print_extended(struct ub_stats_info* s, int inhibit_zero)
 	PR_UL("num.query.tcp", s->svr.qtcp);
 	PR_UL("num.query.tcpout", s->svr.qtcp_outgoing);
 	PR_UL("num.query.udpout", s->svr.qudp_outgoing);
-	PR_UL("num.query.tls", s->svr.qtls);
-	PR_UL("num.query.tls_resume", s->svr.qtls_resume);
 	PR_UL("num.query.ipv6", s->svr.qipv6);
 
 	/* flags */
@@ -813,12 +803,6 @@ check_args_for_listcmd(int argc, char* argv[])
 		fatal_exit("too many arguments for command '%s', "
 			"content is piped in from stdin", argv[0]);
 	}
-	if(argc >= 1 && (strcmp(argv[0], "view_local_datas") == 0 ||
-		strcmp(argv[0], "view_local_datas_remove") == 0) &&
-		argc >= 3) {
-		fatal_exit("too many arguments for command '%s', "
-			"content is piped in from stdin", argv[0]);
-	}
 }
 
 /** send stdin to server */
@@ -862,9 +846,7 @@ go_cmd(SSL* ssl, int fd, int quiet, int argc, char* argv[])
 	else if(argc >= 1 && (strcmp(argv[0], "local_zones") == 0 ||
 		strcmp(argv[0], "local_zones_remove") == 0 ||
 		strcmp(argv[0], "local_datas") == 0 ||
-		strcmp(argv[0], "view_local_datas") == 0 ||
-		strcmp(argv[0], "local_datas_remove") == 0 ||
-		strcmp(argv[0], "view_local_datas_remove") == 0)) {
+		strcmp(argv[0], "local_datas_remove") == 0)) {
 		send_file(ssl, fd, stdin, buf, sizeof(buf));
 		send_eof(ssl, fd);
 	}

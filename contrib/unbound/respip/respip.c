@@ -23,7 +23,6 @@
 #include "util/data/msgreply.h"
 #include "util/storage/dnstree.h"
 #include "respip/respip.h"
-#include "services/view.h"
 #include "sldns/rrdef.h"
 #include "util/data/dname.h"
 
@@ -411,60 +410,6 @@ respip_global_apply_cfg(struct respip_set* set, struct config_file* cfg)
 	cfg->respip_actions = NULL;
 	cfg->respip_tags = NULL;
 	return ret;
-}
-
-/** Iterate through raw view data and apply the view-specific respip
- * configuration; at this point we should have already seen all the views,
- * so if any of the views that respip data refer to does not exist, that's
- * an error.  This additional iteration through view configuration data
- * is expected to not have significant performance impact (or rather, its
- * performance impact is not expected to be prohibitive in the configuration
- * processing phase).
- */
-int
-respip_views_apply_cfg(struct views* vs, struct config_file* cfg,
-	int* have_view_respip_cfg)
-{
-	struct config_view* cv;
-	struct view* v;
-	int ret;
-
-	for(cv = cfg->views; cv; cv = cv->next) {
-
-		/** if no respip config for this view then there's
-		  * nothing to do; note that even though respip data must go
-		  * with respip action, we're checking for both here because
-		  * we want to catch the case where the respip action is missing
-		  * while the data is present */
-		if(!cv->respip_actions && !cv->respip_data)
-			continue;
-
-		if(!(v = views_find_view(vs, cv->name, 1))) {
-			log_err("view '%s' unexpectedly missing", cv->name);
-			return 0;
-		}
-		if(!v->respip_set) {
-			v->respip_set = respip_set_create();
-			if(!v->respip_set) {
-				log_err("out of memory");
-				lock_rw_unlock(&v->lock);
-				return 0;
-			}
-		}
-		ret = respip_set_apply_cfg(v->respip_set, NULL, 0, NULL,
-			cv->respip_actions, cv->respip_data);
-		lock_rw_unlock(&v->lock);
-		if(!ret) {
-			log_err("Error while applying respip configuration "
-				"for view '%s'", cv->name);
-			return 0;
-		}
-		*have_view_respip_cfg = (*have_view_respip_cfg ||
-			v->respip_set->ip_tree.count);
-		cv->respip_actions = NULL;
-		cv->respip_data = NULL;
-	}
-	return 1;
 }
 
 /**
@@ -876,7 +821,7 @@ respip_rewrite_reply(const struct query_info* qinfo,
 	struct reply_info** new_repp, struct respip_action_info* actinfo,
 	struct ub_packed_rrset_key** alias_rrset, int search_only,
 	struct regional* region, struct auth_zones* az, int* rpz_passthru,
-	struct views* views, struct respip_set* ipset)
+	struct respip_set* ipset)
 {
 	const uint8_t* ctaglist;
 	size_t ctaglen;
@@ -884,7 +829,6 @@ respip_rewrite_reply(const struct query_info* qinfo,
 	size_t tag_actions_size;
 	struct config_strlist** tag_datas;
 	size_t tag_datas_size;
-	struct view* view = NULL;
 	size_t rrset_id = 0, rr_id = 0;
 	enum respip_action action = respip_none;
 	int tag = -1;
@@ -907,49 +851,10 @@ respip_rewrite_reply(const struct query_info* qinfo,
 	tag_actions_size = cinfo->tag_actions_size;
 	tag_datas = cinfo->tag_datas;
 	tag_datas_size = cinfo->tag_datas_size;
-	if(cinfo->view) {
-		view = cinfo->view;
-		lock_rw_rdlock(&view->lock);
-	} else if(cinfo->view_name) {
-		view = views_find_view(views, cinfo->view_name, 0);
-		if(!view) {
-			/* If the view no longer exists, the rewrite can not
-			 * be processed further. */
-			verbose(VERB_ALGO, "respip: failed because view %s no "
-				"longer exists", cinfo->view_name);
-			return 0;
-		}
-		/* The view is rdlocked by views_find_view. */
-	}
+
 
 	log_assert(ipset);
 
-	/** Try to use response-ip config from the view first; use
-	  * global response-ip config if we don't have the view or we don't
-	  * have the matching per-view config (and the view allows the use
-	  * of global data in this case).
-	  * Note that we lock the view even if we only use view members that
-	  * currently don't change after creation.  This is for safety for
-	  * future possible changes as the view documentation seems to expect
-	  * any of its member can change in the view's lifetime.
-	  * Note also that we assume 'view' is valid in this function, which
-	  * should be safe (see unbound bug #1191) */
-	if(view) {
-		if(view->respip_set) {
-			if((raddr = respip_addr_lookup(rep,
-				view->respip_set, &rrset_id, &rr_id))) {
-				/** for per-view respip directives the action
-				 * can only be direct (i.e. not tag-based) */
-				action = raddr->action;
-			}
-		}
-		if(!raddr && !view->isfirst)
-			goto done;
-		if(!raddr && view->isfirst) {
-			lock_rw_unlock(&view->lock);
-			view = NULL;
-		}
-	}
 	if(!raddr && (raddr = respip_addr_lookup(rep, ipset,
 		&rrset_id, &rr_id))) {
 		action = (enum respip_action)local_data_find_tag_action(
@@ -973,9 +878,7 @@ respip_rewrite_reply(const struct query_info* qinfo,
 					lock_rw_unlock(&raddr->lock);
 					lock_rw_unlock(&a->lock);
 					lock_rw_unlock(&az->rpz_lock);
-					if(view) {
-                    	lock_rw_unlock(&view->lock);
-					}
+
 					return 0;
 				}
 				if(rpz_used) {
@@ -1034,9 +937,7 @@ respip_rewrite_reply(const struct query_info* qinfo,
 		}
 	}
   done:
-	if(view) {
-		lock_rw_unlock(&view->lock);
-	}
+
 	if(ret) {
 		/* If we're redirecting the original answer to a
 		 * CNAME, record the CNAME rrset so the caller can take
@@ -1124,7 +1025,7 @@ respip_operate(struct module_qstate* qstate, enum module_ev event, int id,
 				qstate->client_info, qstate->return_msg->rep,
 				&new_rep, &actinfo, &alias_rrset, 0,
 				qstate->region, qstate->env->auth_zones,
-				&qstate->rpz_passthru, qstate->env->views,
+				&qstate->rpz_passthru,
 				qstate->env->respip_set)) {
 				goto servfail;
 			}
@@ -1173,8 +1074,7 @@ respip_merge_cname(struct reply_info* base_rep,
 	const struct query_info* qinfo, const struct reply_info* tgt_rep,
 	const struct respip_client_info* cinfo, int must_validate,
 	struct reply_info** new_repp, struct regional* region,
-	struct auth_zones* az, struct views* views,
-	struct respip_set* respip_set)
+	struct auth_zones* az, struct respip_set* respip_set)
 {
 	struct reply_info* new_rep;
 	struct reply_info* tmp_rep = NULL; /* just a placeholder */
@@ -1201,7 +1101,7 @@ respip_merge_cname(struct reply_info* base_rep,
 
 	/* see if the target reply would be subject to a response-ip action. */
 	if(!respip_rewrite_reply(qinfo, cinfo, tgt_rep, &tmp_rep, &actinfo,
-		&alias_rrset, 1, region, az, NULL, views, respip_set))
+		&alias_rrset, 1, region, az, NULL, respip_set))
 		return 0;
 	if(actinfo.action != respip_none) {
 		log_info("CNAME target of redirect response-ip action would "
@@ -1255,8 +1155,7 @@ respip_inform_super(struct module_qstate* qstate, int id,
 	if(!respip_merge_cname(super->return_msg->rep, &qstate->qinfo,
 		qstate->return_msg->rep, super->client_info,
 		super->env->need_to_validate, &new_rep, super->region,
-		qstate->env->auth_zones, qstate->env->views,
-		qstate->env->respip_set))
+		qstate->env->auth_zones, qstate->env->respip_set))
 		goto fail;
 	super->return_msg->rep = new_rep;
 	return;

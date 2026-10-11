@@ -24,7 +24,7 @@ struct respip_set {
 	struct regional* region;
 	struct rbtree_type ip_tree;
 	lock_rw_type lock;	/* lock on the respip tree. It is ordered
-		after views and before hints, stubs and local zones. */
+		before hints, stubs and local zones. */
 	char* const* tagname;	/* shallow copy of tag names, for logging */
 	int num_tags;		/* number of tagname entries */
 };
@@ -47,12 +47,6 @@ struct resp_addr {
 };
 
 
-/**
- * Forward declaration for the structure that represents a tree of view data.
- */
-
-struct views;
-
 struct respip_addr_info;
 
 /**
@@ -68,12 +62,6 @@ struct respip_client_info {
 	size_t tag_actions_size;
 	struct config_strlist** tag_datas;
 	size_t tag_datas_size;
-	/** The view for the action, during cache callback that is by
-	 * pointer. */
-	struct view* view;
-	/** If from module query state, the view pointer is NULL, but the
-	 * name is stored in reference to the view. */
-	char* view_name;
 };
 
 /**
@@ -110,7 +98,7 @@ struct respip_set* respip_set_create(void);
 void respip_set_delete(struct respip_set* set);
 
 /**
- * Apply response-ip config settings to the global (default) view.
+ * Apply response-ip config settings to the global configuration.
  * It assumes exclusive access to set (no internal locks).
  * @param set: processed global respip config data
  * @param cfg: config data.
@@ -118,16 +106,6 @@ void respip_set_delete(struct respip_set* set);
  */
 int respip_global_apply_cfg(struct respip_set* set, struct config_file* cfg);
 
-/**
- * Apply response-ip config settings in named views.
- * @param vs: view structures with processed config data
- * @param cfg: config data.
- * @param have_view_respip_cfg: set to true if any named view has respip
- * 	configuration; otherwise set to false
- * @return 1 on success, 0 on error.
- */
-int respip_views_apply_cfg(struct views* vs, struct config_file* cfg,
-	int* have_view_respip_cfg);
 
 /**
  * Merge two replies to build a complete CNAME chain.
@@ -153,16 +131,14 @@ int respip_views_apply_cfg(struct views* vs, struct config_file* cfg,
  *   on error.
  * @param region: allocator to build *new_repp.
  * @param az: auth zones containing RPZ information.
- * @param views: views tree to lookup view used.
- * @param respip_set: the respip set for the global view.
+ * @param respip_set: the respip set for the global configuration.
  * @return 1 on success, 0 on error.
  */
 int respip_merge_cname(struct reply_info* base_rep,
 	const struct query_info* qinfo, const struct reply_info* tgt_rep,
 	const struct respip_client_info* cinfo, int must_validate,
 	struct reply_info** new_repp, struct regional* region,
-	struct auth_zones* az, struct views* views,
-	struct respip_set* respip_set);
+	struct auth_zones* az, struct respip_set* respip_set);
 
 /**
  * See if any IP-based action should apply to any IP address of AAAA/A answer
@@ -185,8 +161,7 @@ int respip_merge_cname(struct reply_info* base_rep,
  * @param region: allocator to build *new_repp.
  * @param rpz_passthru: keeps track of query state can have passthru that
  *   stops further rpz processing. Or NULL for cached answer processing.
- * @param views: views tree to lookup view used.
- * @param ipset: the respip set for the global view.
+ * @param ipset: the respip set for the global configuration.
  * @return 1 on success, 0 on error.
  */
 int respip_rewrite_reply(const struct query_info* qinfo,
@@ -195,7 +170,7 @@ int respip_rewrite_reply(const struct query_info* qinfo,
 	struct respip_action_info* actinfo,
 	struct ub_packed_rrset_key** alias_rrset,
 	int search_only, struct regional* region, struct auth_zones* az,
-	int* rpz_passthru, struct views* views, struct respip_set* ipset);
+	int* rpz_passthru, struct respip_set* ipset);
 
 /**
  * Get the response-ip function block.

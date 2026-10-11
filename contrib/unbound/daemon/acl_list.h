@@ -43,7 +43,6 @@
 #ifndef DAEMON_ACL_LIST_H
 #define DAEMON_ACL_LIST_H
 #include "util/storage/dnstree.h"
-#include "services/view.h"
 struct config_file;
 struct regional;
 
@@ -109,8 +108,6 @@ struct acl_addr {
 	size_t tag_datas_size;
 	/* If the acl node is for an interface */
 	int is_interface;
-	/* view element, NULL if none */
-	struct view* view;
 };
 
 /**
@@ -143,11 +140,9 @@ acl_interface_insert(struct acl_list* acl_interface,
  * Process access control config.
  * @param acl: where to store.
  * @param cfg: config options.
- * @param v: views structure
  * @return 0 on error.
  */
-int acl_list_apply_cfg(struct acl_list* acl, struct config_file* cfg,
-	struct views* v);
+int acl_list_apply_cfg(struct acl_list* acl, struct config_file* cfg);
 
 /**
  * Initialise (also clean) the acl_interface struct.
@@ -159,11 +154,9 @@ void acl_interface_init(struct acl_list* acl_interface);
  * Process interface control config.
  * @param acl_interface: where to store.
  * @param cfg: config options.
- * @param v: views structure
  * @return 0 on error.
  */
-int acl_interface_apply_cfg(struct acl_list* acl_interface, struct config_file* cfg,
-	struct views* v);
+int acl_interface_apply_cfg(struct acl_list* acl_interface, struct config_file* cfg);
 
 /**
  * Lookup access control status for acl structure.

@@ -87,8 +87,6 @@ enum listen_type {
 	listen_type_tcp,
 	/** udp ipv6 (v4mapped) for use with ancillary data */
 	listen_type_udpancil,
-	/** ssl over tcp type */
-	listen_type_ssl,
 };
 
 /*
@@ -169,7 +167,6 @@ int resolve_interface_names(char** ifs, int num_ifs,
  * 	from clients.
  * @param tcp_idle_timeout: idle timeout for TCP connections in msec.
  * @param tcp_conn_limit: TCP connection limit info.
- * @param dot_sslctx: nonNULL if dot ssl context.
  * @param cb: callback function when a request arrives. It is passed
  *	  the packet and user argument. Return true to send a reply.
  * @param cb_arg: user data argument for callback function.
@@ -179,7 +176,6 @@ struct listen_dnsport*
 listen_create(struct comm_base* base, struct listen_port* ports,
 	size_t bufsize, int tcp_accept_count, int tcp_idle_timeout,
 	struct tcl_list* tcp_conn_limit,
-	void* dot_sslctx,
 	comm_point_callback_type* cb, void *cb_arg);
 
 /**

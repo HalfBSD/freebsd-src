@@ -53,7 +53,6 @@ struct module_env;
 struct rrset_cache;
 struct acl_list;
 struct local_zones;
-struct views;
 struct ub_randstate;
 struct daemon_remote;
 struct respip_set;
@@ -89,22 +88,8 @@ struct daemon {
 	struct listen_port* rc_ports;
 	/** remote control connections management (for first worker) */
 	struct daemon_remote* rc;
-	/** ssl context for listening to dnstcp over ssl */
-	void* listen_dot_sslctx;
 	/** ssl context for connecting to dnstcp over ssl */
 	void* connect_dot_sslctx;
-	/** the file name that the ssl context is made with, private key. */
-	char* ssl_service_key;
-	/** the file name that the ssl context is made with, certificate. */
-	char* ssl_service_pem;
-	/** modification time for ssl_service_key, in sec and ns. Like
-	 * in a struct timespec, but without that for portability. */
-	time_t mtime_ssl_service_key;
-	long mtime_ns_ssl_service_key;
-	/** modification time for ssl_service_pem, in sec and ns. Like
-	 * in a struct timespec, but without that for portability. */
-	time_t mtime_ssl_service_pem;
-	long mtime_ns_ssl_service_pem;
 	/** num threads allocated */
 	int num;
 	/** num threads allocated in the previous config or 0 at first */
@@ -226,13 +211,6 @@ int setup_acl_for_ports(struct acl_list* list, struct listen_port* port_list);
 
 /* setups the needed ssl contexts, fatal_exit() on any failure */
 void daemon_setup_sslctxs(struct daemon* daemon, struct config_file* cfg);
-
-/** See if the SSL cert files have changed */
-int ssl_cert_changed(struct daemon* daemon, struct config_file* cfg);
-
-/** Setup the listening DoT SSL_CTX, returns the ssl ctx. */
-void* daemon_setup_listen_dot_sslctx(struct daemon* daemon,
-	struct config_file* cfg);
 
 
 /** Setup the connect DoT SSL_CTX, returns the ssl ctx */

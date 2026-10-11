@@ -56,7 +56,6 @@
 #include "validator/validator.h"
 #include "services/localzone.h"
 #include "services/listen_dnsport.h"
-#include "services/view.h"
 #include "services/authzone.h"
 #include "respip/respip.h"
 #include "sldns/sbuffer.h"
@@ -240,9 +239,9 @@ localzonechecks(struct config_file* cfg)
 	local_zones_delete(zs);
 }
 
-/** checks for acl and views */
+/** checks for ACL tags */
 static void
-acl_view_tag_checks(struct config_file* cfg, struct views* views)
+acl_tag_checks(struct config_file* cfg)
 {
 	int d;
 	struct sockaddr_storage a;
@@ -250,23 +249,6 @@ acl_view_tag_checks(struct config_file* cfg, struct views* views)
 	struct config_str2list* acl;
 	struct config_str3list* s3;
 	struct config_strbytelist* sb;
-
-	/* acl_view */
-	for(acl=cfg->acl_view; acl; acl = acl->next) {
-		struct view* v;
-		if(!netblockstrtoaddr(acl->str, UNBOUND_DNS_PORT, &a, &alen,
-			&d)) {
-			fatal_exit("cannot parse access-control-view "
-				"address %s %s", acl->str, acl->str2);
-		}
-		v = views_find_view(views, acl->str2, 0);
-		if(!v) {
-			fatal_exit("cannot find view for "
-				"access-control-view: %s %s",
-				acl->str, acl->str2);
-		}
-		lock_rw_unlock(&v->lock);
-	}
 
 	/* acl_tags */
 	for(sb=cfg->acl_tags; sb; sb = sb->next) {
@@ -328,29 +310,23 @@ acl_view_tag_checks(struct config_file* cfg, struct views* views)
 	}
 }
 
-/** check view and response-ip configuration */
+/** check response-ip configuration */
 static void
-view_and_respipchecks(struct config_file* cfg)
+respipchecks(struct config_file* cfg)
 {
-	struct views* views = NULL;
 	struct respip_set* respip = NULL;
-	int have_view_respip_cfg = 0;
 	int use_response_ip = 0;
-	if(!(views = views_create()))
-		fatal_exit("Could not create views: out of memory");
+
 	if(!(respip = respip_set_create()))
 		fatal_exit("Could not create respip set: out of memory");
-	if(!views_apply_cfg(views, cfg))
-		fatal_exit("Could not set up views");
+
 	if(!respip_global_apply_cfg(respip, cfg))
 		fatal_exit("Could not setup respip set");
-	if(!respip_views_apply_cfg(views, cfg, &have_view_respip_cfg))
-		fatal_exit("Could not setup per-view respip sets");
-	use_response_ip = !respip_set_is_empty(respip) || have_view_respip_cfg;
+
+	use_response_ip = !respip_set_is_empty(respip);
 	if(use_response_ip && !strstr(cfg->module_conf, "respip"))
 		fatal_exit("response-ip options require respip module");
-	acl_view_tag_checks(cfg, views);
-	views_delete(views);
+	acl_tag_checks(cfg);
 	respip_set_delete(respip);
 }
 
@@ -842,7 +818,7 @@ morechecks(struct config_file* cfg)
 
 	donotquerylocalhostcheck(cfg);
 	localzonechecks(cfg);
-	view_and_respipchecks(cfg);
+	respipchecks(cfg);
 }
 
 /** check forwards */

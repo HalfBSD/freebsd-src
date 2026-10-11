@@ -363,16 +363,7 @@ service_init(int r, struct daemon** d, struct config_file** c)
 		config_delete(cfg);
 		return 0;
 	}
-	if(cfg->ssl_service_key && cfg->ssl_service_key[0]) {
-		if(!(daemon->listen_dot_sslctx = listen_sslctx_create(
-			cfg->ssl_service_key, cfg->ssl_service_pem, NULL,
-			cfg->tls_ciphers, cfg->tls_ciphersuites,
-			(cfg->tls_session_ticket_keys.first &&
-			cfg->tls_session_ticket_keys.first->str[0] != 0),
-			1, cfg->tls_protocols))) {
-			fatal_exit("could not set up listen SSL_CTX");
-		}
-	}
+
 	if(!(daemon->connect_dot_sslctx = connect_sslctx_create(NULL, NULL,
 		cfg->tls_cert_bundle, cfg->tls_win_cert)))
 		fatal_exit("could not set up connect SSL_CTX");

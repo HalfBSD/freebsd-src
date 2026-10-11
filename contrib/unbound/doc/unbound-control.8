@@ -127,7 +127,6 @@ memory needs.
 Options that can be changed are for
 \fI\%forwards\fP,
 \fI\%stubs\fP,
-\fI\%views\fP,
 \fI\%authority zones\fP,
 \fI\%RPZ zones\fP and
 \fI\%local zones\fP\&.
@@ -168,8 +167,6 @@ ipset,
 \fI\%tcp\-auth\-query\-timeout\fP,
 \fI\%delay\-close\fP\&.
 \fI\%iter\-scrub\-promiscuous\fP\&.
-\fI\%tls\-service\-key\fP\&.
-\fI\%tls\-service\-pem\fP\&.
 .sp
 It does not work with
 \fI\%interface\fP and
@@ -681,48 +678,6 @@ Disable the RPZ zone.
 .UNINDENT
 .INDENT 0.0
 .TP
-.B view_list_local_zones \fIview\fP 
-\fIlist_local_zones\fP for given view.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B view_local_zone \fIview name type\fP 
-\fIlocal_zone\fP for given view.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B view_local_zone_remove \fIview name\fP 
-\fIlocal_zone_remove\fP for given view.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B view_list_local_data \fIview\fP 
-\fIlist_local_data\fP for given view.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B view_local_data \fIview RR data...\fP 
-\fIlocal_data\fP for given view.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B view_local_data_remove \fIview name\fP 
-\fIlocal_data_remove\fP for given view.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B view_local_datas_remove \fIview\fP 
-Remove a list of \fIlocal_data\fP for given view from stdin.
-Like \fIlocal_datas_remove\fP\&.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B view_local_datas \fIview\fP 
-Add a list of \fIlocal_data\fP for given view from stdin.
-Like \fIlocal_datas\fP\&.
-.UNINDENT
-.INDENT 0.0
-.TP
 .B add_cookie_secret \fIsecret\fP 
 Add or replace a cookie secret persistently.
 \fIsecret\fP needs to be an 128 bit hex string.
@@ -1227,16 +1182,8 @@ Number of queries that the Unbound server made using UDP outgoing towards
 other servers.
 .UNINDENT
 .INDENT 0.0
-.TP
-.B num.query.tls 
-Number of queries that were made using TLS towards the Unbound server.
-These are also counted in num.query.tcp, because TLS uses TCP.
 .UNINDENT
 .INDENT 0.0
-.TP
-.B num.query.tls.resume 
-Number of TLS session resumptions, these are queries over TLS towards the
-Unbound server where the client negotiated a TLS session resumption key.
 .UNINDENT
 .INDENT 0.0
 .UNINDENT

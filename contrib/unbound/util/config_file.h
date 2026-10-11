@@ -44,7 +44,6 @@
 #include "sldns/rrdef.h"
 struct config_stub;
 struct config_auth;
-struct config_view;
 struct config_strlist;
 struct config_str2list;
 struct config_str3list;
@@ -126,26 +125,12 @@ struct config_file {
 	/** proxy protocol ports */
 	struct config_strlist* proxy_protocol_port;
 
-	/** private key file for dnstcp-ssl service (enabled if not NULL) */
-	char* ssl_service_key;
-	/** public key file for dnstcp-ssl service */
-	char* ssl_service_pem;
-	/** port on which to provide ssl service */
-	int ssl_port;
 	/** if outgoing tcp connections use SSL */
 	int ssl_upstream;
 	/** cert bundle for outgoing connections */
 	char* tls_cert_bundle;
 	/** should the system certificate store get added to the cert bundle */
 	int tls_win_cert;
-	/** additional tls ports */
-	struct config_strlist* tls_additional_port;
-	/** secret key used to encrypt and decrypt TLS session ticket */
-	struct config_strlist_head tls_session_ticket_keys;
-	/** TLS ciphers */
-	char* tls_ciphers;
-	/** TLS chiphersuites (TLSv1.3) */
-	char* tls_ciphersuites;
 	/** if SNI is to be used */
 	int tls_use_sni;
 	/** TLS protocols */
@@ -241,8 +226,6 @@ struct config_file {
 	struct config_stub* forwards;
 	/** the auth zone definitions, linked list */
 	struct config_auth* auths;
-	/** the views definitions, linked list */
-	struct config_view* views;
 	/** list of donotquery addresses, linked list */
 	struct config_strlist* donotqueryaddrs;
 	/** list of access control entries, linked list */
@@ -451,8 +434,6 @@ struct config_file {
 	struct config_str3list* acl_tag_actions;
 	/** list of aclname, tagname, redirectdata */
 	struct config_str3list* acl_tag_datas;
-	/** list of aclname, view*/
-	struct config_str2list* acl_view;
 	/** list of interface action entries, linked list */
 	struct config_str2list* interface_actions;
 	/** list of interface, tagbitlist */
@@ -461,8 +442,6 @@ struct config_file {
 	struct config_str3list* interface_tag_actions;
 	/** list of interface, tagname, redirectdata */
 	struct config_str3list* interface_tag_datas;
-	/** list of interface, view*/
-	struct config_str2list* interface_view;
 	/** list of IP-netblock, tagbitlist */
 	struct config_strbytelist* respip_tags;
 	/** list of response-driven access control entries, linked list */
@@ -586,10 +565,6 @@ struct config_file {
 	uint16_t edns_client_string_opcode;
 
 	/** EDNS padding according to RFC7830 and RFC8467 */
-	/** true to enable padding of responses (default: on) */
-	int pad_responses;
-	/** block size with which to pad encrypted responses (default: 468) */
-	size_t pad_responses_block_size;
 	/** true to enable padding of queries (default: on) */
 	int pad_queries;
 	/** block size with which to pad encrypted queries (default: 128) */
@@ -724,32 +699,6 @@ struct config_auth {
 	int zonemd_reject_absence;
 };
 
-/**
- * View config options
- */
-struct config_view {
-	/** next in list */
-	struct config_view* next;
-	/** view name */
-	char* name;
-	/** local zones */
-	struct config_str2list* local_zones;
-	/** local data RRs */
-	struct config_strlist* local_data;
-	/** local zones nodefault list */
-	struct config_strlist* local_zones_nodefault;
-#ifdef USE_IPSET
-	/** local zones ipset list */
-	struct config_strlist* local_zones_ipset;
-#endif
-	/** Fallback to global local_zones when there is no match in the view
-	 * view specific tree. 1 for yes, 0 for no */
-	int isfirst;
-	/** predefined actions for particular IP address responses */
-	struct config_str2list* respip_actions;
-	/** data complementing the 'redirect' response IP actions */
-	struct config_str2list* respip_data;
-};
 
 /**
  * List of strings for config options
@@ -1050,17 +999,6 @@ void config_delauth(struct config_auth* p);
  */
 void config_delauths(struct config_auth* list);
 
-/**
- * Delete a view item
- * @param p: view item
- */
-void config_delview(struct config_view* p);
-
-/**
- * Delete items in config view list.
- * @param list: list.
- */
-void config_delviews(struct config_view* list);
 
 /** check if config for remote control turns on IP-address interface
  * with certificates or a named pipe without certificates. */
@@ -1281,11 +1219,6 @@ extern int fake_dsa, fake_sha1;
 int if_listens_on(const char* ifname, int default_port, int port,
 	struct config_strlist* additional_ports);
 
-
-/** see if interface will listen on ssl;
- *  its port number == the ssl port number or any of the additional ports */
-int if_is_ssl(const char* ifname, int default_port, int ssl_port,
-	struct config_strlist* tls_additional_port);
 
 /** see if interface will listen on PROXYv2;
  *  its port number == any of the proxy ports number */

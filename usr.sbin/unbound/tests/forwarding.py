@@ -153,13 +153,15 @@ class Upstream:
             server.server_close()
 
 
-def query(port, name, rtype=1, tcp=False, cd=False, options=b''):
+def query(port, name, rtype=1, tcp=False, cd=False, options=b'', source=None):
     flags = 0x100 | (0x10 if cd else 0)
     packet = struct.pack('!HHHHHH', 1234, flags, 1, 0, 0, 1)
     packet += wire_name(name) + struct.pack('!HH', rtype, 1)
     packet += b'\0' + struct.pack('!HHIH', 41, 1232, 0x8000, len(options)) + options
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM if tcp else socket.SOCK_DGRAM) as sock:
         sock.settimeout(10)
+        if source:
+            sock.bind((source, 0))
         sock.connect(('127.0.0.1', port))
         if tcp:
             sock.sendall(struct.pack('!H', len(packet)) + packet)
@@ -168,8 +170,10 @@ def query(port, name, rtype=1, tcp=False, cd=False, options=b''):
             sock.send(packet)
             response = sock.recv(65535)
     header = struct.unpack('!HHHHHH', response[:12])
-    _, offset = read_name(response, 12)
-    offset += 4
+    offset = 12
+    for _ in range(header[2]):
+        _, offset = read_name(response, offset)
+        offset += 4
     answers = []
     for _ in range(header[3]):
         _, offset = read_name(response, offset)
@@ -210,6 +214,7 @@ def main():
     use-syslog: no
     module-config: "validator iterator"
     access-control: 127.0.0.0/8 allow
+    access-control: 127.0.0.3/32 refuse
     prefetch: yes
     serve-expired: yes
     serve-expired-client-timeout: 0
@@ -254,6 +259,24 @@ forward-zone:
             assert any(t == 5 for t, _ in query(port, 'alias.home.test.')[1])
             assert any(t == 12 for t, _ in query(port, '10.2.0.192.in-addr.arpa.', 12)[1])
             print('PASS local A/CNAME/PTR and incoming UDP/TCP')
+
+            for tcp in (False, True):
+                assert (1, socket.inet_aton('192.0.2.10')) in query(
+                    port, 'host.home.test.', tcp=tcp, source='127.0.0.2')[1]
+                assert query(port, 'host.home.test.', tcp=tcp, source='127.0.0.3')[0] & 15 == 5
+            assert 'ok' in control('local_zone', 'admin.home.test.', 'static')
+            assert 'ok' in control('local_data', 'admin.home.test. 60 IN A 192.0.2.14')
+            for tcp in (False, True):
+                assert (1, socket.inet_aton('192.0.2.14')) in query(
+                    port, 'admin.home.test.', tcp=tcp, source='127.0.0.2')[1]
+            assert 'ok' in control('local_data_remove', 'admin.home.test.')
+            assert 'ok' in control('local_zone_remove', 'admin.home.test.')
+            assert query(port, 'admin.home.test.')[0] & 15 == 3
+            for command in ('view_list_local_zones', 'view_local_zone', 'view_local_data'):
+                result = subprocess.run([str(bindir / 'unbound-control'), '-c', str(config),
+                                         command, 'private'], capture_output=True)
+                assert result.returncode != 0, command
+            print('PASS LAN-style source ACLs and global local-zone/data administration')
 
             flags, answers = query(port, 'answer.forward.test.')
             assert flags & 15 == 0 and (1, socket.inet_aton('192.0.2.80')) in answers
@@ -384,7 +407,11 @@ forward-zone:
             write_config(replacement.port, '192.0.2.12')
             control('fast_reload', '+v')
             assert (1, socket.inet_aton('192.0.2.12')) in query(port, 'host.home.test.')[1]
-            print('PASS fast reload after removing dnstap hooks')
+            for tcp in (False, True):
+                assert (1, socket.inet_aton('192.0.2.12')) in query(
+                    port, 'host.home.test.', tcp=tcp, source='127.0.0.2')[1]
+                assert query(port, 'host.home.test.', tcp=tcp, source='127.0.0.3')[0] & 15 == 5
+            print('PASS fast reload preserving global records and source ACLs')
 
             # Use a private test CA to exercise both acceptance and rejection
             # of upstream certificates, without external network access.
@@ -418,11 +445,26 @@ forward-zone:
                 flags, answers = query(port, 'tls.forward.test.')
                 if hostname == 'upstream.test':
                     assert flags & 15 == 0 and (1, socket.inet_aton('192.0.2.80')) in answers
+                    (root / 'ca-reload.pem').write_text(fixture['tls_ca'])
+                    config.write_text(text.replace(str(root / 'ca.pem'), str(root / 'ca-reload.pem')))
+                    assert 'ok' in control('reload')
+                    for _ in range(100):
+                        try:
+                            assert 'is running' in control('status')
+                            break
+                        except subprocess.CalledProcessError:
+                            time.sleep(.05)
+                    else:
+                        raise AssertionError('outgoing TLS reload did not recover')
+                    assert (1, socket.inet_aton('192.0.2.80')) in query(port, 'tls-reload.forward.test.')[1]
+                    config.write_text(text)
+                    control('fast_reload', '+v')
+                    assert (1, socket.inet_aton('192.0.2.80')) in query(port, 'tls-fast-reload.forward.test.', tcp=True)[1]
                 else:
                     assert flags & 15 == 2, hex(flags)
                 process.terminate()
                 process.wait(timeout=10)
-            print('PASS outgoing TLS certificate validation and hostname mismatch rejection')
+            print('PASS outgoing TLS certificate validation, CA-path reload/fast_reload, and hostname mismatch rejection')
 
             # Remote control retains mutual TLS authentication independently of DoH.
             with socket.socket() as reserve:
@@ -475,7 +517,24 @@ forward-zone:
             process.wait(timeout=10)
             print('PASS remote-control mutual TLS, reload/fast_reload, and missing certificate rejection')
 
-            for text in ('server:\n quic-port: 853\n',
+            for text in ('view:\n name: private\n',
+                         'server:\n access-control-view: 127.0.0.0/8 private\n',
+                         'server:\n interface-view: 127.0.0.1 private\n',
+                         'server:\n local-zone: home.test. noview\n',
+                         'server:\n tls-service-key: key.pem\n',
+                         'server:\n ssl-service-pem: cert.pem\n',
+                         'server:\n tls-port: 853\n',
+                         'server:\n tls-additional-port: 8853\n',
+                         'server:\n tls-session-ticket-keys: ticket.key\n',
+                         'server:\n tls-ciphers: DEFAULT\n',
+                         'server:\n ssl-service-key: key.pem\n',
+                         'server:\n tls-service-pem: cert.pem\n',
+                         'server:\n ssl-port: 853\n',
+                         'server:\n additional-ssl-port: 8853\n',
+                         'server:\n tls-ciphersuites: TLS_AES_256_GCM_SHA384\n',
+                         'server:\n pad-responses: yes\n',
+                         'server:\n pad-responses-block-size: 468\n',
+                         'server:\n quic-port: 853\n',
                          'server:\n quic-size: 8m\n',
                          'server:\n https-port: 443\n',
                          'server:\n http-endpoint: /dns-query\n',

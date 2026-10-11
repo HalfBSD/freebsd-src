@@ -70,7 +70,7 @@ struct auth_chunk;
  * Authoritative zones, shared.
  */
 struct auth_zones {
-	/** lock on the authzone trees. It is locked after views, respip,
+	/** lock on the authzone trees. It is locked after respip,
 	 * local_zones and before fwds and stubs. */
 	lock_rw_type lock;
 	/** rbtree of struct auth_zone */

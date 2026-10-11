@@ -732,8 +732,6 @@ struct ub_server_stats {
 	long long qtcp_outgoing;
 	/** number of outgoing queries over UDP */
 	long long qudp_outgoing;
-	/** number of queries over (DNS over) TLS */
-	long long qtls;
 	/** number of queries over IPv6 */
 	long long qipv6;
 	/** number of queries with QR bit */
@@ -810,8 +808,6 @@ struct ub_server_stats {
 	long long num_neg_cache_nxdomain;
 	/** number of bytes in the stream wait buffers */
 	long long mem_stream_wait;
-	/** number of TLS connection resume */
-	long long qtls_resume;
 	/** RPZ action stats */
 	long long rpz_action[UB_STATS_RPZ_ACTION_NUM];
 	/** number of queries removed due to discard-timeout */

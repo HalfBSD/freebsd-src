@@ -246,26 +246,6 @@ acl_list_tags_cfg(struct acl_list* acl, const char* str, uint8_t* bitmap,
 	return 1;
 }
 
-/** apply acl_view string */
-static int
-acl_list_view_cfg(struct acl_list* acl, const char* str, const char* str2,
-	struct views* vs, int is_interface, int port)
-{
-	struct acl_addr* node;
-	if(!(node=acl_find_or_create_str2addr(acl, str, is_interface, port))) {
-		if(is_interface)
-			log_err("non-configured interface: %s", str);
-		return 0;
-	}
-	node->view = views_find_view(vs, str2, 0 /* get read lock*/);
-	if(!node->view) {
-		log_err("no view with name: %s", str2);
-		return 0;
-	}
-	lock_rw_unlock(&node->view->lock);
-	return 1;
-}
-
 /** apply acl_tag_action string */
 static int
 acl_list_tag_action_cfg(struct acl_list* acl, struct config_file* cfg,
@@ -426,29 +406,6 @@ read_acl_list(struct acl_list* acl, struct config_str2list* acls)
 	return 1;
 }
 
-/** read acl view config */
-static int
-read_acl_view(struct acl_list* acl, struct config_str2list** acl_view,
-	struct views* v)
-{
-	struct config_str2list* np, *p = *acl_view;
-	*acl_view = NULL;
-	while(p) {
-		log_assert(p->str && p->str2);
-		if(!acl_list_view_cfg(acl, p->str, p->str2, v, 0, 0)) {
-			config_deldblstrlist(p);
-			return 0;
-		}
-		/* free the items as we go to free up memory */
-		np = p->next;
-		free(p->str);
-		free(p->str2);
-		free(p);
-		p = np;
-	}
-	return 1;
-}
-
 /** read acl tags config */
 static int
 read_acl_tags(struct acl_list* acl, struct config_strbytelist** acl_tags)
@@ -524,15 +481,13 @@ read_acl_tag_datas(struct acl_list* acl, struct config_file* cfg,
 }
 
 int
-acl_list_apply_cfg(struct acl_list* acl, struct config_file* cfg,
-	struct views* v)
+acl_list_apply_cfg(struct acl_list* acl, struct config_file* cfg)
 {
 	regional_free_all(acl->region);
 	addr_tree_init(&acl->tree);
 	if(!read_acl_list(acl, cfg->acls))
 		return 0;
-	if(!read_acl_view(acl, &cfg->acl_view, v))
-		return 0;
+
 	if(!read_acl_tags(acl, &cfg->acl_tags))
 		return 0;
 	if(!read_acl_tag_actions(acl, cfg, &cfg->acl_tag_actions))
@@ -584,42 +539,6 @@ read_acl_interface_action(struct acl_list* acl_interface,
 			}
 		}
 		config_del_strarray(resif, num_resif);
-	}
-	return 1;
-}
-
-/** read acl view config for interface */
-static int
-read_acl_interface_view(struct acl_list* acl_interface,
-	struct config_str2list** acl_view,
-	struct views* v, int port)
-{
-	struct config_str2list* np, *p = *acl_view;
-	*acl_view = NULL;
-	while(p) {
-		char** resif = NULL;
-		int num_resif = 0;
-		int i;
-		log_assert(p->str && p->str2);
-		if(!resolve_interface_names(&p->str, 1, NULL, &resif, &num_resif)) {
-			config_deldblstrlist(p);
-			return 0;
-		}
-		for(i = 0; i<num_resif; i++) {
-			if(!acl_list_view_cfg(acl_interface, resif[i], p->str2,
-				v, 1, port)) {
-				config_del_strarray(resif, num_resif);
-				config_deldblstrlist(p);
-				return 0;
-			}
-		}
-		config_del_strarray(resif, num_resif);
-		/* free the items as we go to free up memory */
-		np = p->next;
-		free(p->str);
-		free(p->str2);
-		free(p);
-		p = np;
 	}
 	return 1;
 }
@@ -736,15 +655,12 @@ read_acl_interface_tag_datas(struct acl_list* acl_interface,
 }
 
 int
-acl_interface_apply_cfg(struct acl_list* acl_interface, struct config_file* cfg,
-	struct views* v)
+acl_interface_apply_cfg(struct acl_list* acl_interface, struct config_file* cfg)
 {
 	if(!read_acl_interface_action(acl_interface, cfg->interface_actions,
 		cfg->port))
 		return 0;
-	if(!read_acl_interface_view(acl_interface, &cfg->interface_view, v,
-		cfg->port))
-		return 0;
+
 	if(!read_acl_interface_tags(acl_interface, &cfg->interface_tags,
 		cfg->port))
 		return 0;

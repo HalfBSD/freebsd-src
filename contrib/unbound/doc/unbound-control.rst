@@ -129,7 +129,6 @@ There are several commands that the server understands.
     Options that can be changed are for
     :ref:`forwards<unbound.conf.forward>`,
     :ref:`stubs<unbound.conf.stub>`,
-    :ref:`views<unbound.conf.view>`,
     :ref:`authority zones<unbound.conf.auth>`,
     :ref:`RPZ zones<unbound.conf.rpz>` and
     :ref:`local zones<unbound.conf.local-zone>`.
@@ -170,8 +169,6 @@ There are several commands that the server understands.
     :ref:`tcp-auth-query-timeout<unbound.conf.tcp-auth-query-timeout>`,
     :ref:`delay-close<unbound.conf.delay-close>`.
     :ref:`iter-scrub-promiscuous<unbound.conf.iter-scrub-promiscuous>`.
-    :ref:`tls-service-key<unbound.conf.tls-service-key>`.
-    :ref:`tls-service-pem<unbound.conf.tls-service-pem>`.
 
     It does not work with
     :ref:`interface<unbound.conf.interface>` and
@@ -634,40 +631,6 @@ There are several commands that the server understands.
     Disable the RPZ zone.
 
 
-@@UAHL@unbound-control.commands@view_list_local_zones@@ *view*
-    *list_local_zones* for given view.
-
-
-@@UAHL@unbound-control.commands@view_local_zone@@ *view name type*
-    *local_zone* for given view.
-
-
-@@UAHL@unbound-control.commands@view_local_zone_remove@@ *view name*
-    *local_zone_remove* for given view.
-
-
-@@UAHL@unbound-control.commands@view_list_local_data@@ *view*
-    *list_local_data* for given view.
-
-
-@@UAHL@unbound-control.commands@view_local_data@@ *view RR data...*
-    *local_data* for given view.
-
-
-@@UAHL@unbound-control.commands@view_local_data_remove@@ *view name*
-    *local_data_remove* for given view.
-
-
-@@UAHL@unbound-control.commands@view_local_datas_remove@@ *view*
-    Remove a list of *local_data* for given view from stdin.
-    Like *local_datas_remove*.
-
-
-@@UAHL@unbound-control.commands@view_local_datas@@ *view*
-    Add a list of *local_data* for given view from stdin.
-    Like *local_datas*.
-
-
 @@UAHL@unbound-control.commands@add_cookie_secret@@ *secret*
     Add or replace a cookie secret persistently.
     *secret* needs to be an 128 bit hex string.
@@ -1076,16 +1039,6 @@ Extended Statistics
 @@UAHL@unbound-control.stats@num.query.udpout@@
     Number of queries that the Unbound server made using UDP outgoing towards
     other servers.
-
-
-@@UAHL@unbound-control.stats@num.query.tls@@
-    Number of queries that were made using TLS towards the Unbound server.
-    These are also counted in num.query.tcp, because TLS uses TCP.
-
-
-@@UAHL@unbound-control.stats@num.query.tls.resume@@
-    Number of TLS session resumptions, these are queries over TLS towards the
-    Unbound server where the client negotiated a TLS session resumption key.
 
 
 @@UAHL@unbound-control.stats@num.query.ipv6@@

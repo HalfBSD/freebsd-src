@@ -220,8 +220,6 @@
 /* Define to 1 if you have the <event.h> header file. */
 /* #undef HAVE_EVENT_H */
 
-/* Define to 1 if you have the `EVP_aes_256_cbc' function. */
-#define HAVE_EVP_AES_256_CBC 1
 
 /* Define to 1 if you have the `EVP_cleanup' function. */
 /* #undef HAVE_EVP_CLEANUP */
@@ -236,11 +234,7 @@
 /* Define to 1 if you have the `EVP_dss1' function. */
 /* #undef HAVE_EVP_DSS1 */
 
-/* Define to 1 if you have the `EVP_EncryptInit_ex' function. */
-#define HAVE_EVP_ENCRYPTINIT_EX 1
 
-/* Define to 1 if you have the `EVP_MAC_CTX_set_params' function. */
-#define HAVE_EVP_MAC_CTX_SET_PARAMS 1
 
 /* Define to 1 if you have the `EVP_MD_CTX_new' function. */
 #define HAVE_EVP_MD_CTX_NEW 1
@@ -318,8 +312,6 @@
 #define HAVE_GRP_H 1
 
 
-/* Define to 1 if you have the `HMAC_Init_ex' function. */
-#define HAVE_HMAC_INIT_EX 1
 
 /* If we have htobe64 */
 #define HAVE_HTOBE64 1
@@ -569,21 +561,12 @@
 /* Define to 1 if you have the `SSL_CTX_set_alpn_protos' function. */
 #define HAVE_SSL_CTX_SET_ALPN_PROTOS 1
 
-/* Define to 1 if you have the `SSL_CTX_set_alpn_select_cb' function. */
-#define HAVE_SSL_CTX_SET_ALPN_SELECT_CB 1
 
-/* Define to 1 if you have the `SSL_CTX_set_ciphersuites' function. */
-#define HAVE_SSL_CTX_SET_CIPHERSUITES 1
 
 /* Define to 1 if you have the `SSL_CTX_set_security_level' function. */
 #define HAVE_SSL_CTX_SET_SECURITY_LEVEL 1
 
-/* Define to 1 if you have the `SSL_CTX_set_tlsext_ticket_key_evp_cb'
-   function. */
-#define HAVE_SSL_CTX_SET_TLSEXT_TICKET_KEY_EVP_CB 1
 
-/* Define to 1 if you have the `SSL_get0_alpn_selected' function. */
-#define HAVE_SSL_GET0_ALPN_SELECTED 1
 
 /* Define to 1 if you have the `SSL_get0_peername' function. */
 #define HAVE_SSL_GET0_PEERNAME 1
@@ -747,8 +730,6 @@
 /* Define to 1 if you have the `_beginthreadex' function. */
 /* #undef HAVE__BEGINTHREADEX */
 
-/* If HMAC_Init_ex() returns void */
-/* #undef HMAC_INIT_EX_RETURNS_VOID */
 
 /* if lex has yylex_destroy */
 #define LEX_HAS_YYLEX_DESTROY 1

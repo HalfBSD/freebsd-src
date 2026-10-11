@@ -132,12 +132,6 @@ Configuration for a zone that forwards to specific DNS resolvers.
 .B \fI\%auth\-zone:\fP
 Configuration for local authoritative zones.
 .TP
-.B \fI\%view:\fP
-Overriding a small subset of configuration for incoming requests.
-Requests are mapped to views with
-\fI\%access\-control\-view\fP and
-\fI\%interface\-view\fP\&.
-.TP
 .B \fI\%rpz:\fP
 Configuration for Response Policy Zones that allows for DNS filtering.
 Requires the \fBrespip\fP module.
@@ -1068,8 +1062,7 @@ Default: no
 .TP
 .B udp\-upstream\-without\-downstream: \fI<yes or no>\fP 
 Enable UDP upstream even if \fI\%do\-udp: no\fP is set.
-Useful for TLS service providers, that want no UDP downstream but use UDP
-to fetch data upstream.
+Allows UDP upstream queries when UDP listeners are disabled.
 .sp
 Default: no (no changes)
 .UNINDENT
@@ -1079,8 +1072,7 @@ Default: no (no changes)
 Enabled or disable whether the upstream queries use TLS only for transport.
 Useful in tunneling scenarios.
 The TLS contains plain DNS in TCP wireformat.
-The other server must support this (see
-\fI\%tls\-service\-key\fP).
+The upstream server must support DNS-over-TLS.
 .sp
 If you enable this, also configure a
 \fI\%tls\-cert\-bundle\fP or use
@@ -1110,58 +1102,16 @@ Alternate syntax for \fI\%tls\-upstream\fP\&.
 If both are present in the config file the last is used.
 .UNINDENT
 .INDENT 0.0
-.TP
-.B tls\-service\-key: \fI<file>\fP 
-If enabled, the server provides DNS\-over\-TLS service on
-the TCP ports marked implicitly or explicitly for these services with
-\fI\%tls\-port\fP\&.
-The file must contain the private key for the TLS session, the public
-certificate is in the \fI\%tls\-service\-pem\fP
-file and it must also be specified if
-\fI\%tls\-service\-key\fP is specified.
-If the key is stored with root permissions or outside of chroot, then
-a change or enabling or disabling requires a restart (a reload is not
-enough).
-But if the key file (and tls\-service\-pem file) are accessible, then they
-are read in on reload, and fast_reload.
-The server checks the modification time of the file (and the filename)
-to see if the file has changed for reload.
-The ports enabled implicitly or explicitly via
-\fI\%tls\-port\fP do not provide normal DNS TCP
-service.
-.sp
-Default: \(dq\(dq (disabled)
 .UNINDENT
 .INDENT 0.0
-.TP
-.B ssl\-service\-key: \fI<file>\fP 
-Alternate syntax for \fI\%tls\-service\-key\fP\&.
 .UNINDENT
 .INDENT 0.0
-.TP
-.B tls\-service\-pem: \fI<file>\fP 
-The public key certificate pem file for the tls service.
-.sp
-Default: \(dq\(dq (disabled)
 .UNINDENT
 .INDENT 0.0
-.TP
-.B ssl\-service\-pem: \fI<file>\fP 
-Alternate syntax for \fI\%tls\-service\-pem\fP\&.
 .UNINDENT
 .INDENT 0.0
-.TP
-.B tls\-port: \fI<number>\fP 
-The port number on which to provide TCP TLS service.
-Only interfaces configured with that port number as @number get the TLS
-service.
-.sp
-Default: 853
 .UNINDENT
 .INDENT 0.0
-.TP
-.B ssl\-port: \fI<number>\fP 
-Alternate syntax for \fI\%tls\-port\fP\&.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -1204,36 +1154,8 @@ different name.
 Because it is not windows specific.
 .UNINDENT
 .INDENT 0.0
-.TP
-.B tls\-additional\-port: \fI<portnr>\fP 
-List port numbers as
-\fI\%tls\-additional\-port\fP, and when
-interfaces are defined, eg. with the @port suffix, as this port number,
-they provide DNS\-over\-TLS service.
-Can list multiple, each on a new statement.
 .UNINDENT
 .INDENT 0.0
-.TP
-.B tls\-session\-ticket\-keys: \fI<file>\fP 
-If not \fB\(dq\(dq\fP, lists files with 80 bytes of random contents that are used
-to perform TLS session resumption for clients using the Unbound server.
-These files contain the secret key for the TLS session tickets.
-First key use to encrypt and decrypt TLS session tickets.
-Other keys use to decrypt only.
-.sp
-With this you can roll over to new keys, by generating a new first file and
-allowing decrypt of the old file by listing it after the first file for
-some time, after the wait clients are not using the old key any more and
-the old key can be removed.
-One way to create the file is:
-.INDENT 7.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-dd if=/dev/random bs=1 count=80 of=ticket.dat
-.ft P
-.fi
 .UNINDENT
 .UNINDENT
 .sp
@@ -1245,21 +1167,8 @@ data for the HMAC key.
 Default: \(dq\(dq
 .UNINDENT
 .INDENT 0.0
-.TP
-.B tls\-ciphers: \fI<string with cipher list>\fP 
-Set the list of ciphers to allow when serving TLS.
-Use \fB\(dq\(dq\fP for default ciphers.
-.sp
-Default: \(dq\(dq
 .UNINDENT
 .INDENT 0.0
-.TP
-.B tls\-ciphersuites: \fI<string with ciphersuites list>\fP 
-Set the list of ciphersuites to allow when serving TLS.
-This is for newer TLS 1.3 connections.
-Use \fB\(dq\(dq\fP for default ciphersuites.
-.sp
-Default: \(dq\(dq
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -1292,21 +1201,8 @@ Changing the value requires a restart.
 Default: \(dqTLSv1.2 TLSv1.3\(dq
 .UNINDENT
 .INDENT 0.0
-.TP
-.B pad\-responses: \fI<yes or no>\fP 
-If enabled, TLS serviced queries that contained an EDNS Padding option will
-cause responses padded to the closest multiple of the size specified in
-\fI\%pad\-responses\-block\-size\fP\&.
-.sp
-Default: yes
 .UNINDENT
 .INDENT 0.0
-.TP
-.B pad\-responses\-block\-size: \fI<number>\fP 
-The block size with which to pad responses serviced over TLS.
-Only responses to padded queries will be padded.
-.sp
-Default: 468
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -1354,7 +1250,7 @@ The proxied address (if any) will then be used as the true client address
 and will be used where applicable for logging, ACL, RPZ and IP
 ratelimiting.
 .sp
-PROXYv2 is supported for UDP and TCP/TLS listening interfaces.
+PROXYv2 is supported for UDP and TCP listening interfaces.
 .sp
 .sp
 Can list multiple, each on a new statement.
@@ -1545,9 +1441,6 @@ from the order of the \fI\%define\-tag\fP values.
 Set redirect data for particular tag for given access control element.
 .UNINDENT
 .INDENT 0.0
-.TP
-.B access\-control\-view: \fI<IP netblock> <view name>\fP 
-Set view for given access control element.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -1628,18 +1521,6 @@ options for targeted clients.
 .UNINDENT
 .UNINDENT
 .INDENT 0.0
-.TP
-.B interface\-view: \fI<ip address or interface name [@port]> <view name>\fP 
-Similar to \fI\%access\-control\-view\fP
-but for interfaces.
-.sp
-\fBNOTE:\fP
-.INDENT 7.0
-.INDENT 3.5
-The interface needs to be already specified with
-\fI\%interface\fP and that any
-\fBaccess\-control*:\fP option overrides all \fBinterface\-*:\fP
-options for targeted clients.
 .UNINDENT
 .UNINDENT
 .UNINDENT
@@ -2804,7 +2685,6 @@ The types are
 \fI\%always_refuse\fP,
 \fI\%always_nxdomain\fP,
 \fI\%always_null\fP,
-\fI\%noview\fP,
 and are explained below.
 After that the default settings are listed.
 Use \fI\%local\-data\fP to enter data into the
@@ -3026,16 +2906,6 @@ Ignores local data in the zone.
 Used for some block lists.
 .UNINDENT
 .INDENT 7.0
-.TP
-.B noview 
-Breaks out of that view and moves towards the global local zones for
-answer to the query.
-If the \fI\%view\-first\fP is no, it\(aqll
-resolve normally.
-If \fI\%view\-first\fP is enabled, it\(aqll
-break perform that step and check the global answers.
-For when the view has view specific overrides but some zone has to be
-answered from global local zone contents.
 .UNINDENT
 .INDENT 7.0
 .TP
@@ -4055,8 +3925,7 @@ If TLS is enabled, then you can append a \fB\(aq#\(aq\fP and a name, then it\(aq
 check the TLS authentication certificates with that name.
 .sp
 If you combine the \fB\(aq@\(aq\fP and \fB\(aq#\(aq\fP, the \fB\(aq@\(aq\fP comes first.
-If only \fB\(aq#\(aq\fP is used the default port is the configured
-\fI\%tls\-port\fP\&.
+If only \fB\(aq#\(aq\fP is used the default TLS port is 853.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -4071,8 +3940,7 @@ If TLS is enabled, then you can append a \fB\(aq#\(aq\fP and a name, then it\(aq
 check the tls authentication certificates with that name.
 .sp
 If you combine the \fB\(aq@\(aq\fP and \fB\(aq#\(aq\fP, the \fB\(aq@\(aq\fP comes first.
-If only \fB\(aq#\(aq\fP is used the default port is the configured
-\fI\%tls\-port\fP\&.
+If only \fB\(aq#\(aq\fP is used the default TLS port is 853.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -4185,8 +4053,7 @@ If TLS is enabled, then you can append a \fB\(aq#\(aq\fP and a name, then it\(aq
 check the TLS authentication certificates with that name.
 .sp
 If you combine the \fB\(aq@\(aq\fP and \fB\(aq#\(aq\fP, the \fB\(aq@\(aq\fP comes first.
-If only \fB\(aq#\(aq\fP is used the default port is the configured
-\fI\%tls\-port\fP\&.
+If only \fB\(aq#\(aq\fP is used the default TLS port is 853.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -4201,8 +4068,7 @@ If TLS is enabled, then you can append a \fB\(aq#\(aq\fP and a name, then it\(aq
 check the tls authentication certificates with that name.
 .sp
 If you combine the \fB\(aq@\(aq\fP and \fB\(aq#\(aq\fP, the \fB\(aq@\(aq\fP comes first.
-If only \fB\(aq#\(aq\fP is used the default port is the configured
-\fI\%tls\-port\fP\&.
+If only \fB\(aq#\(aq\fP is used the default TLS port is 853.
 .sp
 At high verbosity it logs the TLS certificate, with TLS enabled.
 If you leave out the \fB\(aq#\(aq\fP and auth name from the
@@ -4484,86 +4350,6 @@ The filename where the zone is stored.
 If not given then no zonefile is used.
 If the file does not exist or is empty, Unbound will attempt to fetch zone
 data (eg. from the primary servers).
-.UNINDENT
-.SH VIEW OPTIONS
-.sp
-These options are part of the \fBview:\fP section.
-.sp
-There may be multiple \fBview:\fP sections.
-Each with a \fI\%name\fP and zero or more
-\fI\%local\-zone\fP and
-\fI\%local\-data\fP options.
-Views can also contain \fI\%view\-first\fP,
-\fI\%response\-ip\fP,
-\fI\%response\-ip\-data\fP and
-\fI\%local\-data\-ptr\fP options.
-View can be mapped to requests by specifying the view name in an
-\fI\%access\-control\-view\fP option.
-Options from matching views will override global options.
-Global options will be used if no matching view is found, or when the matching
-view does not have the option specified.
-.INDENT 0.0
-.TP
-.B name: \fI<view name>\fP 
-Name of the view.
-Must be unique.
-This name is used in the
-\fI\%access\-control\-view\fP option.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B local\-zone: \fI<zone> <type>\fP 
-View specific local zone elements.
-Has the same types and behaviour as the global
-\fI\%local\-zone\fP elements.
-When there is at least one \fIlocal\-zone:\fP specified and \fI\%view\-first:
-no\fP is set, the default local\-zones will be
-added to this view.
-Defaults can be disabled using the nodefault type.
-When \fI\%view\-first: yes\fP is set or when a
-view does not have a \fI\%local\-zone\fP, the
-global \fI\%local\-zone\fP will be used including
-it\(aqs default zones.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B local\-data: \fI\(dq<resource record string>\(dq\fP 
-View specific local data elements.
-Has the same behaviour as the global
-\fI\%local\-data\fP elements.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B local\-data\-ptr: \fI\(dqIPaddr name\(dq\fP 
-View specific local\-data\-ptr elements.
-Has the same behaviour as the global
-\fI\%local\-data\-ptr\fP elements.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B response\-ip: \fI<IP\-netblock> <action>\fP 
-This requires use of the \fBrespip\fP module.
-.sp
-Similar to \fI\%response\-ip\fP but
-only applies to this view.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B response\-ip\-data: \fI<IP\-netblock> <\(dqresource record string\(dq>\fP 
-This requires use of the \fBrespip\fP module.
-.sp
-Similar to \fI\%response\-ip\-data\fP but
-only applies to this view.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B view\-first: \fI<yes or no>\fP 
-If enabled, it attempts to use the global
-\fI\%local\-zone\fP and
-\fI\%local\-data\fP if there is no match in the
-view specific options.
-.sp
-Default: no
 .UNINDENT
 .SH NAT64 OPTIONS
 .sp

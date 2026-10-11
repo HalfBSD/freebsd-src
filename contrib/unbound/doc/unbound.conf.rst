@@ -129,13 +129,6 @@ The recognized section clauses are:
     :ref:`auth-zone:<unbound.conf.auth>`
         Configuration for local authoritative zones.
 
-    :ref:`view:<unbound.conf.view>`
-        Overriding a small subset of configuration for incoming requests.
-        Requests are mapped to views with
-        :ref:`access-control-view<unbound.conf.access-control-view>` and
-        :ref:`interface-view<unbound.conf.interface-view>`.
-
-
     :ref:`rpz:<unbound.conf.rpz>`
         Configuration for Response Policy Zones that allows for DNS filtering.
         Requires the ``respip`` module.
@@ -298,10 +291,7 @@ These options are part of the ``server:`` section.
     If empty, the default port is listened on.
     The port numbers are separated by spaces in the string.
 
-    This can be used to have interface automatic to deal with the interface,
-    and listen on the normal port number, by including it in the list, and
-    also DNS-over-TLS port numbers by putting them in the list as
-    well.
+    Use this list to listen on additional UDP and TCP port numbers.
 
     Default: ""
 
@@ -981,8 +971,7 @@ These options are part of the ``server:`` section.
 
 @@UAHL@unbound.conf@udp-upstream-without-downstream@@: *<yes or no>*
     Enable UDP upstream even if :ref:`do-udp: no<unbound.conf.do-udp>` is set.
-    Useful for TLS service providers, that want no UDP downstream but use UDP
-    to fetch data upstream.
+    Allows UDP upstream queries when UDP listeners are disabled.
 
     Default: no (no changes)
 
@@ -991,8 +980,7 @@ These options are part of the ``server:`` section.
     Enabled or disable whether the upstream queries use TLS only for transport.
     Useful in tunneling scenarios.
     The TLS contains plain DNS in TCP wireformat.
-    The other server must support this (see
-    :ref:`tls-service-key<unbound.conf.tls-service-key>`).
+    The upstream server must support DNS-over-TLS.
 
     If you enable this, also configure a
     :ref:`tls-cert-bundle<unbound.conf.tls-cert-bundle>` or use
@@ -1019,55 +1007,6 @@ These options are part of the ``server:`` section.
 @@UAHL@unbound.conf@ssl-upstream@@: *<yes or no>*
     Alternate syntax for :ref:`tls-upstream<unbound.conf.tls-upstream>`.
     If both are present in the config file the last is used.
-
-
-@@UAHL@unbound.conf@tls-service-key@@: *<file>*
-    If enabled, the server provides DNS-over-TLS service on
-    the TCP ports marked implicitly or explicitly for these services with
-    :ref:`tls-port<unbound.conf.tls-port>`.
-    The file must contain the private key for the TLS session, the public
-    certificate is in the :ref:`tls-service-pem<unbound.conf.tls-service-pem>`
-    file and it must also be specified if
-    :ref:`tls-service-key<unbound.conf.tls-service-key>` is specified.
-    If the key is stored with root permissions or outside of chroot, then
-    a change or enabling or disabling requires a restart (a reload is not
-    enough).
-    But if the key file (and tls-service-pem file) are accessible, then they
-    are read in on reload, and fast_reload.
-    The server checks the modification time of the file (and the filename)
-    to see if the file has changed for reload.
-    The ports enabled implicitly or explicitly via
-    :ref:`tls-port<unbound.conf.tls-port>` do not provide normal DNS TCP
-    service.
-
-
-    Default: "" (disabled)
-
-
-@@UAHL@unbound.conf@ssl-service-key@@: *<file>*
-    Alternate syntax for :ref:`tls-service-key<unbound.conf.tls-service-key>`.
-
-
-@@UAHL@unbound.conf@tls-service-pem@@: *<file>*
-    The public key certificate pem file for the tls service.
-
-    Default: "" (disabled)
-
-
-@@UAHL@unbound.conf@ssl-service-pem@@: *<file>*
-    Alternate syntax for :ref:`tls-service-pem<unbound.conf.tls-service-pem>`.
-
-
-@@UAHL@unbound.conf@tls-port@@: *<number>*
-    The port number on which to provide TCP TLS service.
-    Only interfaces configured with that port number as @number get the TLS
-    service.
-
-    Default: 853
-
-
-@@UAHL@unbound.conf@ssl-port@@: *<number>*
-    Alternate syntax for :ref:`tls-port<unbound.conf.tls-port>`.
 
 
 @@UAHL@unbound.conf@tls-cert-bundle@@: *<file>*
@@ -1106,54 +1045,6 @@ These options are part of the ``server:`` section.
     Because it is not windows specific.
 
 
-@@UAHL@unbound.conf@tls-additional-port@@: *<portnr>*
-    List port numbers as
-    :ref:`tls-additional-port<unbound.conf.tls-additional-port>`, and when
-    interfaces are defined, eg. with the @port suffix, as this port number,
-    they provide DNS-over-TLS service.
-    Can list multiple, each on a new statement.
-
-
-@@UAHL@unbound.conf@tls-session-ticket-keys@@: *<file>*
-    If not ``""``, lists files with 80 bytes of random contents that are used
-    to perform TLS session resumption for clients using the Unbound server.
-    These files contain the secret key for the TLS session tickets.
-    First key use to encrypt and decrypt TLS session tickets.
-    Other keys use to decrypt only.
-
-    With this you can roll over to new keys, by generating a new first file and
-    allowing decrypt of the old file by listing it after the first file for
-    some time, after the wait clients are not using the old key any more and
-    the old key can be removed.
-    One way to create the file is:
-
-    .. code-block:: text
-
-        dd if=/dev/random bs=1 count=80 of=ticket.dat
-
-    The first 16 bytes should be different from the old one if you create a
-    second key, that is the name used to identify the key.
-    Then there is 32 bytes random data for an AES key and then 32 bytes random
-    data for the HMAC key.
-
-    Default: ""
-
-
-@@UAHL@unbound.conf@tls-ciphers@@: *<string with cipher list>*
-    Set the list of ciphers to allow when serving TLS.
-    Use ``""`` for default ciphers.
-
-    Default: ""
-
-
-@@UAHL@unbound.conf@tls-ciphersuites@@: *<string with ciphersuites list>*
-    Set the list of ciphersuites to allow when serving TLS.
-    This is for newer TLS 1.3 connections.
-    Use ``""`` for default ciphersuites.
-
-    Default: ""
-
-
 @@UAHL@unbound.conf@tls-use-sni@@: *<yes or no>*
     Enable or disable sending the SNI extension on TLS connections.
 
@@ -1170,21 +1061,6 @@ These options are part of the ``server:`` section.
     .. note:: Changing the value requires a restart.
 
     Default: "TLSv1.2 TLSv1.3"
-
-
-@@UAHL@unbound.conf@pad-responses@@: *<yes or no>*
-    If enabled, TLS serviced queries that contained an EDNS Padding option will
-    cause responses padded to the closest multiple of the size specified in
-    :ref:`pad-responses-block-size<unbound.conf.pad-responses-block-size>`.
-
-    Default: yes
-
-
-@@UAHL@unbound.conf@pad-responses-block-size@@: *<number>*
-    The block size with which to pad responses serviced over TLS.
-    Only responses to padded queries will be padded.
-
-    Default: 468
 
 
 @@UAHL@unbound.conf@pad-queries@@: *<yes or no>*
@@ -1215,7 +1091,7 @@ These options are part of the ``server:`` section.
     and will be used where applicable for logging, ACL, RPZ and IP
     ratelimiting.
 
-    PROXYv2 is supported for UDP and TCP/TLS listening interfaces.
+    PROXYv2 is supported for UDP and TCP listening interfaces.
 
     Can list multiple, each on a new statement.
 
@@ -1380,10 +1256,6 @@ These options are part of the ``server:`` section.
     Set redirect data for particular tag for given access control element.
 
 
-@@UAHL@unbound.conf@access-control-view@@: *<IP netblock> <view name>*
-    Set view for given access control element.
-
-
 @@UAHL@unbound.conf@interface-action@@: *<ip address or interface name [@port]> <action>*
     Similar to :ref:`access-control<unbound.conf.access-control>` but for
     interfaces.
@@ -1434,17 +1306,6 @@ These options are part of the ``server:`` section.
     Similar to
     :ref:`access-control-tag-data<unbound.conf.access-control-tag-data>` but
     for interfaces.
-
-    .. note::
-        The interface needs to be already specified with
-        :ref:`interface<unbound.conf.interface>` and that any
-        **access-control\*:** option overrides all **interface-\*:**
-        options for targeted clients.
-
-
-@@UAHL@unbound.conf@interface-view@@: *<ip address or interface name [@port]> <view name>*
-    Similar to :ref:`access-control-view<unbound.conf.access-control-view>`
-    but for interfaces.
 
     .. note::
         The interface needs to be already specified with
@@ -2473,7 +2334,6 @@ These options are part of the ``server:`` section.
     :ref:`always_refuse<unbound.conf.local-zone.type.always_refuse>`,
     :ref:`always_nxdomain<unbound.conf.local-zone.type.always_nxdomain>`,
     :ref:`always_null<unbound.conf.local-zone.type.always_null>`,
-    :ref:`noview<unbound.conf.local-zone.type.noview>`,
     and are explained below.
     After that the default settings are listed.
     Use :ref:`local-data<unbound.conf.local-data>` to enter data into the
@@ -2644,16 +2504,6 @@ These options are part of the ``server:`` section.
         data for A and AAAA.
         Ignores local data in the zone.
         Used for some block lists.
-
-    @@UAHL@unbound.conf.local-zone.type@noview@@
-        Breaks out of that view and moves towards the global local zones for
-        answer to the query.
-        If the :ref:`view-first<unbound.conf.view.view-first>` is no, it'll
-        resolve normally.
-        If :ref:`view-first<unbound.conf.view.view-first>` is enabled, it'll
-        break perform that step and check the global answers.
-        For when the view has view specific overrides but some zone has to be
-        answered from global local zone contents.
 
     @@UAHL@unbound.conf.local-zone.type@nodefault@@
         Used to turn off default contents for AS112 zones.
@@ -3503,8 +3353,7 @@ The :ref:`local-zone: nodefault<unbound.conf.local-zone.type.nodefault>` (or
     check the TLS authentication certificates with that name.
 
     If you combine the ``'@'`` and ``'#'``, the ``'@'`` comes first.
-    If only ``'#'`` is used the default port is the configured
-    :ref:`tls-port<unbound.conf.tls-port>`.
+    If only ``'#'`` is used the default TLS port is 853.
 
 
 @@UAHL@unbound.conf.stub@stub-addr@@: *<IP address>*
@@ -3518,8 +3367,7 @@ The :ref:`local-zone: nodefault<unbound.conf.local-zone.type.nodefault>` (or
     check the tls authentication certificates with that name.
 
     If you combine the ``'@'`` and ``'#'``, the ``'@'`` comes first.
-    If only ``'#'`` is used the default port is the configured
-    :ref:`tls-port<unbound.conf.tls-port>`.
+    If only ``'#'`` is used the default TLS port is 853.
 
 
 @@UAHL@unbound.conf.stub@stub-prime@@: *<yes or no>*
@@ -3624,8 +3472,7 @@ cache).
     check the TLS authentication certificates with that name.
 
     If you combine the ``'@'`` and ``'#'``, the ``'@'`` comes first.
-    If only ``'#'`` is used the default port is the configured
-    :ref:`tls-port<unbound.conf.tls-port>`.
+    If only ``'#'`` is used the default TLS port is 853.
 
 
 @@UAHL@unbound.conf.forward@forward-addr@@: *<IP address>*
@@ -3639,8 +3486,7 @@ cache).
     check the tls authentication certificates with that name.
 
     If you combine the ``'@'`` and ``'#'``, the ``'@'`` comes first.
-    If only ``'#'`` is used the default port is the configured
-    :ref:`tls-port<unbound.conf.tls-port>`.
+    If only ``'#'`` is used the default TLS port is 853.
 
     At high verbosity it logs the TLS certificate, with TLS enabled.
     If you leave out the ``'#'`` and auth name from the
@@ -3897,83 +3743,6 @@ fallback activates to fetch from the upstream instead of the SERVFAIL.
     If not given then no zonefile is used.
     If the file does not exist or is empty, Unbound will attempt to fetch zone
     data (eg. from the primary servers).
-
-.. _unbound.conf.view:
-
-View Options
-------------
-
-These options are part of the ``view:`` section.
-
-There may be multiple ``view:`` sections.
-Each with a :ref:`name<unbound.conf.view.name>` and zero or more
-:ref:`local-zone<unbound.conf.view.local-zone>` and
-:ref:`local-data<unbound.conf.view.local-data>` options.
-Views can also contain :ref:`view-first<unbound.conf.view.view-first>`,
-:ref:`response-ip<unbound.conf.response-ip>`,
-:ref:`response-ip-data<unbound.conf.response-ip-data>` and
-:ref:`local-data-ptr<unbound.conf.view.local-data-ptr>` options.
-View can be mapped to requests by specifying the view name in an
-:ref:`access-control-view<unbound.conf.access-control-view>` option.
-Options from matching views will override global options.
-Global options will be used if no matching view is found, or when the matching
-view does not have the option specified.
-
-
-@@UAHL@unbound.conf.view@name@@: *<view name>*
-    Name of the view.
-    Must be unique.
-    This name is used in the
-    :ref:`access-control-view<unbound.conf.access-control-view>` option.
-
-
-@@UAHL@unbound.conf.view@local-zone@@: *<zone> <type>*
-    View specific local zone elements.
-    Has the same types and behaviour as the global
-    :ref:`local-zone<unbound.conf.local-zone>` elements.
-    When there is at least one *local-zone:* specified and :ref:`view-first:
-    no<unbound.conf.view.view-first>` is set, the default local-zones will be
-    added to this view.
-    Defaults can be disabled using the nodefault type.
-    When :ref:`view-first: yes<unbound.conf.view.view-first>` is set or when a
-    view does not have a :ref:`local-zone<unbound.conf.view.local-zone>`, the
-    global :ref:`local-zone<unbound.conf.local-zone>` will be used including
-    it's default zones.
-
-
-@@UAHL@unbound.conf.view@local-data@@: *"<resource record string>"*
-    View specific local data elements.
-    Has the same behaviour as the global
-    :ref:`local-data<unbound.conf.local-data>` elements.
-
-
-@@UAHL@unbound.conf.view@local-data-ptr@@: *"IPaddr name"*
-    View specific local-data-ptr elements.
-    Has the same behaviour as the global
-    :ref:`local-data-ptr<unbound.conf.local-data-ptr>` elements.
-
-
-@@UAHL@unbound.conf.view@response-ip@@: *<IP-netblock> <action>*
-    This requires use of the ``respip`` module.
-
-    Similar to :ref:`response-ip<unbound.conf.response-ip>` but
-    only applies to this view.
-
-
-@@UAHL@unbound.conf.view@response-ip-data@@: *<IP-netblock> <"resource record string">*
-    This requires use of the ``respip`` module.
-
-    Similar to :ref:`response-ip-data<unbound.conf.response-ip-data>` but
-    only applies to this view.
-
-
-@@UAHL@unbound.conf.view@view-first@@: *<yes or no>*
-    If enabled, it attempts to use the global
-    :ref:`local-zone<unbound.conf.local-zone>` and
-    :ref:`local-data<unbound.conf.local-data>` if there is no match in the
-    view specific options.
-
-    Default: no
 
 NAT64 Options
 -------------

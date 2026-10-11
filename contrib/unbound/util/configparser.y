@@ -113,8 +113,8 @@ extern struct config_parser_state* cfg_parser;
 %token VAR_PREFETCH VAR_PREFETCH_KEY VAR_SO_SNDBUF VAR_SO_REUSEPORT
 %token VAR_HARDEN_BELOW_NXDOMAIN VAR_IGNORE_CD_FLAG VAR_LOG_QUERIES
 %token VAR_LOG_REPLIES VAR_LOG_LOCAL_ACTIONS VAR_TCP_UPSTREAM
-%token VAR_SSL_UPSTREAM VAR_TCP_AUTH_QUERY_TIMEOUT VAR_SSL_SERVICE_KEY
-%token VAR_SSL_SERVICE_PEM VAR_SSL_PORT VAR_FORWARD_FIRST
+%token VAR_SSL_UPSTREAM VAR_TCP_AUTH_QUERY_TIMEOUT
+%token   VAR_FORWARD_FIRST
 %token VAR_STUB_SSL_UPSTREAM VAR_FORWARD_SSL_UPSTREAM VAR_TLS_CERT_BUNDLE
 %token VAR_STUB_TCP_UPSTREAM VAR_FORWARD_TCP_UPSTREAM
 %token VAR_STUB_FIRST VAR_MINIMAL_RESPONSES VAR_RRSET_ROUNDROBIN
@@ -137,8 +137,8 @@ extern struct config_parser_state* cfg_parser;
 %token VAR_QNAME_MINIMISATION VAR_QNAME_MINIMISATION_STRICT VAR_IP_FREEBIND
 %token VAR_DEFINE_TAG VAR_LOCAL_ZONE_TAG VAR_ACCESS_CONTROL_TAG
 %token VAR_LOCAL_ZONE_OVERRIDE VAR_ACCESS_CONTROL_TAG_ACTION
-%token VAR_ACCESS_CONTROL_TAG_DATA VAR_VIEW VAR_ACCESS_CONTROL_VIEW
-%token VAR_VIEW_FIRST VAR_SERVE_EXPIRED VAR_SERVE_EXPIRED_TTL
+%token VAR_ACCESS_CONTROL_TAG_DATA
+%token  VAR_SERVE_EXPIRED VAR_SERVE_EXPIRED_TTL
 %token VAR_SERVE_EXPIRED_TTL_RESET VAR_SERVE_EXPIRED_REPLY_TTL
 %token VAR_SERVE_EXPIRED_CLIENT_TIMEOUT VAR_EDE_SERVE_EXPIRED
 %token VAR_SERVE_ORIGINAL_TTL VAR_FAKE_DSA
@@ -146,13 +146,12 @@ extern struct config_parser_state* cfg_parser;
 %token VAR_HIDE_HTTP_USER_AGENT VAR_HTTP_USER_AGENT
 %token VAR_TRUST_ANCHOR_SIGNALING VAR_AGGRESSIVE_NSEC VAR_USE_SYSTEMD
 %token VAR_SHM_ENABLE VAR_SHM_KEY VAR_ROOT_KEY_SENTINEL
-%token VAR_PAD_RESPONSES VAR_PAD_RESPONSES_BLOCK_SIZE
 %token VAR_PAD_QUERIES VAR_PAD_QUERIES_BLOCK_SIZE
 %token VAR_IPSECMOD_ENABLED VAR_IPSECMOD_HOOK VAR_IPSECMOD_IGNORE_BOGUS
 %token VAR_IPSECMOD_MAX_TTL VAR_IPSECMOD_WHITELIST VAR_IPSECMOD_STRICT
 %token VAR_UDP_UPSTREAM_WITHOUT_DOWNSTREAM VAR_FOR_UPSTREAM
 %token VAR_AUTH_ZONE VAR_ZONEFILE VAR_MASTER VAR_URL VAR_FOR_DOWNSTREAM
-%token VAR_FALLBACK_ENABLED VAR_TLS_ADDITIONAL_PORT VAR_LOW_RTT VAR_LOW_RTT_PERMIL
+%token VAR_FALLBACK_ENABLED  VAR_LOW_RTT VAR_LOW_RTT_PERMIL
 %token VAR_FAST_SERVER_PERMIL VAR_FAST_SERVER_NUM
 %token VAR_ALLOW_NOTIFY VAR_TLS_WIN_CERT VAR_TCP_CONNECTION_LIMIT
 %token VAR_ANSWER_COOKIE VAR_COOKIE_SECRET VAR_IP_RATELIMIT_COOKIE
@@ -160,17 +159,17 @@ extern struct config_parser_state* cfg_parser;
 %token VAR_UNKNOWN_SERVER_TIME_LIMIT VAR_LOG_TAG_QUERYREPLY
 %token VAR_DISCARD_TIMEOUT VAR_WAIT_LIMIT VAR_WAIT_LIMIT_COOKIE
 %token VAR_WAIT_LIMIT_NETBLOCK VAR_WAIT_LIMIT_COOKIE_NETBLOCK
-%token VAR_STREAM_WAIT_SIZE VAR_TLS_CIPHERS VAR_TLS_CIPHERSUITES VAR_TLS_USE_SNI
+%token VAR_STREAM_WAIT_SIZE   VAR_TLS_USE_SNI
 %token VAR_TLS_PROTOCOLS
 %token VAR_IPSET VAR_IPSET_NAME_V4 VAR_IPSET_NAME_V6
-%token VAR_TLS_SESSION_TICKET_KEYS VAR_RPZ VAR_TAGS VAR_RPZ_ACTION_OVERRIDE
+%token  VAR_RPZ VAR_TAGS VAR_RPZ_ACTION_OVERRIDE
 %token VAR_RPZ_CNAME_OVERRIDE VAR_RPZ_LOG VAR_RPZ_LOG_NAME
 %token VAR_EDNS_CLIENT_STRING
 %token VAR_EDNS_CLIENT_STRING_OPCODE VAR_NSID
 %token VAR_ZONEMD_PERMISSIVE_MODE VAR_ZONEMD_CHECK VAR_ZONEMD_REJECT_ABSENCE
 %token VAR_RPZ_SIGNAL_NXDOMAIN_RA VAR_INTERFACE_AUTOMATIC_PORTS VAR_EDE
 %token VAR_DNS_ERROR_REPORTING
-%token VAR_INTERFACE_ACTION VAR_INTERFACE_VIEW VAR_INTERFACE_TAG
+%token VAR_INTERFACE_ACTION  VAR_INTERFACE_TAG
 %token VAR_INTERFACE_TAG_ACTION VAR_INTERFACE_TAG_DATA
 %token VAR_PROXY_PROTOCOL_PORT VAR_STATISTICS_INHIBIT_ZERO
 %token VAR_HARDEN_UNKNOWN_ADDITIONAL VAR_DISABLE_EDNS_DO
@@ -184,8 +183,7 @@ extern struct config_parser_state* cfg_parser;
 toplevelvars: /* empty */ | toplevelvars toplevelvar ;
 toplevelvar: serverstart contents_server | stub_clause |
 	forward_clause |
-	rcstart contents_rc | view_clause |
-	ipsetstart contents_ipset | authstart contents_auth |
+	rcstart contents_rc | ipsetstart contents_ipset | authstart contents_auth |
 	rpzstart contents_rpz |
 	force_toplevel
 	;
@@ -250,7 +248,6 @@ content_server: server_num_threads | server_verbosity | server_port |
 	server_so_sndbuf | server_harden_below_nxdomain | server_ignore_cd_flag |
 	server_log_queries | server_log_replies | server_tcp_upstream | server_ssl_upstream |
 	server_log_local_actions | server_log_thread_id |
-	server_ssl_service_key | server_ssl_service_pem | server_ssl_port |
 	server_minimal_responses | server_rrset_roundrobin | server_max_udp_size |
 	server_so_reuseport | server_delay_close | server_udp_connect |
 	server_unblock_lan_zones | server_insecure_lan_zones |
@@ -271,11 +268,9 @@ content_server: server_num_threads | server_verbosity | server_port |
 	server_ip_freebind | server_define_tag | server_local_zone_tag |
 	server_disable_dnssec_lame_check | server_access_control_tag |
 	server_local_zone_override | server_access_control_tag_action |
-	server_access_control_tag_data | server_access_control_view |
-	server_interface_action | server_interface_view | server_interface_tag |
+	server_access_control_tag_data | server_interface_action | server_interface_tag |
 	server_interface_tag_action | server_interface_tag_data |
 	server_qname_minimisation_strict |
-	server_pad_responses | server_pad_responses_block_size |
 	server_pad_queries | server_pad_queries_block_size |
 	server_serve_expired |
 	server_serve_expired_ttl | server_serve_expired_ttl_reset |
@@ -290,15 +285,13 @@ content_server: server_num_threads | server_verbosity | server_port |
 	server_ipsecmod_ignore_bogus | server_ipsecmod_max_ttl |
 	server_ipsecmod_whitelist | server_ipsecmod_strict |
 	server_udp_upstream_without_downstream | server_aggressive_nsec |
-	server_tls_cert_bundle | server_tls_additional_port | server_low_rtt |
+	server_tls_cert_bundle | server_low_rtt |
 	server_fast_server_permil | server_fast_server_num  | server_tls_win_cert |
 	server_tcp_connection_limit | server_log_servfail | server_deny_any |
 	server_unknown_server_time_limit | server_log_tag_queryreply |
 	server_discard_timeout | server_wait_limit | server_wait_limit_cookie |
 	server_wait_limit_netblock | server_wait_limit_cookie_netblock |
-	server_stream_wait_size | server_tls_ciphers |
-	server_tls_ciphersuites | server_tls_session_ticket_keys |
-	server_answer_cookie | server_cookie_secret | server_ip_ratelimit_cookie |
+	server_stream_wait_size | server_answer_cookie | server_cookie_secret | server_ip_ratelimit_cookie |
 	server_tls_use_sni | server_edns_client_string | server_tls_protocols |
 	server_edns_client_string_opcode | server_nsid |
 	server_zonemd_permissive_mode | server_max_reuse_tcp_queries |
@@ -365,33 +358,6 @@ contents_forward: contents_forward content_forward
 	| ;
 content_forward: forward_name | forward_host | forward_addr | forward_first |
 	forward_no_cache | forward_ssl_upstream | forward_tcp_upstream
-	;
-view_clause: viewstart contents_view
-	{
-		/* view end */
-		if(cfg_parser->cfg->views &&
-			!cfg_parser->cfg->views->name)
-			yyerror("view without name");
-	}
-	;
-viewstart: VAR_VIEW
-	{
-		struct config_view* s;
-		OUTYY(("\nP(view:)\n"));
-		cfg_parser->started_toplevel = 1;
-		s = (struct config_view*)calloc(1, sizeof(struct config_view));
-		if(s) {
-			s->next = cfg_parser->cfg->views;
-			cfg_parser->cfg->views = s;
-		} else {
-			yyerror("out of memory");
-		}
-	}
-	;
-contents_view: contents_view content_view
-	| ;
-content_view: view_name | view_local_zone | view_local_data | view_first |
-		view_response_ip | view_response_ip_data | view_local_data_ptr
 	;
 authstart: VAR_AUTH_ZONE
 	{
@@ -880,29 +846,6 @@ server_ssl_upstream: VAR_SSL_UPSTREAM STRING_ARG
 		free($2);
 	}
 	;
-server_ssl_service_key: VAR_SSL_SERVICE_KEY STRING_ARG
-	{
-		OUTYY(("P(server_ssl_service_key:%s)\n", $2));
-		free(cfg_parser->cfg->ssl_service_key);
-		cfg_parser->cfg->ssl_service_key = $2;
-	}
-	;
-server_ssl_service_pem: VAR_SSL_SERVICE_PEM STRING_ARG
-	{
-		OUTYY(("P(server_ssl_service_pem:%s)\n", $2));
-		free(cfg_parser->cfg->ssl_service_pem);
-		cfg_parser->cfg->ssl_service_pem = $2;
-	}
-	;
-server_ssl_port: VAR_SSL_PORT STRING_ARG
-	{
-		OUTYY(("P(server_ssl_port:%s)\n", $2));
-		if(atoi($2) == 0)
-			yyerror("port number expected");
-		else cfg_parser->cfg->ssl_port = atoi($2);
-		free($2);
-	}
-	;
 server_tls_cert_bundle: VAR_TLS_CERT_BUNDLE STRING_ARG
 	{
 		OUTYY(("P(server_tls_cert_bundle:%s)\n", $2));
@@ -917,36 +860,6 @@ server_tls_win_cert: VAR_TLS_WIN_CERT STRING_ARG
 			yyerror("expected yes or no.");
 		else cfg_parser->cfg->tls_win_cert = (strcmp($2, "yes")==0);
 		free($2);
-	}
-	;
-server_tls_additional_port: VAR_TLS_ADDITIONAL_PORT STRING_ARG
-	{
-		OUTYY(("P(server_tls_additional_port:%s)\n", $2));
-		if(!cfg_strlist_insert(&cfg_parser->cfg->tls_additional_port,
-			$2))
-			yyerror("out of memory");
-	}
-	;
-server_tls_ciphers: VAR_TLS_CIPHERS STRING_ARG
-	{
-		OUTYY(("P(server_tls_ciphers:%s)\n", $2));
-		free(cfg_parser->cfg->tls_ciphers);
-		cfg_parser->cfg->tls_ciphers = $2;
-	}
-	;
-server_tls_ciphersuites: VAR_TLS_CIPHERSUITES STRING_ARG
-	{
-		OUTYY(("P(server_tls_ciphersuites:%s)\n", $2));
-		free(cfg_parser->cfg->tls_ciphersuites);
-		cfg_parser->cfg->tls_ciphersuites = $2;
-	}
-	;
-server_tls_session_ticket_keys: VAR_TLS_SESSION_TICKET_KEYS STRING_ARG
-	{
-		OUTYY(("P(server_tls_session_ticket_keys:%s)\n", $2));
-		if(!cfg_strlist_append(&cfg_parser->cfg->tls_session_ticket_keys,
-			$2))
-			yyerror("out of memory");
 	}
 	;
 server_tls_use_sni: VAR_TLS_USE_SNI STRING_ARG
@@ -2104,7 +2017,6 @@ server_local_zone: VAR_LOCAL_ZONE STRING_ARG STRING_ARG
 		   && strcmp($3, "always_nodata")!=0
 		   && strcmp($3, "always_deny")!=0
 		   && strcmp($3, "always_null")!=0
-		   && strcmp($3, "noview")!=0
 		   && strcmp($3, "inform")!=0 && strcmp($3, "inform_deny")!=0
 		   && strcmp($3, "inform_redirect") != 0
 		   && strcmp($3, "ipset") != 0) {
@@ -2114,7 +2026,7 @@ server_local_zone: VAR_LOCAL_ZONE STRING_ARG STRING_ARG
 				"inform_redirect, always_transparent, block_a, "
 				"always_refuse, always_nxdomain, "
 				"always_nodata, always_deny, always_null, "
-				"noview, nodefault or ipset");
+				"nodefault or ipset");
 			free($2);
 			free($3);
 		} else if(strcmp($3, "nodefault")==0) {
@@ -2352,15 +2264,6 @@ server_local_zone_override: VAR_LOCAL_ZONE_OVERRIDE STRING_ARG STRING_ARG STRING
 		}
 	}
 	;
-server_access_control_view: VAR_ACCESS_CONTROL_VIEW STRING_ARG STRING_ARG
-	{
-		OUTYY(("P(server_access_control_view:%s %s)\n", $2, $3));
-		if(!cfg_str2list_insert(&cfg_parser->cfg->acl_view,
-			$2, $3)) {
-			yyerror("out of memory");
-		}
-	}
-	;
 server_interface_tag: VAR_INTERFACE_TAG STRING_ARG STRING_ARG
 	{
 		size_t len = 0;
@@ -2403,15 +2306,6 @@ server_interface_tag_data: VAR_INTERFACE_TAG_DATA STRING_ARG STRING_ARG STRING_A
 			free($2);
 			free($3);
 			free($4);
-		}
-	}
-	;
-server_interface_view: VAR_INTERFACE_VIEW STRING_ARG STRING_ARG
-	{
-		OUTYY(("P(server_interface_view:%s %s)\n", $2, $3));
-		if(!cfg_str2list_insert(&cfg_parser->cfg->interface_view,
-			$2, $3)) {
-			yyerror("out of memory");
 		}
 	}
 	;
@@ -2641,25 +2535,6 @@ server_qname_minimisation_strict: VAR_QNAME_MINIMISATION_STRICT STRING_ARG
 			yyerror("expected yes or no.");
 		else cfg_parser->cfg->qname_minimisation_strict =
 			(strcmp($2, "yes")==0);
-		free($2);
-	}
-	;
-server_pad_responses: VAR_PAD_RESPONSES STRING_ARG
-	{
-		OUTYY(("P(server_pad_responses:%s)\n", $2));
-		if(strcmp($2, "yes") != 0 && strcmp($2, "no") != 0)
-			yyerror("expected yes or no.");
-		else cfg_parser->cfg->pad_responses =
-			(strcmp($2, "yes")==0);
-		free($2);
-	}
-	;
-server_pad_responses_block_size: VAR_PAD_RESPONSES_BLOCK_SIZE STRING_ARG
-	{
-		OUTYY(("P(server_pad_responses_block_size:%s)\n", $2));
-		if(atoi($2) == 0)
-			yyerror("number expected");
-		else cfg_parser->cfg->pad_responses_block_size = atoi($2);
 		free($2);
 	}
 	;
@@ -3025,122 +2900,6 @@ auth_fallback_enabled: VAR_FALLBACK_ENABLED STRING_ARG
 			yyerror("expected yes or no.");
 		else cfg_parser->cfg->auths->fallback_enabled =
 			(strcmp($2, "yes")==0);
-		free($2);
-	}
-	;
-view_name: VAR_NAME STRING_ARG
-	{
-		OUTYY(("P(name:%s)\n", $2));
-		if(cfg_parser->cfg->views->name)
-			yyerror("view name override, there must be one "
-				"name for one view");
-		free(cfg_parser->cfg->views->name);
-		cfg_parser->cfg->views->name = $2;
-	}
-	;
-view_local_zone: VAR_LOCAL_ZONE STRING_ARG STRING_ARG
-	{
-		OUTYY(("P(view_local_zone:%s %s)\n", $2, $3));
-		if(strcmp($3, "static")!=0 && strcmp($3, "deny")!=0 &&
-		   strcmp($3, "refuse")!=0 && strcmp($3, "redirect")!=0 &&
-		   strcmp($3, "transparent")!=0 && strcmp($3, "nodefault")!=0
-		   && strcmp($3, "typetransparent")!=0
-		   && strcmp($3, "always_transparent")!=0
-		   && strcmp($3, "always_refuse")!=0
-		   && strcmp($3, "always_nxdomain")!=0
-		   && strcmp($3, "always_nodata")!=0
-		   && strcmp($3, "always_deny")!=0
-		   && strcmp($3, "always_null")!=0
-		   && strcmp($3, "noview")!=0
-		   && strcmp($3, "inform")!=0 && strcmp($3, "inform_deny")!=0
-		   && strcmp($3, "inform_redirect") != 0
-		   && strcmp($3, "ipset") != 0) {
-			yyerror("local-zone type: expected static, deny, "
-				"refuse, redirect, transparent, "
-				"typetransparent, inform, inform_deny, "
-				"inform_redirect, always_transparent, "
-				"always_refuse, always_nxdomain, "
-				"always_nodata, always_deny, always_null, "
-				"noview, nodefault or ipset");
-			free($2);
-			free($3);
-		} else if(strcmp($3, "nodefault")==0) {
-			if(!cfg_strlist_insert(&cfg_parser->cfg->views->
-				local_zones_nodefault, $2))
-				fatal_exit("out of memory adding local-zone");
-			free($3);
-#ifdef USE_IPSET
-		} else if(strcmp($3, "ipset")==0) {
-			size_t len = strlen($2);
-			/* Make sure to add the trailing dot.
-			 * These are str compared to domain names. */
-			if($2[len-1] != '.') {
-				if(!($2 = realloc($2, len+2))) {
-					fatal_exit("out of memory adding local-zone");
-				}
-				$2[len] = '.';
-				$2[len+1] = 0;
-			}
-			if(!cfg_strlist_insert(&cfg_parser->cfg->views->
-				local_zones_ipset, $2))
-				fatal_exit("out of memory adding local-zone");
-			free($3);
-#endif
-		} else {
-			if(!cfg_str2list_insert(
-				&cfg_parser->cfg->views->local_zones,
-				$2, $3))
-				fatal_exit("out of memory adding local-zone");
-		}
-	}
-	;
-view_response_ip: VAR_RESPONSE_IP STRING_ARG STRING_ARG
-	{
-		OUTYY(("P(view_response_ip:%s %s)\n", $2, $3));
-		validate_respip_action($3);
-		if(!cfg_str2list_insert(
-			&cfg_parser->cfg->views->respip_actions, $2, $3))
-			fatal_exit("out of memory adding per-view "
-				"response-ip action");
-	}
-	;
-view_response_ip_data: VAR_RESPONSE_IP_DATA STRING_ARG STRING_ARG
-	{
-		OUTYY(("P(view_response_ip_data:%s)\n", $2));
-		if(!cfg_str2list_insert(
-			&cfg_parser->cfg->views->respip_data, $2, $3))
-			fatal_exit("out of memory adding response-ip-data");
-	}
-	;
-view_local_data: VAR_LOCAL_DATA STRING_ARG
-	{
-		OUTYY(("P(view_local_data:%s)\n", $2));
-		if(!cfg_strlist_insert(&cfg_parser->cfg->views->local_data, $2)) {
-			fatal_exit("out of memory adding local-data");
-		}
-	}
-	;
-view_local_data_ptr: VAR_LOCAL_DATA_PTR STRING_ARG
-	{
-		char* ptr;
-		OUTYY(("P(view_local_data_ptr:%s)\n", $2));
-		ptr = cfg_ptr_reverse($2);
-		free($2);
-		if(ptr) {
-			if(!cfg_strlist_insert(&cfg_parser->cfg->views->
-				local_data, ptr))
-				fatal_exit("out of memory adding local-data");
-		} else {
-			yyerror("local-data-ptr could not be reversed");
-		}
-	}
-	;
-view_first: VAR_VIEW_FIRST STRING_ARG
-	{
-		OUTYY(("P(view-first:%s)\n", $2));
-		if(strcmp($2, "yes") != 0 && strcmp($2, "no") != 0)
-			yyerror("expected yes or no.");
-		else cfg_parser->cfg->views->isfirst=(strcmp($2, "yes")==0);
 		free($2);
 	}
 	;

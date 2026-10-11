@@ -1250,8 +1250,6 @@ set_recvpktinfo(int s, int family)
  * @param list: list of open ports, appended to, changed to point to list head.
  * @param rcv: receive buffer size for UDP
  * @param snd: send buffer size for UDP
- * @param ssl_port: ssl service port number
- * @param tls_additional_port: list of additional ssl service port numbers.
  * @param proxy_protocol_port: list of PROXYv2 port numbers.
  * @param reuseport: try to set SO_REUSEPORT if nonNULL and true.
  * 	set to false on exit if reuseport failed due to no kernel support.
@@ -1268,22 +1266,15 @@ set_recvpktinfo(int s, int family)
 static int
 ports_create_if(const char* ifname, int do_auto, int do_udp, int do_tcp,
 	struct addrinfo *hints, int port, struct listen_port** list,
-	size_t rcv, size_t snd, int ssl_port,
-	struct config_strlist* tls_additional_port,
+	size_t rcv, size_t snd,
 	struct config_strlist* proxy_protocol_port,
 	int* reuseport, int transparent, int tcp_mss, int freebind,
 	int use_systemd, int dscp,
 	int sock_queue_timeout)
 {
 	int s, noip6=0;
-	int is_ssl = if_is_ssl(ifname, port, ssl_port, tls_additional_port);
 	int is_pp2 = if_is_pp2(ifname, port, proxy_protocol_port);
-	/* Always set TCP_NODELAY on TLS connection as it speeds up the TLS
-	 * handshake.
-	 * Otherwise the server waits before sending more handshake data for
-	 * the client ACK (Nagle's algorithm), which is delayed because the
-	 * client waits for more data before ACKing (delayed ACK). */
-	int nodelay = is_ssl;
+	int nodelay = 0;
 	struct unbound_socket* ub_sock;
 	const char* add = NULL;
 
@@ -1294,7 +1285,6 @@ ports_create_if(const char* ifname, int do_auto, int do_udp, int do_tcp,
 	/* Check if both UDP and TCP ports should be open.
 	 * In the case of encrypted channels, probably an unencrypted channel
 	 * at the same port is not desired. */
-	if(is_ssl) do_udp = do_auto = 0;
 
 
 	if(do_auto) {
@@ -1375,13 +1365,10 @@ ports_create_if(const char* ifname, int do_auto, int do_udp, int do_tcp,
 		ub_sock = calloc(1, sizeof(struct unbound_socket));
 		if(!ub_sock)
 			return 0;
-		if(is_ssl) {
-			port_type = listen_type_ssl;
-			add = "tls";
-		} else {
+
 			port_type = listen_type_tcp;
 			add = NULL;
-		}
+
 		if((s = make_sock_port(SOCK_STREAM, ifname, port, hints, 1,
 			&noip6, 0, 0, reuseport, transparent, tcp_mss, nodelay,
 			freebind, use_systemd, dscp, ub_sock, add)) == -1) {
@@ -1393,8 +1380,7 @@ ports_create_if(const char* ifname, int do_auto, int do_udp, int do_tcp,
 			}
 			return 0;
 		}
-		if(is_ssl)
-			verbose(VERB_ALGO, "setup TCP for SSL service");
+
 		if(!port_insert(list, s, port_type, is_pp2, ub_sock)) {
 			sock_close(s);
 			free(ub_sock->addr);
@@ -1448,7 +1434,6 @@ struct listen_dnsport*
 listen_create(struct comm_base* base, struct listen_port* ports,
 	size_t bufsize, int tcp_accept_count, int tcp_idle_timeout,
 	struct tcl_list* tcp_conn_limit,
-	void* dot_sslctx,
 	comm_point_callback_type* cb, void *cb_arg)
 {
 	struct listen_dnsport* front = (struct listen_dnsport*)
@@ -1475,13 +1460,6 @@ listen_create(struct comm_base* base, struct listen_port* ports,
 				tcp_conn_limit, bufsize, front->udp_buff,
 				ports->ftype, ports->pp2_enabled, cb, cb_arg,
 				ports->socket);
-		} else if(ports->ftype == listen_type_ssl) {
-			cp = comm_point_create_tcp(base, ports->fd,
-				tcp_accept_count, tcp_idle_timeout,
-				tcp_conn_limit, bufsize, front->udp_buff,
-				ports->ftype, ports->pp2_enabled, cb, cb_arg,
-				ports->socket);
-
 		} else if(ports->ftype == listen_type_udpancil) {
 #if defined(AF_INET6) && defined(IPV6_PKTINFO) && defined(HAVE_RECVMSG)
 			cp = comm_point_create_udp_ancil(base, ports->fd,
@@ -1496,13 +1474,7 @@ listen_create(struct comm_base* base, struct listen_port* ports,
 			listen_delete(front);
 			return NULL;
 		}
-		if((ports->ftype == listen_type_tcp) ||
-			(ports->ftype == listen_type_udp) ||
-			(ports->ftype == listen_type_udpancil)) {
-			cp->ssl = NULL;
-		} else {
-			cp->ssl = dot_sslctx;
-		}
+		cp->ssl = NULL;
 		cp->do_not_close = 1;
 		if(!listen_cp_insert(cp, front)) {
 			log_err("malloc failed");
@@ -1795,7 +1767,7 @@ listening_ports_open(struct config_file* cfg, char** ifs, int num_ifs,
 						do_auto, cfg->do_udp, do_tcp,
 						&hints, extraport, &list,
 						cfg->so_rcvbuf, cfg->so_sndbuf,
-						cfg->ssl_port, cfg->tls_additional_port,
+
 						cfg->proxy_protocol_port,
 						reuseport, cfg->ip_transparent,
 						cfg->tcp_mss, cfg->ip_freebind,
@@ -1812,7 +1784,7 @@ listening_ports_open(struct config_file* cfg, char** ifs, int num_ifs,
 						do_auto, cfg->do_udp, do_tcp,
 						&hints, extraport, &list,
 						cfg->so_rcvbuf, cfg->so_sndbuf,
-						cfg->ssl_port, cfg->tls_additional_port,
+
 						cfg->proxy_protocol_port,
 						reuseport, cfg->ip_transparent,
 						cfg->tcp_mss, cfg->ip_freebind,
@@ -1832,7 +1804,7 @@ listening_ports_open(struct config_file* cfg, char** ifs, int num_ifs,
 				do_auto, cfg->do_udp, do_tcp,
 				&hints, cfg->port, &list,
 				cfg->so_rcvbuf, cfg->so_sndbuf,
-				cfg->ssl_port, cfg->tls_additional_port,
+
 				cfg->proxy_protocol_port,
 				reuseport, cfg->ip_transparent,
 				cfg->tcp_mss, cfg->ip_freebind,
@@ -1849,7 +1821,7 @@ listening_ports_open(struct config_file* cfg, char** ifs, int num_ifs,
 				do_auto, cfg->do_udp, do_tcp,
 				&hints, cfg->port, &list,
 				cfg->so_rcvbuf, cfg->so_sndbuf,
-				cfg->ssl_port, cfg->tls_additional_port,
+
 				cfg->proxy_protocol_port,
 				reuseport, cfg->ip_transparent,
 				cfg->tcp_mss, cfg->ip_freebind,
@@ -1868,7 +1840,7 @@ listening_ports_open(struct config_file* cfg, char** ifs, int num_ifs,
 			if(!ports_create_if(ifs[i], 0, cfg->do_udp,
 				do_tcp, &hints, cfg->port, &list,
 				cfg->so_rcvbuf, cfg->so_sndbuf,
-				cfg->ssl_port, cfg->tls_additional_port,
+
 				cfg->proxy_protocol_port,
 				reuseport, cfg->ip_transparent,
 				cfg->tcp_mss, cfg->ip_freebind,
@@ -1885,7 +1857,7 @@ listening_ports_open(struct config_file* cfg, char** ifs, int num_ifs,
 			if(!ports_create_if(ifs[i], 0, cfg->do_udp,
 				do_tcp, &hints, cfg->port, &list,
 				cfg->so_rcvbuf, cfg->so_sndbuf,
-				cfg->ssl_port, cfg->tls_additional_port,
+
 				cfg->proxy_protocol_port,
 				reuseport, cfg->ip_transparent,
 				cfg->tcp_mss, cfg->ip_freebind,

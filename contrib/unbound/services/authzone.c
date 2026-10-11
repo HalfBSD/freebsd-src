@@ -767,7 +767,7 @@ rrset_remove_rr(struct auth_rrset* rrset, size_t index)
 	if(index+1 < old->count+old->rrsig_count)
 		memmove(&d->rr_ttl[index], &old->rr_ttl[index+1],
 		(old->count+old->rrsig_count - (index+1))*sizeof(time_t));
-	
+
 	/* move over rr_data */
 	for(i=0; i<d->count+d->rrsig_count; i++) {
 		size_t oldi;
@@ -1579,7 +1579,7 @@ auth_zone_read_zonefile(struct auth_zone* z, struct config_file* cfg)
 	FILE* in;
 	if(!z || !z->zonefile || z->zonefile[0]==0)
 		return 1; /* no file, or "", nothing to read */
-	
+
 	zfilename = z->zonefile;
 	if(cfg->chrootdir && cfg->chrootdir[0] && strncmp(zfilename,
 		cfg->chrootdir, strlen(cfg->chrootdir)) == 0)
@@ -3869,7 +3869,7 @@ int auth_zones_notify(struct auth_zones* az, struct module_env* env,
 	}
 	lock_basic_lock(&xfr->lock);
 	lock_rw_unlock(&az->lock);
-	
+
 	/* check access list for notifies */
 	if(!az_xfr_allowed_notify(xfr, addr, addrlen, &fromhost)) {
 		lock_basic_unlock(&xfr->lock);
@@ -5709,7 +5709,7 @@ xfr_master_add_addrs(struct auth_master* m, struct ub_packed_rrset_key* rrset,
 			continue; /* wrong length for A */
 		if(rrtype == LDNS_RR_TYPE_AAAA && len != INET6_SIZE)
 			continue; /* wrong length for AAAA */
-		
+
 		/* add and alloc it */
 		a = (struct auth_addr*)calloc(1, sizeof(*a));
 		if(!a) {
@@ -6444,12 +6444,12 @@ xfr_probe_send_probe(struct auth_xfer* xfr, struct module_env* env,
 		if (auth_name != NULL) {
 			if (addr.ss_family == AF_INET
 			&&  (int)ntohs(((struct sockaddr_in *)&addr)->sin_port)
-		            == env->cfg->ssl_port)
+		            == UNBOUND_DNS_OVER_TLS_PORT)
 				((struct sockaddr_in *)&addr)->sin_port
 					= htons((uint16_t)env->cfg->port);
 			else if (addr.ss_family == AF_INET6
 			&&  (int)ntohs(((struct sockaddr_in6 *)&addr)->sin6_port)
-		            == env->cfg->ssl_port)
+		            == UNBOUND_DNS_OVER_TLS_PORT)
                         	((struct sockaddr_in6 *)&addr)->sin6_port
 					= htons((uint16_t)env->cfg->port);
 		}
@@ -6635,7 +6635,7 @@ auth_xfer_probe_udp_callback(struct comm_point* c, void* arg, int err,
 			verbose(VERB_ALGO, "auth zone %s: soa probe failed", buf);
 		}
 	}
-	
+
 	/* failed lookup or not an update */
 	/* delete commpoint so a new one is created, with a fresh port nr */
 	comm_point_delete(xfr->task_probe->cp);
@@ -7004,7 +7004,7 @@ xfr_set_timeout(struct auth_xfer* xfr, struct module_env* env,
 	xfr->task_nextprobe->next_probe = *env->now;
 	if(xfr->lease_time && !failure)
 		xfr->task_nextprobe->next_probe = xfr->lease_time;
-	
+
 	if(!failure) {
 		xfr->task_nextprobe->backoff = 0;
 	} else {

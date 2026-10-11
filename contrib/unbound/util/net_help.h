@@ -489,23 +489,6 @@ int listen_sslctx_setup(void* ctxt, const char* tls_protocols);
  */
 void listen_sslctx_setup_2(void* ctxt);
 
-/**
- * create SSL listen context
- * @param key: private key file.
- * @param pem: public key cert.
- * @param verifypem: if nonNULL, verifylocation file.
- * @param tls_ciphers: if non empty string, tls ciphers to use.
- * @param tls_ciphersuites: if non empty string, tls ciphersuites to use.
- * @param set_ticket_keys_cb: if the callback for configured ticket keys needs
- *	to be set.
- * @param is_dot: if the TLS connection is for DoT to set the appropriate ALPN.
- * @param tls_protocols: configure string with allowed TLS protocols to use.
- * return SSL_CTX* or NULL on failure (logged).
- */
-void* listen_sslctx_create(const char* key, const char* pem,
-	const char* verifypem, const char* tls_ciphers,
-	const char* tls_ciphersuites, int set_ticket_keys_cb,
-	int is_dot, const char* tls_protocols);
 
 /**
  * create SSL connect context
@@ -518,13 +501,6 @@ void* listen_sslctx_create(const char* key, const char* pem,
  */
 void* connect_sslctx_create(char* key, char* pem, char* verifypem, int wincert);
 
-/**
- * accept a new fd and wrap it in a BIO in SSL
- * @param sslctx: the SSL_CTX to use (from listen_sslctx_create()).
- * @param fd: from accept, nonblocking.
- * @return SSL or NULL on alloc failure.
- */
-void* incoming_ssl_fd(void* sslctx, int fd);
 
 /**
  * connect a new fd and wrap it in a BIO in SSL
@@ -561,17 +537,6 @@ int ub_openssl_lock_init(void);
  */
 void ub_openssl_lock_delete(void);
 
-/**
- * setup TLS session ticket
- * @param tls_session_ticket_keys: TLS ticket secret filenames
- * @param chroot: if not NULL, the chroot that is in use.
- * @return false on failure (alloc failure).
- */
-int listen_sslctx_setup_ticket_keys(
-	struct config_strlist* tls_session_ticket_keys, char* chroot);
-
-/** Free memory used for TLS session ticket keys */
-void listen_sslctx_delete_ticket_keys(void);
 
 /**
  * RPZ format netblock to network byte order address and netblock

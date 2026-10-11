@@ -447,3 +447,122 @@ UNBOUND-REDUCTION-PLAN.md and this report.
 
 All five requested subsystems are physically removed; no iterator modification,
 commit, push, installed-directory migration, or Capsicum implementation occurred.
+
+Third reduction pass — partial, 2026-10-11
+
+Baseline: 815921421bcc8bdf559aa9d295fdce504c53a903
+("Remove Unbound external caching and encrypted server subsystems").
+The working tree was initially clean. Changes remain uncommitted and unpushed.
+
+Completed: incoming DNS-over-TLS service and client-specific views.
+Not completed: RPZ and global response-IP. The explicit prohibition on iterator
+changes conflicts with RPZ deletion: iterator.c calls two RPZ callbacks six times
+in three RPZ-only forged-response/CNAME policy blocks. Those callbacks are
+implemented in services/rpz.c and declared in services/rpz.h. Deleting them while
+retaining their calls breaks linking; replacing them with no-op implementations
+would create forbidden compatibility shims. RPZ in turn needs the response-IP
+address/action/rewrite machinery. A clarification request asks whether deleting
+only these policy hooks is authorized. No answer has been received. The entire
+iterator directory remains unchanged; these two subsystems remain supported.
+This report does not represent the third pass or overall reduction as complete.
+
+Incoming TLS removal deletes listener dispatch/type, accepted-connection TLS
+creation, DNS listener contexts and certificate/reload state, service key/PEM
+settings and aliases, listener ports/additional ports, ticket-key configuration
+and rotation, server ALPN callback, server ciphers/ciphersuites, TLS-only PROXYv2
+reads, response padding settings/parser code, incoming TLS statistics, capability
+probes, manuals and examples. tls-protocols stays for authenticated remote control.
+Shared TLS transport, control context security, outgoing DNS TLS certificates,
+SNI/query padding and anchor HTTPS clients stay. Ordinary reload refreshes outgoing
+contexts; fast reload retains CA-bundle change detection and context swapping.
+An authority-zone probe's deleted listener-port reference now uses the default
+outgoing TLS port constant; iterator logic is untouched.
+
+Views removal deletes services/view.c/.h, build and header references, view config
+structures/grammar/generated parser, ACL/interface associations, view local-data
+selection, per-view response-IP data, mesh identity/copies, control commands,
+reload locks/swaps, checkconf checks, callback registration and documentation.
+The view-only local-zone 'noview' type is gone. Global local-zone/local-data,
+ACL/interface tags and LAN access controls remain. libunbound callers use the
+simplified local-answer signature. No switches, shims or alternate versions.
+
+Deleted files:
+  contrib/unbound/services/view.c
+  contrib/unbound/services/view.h
+Incoming TLS implementation was deleted from shared files rather than separate
+source files. Major modifications: Makefile.in; configure.ac/configure/config.h.in;
+util/config_file.*, configlexer.lex/.c, configparser.y/.c/.h, net_help.*, netevent.c,
+data/msgparse.c, module.h and fptr_wlist.c; daemon/daemon.*, acl_list.*, remote.c,
+worker.c and stats.c; services/listen_dnsport.*, localzone.*, mesh.c and authzone.*;
+respip/respip.* (view portions only); libunbound/libworker.c and unbound.h;
+smallapp/unbound-checkconf.c and unbound-control.c; winrc/win_svc.c;
+lib/libunbound/Makefile and config.h; manuals/examples; forwarding.py; plan/reports.
+
+Removed dependencies: none external. OpenSSL remains necessary for outbound TLS,
+control authentication and cryptography. Removed orphan capability probes include
+TLS server ALPN selection, ticket-key callbacks, ticket encryption/HMAC helpers,
+and server cipher selection. DNSSEC key construction probes remain. Portable
+daemon NEEDED list unchanged: libssl.so.3, libcrypto.so.3, libc.so.6 (pthread merged
+into glibc). HalfBSD OpenSSL/pthread/XML dependencies and required libunbound remain.
+All four installed utilities remain; no make install was performed. Incoming TLS
+statistics were deleted from private/shared-memory structures and exported names;
+deploy daemon and retained utilities together.
+
+Fresh same-host measurements:                     Before      After     Removed
+Files under contrib/unbound                         329        327           2
+C/header/lexer/parser files                          218        216           2
+Lines (.c/.h/.y/.lex)                             167364     164323        3041
+Lines excluding generated lexer/parser           153448     151031        2417
+Unbound executable bytes                        6031056    5898248      132808
+Stripped executable bytes                       1325744    1292960       32784
+Installed HalfBSD utilities                            4          4           0
+Generated exclusion: configlexer.c, configparser.c, configparser.h. Temporary
+build-generated config.h is excluded. Actual source deletion is distinct from
+build rule/probe deletion. Baseline is freshly built, not a historical binary.
+Other unstripped ELF sizes: control 1466384 -> 1425288; checkconf 4377352 ->
+4305368; anchor 363992 -> 363984 (real .libs executable, not libtool wrapper).
+
+Stage       Files   Source lines   Stripped daemon bytes   Four builds   Runtime
+baseline      329       167364                   1325744   PASS          not rerun
+dot           329       166097                   1313472   PASS          PASS 16
+views         327       164488                   1297056   PASS          PASS 17
+final         327       164323                   1292960   PASS          PASS 17
+All four utilities were compiled before testing each removal and before starting
+the next. Incremental compile/reference errors were corrected. Final diff --check
+passes. Iterator diff is empty. Removed implementation/configuration reference
+audits pass; packet viewer test references remain and are unrelated to DNS views.
+
+Final tests exercise local A/CNAME/PTR UDP/TCP; forwarding/CNAME chains; positive
+and negative caching and cache administration; ordinary EDNS/ignored ECS; TCP
+pipelining/reuse; truncation and outgoing TCP fallback; AAAA/CD cache behavior;
+DNSSEC AD, corrupt-signature SERVFAIL and CD; prefetch; serve-expired; failover;
+runtime forwarding changes; Unix control/stats; reload and fast reload; outbound
+TLS hostname validation and CA-path changes across both reload mechanisms;
+mutual-TLS control authentication/missing-certificate rejection; removed directives
+and view commands rejection. New source-address ACL tests use allowed 127.0.0.2
+and refused 127.0.0.3 over UDP/TCP, also after fast reload. Global local-zone/data
+administration works. The suite's reply parser was fixed for legitimate REFUSED
+responses without a question section; this was a test issue, not a resolver bug.
+
+These are actual controlled loopback tests, not public Internet verification.
+Native buildworld/buildkernel/install are unavailable on this Linux host. Live
+RFC5011/bootstrap and deployed privilege-drop/chroot were not tested; suite
+username/chroot are empty. Those security mechanisms remain by source review.
+Imported upstream testcode/testdata implementations are absent. Existing compiler
+const-discard and generated-flex warnings remain; no unresolved build failures.
+No packages/tools were installed or downloaded. Existing temporary OpenSSL/Expat
+headers/libraries and system compiler/make/flex/bison/autoconf were used.
+Build and test logs: /tmp/unbound-pass3-{baseline,dot,views,final}-build.log and
+/tmp/unbound-pass3-{dot,views,final}-tests.log; each build copy has metrics.json.
+Reproduction commands and self-contained context are in
+UNBOUND-CHATGPT-HANDOFF-PASS3.txt.
+
+Remaining: RPZ/response-IP pending iterator scope clarification; authority zones
+and transfers; stub zones; catch-all forwarding enforcement; other deferred
+optional modules. Configuration/service directory migration remains separate.
+No recursive-resolution edits or Capsicum implementation occurred.
+Future Capsicum operations remain reload/includes/CA/control cert reads, log
+reopening, PID/control socket and worker channels, outgoing UDP/TCP/TLS creation,
+RFC5011 temporary writes and atomic root.key rename, anchor DNS/HTTPS and retained
+authority-zone files/transfers. DNS listener certificate/ticket operations and
+view reload trees are now eliminated. Existing sandbox-related behavior is intact.

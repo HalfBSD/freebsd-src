@@ -45,7 +45,6 @@
 #include "util/locks.h"
 #include "util/storage/dnstree.h"
 #include "util/module.h"
-#include "services/view.h"
 #include "sldns/sbuffer.h"
 struct packed_rrset_data;
 struct ub_packed_rrset_key;
@@ -104,8 +103,6 @@ enum localzone_type {
 	/** answer with 0.0.0.0 or ::0 or noerror/nodata, even when there is
 	 * local data */
 	local_zone_always_null,
-	/** answer not from the view, but global or no-answer */
-	local_zone_noview,
 	/** truncate the response; client should retry via tcp */
 	local_zone_truncate,
 	/** Invalid type, cannot be used to generate answer */
@@ -316,7 +313,6 @@ void local_zones_print(struct local_zones* zones);
  * @param tag_datas_size: size of tag_datas array.
  * @param tagname: array of tag name strings (for debug output).
  * @param num_tags: number of items in tagname array.
- * @param view: answer using this view. May be NULL.
  * @return true if answer is in buffer. false if query is not answered 
  * by authority data. If the reply should be dropped altogether, the return 
  * value is true, but the buffer is cleared (empty).
@@ -334,7 +330,7 @@ int local_zones_answer(struct local_zones* zones, struct module_env* env,
 	struct regional* temp, struct comm_reply* repinfo, uint8_t* taglist,
 	size_t taglen, uint8_t* tagactions, size_t tagactionssize,
 	struct config_strlist** tag_datas, size_t tag_datas_size,
-	char** tagname, int num_tags, struct view* view);
+	char** tagname, int num_tags);
 
 /** 
  * Answer using the local zone only (not local data used).

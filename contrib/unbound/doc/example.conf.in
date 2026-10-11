@@ -366,8 +366,6 @@ server:
 	# set redirect data for particular tag for access control element
 	# access-control-tag-data: 192.0.2.0/24 tag2 "A 127.0.0.1"
 
-	# Set view for access control element
-	# access-control-view: 192.0.2.0/24 viewname
 
 	# Similar to 'access-control:' but for interfaces.
 	# Control which listening interfaces are allowed to accept (recursive)
@@ -412,14 +410,6 @@ server:
 	# Note: any 'access-control*:' setting overrides all 'interface-*:'
 	# settings for targeted clients.
 	# interface-tag-data: eth0@5003 tag2 "A 127.0.0.1"
-
-	# Similar to 'access-control-view:' but for interfaces.
-	# Set view for an interface element.
-	# The specified interfaces should be the same as the ones specified in
-	# 'interface:' followed by the view name.
-	# Note: any 'access-control*:' setting overrides all 'interface-*:'
-	# settings for targeted clients.
-	# interface-view: eth0@5003 viewname
 
 	# if given, a chroot(2) is done to the given directory.
 	# i.e. you can chroot to the working directory, for example,
@@ -897,7 +887,6 @@ server:
 	# o block_a resolves all records normally but returns
 	#   NODATA for A queries and ignores local data for that name
 	# o always_null returns 0.0.0.0 or ::0 for any name in the zone.
-	# o noview breaks out of that view towards global local-zones.
 	#
 	# defaults are localhost address, reverse for 127.0.0.1 and ::1
 	# and nxdomain for AS112 zones. If you configure one of these zones
@@ -946,22 +935,6 @@ server:
 	# Requires use of the respip module.
 	# response-ip-tag: 192.0.2.0/24 "tag1 tag2"
 
-	# service clients over TLS (on the TCP sockets) with plain DNS inside
-	# the TLS stream, as specified in RFC7858.
-	# Give the certificate to use and private key.
-	# default is "" (disabled).  requires restart to take effect.
-	# tls-service-key: "path/to/privatekeyfile.key"
-	# tls-service-pem: "path/to/publiccertfile.pem"
-	# tls-port: 853
-
-	# Also serve tls on these port numbers (eg. 443, ...), by listing
-	# tls-additional-port: portno for each of the port numbers.
-
-	# cipher setting for TLSv1.2
-	# tls-ciphers: "DHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-SHA256:DHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA256"
-	# cipher setting for TLSv1.3
-	# tls-ciphersuites: "TLS_AES_128_GCM_SHA256:TLS_AES_128_CCM_8_SHA256:TLS_AES_128_CCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256"
-
 	# Use the SNI extension for TLS connections.  Default is yes.
 	# Changing the value requires a restart.
 	# tls-use-sni: yes
@@ -969,14 +942,6 @@ server:
 	# TLS protocols.
 	# Changing the value requires a restart.
 	# tls-protocols: "TLSv1.2 TLSv1.3"
-
-	# Add the secret file for TLS Session Ticket.
-	# Secret file must be 80 bytes of random data.
-	# First key use to encrypt and decrypt TLS session tickets.
-	# Other keys use to decrypt only.
-	# requires restart to take effect.
-	# tls-session-ticket-keys: "path/to/secret_file1"
-	# tls-session-ticket-keys: "path/to/secret_file2"
 
 	# request upstream over TLS (with plain DNS inside the TLS stream).
 	# Default is no.  Can be turned on and off with unbound-control.
@@ -990,12 +955,6 @@ server:
 	# and on other systems, the default openssl certificates
 	# tls-system-cert: no
 
-	# Pad responses to padded queries received over TLS
-	# pad-responses: yes
-
-	# Padded responses will be padded to the closest multiple of this size.
-	# pad-responses-block-size: 468
-
 	# Pad queries over TLS upstreams
 	# pad-queries: yes
 
@@ -1003,7 +962,7 @@ server:
 	# pad-queries-block-size: 128
 
 	# The interfaces that use these listed port numbers will support and
-	# expect PROXYv2. For UDP and TCP/TLS interfaces.
+	# expect PROXYv2. For UDP and TCP interfaces.
 	# proxy-protocol-port: portno for each of the port numbers.
 
 
@@ -1235,26 +1194,6 @@ remote-control:
 #	zonemd-check: no
 #	zonemd-reject-absence: no
 #	zonefile: "example.org.zone"
-
-# Views
-# Create named views. Name must be unique.
-# Map views to requests using the access-control-view/interface-view options.
-# Views can contain zero or more local-zone and local-data options.
-# Options from matching views will override global options.
-# Global options will be used if no matching view is found.
-# With view-first yes, it will try to answer using the global local-zone and
-# local-data elements if there is no view specific match.
-# view:
-#	name: "viewname"
-#	local-zone: "example.com" redirect
-#	local-data: "example.com A 192.0.2.3"
-#	local-data-ptr: "192.0.2.3 www.example.com"
-#	response-ip: 192.0.2.0/24 redirect
-#	response-ip-data: 192.0.2.0/24 "example. A 192.0.2.1"
-#	view-first: no
-# view:
-#	name: "anotherview"
-#	local-zone: "example.com" refuse
 
 # IPSet
 # Add specify domain into set via ipset.

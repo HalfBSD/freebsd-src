@@ -499,7 +499,7 @@ find_rrset(struct msg_parse* msg, sldns_buffer* pkt, uint8_t* dname,
 	}
 	/* find by hashing and lookup in hashtable */
 	*rrset_flags = pkt_rrset_flags(pkt, type, section);
-	
+
 	/* if rrsig - try to lookup matching data set first */
 	if(type == LDNS_RR_TYPE_RRSIG && pkt_rrsig_covered(pkt, 
 		sldns_buffer_current(pkt), &covtype)) {
@@ -784,7 +784,7 @@ add_rr_to_rrset(struct rrset_parse* rrset, sldns_buffer* pkt,
 			return LDNS_RCODE_FORMERR;
 		return 0;
 	}
-	
+
 	/* create rr */
 	if(!(rr = (struct rr_parse*)regional_alloc(region, sizeof(*rr))))
 		return LDNS_RCODE_SERVFAIL;
@@ -952,7 +952,7 @@ parse_edns_options_from_query(uint8_t* rdata_ptr, size_t rdata_len,
 	struct comm_reply* repinfo, uint32_t now, struct regional* region,
 	struct cookie_secrets* cookie_secrets)
 {
-	int i = 0, nsid_seen = 0, cookie_seen = 0, padding_seen = 0;
+	int i = 0, nsid_seen = 0, cookie_seen = 0;
 	/* To respond with a Keepalive option, the client connection must have
 	 * received one message with a TCP Keepalive EDNS option, and that
 	 * option must have 0 length data. Subsequent messages sent on that
@@ -1027,20 +1027,6 @@ parse_edns_options_from_query(uint8_t* rdata_ptr, size_t rdata_len,
 				return LDNS_RCODE_SERVFAIL;
 			}
 			c->tcp_keepalive = 1;
-			break;
-
-		case LDNS_EDNS_PADDING:
-			if(!cfg || !cfg->pad_responses ||
-					!c || c->type != comm_tcp ||!c->ssl || padding_seen)
-				break;
-			padding_seen = 1;
-			if(!edns_opt_list_append(&edns->opt_list_out,
-						LDNS_EDNS_PADDING,
-						0, NULL, region)) {
-				log_err("out of memory");
-				return LDNS_RCODE_SERVFAIL;
-			}
-			edns->padding_block_size = cfg->pad_responses_block_size;
 			break;
 
 		case LDNS_EDNS_COOKIE:
@@ -1207,7 +1193,7 @@ parse_extract_edns_from_response_msg(struct msg_parse* msg,
 	msg->arcount --;
 	msg->ar_rrsets --;
 	msg->rrset_count --;
-	
+
 	/* take the data ! */
 	edns->edns_present = 1;
 	edns->ext_rcode = found->rr_last->ttl_data[0];

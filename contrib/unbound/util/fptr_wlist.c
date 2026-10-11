@@ -53,7 +53,6 @@
 #include "services/authzone.h"
 #include "services/cache/infra.h"
 #include "services/cache/rrset.h"
-#include "services/view.h"
 #include "iterator/iterator.h"
 #include "iterator/iter_fwd.h"
 #include "validator/validator.h"
@@ -220,7 +219,6 @@ fptr_whitelist_rbtree_cmp(int (*fptr) (const void *, const void *))
 	else if(fptr == &val_neg_zone_compare) return 1;
 	else if(fptr == &probetree_cmp) return 1;
 	else if(fptr == &replay_var_compare) return 1;
-	else if(fptr == &view_cmp) return 1;
 	else if(fptr == &auth_zone_cmp) return 1;
 	else if(fptr == &auth_data_cmp) return 1;
 	else if(fptr == &auth_xfer_cmp) return 1;

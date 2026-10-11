@@ -21475,34 +21475,10 @@ then :
   printf "%s\n" "#define HAVE_EVP_DIGESTVERIFY 1" >>confdefs.h
 
 fi
-ac_fn_c_check_func "$LINENO" "EVP_aes_256_cbc" "ac_cv_func_EVP_aes_256_cbc"
-if test "x$ac_cv_func_EVP_aes_256_cbc" = xyes
-then :
-  printf "%s\n" "#define HAVE_EVP_AES_256_CBC 1" >>confdefs.h
-
-fi
-ac_fn_c_check_func "$LINENO" "EVP_EncryptInit_ex" "ac_cv_func_EVP_EncryptInit_ex"
-if test "x$ac_cv_func_EVP_EncryptInit_ex" = xyes
-then :
-  printf "%s\n" "#define HAVE_EVP_ENCRYPTINIT_EX 1" >>confdefs.h
-
-fi
-ac_fn_c_check_func "$LINENO" "HMAC_Init_ex" "ac_cv_func_HMAC_Init_ex"
-if test "x$ac_cv_func_HMAC_Init_ex" = xyes
-then :
-  printf "%s\n" "#define HAVE_HMAC_INIT_EX 1" >>confdefs.h
-
-fi
 ac_fn_c_check_func "$LINENO" "CRYPTO_THREADID_set_callback" "ac_cv_func_CRYPTO_THREADID_set_callback"
 if test "x$ac_cv_func_CRYPTO_THREADID_set_callback" = xyes
 then :
   printf "%s\n" "#define HAVE_CRYPTO_THREADID_SET_CALLBACK 1" >>confdefs.h
-
-fi
-ac_fn_c_check_func "$LINENO" "EVP_MAC_CTX_set_params" "ac_cv_func_EVP_MAC_CTX_set_params"
-if test "x$ac_cv_func_EVP_MAC_CTX_set_params" = xyes
-then :
-  printf "%s\n" "#define HAVE_EVP_MAC_CTX_SET_PARAMS 1" >>confdefs.h
 
 fi
 ac_fn_c_check_func "$LINENO" "OSSL_PARAM_BLD_new" "ac_cv_func_OSSL_PARAM_BLD_new"
@@ -21550,30 +21526,6 @@ ac_fn_c_check_func "$LINENO" "X509_VERIFY_PARAM_set1_host" "ac_cv_func_X509_VERI
 if test "x$ac_cv_func_X509_VERIFY_PARAM_set1_host" = xyes
 then :
   printf "%s\n" "#define HAVE_X509_VERIFY_PARAM_SET1_HOST 1" >>confdefs.h
-
-fi
-ac_fn_c_check_func "$LINENO" "SSL_CTX_set_ciphersuites" "ac_cv_func_SSL_CTX_set_ciphersuites"
-if test "x$ac_cv_func_SSL_CTX_set_ciphersuites" = xyes
-then :
-  printf "%s\n" "#define HAVE_SSL_CTX_SET_CIPHERSUITES 1" >>confdefs.h
-
-fi
-ac_fn_c_check_func "$LINENO" "SSL_CTX_set_tlsext_ticket_key_evp_cb" "ac_cv_func_SSL_CTX_set_tlsext_ticket_key_evp_cb"
-if test "x$ac_cv_func_SSL_CTX_set_tlsext_ticket_key_evp_cb" = xyes
-then :
-  printf "%s\n" "#define HAVE_SSL_CTX_SET_TLSEXT_TICKET_KEY_EVP_CB 1" >>confdefs.h
-
-fi
-ac_fn_c_check_func "$LINENO" "SSL_CTX_set_alpn_select_cb" "ac_cv_func_SSL_CTX_set_alpn_select_cb"
-if test "x$ac_cv_func_SSL_CTX_set_alpn_select_cb" = xyes
-then :
-  printf "%s\n" "#define HAVE_SSL_CTX_SET_ALPN_SELECT_CB 1" >>confdefs.h
-
-fi
-ac_fn_c_check_func "$LINENO" "SSL_get0_alpn_selected" "ac_cv_func_SSL_get0_alpn_selected"
-if test "x$ac_cv_func_SSL_get0_alpn_selected" = xyes
-then :
-  printf "%s\n" "#define HAVE_SSL_GET0_ALPN_SELECTED 1" >>confdefs.h
 
 fi
 ac_fn_c_check_func "$LINENO" "SSL_CTX_set_alpn_protos" "ac_cv_func_SSL_CTX_set_alpn_protos"
@@ -21709,63 +21661,6 @@ fi
 printf "%s\n" "#define HAVE_DECL_SSL_CTX_SET_TMP_ECDH $ac_have_decl" >>confdefs.h
 
 
-if test "$ac_cv_func_HMAC_Init_ex" = "yes"; then
-# check function return type.
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking the return type of HMAC_Init_ex" >&5
-printf %s "checking the return type of HMAC_Init_ex... " >&6; }
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#ifdef HAVE_OPENSSL_ERR_H
-#include <openssl/err.h>
-#endif
-
-#ifdef HAVE_OPENSSL_RAND_H
-#include <openssl/rand.h>
-#endif
-
-#ifdef HAVE_OPENSSL_CONF_H
-#include <openssl/conf.h>
-#endif
-
-#ifdef HAVE_OPENSSL_ENGINE_H
-#include <openssl/engine.h>
-#endif
-#include <openssl/ssl.h>
-#include <openssl/evp.h>
-
-int
-main (void)
-{
-
-	HMAC_CTX* hmac_ctx = NULL;
-	void* hmac_key = NULL;
-	const EVP_MD* digest = NULL;
-	int x = HMAC_Init_ex(hmac_ctx, hmac_key, 32, digest, NULL);
-	(void)x;
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"
-then :
-
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: int" >&5
-printf "%s\n" "int" >&6; }
-
-else case e in #(
-  e)
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: void" >&5
-printf "%s\n" "void" >&6; }
-
-printf "%s\n" "#define HMAC_INIT_EX_RETURNS_VOID 1" >>confdefs.h
-
- ;;
-esac
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
 
 fi
 

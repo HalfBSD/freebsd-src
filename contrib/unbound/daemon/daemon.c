@@ -82,7 +82,6 @@
 #include "services/cache/rrset.h"
 #include "services/cache/infra.h"
 #include "services/localzone.h"
-#include "services/view.h"
 #include "services/modstack.h"
 #include "services/authzone.h"
 #include "util/module.h"
@@ -196,38 +195,6 @@ signal_handling_playback(struct worker* wrk)
 	sig_record_reload = 0;
 }
 
-#ifdef HAVE_SSL
-/* setup a listening ssl context, fatal_exit() on any failure */
-static void
-setup_listen_sslctx(void** ctx, int is_dot,
-	struct config_file* cfg, char* chroot)
-{
-	char* key = cfg->ssl_service_key;
-	char* pem = cfg->ssl_service_pem;
-	if(chroot && strncmp(key, chroot, strlen(chroot)) == 0)
-		key += strlen(chroot);
-	if(chroot && pem && strncmp(pem, chroot, strlen(chroot)) == 0)
-		pem += strlen(chroot);
-	if(!(*ctx = listen_sslctx_create(key, pem, NULL,
-		cfg->tls_ciphers, cfg->tls_ciphersuites,
-		(cfg->tls_session_ticket_keys.first &&
-		cfg->tls_session_ticket_keys.first->str[0] != 0),
-		is_dot, cfg->tls_protocols))) {
-		fatal_exit("could not set up listen SSL_CTX");
-	}
-}
-#endif /* HAVE_SSL */
-
-#ifdef HAVE_SSL
-void* daemon_setup_listen_dot_sslctx(struct daemon* daemon,
-	struct config_file* cfg)
-{
-	void* ctx;
-	(void)setup_listen_sslctx(&ctx, 1, cfg, daemon->chroot);
-	return ctx;
-}
-#endif /* HAVE_SSL */
-
 
 #ifdef HAVE_SSL
 void* daemon_setup_connect_dot_sslctx(struct daemon* daemon,
@@ -251,54 +218,6 @@ void
 daemon_setup_sslctxs(struct daemon* daemon, struct config_file* cfg)
 {
 #ifdef HAVE_SSL
-	char* chroot = daemon->chroot;
-	if(cfg->ssl_service_key && cfg->ssl_service_key[0]) {
-		char* key = cfg->ssl_service_key;
-		char* pem = cfg->ssl_service_pem;
-		if(chroot && strncmp(key, chroot, strlen(chroot)) == 0)
-			key += strlen(chroot);
-		if(chroot && pem && strncmp(pem, chroot, strlen(chroot)) == 0)
-			pem += strlen(chroot);
-
-		/* setup the session keys; the callback to use them will be
-		 * attached to each sslctx separately */
-		if(cfg->tls_session_ticket_keys.first &&
-			cfg->tls_session_ticket_keys.first->str[0] != 0) {
-			if(!listen_sslctx_setup_ticket_keys(
-				cfg->tls_session_ticket_keys.first, chroot)) {
-				fatal_exit("could not set session ticket SSL_CTX");
-			}
-		}
-		daemon->listen_dot_sslctx = daemon_setup_listen_dot_sslctx(
-			daemon, cfg);
-
-		/* Store the file name and mtime to detect changes later. */
-		daemon->ssl_service_key = strdup(cfg->ssl_service_key);
-		if(!daemon->ssl_service_key)
-			fatal_exit("could not setup ssl ctx: out of memory");
-		if(cfg->ssl_service_pem) {
-			daemon->ssl_service_pem = strdup(cfg->ssl_service_pem);
-			if(!daemon->ssl_service_pem)
-				fatal_exit("could not setup ssl ctx: out of memory");
-		} else {
-			daemon->ssl_service_pem = NULL;
-		}
-		if(!file_get_mtime(key,
-			&daemon->mtime_ssl_service_key,
-			&daemon->mtime_ns_ssl_service_key, NULL))
-			log_err("Could not stat(%s): %s",
-				key, strerror(errno));
-		if(pem) {
-			if(!file_get_mtime(pem,
-				&daemon->mtime_ssl_service_pem,
-				&daemon->mtime_ns_ssl_service_pem, NULL))
-				log_err("Could not stat(%s): %s",
-					pem, strerror(errno));
-		} else {
-			daemon->mtime_ssl_service_pem = 0;
-			daemon->mtime_ns_ssl_service_pem = 0;
-		}
-	}
 	daemon->connect_dot_sslctx = daemon_setup_connect_dot_sslctx(
 		daemon, cfg);
 #else /* HAVE_SSL */
@@ -311,62 +230,11 @@ static void
 daemon_delete_sslctxs(struct daemon* daemon)
 {
 #ifdef HAVE_SSL
-	listen_sslctx_delete_ticket_keys();
-	SSL_CTX_free((SSL_CTX*)daemon->listen_dot_sslctx);
-	daemon->listen_dot_sslctx = NULL;
 	SSL_CTX_free((SSL_CTX*)daemon->connect_dot_sslctx);
 	daemon->connect_dot_sslctx = NULL;
-	free(daemon->ssl_service_key);
-	daemon->ssl_service_key = NULL;
-	free(daemon->ssl_service_pem);
-	daemon->ssl_service_pem = NULL;
 #else
 	(void)daemon;
 #endif
-}
-
-int
-ssl_cert_changed(struct daemon* daemon, struct config_file* cfg)
-{
-	time_t mtime = 0;
-	long ns = 0;
-	char* chroot = daemon->chroot;
-	char* key = cfg->ssl_service_key;
-	char* pem = cfg->ssl_service_pem;
-	log_assert(daemon->ssl_service_key && cfg->ssl_service_key);
-	if(chroot && strncmp(key, chroot, strlen(chroot)) == 0)
-		key += strlen(chroot);
-	if(chroot && pem && strncmp(pem, chroot, strlen(chroot)) == 0)
-		pem += strlen(chroot);
-
-	if(strcmp(daemon->ssl_service_key, cfg->ssl_service_key) != 0)
-		return 1;
-	if(daemon->ssl_service_pem && cfg->ssl_service_pem &&
-	   strcmp(daemon->ssl_service_pem, cfg->ssl_service_pem) != 0)
-		return 1;
-	if(!file_get_mtime(key, &mtime, &ns, NULL)) {
-		log_err("Could not stat(%s): %s",
-			key, strerror(errno));
-		/* It has probably changed, but file read is likely going to
-		 * fail. */
-		return 0;
-	}
-	if(mtime != daemon->mtime_ssl_service_key ||
-		ns != daemon->mtime_ns_ssl_service_key)
-		return 1;
-	if(pem) {
-		if(!file_get_mtime(pem, &mtime, &ns, NULL)) {
-			log_err("Could not stat(%s): %s",
-				pem, strerror(errno));
-			/* It has probably changed, but file read is likely going to
-			 * fail. */
-			return 0;
-		}
-		if(mtime != daemon->mtime_ssl_service_pem ||
-			ns != daemon->mtime_ns_ssl_service_pem)
-			return 1;
-	}
-	return 0;
 }
 
 /** Reload the sslctxs if they have changed */
@@ -374,21 +242,8 @@ static void
 daemon_reload_sslctxs(struct daemon* daemon)
 {
 #ifdef HAVE_SSL
-	if(daemon->cfg->ssl_service_key && daemon->cfg->ssl_service_key[0]) {
-		/* See if changed */
-		if(!daemon->ssl_service_key ||
-			ssl_cert_changed(daemon,daemon->cfg)) {
-			verbose(VERB_ALGO, "Reloading certificates");
-			daemon_delete_sslctxs(daemon);
-			daemon_setup_sslctxs(daemon, daemon->cfg);
-		}
-	} else {
-		/* See if sslctxs are removed from config. */
-		if(daemon->ssl_service_key) {
-			verbose(VERB_ALGO, "Removing certificates");
-			daemon_delete_sslctxs(daemon);
-		}
-	}
+	daemon_delete_sslctxs(daemon);
+	daemon_setup_sslctxs(daemon, daemon->cfg);
 #else
 	(void)daemon;
 #endif
@@ -925,23 +780,17 @@ daemon_stop_others(struct daemon* daemon)
 void 
 daemon_fork(struct daemon* daemon)
 {
-	int have_view_respip_cfg = 0;
 #ifdef HAVE_SYSTEMD
 	int ret;
 #endif
 
 	log_assert(daemon);
 	daemon_reload_sslctxs(daemon);
-	if(!(daemon->env->views = views_create()))
-		fatal_exit("Could not create views: out of memory");
-	/* create individual views and their localzone/data trees */
-	if(!views_apply_cfg(daemon->env->views, daemon->cfg))
-		fatal_exit("Could not set up views");
 
-	if(!acl_list_apply_cfg(daemon->acl, daemon->cfg, daemon->env->views))
+
+	if(!acl_list_apply_cfg(daemon->acl, daemon->cfg))
 		fatal_exit("Could not setup access control list");
-	if(!acl_interface_apply_cfg(daemon->acl_interface, daemon->cfg,
-		daemon->env->views))
+	if(!acl_interface_apply_cfg(daemon->acl_interface, daemon->cfg))
 		fatal_exit("Could not setup interface control list");
 	if(!tcl_list_apply_cfg(daemon->tcl, daemon->cfg))
 		fatal_exit("Could not setup TCP connection limits");
@@ -970,11 +819,9 @@ daemon_fork(struct daemon* daemon)
 		fatal_exit("Could not create response IP set");
 	if(!respip_global_apply_cfg(daemon->env->respip_set, daemon->cfg))
 		fatal_exit("Could not set up response IP set");
-	if(!respip_views_apply_cfg(daemon->env->views, daemon->cfg,
-		&have_view_respip_cfg))
-		fatal_exit("Could not set up per-view response IP sets");
+
 	daemon->use_response_ip = !respip_set_is_empty(
-		daemon->env->respip_set) || have_view_respip_cfg;
+		daemon->env->respip_set);
 
 	/* setup modules */
 	daemon_setup_modules(daemon);
@@ -1098,8 +945,6 @@ daemon_cleanup(struct daemon* daemon)
 	daemon->local_zones = NULL;
 	respip_set_delete(daemon->env->respip_set);
 	daemon->env->respip_set = NULL;
-	views_delete(daemon->env->views);
-	daemon->env->views = NULL;
 	if(daemon->env->auth_zones)
 		auth_zones_cleanup(daemon->env->auth_zones);
 	/* key cache is cleared by module deinit during next daemon_fork() */

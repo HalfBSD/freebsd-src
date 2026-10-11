@@ -121,3 +121,24 @@ views, authority zones and transfers, stub zones, and forwarding-only
 configuration enforcement. Configuration path migration and full HalfBSD
 builds still require their own validation. This pass adds no build switches,
 compatibility support, Capsicum implementation, commit, or push.
+
+## Third pass status: independent removals and iterator constraint (2026-10-11)
+
+Incoming DNS-over-TLS service and client-specific views have been physically
+removed. All four retained utilities compile after each removal; the forwarding
+suite passed after each stage, with additional source ACL, global local-record
+administration, and outgoing TLS reload coverage. Shared outgoing TLS, HTTPS
+clients used by anchor, and authenticated control TLS remain.
+
+RPZ and global response-IP removal require a scope decision. iterator.c contains
+six RPZ callback calls in three policy-only response-rewriting blocks. Deleting
+the RPZ implementation while keeping those calls would break linking; retaining
+no-op callbacks would violate the prohibition on compatibility shims. RPZ also
+uses the response-IP address trees and rewrite engine. The user prohibited all
+iterator changes, so these two subsystems remain supported pending authorization
+to delete only the RPZ hooks. No iterator or recursive-resolution code has been
+modified. This third pass is therefore partial, not the completion of all four
+requested removals. See the third-pass results appendix and handoff report.
+
+Configuration directories and service integration remain unchanged. No Capsicum,
+build switches, compatibility layers, commit, or push were introduced.

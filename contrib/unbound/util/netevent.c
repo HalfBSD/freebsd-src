@@ -1449,18 +1449,6 @@ comm_point_tcp_accept_callback(int fd, short event, void* arg)
 	memmove(&c_hdl->repinfo.client_addr,
 		&c_hdl->repinfo.remote_addr,
 		c_hdl->repinfo.remote_addrlen);
-	if(c->ssl) {
-		c_hdl->ssl = incoming_ssl_fd(c->ssl, new_fd);
-		if(!c_hdl->ssl) {
-			c_hdl->fd = new_fd;
-			comm_point_close(c_hdl);
-			return;
-		}
-		c_hdl->ssl_shake_state = comm_ssl_shake_read;
-#ifdef USE_WINSOCK
-		comm_point_tcp_win_bio_cb(c_hdl, c_hdl->ssl);
-#endif
-	}
 
 	/* Paranoia: Check that the state has not changed from above: */
 	/* Should not happen: tcp_free state changed within accept_callback. */
@@ -1747,152 +1735,7 @@ ssl_handle_read(struct comm_point* c)
 		if(c->ssl_shake_state != comm_ssl_shake_none)
 			return 1;
 	}
-	if(c->pp2_enabled && c->pp2_header_state != pp2_header_done) {
-		struct pp2_header* header = NULL;
-		size_t want_read_size = 0;
-		size_t current_read_size = 0;
-		if(c->pp2_header_state == pp2_header_none) {
-			want_read_size = PP2_HEADER_SIZE;
-			if(sldns_buffer_remaining(c->buffer)<want_read_size) {
-				log_err_addr("proxy_protocol: not enough "
-					"buffer size to read PROXYv2 header", "",
-					&c->repinfo.remote_addr,
-					c->repinfo.remote_addrlen);
-				return 0;
-			}
-			verbose(VERB_ALGO, "proxy_protocol: reading fixed "
-				"part of PROXYv2 header (len %lu)",
-				(unsigned long)want_read_size);
-			current_read_size = want_read_size;
-			if(c->tcp_byte_count < current_read_size) {
-				ERR_clear_error();
-				if((r=SSL_read(c->ssl, (void*)sldns_buffer_at(
-					c->buffer, c->tcp_byte_count),
-					current_read_size -
-					c->tcp_byte_count)) <= 0) {
-					int want = SSL_get_error(c->ssl, r);
-					if(want == SSL_ERROR_ZERO_RETURN) {
-						if(c->tcp_req_info)
-							return tcp_req_info_handle_read_close(c->tcp_req_info);
-						return 0; /* shutdown, closed */
-					} else if(want == SSL_ERROR_WANT_READ) {
-#ifdef USE_WINSOCK
-						ub_winsock_tcp_wouldblock(c->ev->ev, UB_EV_READ);
-#endif
-						return 1; /* read more later */
-					} else if(want == SSL_ERROR_WANT_WRITE) {
-						c->ssl_shake_state = comm_ssl_shake_hs_write;
-						comm_point_listen_for_rw(c, 0, 1);
-						return 1;
-					} else if(want == SSL_ERROR_SYSCALL) {
-#ifdef ECONNRESET
-						if(errno == ECONNRESET && verbosity < 2)
-							return 0; /* silence reset by peer */
-#endif
-						if(errno != 0)
-							log_err("SSL_read syscall: %s",
-								strerror(errno));
-						return 0;
-					}
-					log_crypto_err_io("could not SSL_read",
-						want);
-					return 0;
-				}
-				c->tcp_byte_count += r;
-				sldns_buffer_skip(c->buffer, r);
-				if(c->tcp_byte_count != current_read_size) return 1;
-				c->pp2_header_state = pp2_header_init;
-			}
-		}
-		if(c->pp2_header_state == pp2_header_init) {
-			int err;
-			err = pp2_read_header(
-				sldns_buffer_begin(c->buffer),
-				sldns_buffer_limit(c->buffer));
-			if(err) {
-				log_err("proxy_protocol: could not parse "
-					"PROXYv2 header (%s)",
-					pp_lookup_error(err));
-				return 0;
-			}
-			header = (struct pp2_header*)sldns_buffer_begin(c->buffer);
-			want_read_size = ntohs(header->len);
-			if(sldns_buffer_limit(c->buffer) <
-				PP2_HEADER_SIZE + want_read_size) {
-				log_err_addr("proxy_protocol: not enough "
-					"buffer size to read PROXYv2 header", "",
-					&c->repinfo.remote_addr,
-					c->repinfo.remote_addrlen);
-				return 0;
-			}
-			verbose(VERB_ALGO, "proxy_protocol: reading variable "
-				"part of PROXYv2 header (len %lu)",
-				(unsigned long)want_read_size);
-			current_read_size = PP2_HEADER_SIZE + want_read_size;
-			if(want_read_size == 0) {
-				/* nothing more to read; header is complete */
-				c->pp2_header_state = pp2_header_done;
-			} else if(c->tcp_byte_count < current_read_size) {
-				ERR_clear_error();
-				if((r=SSL_read(c->ssl, (void*)sldns_buffer_at(
-					c->buffer, c->tcp_byte_count),
-					current_read_size -
-					c->tcp_byte_count)) <= 0) {
-					int want = SSL_get_error(c->ssl, r);
-					if(want == SSL_ERROR_ZERO_RETURN) {
-						if(c->tcp_req_info)
-							return tcp_req_info_handle_read_close(c->tcp_req_info);
-						return 0; /* shutdown, closed */
-					} else if(want == SSL_ERROR_WANT_READ) {
-#ifdef USE_WINSOCK
-						ub_winsock_tcp_wouldblock(c->ev->ev, UB_EV_READ);
-#endif
-						return 1; /* read more later */
-					} else if(want == SSL_ERROR_WANT_WRITE) {
-						c->ssl_shake_state = comm_ssl_shake_hs_write;
-						comm_point_listen_for_rw(c, 0, 1);
-						return 1;
-					} else if(want == SSL_ERROR_SYSCALL) {
-#ifdef ECONNRESET
-						if(errno == ECONNRESET && verbosity < 2)
-							return 0; /* silence reset by peer */
-#endif
-						if(errno != 0)
-							log_err("SSL_read syscall: %s",
-								strerror(errno));
-						return 0;
-					}
-					log_crypto_err_io("could not SSL_read",
-						want);
-					return 0;
-				}
-				c->tcp_byte_count += r;
-				sldns_buffer_skip(c->buffer, r);
-				if(c->tcp_byte_count != current_read_size) return 1;
-				c->pp2_header_state = pp2_header_done;
-			}
-		}
-		if(c->pp2_header_state != pp2_header_done || !header) {
-			log_err_addr("proxy_protocol: wrong state for the "
-				"PROXYv2 header", "", &c->repinfo.remote_addr,
-				c->repinfo.remote_addrlen);
-			return 0;
-		}
-		sldns_buffer_flip(c->buffer);
-		if(!consume_pp2_header(c->buffer, &c->repinfo, 1)) {
-			log_err_addr("proxy_protocol: could not consume "
-				"PROXYv2 header", "", &c->repinfo.remote_addr,
-				c->repinfo.remote_addrlen);
-			return 0;
-		}
-		verbose(VERB_ALGO, "proxy_protocol: successful read of "
-			"PROXYv2 header");
-		/* Clear and reset the buffer to read the following
-		 * DNS packet(s). */
-		sldns_buffer_clear(c->buffer);
-		c->tcp_byte_count = 0;
-		return 1;
-	}
+
 	if(c->tcp_byte_count < sizeof(uint16_t)) {
 		/* read length bytes */
 		ERR_clear_error();
@@ -1901,8 +1744,7 @@ ssl_handle_read(struct comm_point* c)
 			c->tcp_byte_count))) <= 0) {
 			int want = SSL_get_error(c->ssl, r);
 			if(want == SSL_ERROR_ZERO_RETURN) {
-				if(c->tcp_req_info)
-					return tcp_req_info_handle_read_close(c->tcp_req_info);
+
 				return 0; /* shutdown, closed */
 			} else if(want == SSL_ERROR_WANT_READ) {
 #ifdef USE_WINSOCK
@@ -1951,8 +1793,7 @@ ssl_handle_read(struct comm_point* c)
 		if(r <= 0) {
 			int want = SSL_get_error(c->ssl, r);
 			if(want == SSL_ERROR_ZERO_RETURN) {
-				if(c->tcp_req_info)
-					return tcp_req_info_handle_read_close(c->tcp_req_info);
+
 				return 0; /* shutdown, closed */
 			} else if(want == SSL_ERROR_WANT_READ) {
 #ifdef USE_WINSOCK
@@ -3840,8 +3681,7 @@ comm_point_create_tcp(struct comm_base *base, int fd, int num,
 	c->event_added = 1;
 	/* now prealloc the handlers */
 	for(i=0; i<num; i++) {
-		if(port_type == listen_type_tcp ||
-			port_type == listen_type_ssl) {
+		if(port_type == listen_type_tcp) {
 			c->tcp_handlers[i] = comm_point_create_tcp_handler(base,
 				c, bufsize, spoolbuf, callback, callback_arg, socket);
 		} else {

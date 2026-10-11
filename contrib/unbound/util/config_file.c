@@ -120,9 +120,6 @@ config_create(void)
 	cfg->do_tcp_keepalive = 0;
 	cfg->tcp_keepalive_timeout = 120 * 1000; /* 120s in millisecs */
 	cfg->sock_queue_timeout = 0; /* do not check timeout */
-	cfg->ssl_service_key = NULL;
-	cfg->ssl_service_pem = NULL;
-	cfg->ssl_port = UNBOUND_DNS_OVER_TLS_PORT;
 	cfg->ssl_upstream = 0;
 	cfg->tls_cert_bundle = NULL;
 	cfg->tls_win_cert = 0;
@@ -214,7 +211,6 @@ config_create(void)
 	cfg->stubs = NULL;
 	cfg->forwards = NULL;
 	cfg->auths = NULL;
-	cfg->views = NULL;
 	cfg->acls = NULL;
 	cfg->tcp_connection_limits = NULL;
 	cfg->harden_short_bufsize = 1;
@@ -332,8 +328,6 @@ config_create(void)
 	cfg->shm_key = 11777;
 	cfg->edns_client_strings = NULL;
 	cfg->edns_client_string_opcode = 65001;
-	cfg->pad_responses = 1;
-	cfg->pad_responses_block_size = 468; /* from RFC8467 */
 	cfg->pad_queries = 1;
 	cfg->pad_queries_block_size = 128; /* from RFC8467 */
 #ifdef USE_IPSECMOD
@@ -547,23 +541,10 @@ int config_set_option(struct config_file* cfg, const char* opt,
 	else S_NUMBER_OR_ZERO("sock-queue-timeout:", sock_queue_timeout)
 	else S_YNO("ssl-upstream:", ssl_upstream)
 	else S_YNO("tls-upstream:", ssl_upstream)
-	else S_STR("ssl-service-key:", ssl_service_key)
-	else S_STR("tls-service-key:", ssl_service_key)
-	else S_STR("ssl-service-pem:", ssl_service_pem)
-	else S_STR("tls-service-pem:", ssl_service_pem)
-	else S_NUMBER_NONZERO("ssl-port:", ssl_port)
-	else S_NUMBER_NONZERO("tls-port:", ssl_port)
 	else S_STR("ssl-cert-bundle:", tls_cert_bundle)
 	else S_STR("tls-cert-bundle:", tls_cert_bundle)
 	else S_YNO("tls-win-cert:", tls_win_cert)
 	else S_YNO("tls-system-cert:", tls_win_cert)
-	else S_STRLIST("additional-ssl-port:", tls_additional_port)
-	else S_STRLIST("additional-tls-port:", tls_additional_port)
-	else S_STRLIST("tls-additional-ports:", tls_additional_port)
-	else S_STRLIST("tls-additional-port:", tls_additional_port)
-	else S_STRLIST_APPEND("tls-session-ticket-keys:", tls_session_ticket_keys)
-	else S_STR("tls-ciphers:", tls_ciphers)
-	else S_STR("tls-ciphersuites:", tls_ciphersuites)
 	else S_YNO("tls-use-sni:", tls_use_sni)
 	else if(strcmp(opt, "tls-protocols:") == 0) {
 		if(!cfg_tls_protocols_is_valid(val)) return 0;
@@ -759,8 +740,6 @@ int config_set_option(struct config_file* cfg, const char* opt,
 	else S_NUMBER_OR_ZERO("fast-server-permil:", fast_server_permil)
 	else S_YNO("qname-minimisation:", qname_minimisation)
 	else S_YNO("qname-minimisation-strict:", qname_minimisation_strict)
-	else S_YNO("pad-responses:", pad_responses)
-	else S_SIZET_NONZERO("pad-responses-block-size:", pad_responses_block_size)
 	else S_YNO("pad-queries:", pad_queries)
 	else S_SIZET_NONZERO("pad-queries-block-size:", pad_queries_block_size)
 	else S_STRLIST("proxy-protocol-port:", proxy_protocol_port)
@@ -802,7 +781,7 @@ int config_set_option(struct config_file* cfg, const char* opt,
 		 * stub-ssl-upstream, forward-zone, auth-zone
 		 * name, forward-addr, forward-host,
 		 * ratelimit-for-domain, ratelimit-below-domain,
-		 * local-zone-tag, access-control-view, interface-*,
+		 * local-zone-tag, interface-*,
 		 * ipsecmod_hook,
 		 * ipsecmod_whitelist. */
 		return 0;
@@ -1037,23 +1016,10 @@ config_get_option(struct config_file* cfg, const char* opt,
 	else O_DEC(opt, "sock-queue-timeout", sock_queue_timeout)
 	else O_YNO(opt, "ssl-upstream", ssl_upstream)
 	else O_YNO(opt, "tls-upstream", ssl_upstream)
-	else O_STR(opt, "ssl-service-key", ssl_service_key)
-	else O_STR(opt, "tls-service-key", ssl_service_key)
-	else O_STR(opt, "ssl-service-pem", ssl_service_pem)
-	else O_STR(opt, "tls-service-pem", ssl_service_pem)
-	else O_DEC(opt, "ssl-port", ssl_port)
-	else O_DEC(opt, "tls-port", ssl_port)
 	else O_STR(opt, "ssl-cert-bundle", tls_cert_bundle)
 	else O_STR(opt, "tls-cert-bundle", tls_cert_bundle)
 	else O_YNO(opt, "tls-win-cert", tls_win_cert)
 	else O_YNO(opt, "tls-system-cert", tls_win_cert)
-	else O_LST(opt, "additional-ssl-port", tls_additional_port)
-	else O_LST(opt, "additional-tls-port", tls_additional_port)
-	else O_LST(opt, "tls-additional-ports", tls_additional_port)
-	else O_LST(opt, "tls-additional-port", tls_additional_port)
-	else O_LST(opt, "tls-session-ticket-keys", tls_session_ticket_keys.first)
-	else O_STR(opt, "tls-ciphers", tls_ciphers)
-	else O_STR(opt, "tls-ciphersuites", tls_ciphersuites)
 	else O_YNO(opt, "tls-use-sni", tls_use_sni)
 	else O_STR(opt, "tls-protocols", tls_protocols)
 	else O_YNO(opt, "use-systemd", use_systemd)
@@ -1186,14 +1152,10 @@ config_get_option(struct config_file* cfg, const char* opt,
 	else O_LS3(opt, "local-zone-override", local_zone_overrides)
 	else O_LS3(opt, "access-control-tag-action", acl_tag_actions)
 	else O_LS3(opt, "access-control-tag-data", acl_tag_datas)
-	else O_LS2(opt, "access-control-view", acl_view)
 	else O_LS2(opt, "interface-action", interface_actions)
 	else O_LTG(opt, "interface-tag", interface_tags)
 	else O_LS3(opt, "interface-tag-action", interface_tag_actions)
 	else O_LS3(opt, "interface-tag-data", interface_tag_datas)
-	else O_LS2(opt, "interface-view", interface_view)
-	else O_YNO(opt, "pad-responses", pad_responses)
-	else O_DEC(opt, "pad-responses-block-size", pad_responses_block_size)
 	else O_YNO(opt, "pad-queries", pad_queries)
 	else O_DEC(opt, "pad-queries-block-size", pad_queries_block_size)
 	else O_LS2(opt, "edns-client-strings", edns_client_strings)
@@ -1461,31 +1423,6 @@ config_delstubs(struct config_stub* p)
 }
 
 void
-config_delview(struct config_view* p)
-{
-	if(!p) return;
-	free(p->name);
-	config_deldblstrlist(p->local_zones);
-	config_delstrlist(p->local_zones_nodefault);
-#ifdef USE_IPSET
-	config_delstrlist(p->local_zones_ipset);
-#endif
-	config_delstrlist(p->local_data);
-	free(p);
-}
-
-void
-config_delviews(struct config_view* p)
-{
-	struct config_view* np;
-	while(p) {
-		np = p->next;
-		config_delview(p);
-		p = np;
-	}
-}
-
-void
 config_del_strarray(char** array, int num)
 {
 	int i;
@@ -1521,13 +1458,7 @@ config_delete(struct config_file* cfg)
 	free(cfg->pidfile);
 	free(cfg->if_automatic_ports);
 	free(cfg->target_fetch_policy);
-	free(cfg->ssl_service_key);
-	free(cfg->ssl_service_pem);
 	free(cfg->tls_cert_bundle);
-	config_delstrlist(cfg->tls_additional_port);
-	config_delstrlist(cfg->tls_session_ticket_keys.first);
-	free(cfg->tls_ciphers);
-	free(cfg->tls_ciphersuites);
 	free(cfg->tls_protocols);
 	if(cfg->log_identity) {
 		log_ident_revert_to_default();
@@ -1538,7 +1469,6 @@ config_delete(struct config_file* cfg)
 	config_delstubs(cfg->stubs);
 	config_delstubs(cfg->forwards);
 	config_delauths(cfg->auths);
-	config_delviews(cfg->views);
 	config_delstrlist(cfg->donotqueryaddrs);
 	config_delstrlist(cfg->root_hints);
 	free(cfg->identity);
@@ -1570,12 +1500,10 @@ config_delete(struct config_file* cfg)
 	config_del_strbytelist(cfg->local_zone_tags);
 	config_del_strbytelist(cfg->respip_tags);
 	config_deldblstrlist(cfg->respip_actions);
-	config_deldblstrlist(cfg->acl_view);
 	config_del_strbytelist(cfg->acl_tags);
 	config_deltrplstrlist(cfg->acl_tag_actions);
 	config_deltrplstrlist(cfg->acl_tag_datas);
 	config_deldblstrlist(cfg->interface_actions);
-	config_deldblstrlist(cfg->interface_view);
 	config_del_strbytelist(cfg->interface_tags);
 	config_deltrplstrlist(cfg->interface_tag_actions);
 	config_deltrplstrlist(cfg->interface_tag_datas);
@@ -2614,14 +2542,6 @@ if_listens_on(const char* ifname, int default_port, int port,
 		if(if_port == atoi(s->str)) return 1;
 	}
 	return 0;
-}
-
-int
-if_is_ssl(const char* ifname, int default_port, int ssl_port,
-	struct config_strlist* tls_additional_port)
-{
-	return if_listens_on(ifname, default_port, ssl_port,
-		tls_additional_port);
 }
 
 int

@@ -668,7 +668,6 @@ struct ub_shm_stat_info {
 		long long val;
 		long long iter;
 		long long ipsecmod;
-		long long respip;
 	} mem;
 };
 
@@ -682,8 +681,6 @@ struct ub_shm_stat_info {
 #define UB_STATS_OPCODE_NUM 16
 /** number of histogram buckets */
 #define UB_STATS_BUCKET_NUM 40
-/** number of RPZ actions */
-#define UB_STATS_RPZ_ACTION_NUM 10
 
 /** per worker statistics. */
 struct ub_server_stats {
@@ -808,8 +805,7 @@ struct ub_server_stats {
 	long long num_neg_cache_nxdomain;
 	/** number of bytes in the stream wait buffers */
 	long long mem_stream_wait;
-	/** RPZ action stats */
-	long long rpz_action[UB_STATS_RPZ_ACTION_NUM];
+
 	/** number of queries removed due to discard-timeout */
 	long long num_queries_discard_timeout;
 	/** number of queries removed due to replyaddr limit */

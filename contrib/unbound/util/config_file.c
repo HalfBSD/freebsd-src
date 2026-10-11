@@ -1148,7 +1148,6 @@ config_get_option(struct config_file* cfg, const char* opt,
 	else O_IFC(opt, "define-tag", num_tags, tagname)
 	else O_LTG(opt, "local-zone-tag", local_zone_tags)
 	else O_LTG(opt, "access-control-tag", acl_tags)
-	else O_LTG(opt, "response-ip-tag", respip_tags)
 	else O_LS3(opt, "local-zone-override", local_zone_overrides)
 	else O_LS3(opt, "access-control-tag-action", acl_tag_actions)
 	else O_LS3(opt, "access-control-tag-data", acl_tag_datas)
@@ -1383,10 +1382,6 @@ config_delauth(struct config_auth* p)
 	config_delstrlist(p->urls);
 	config_delstrlist(p->allow_notify);
 	free(p->zonefile);
-	free(p->rpz_taglist);
-	free(p->rpz_action_override);
-	free(p->rpz_cname);
-	free(p->rpz_log_name);
 	free(p);
 }
 
@@ -1498,8 +1493,6 @@ config_delete(struct config_file* cfg)
 	config_deltrplstrlist(cfg->local_zone_overrides);
 	config_del_strarray(cfg->tagname, cfg->num_tags);
 	config_del_strbytelist(cfg->local_zone_tags);
-	config_del_strbytelist(cfg->respip_tags);
-	config_deldblstrlist(cfg->respip_actions);
 	config_del_strbytelist(cfg->acl_tags);
 	config_deltrplstrlist(cfg->acl_tag_actions);
 	config_deltrplstrlist(cfg->acl_tag_datas);

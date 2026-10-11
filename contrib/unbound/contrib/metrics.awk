@@ -51,9 +51,6 @@ END {
 	if(val["mem.mod.validator"] != "") {
 		print "unbound_memory_bytes{type=\"mem.mod.validator\"} " val["mem.mod.validator"];
 	}
-	if(val["mem.mod.respip"] != "") {
-		print "unbound_memory_bytes{type=\"mem.mod.respip\"} " val["mem.mod.respip"];
-	}
 	if(val["mem.mod.subnet"] != "") {
 		print "unbound_memory_bytes{type=\"mem.mod.subnet\"} " val["mem.mod.subnet"];
 	}

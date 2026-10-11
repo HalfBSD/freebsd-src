@@ -51,7 +51,6 @@
 #include "util/data/msgparse.h"
 #include "util/module.h"
 #include "services/modstack.h"
-#include "services/rpz.h"
 #include "libunbound/unbound.h"
 struct sldns_buffer;
 struct mesh_state;
@@ -61,7 +60,6 @@ struct query_info;
 struct reply_info;
 struct outbound_entry;
 struct timehist;
-struct respip_client_info;
 
 /**
  * Maximum number of mesh state activations. Any more is likely an
@@ -135,8 +133,7 @@ struct mesh_area {
 	size_t ans_rcode[UB_STATS_RCODE_NUM];
 	/** (extended stats) rcode nodata in replies */
 	size_t ans_nodata;
-	/** (extended stats) type of applied RPZ action */
-	size_t rpz_action[UB_STATS_RPZ_ACTION_NUM];
+
 	/** stats, number of queries removed due to discard-timeout */
 	size_t num_queries_discard_timeout;
 	/** stats, number of queries removed due to replyaddr limit */
@@ -164,10 +161,7 @@ struct mesh_area {
 	/** timeout for jostling. if age is lower, it does not get jostled. */
 	struct timeval jostle_max;
 
-	/** If we need to use response ip (value passed from daemon)*/
-	int use_response_ip;
-	/** If we need to use RPZ (value passed from daemon) */
-	int use_rpz;
+
 };
 
 /**
@@ -307,21 +301,14 @@ void mesh_delete(struct mesh_area* mesh);
  *
  * @param mesh: the mesh.
  * @param qinfo: query from client.
- * @param cinfo: additional information associated with the query client.
- * 	'cinfo' itself is ephemeral but data pointed to by its members
- *      can be assumed to be valid and unchanged until the query processing is
- *      completed.
  * @param qflags: flags from client query.
  * @param edns: edns data from client query.
  * @param rep: where to reply to.
  * @param qid: query id to reply with.
- * @param rpz_passthru: if true, the rpz passthru was previously found and
- * 	further rpz processing is stopped.
  */
 void mesh_new_client(struct mesh_area* mesh, struct query_info* qinfo,
-	struct respip_client_info* cinfo, uint16_t qflags,
-	struct edns_data* edns, struct comm_reply* rep, uint16_t qid,
-	int rpz_passthru);
+	uint16_t qflags,
+	struct edns_data* edns, struct comm_reply* rep, uint16_t qid);
 
 /**
  * New query with callback. Create new query state if needed, and
@@ -336,13 +323,11 @@ void mesh_new_client(struct mesh_area* mesh, struct query_info* qinfo,
  * @param qid: query id to reply with.
  * @param cb: callback function.
  * @param cb_arg: callback user arg.
- * @param rpz_passthru: if true, the rpz passthru was previously found and
- * 	further rpz processing is stopped.
  * @return 0 on error.
  */
 int mesh_new_callback(struct mesh_area* mesh, struct query_info* qinfo,
 	uint16_t qflags, struct edns_data* edns, struct sldns_buffer* buf, 
-	uint16_t qid, mesh_cb_func_type cb, void* cb_arg, int rpz_passthru);
+	uint16_t qid, mesh_cb_func_type cb, void* cb_arg);
 
 /**
  * New prefetch message. Create new query state if needed.
@@ -352,11 +337,9 @@ int mesh_new_callback(struct mesh_area* mesh, struct query_info* qinfo,
  * @param qinfo: query from client.
  * @param qflags: flags from client query.
  * @param leeway: TTL leeway what to expire earlier for this update.
- * @param rpz_passthru: if true, the rpz passthru was previously found and
- * 	further rpz processing is stopped.
  */
 void mesh_new_prefetch(struct mesh_area* mesh, struct query_info* qinfo,
-	uint16_t qflags, time_t leeway, int rpz_passthru);
+	uint16_t qflags, time_t leeway);
 
 /**
  * Handle new event from the wire. A serviced query has returned.
@@ -399,8 +382,6 @@ void mesh_detach_subs(struct module_qstate* qstate);
  * @param qstate: the state to find mesh state, and that wants to receive
  * 	the results from the new subquery.
  * @param qinfo: what to query for (copied).
- * @param cinfo: if non-NULL client specific info that may affect IP-based
- * 	actions that apply to the query result. It is copied.
  * @param qflags: what flags to use (RD / CD flag or not).
  * @param prime: if it is a (stub) priming query.
  * @param valrec: if it is a validation recursion query (lookup of key, DS).
@@ -409,7 +390,7 @@ void mesh_detach_subs(struct module_qstate* qstate);
  * @return: false on error, true if success (and init may be needed).
  */
 int mesh_attach_sub(struct module_qstate* qstate, struct query_info* qinfo,
-	struct respip_client_info* cinfo, uint16_t qflags, int prime,
+	uint16_t qflags, int prime,
 	int valrec, struct module_qstate** newq);
 
 /**
@@ -429,8 +410,6 @@ int mesh_attach_sub(struct module_qstate* qstate, struct query_info* qinfo,
  * @param qstate: the state to find mesh state, and that wants to receive
  * 	the results from the new subquery.
  * @param qinfo: what to query for (copied).
- * @param cinfo: if non-NULL client specific info that may affect IP-based
- * 	actions that apply to the query result. It is copied.
  * @param qflags: what flags to use (RD / CD flag or not).
  * @param prime: if it is a (stub) priming query.
  * @param valrec: if it is a validation recursion query (lookup of key, DS).
@@ -440,7 +419,7 @@ int mesh_attach_sub(struct module_qstate* qstate, struct query_info* qinfo,
  * @return: false on error, true if success (and init may be needed).
  */
 int mesh_add_sub(struct module_qstate* qstate, struct query_info* qinfo,
-	struct respip_client_info* cinfo, uint16_t qflags, int prime,
+	uint16_t qflags, int prime,
 	int valrec, struct module_qstate** newq, struct mesh_state** sub);
 
 /**
@@ -487,7 +466,6 @@ void mesh_state_delete(struct module_qstate* qstate);
  * Does not put the mesh state into rbtrees and so on.
  * @param env: module environment to set.
  * @param qinfo: query info that the mesh is for.
- * @param cinfo: control info for the query client (can be NULL).
  * @param qflags: flags for query (RD / CD flag).
  * @param prime: if true, it is a priming query, set is_priming on mesh state.
  * @param valrec: if true, it is a validation recursion query, and sets
@@ -495,7 +473,7 @@ void mesh_state_delete(struct module_qstate* qstate);
  * @return: new mesh state or NULL on allocation error.
  */
 struct mesh_state* mesh_state_create(struct module_env* env,
-	struct query_info* qinfo, struct respip_client_info* cinfo,
+	struct query_info* qinfo,
 	uint16_t qflags, int prime, int valrec);
 
 /**
@@ -523,8 +501,6 @@ void mesh_delete_all(struct mesh_area* mesh);
  * Find a mesh state in the mesh area. Pass relevant flags.
  *
  * @param mesh: the mesh area to look in.
- * @param cinfo: if non-NULL client specific info that may affect IP-based
- * 	actions that apply to the query result.
  * @param qinfo: what query
  * @param qflags: if RD / CD bit is set or not.
  * @param prime: if it is a priming query.
@@ -532,7 +508,7 @@ void mesh_delete_all(struct mesh_area* mesh);
  * @return: mesh state or NULL if not found.
  */
 struct mesh_state* mesh_area_find(struct mesh_area* mesh,
-	struct respip_client_info* cinfo, struct query_info* qinfo,
+	struct query_info* qinfo,
 	uint16_t qflags, int prime, int valrec);
 
 /**

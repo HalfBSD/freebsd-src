@@ -304,8 +304,6 @@ struct auth_zones* auth_zones_create(void)
 	lock_protect(&az->lock, &az->ztree, sizeof(az->ztree));
 	lock_protect(&az->lock, &az->xtree, sizeof(az->xtree));
 	/* also lock protects the rbnode's in struct auth_zone, auth_xfer */
-	lock_rw_init(&az->rpz_lock);
-	lock_protect(&az->rpz_lock, &az->rpz_first, sizeof(az->rpz_first));
 	return az;
 }
 
@@ -388,25 +386,12 @@ auth_data_del(rbnode_type* n, void* ATTR_UNUSED(arg))
 
 /** delete an auth zone structure (tree remove must be done elsewhere) */
 static void
-auth_zone_delete(struct auth_zone* z, struct auth_zones* az)
+auth_zone_delete(struct auth_zone* z)
 {
 	if(!z) return;
 	lock_rw_destroy(&z->lock);
 	traverse_postorder(&z->data, auth_data_del, NULL);
 
-	if(az && z->rpz) {
-		/* keep RPZ linked list intact */
-		lock_rw_wrlock(&az->rpz_lock);
-		if(z->rpz_az_prev)
-			z->rpz_az_prev->rpz_az_next = z->rpz_az_next;
-		else
-			az->rpz_first = z->rpz_az_next;
-		if(z->rpz_az_next)
-			z->rpz_az_next->rpz_az_prev = z->rpz_az_prev;
-		lock_rw_unlock(&az->rpz_lock);
-	}
-	if(z->rpz)
-		rpz_delete(z->rpz);
 	free(z->name);
 	free(z->zonefile);
 	free(z);
@@ -431,14 +416,12 @@ auth_zone_create(struct auth_zones* az, uint8_t* nm, size_t nmlen,
 	}
 	rbtree_init(&z->data, &auth_data_cmp);
 	lock_rw_init(&z->lock);
-	lock_protect(&z->lock, &z->name, sizeof(*z)-sizeof(rbnode_type)-
-			sizeof(&z->rpz_az_next)-sizeof(&z->rpz_az_prev));
+	lock_protect(&z->lock, &z->name, sizeof(*z)-sizeof(rbnode_type));
 	lock_rw_wrlock(&z->lock);
-	/* z lock protects all, except rbtree itself and the rpz linked list
-	 * pointers, which are protected using az->lock */
+	/* z lock protects zone data; az->lock protects the tree. */
 	if(!rbtree_insert(&az->ztree, &z->node)) {
 		lock_rw_unlock(&z->lock);
-		auth_zone_delete(z, NULL);
+		auth_zone_delete(z);
 		log_warn("duplicate auth zone");
 		return NULL;
 	}
@@ -1184,12 +1167,6 @@ az_insert_rr(struct auth_zone* z, uint8_t* rr, size_t rr_len,
 		log_err("cannot add RR to domain");
 		return 0;
 	}
-	if(z->rpz) {
-		if(!(rpz_insert_rr(z->rpz, z->name, z->namelen, dname,
-			dname_len, rr_type, rr_class, rr_ttl, rdata, rdatalen,
-			rr, rr_len)))
-			return 0;
-	}
 	return 1;
 }
 
@@ -1304,10 +1281,6 @@ az_remove_rr(struct auth_zone* z, uint8_t* rr, size_t rr_len,
 	if(node->rrsets == NULL) {
 		(void)rbtree_delete(&z->data, node);
 		auth_data_delete(node);
-	}
-	if(z->rpz) {
-		rpz_remove_rr(z->rpz, z->name, z->namelen, dname, dname_len,
-			rr_type, rr_class, rdata, rdatalen);
 	}
 	return 1;
 }
@@ -1608,9 +1581,6 @@ auth_zone_read_zonefile(struct auth_zone* z, struct config_file* cfg)
 	/* clear the data tree */
 	traverse_postorder(&z->data, auth_data_del, NULL);
 	rbtree_init(&z->data, &auth_data_cmp);
-	/* clear the RPZ policies */
-	if(z->rpz)
-		rpz_clear(z->rpz);
 
 	memset(&state, 0, sizeof(state));
 	/* default TTL to 3600 */
@@ -1631,8 +1601,6 @@ auth_zone_read_zonefile(struct auth_zone* z, struct config_file* cfg)
 	}
 	fclose(in);
 
-	if(z->rpz)
-		rpz_finish_config(z->rpz);
 	return 1;
 }
 
@@ -2122,26 +2090,15 @@ auth_zones_cfg(struct auth_zones* az, struct config_auth* c)
 	struct auth_xfer* x = NULL;
 
 	/* create zone */
-	if(c->isrpz) {
-		/* if the rpz lock is needed, grab it before the other
-		 * locks to avoid a lock dependency cycle */
-		lock_rw_wrlock(&az->rpz_lock);
-	}
 	lock_rw_wrlock(&az->lock);
 	if(!(z=auth_zones_find_or_add_zone(az, c->name))) {
 		lock_rw_unlock(&az->lock);
-		if(c->isrpz) {
-			lock_rw_unlock(&az->rpz_lock);
-		}
 		return 0;
 	}
 	if(c->masters || c->urls) {
 		if(!(x=auth_zones_find_or_add_xfer(az, z))) {
 			lock_rw_unlock(&az->lock);
 			lock_rw_unlock(&z->lock);
-			if(c->isrpz) {
-				lock_rw_unlock(&az->rpz_lock);
-			}
 			return 0;
 		}
 	}
@@ -2156,9 +2113,6 @@ auth_zones_cfg(struct auth_zones* az, struct config_auth* c)
 			lock_basic_unlock(&x->lock);
 		}
 		lock_rw_unlock(&z->lock);
-		if(c->isrpz) {
-			lock_rw_unlock(&az->rpz_lock);
-		}
 		return 0;
 	}
 	z->for_downstream = c->for_downstream;
@@ -2166,31 +2120,6 @@ auth_zones_cfg(struct auth_zones* az, struct config_auth* c)
 	z->fallback_enabled = c->fallback_enabled;
 	z->zonemd_check = c->zonemd_check;
 	z->zonemd_reject_absence = c->zonemd_reject_absence;
-	if(c->isrpz && !z->rpz){
-		if(!(z->rpz = rpz_create(c))){
-			fatal_exit("Could not setup RPZ zones");
-			return 0;
-		}
-		lock_protect(&z->lock, &z->rpz->local_zones, sizeof(*z->rpz));
-		/* the az->rpz_lock is locked above */
-		z->rpz_az_next = az->rpz_first;
-		if(az->rpz_first)
-			az->rpz_first->rpz_az_prev = z;
-		az->rpz_first = z;
-	} else if(c->isrpz && z->rpz) {
-		if(!rpz_config(z->rpz, c)) {
-			log_err("Could not change rpz config");
-			if(x) {
-				lock_basic_unlock(&x->lock);
-			}
-			lock_rw_unlock(&z->lock);
-			lock_rw_unlock(&az->rpz_lock);
-			return 0;
-		}
-	}
-	if(c->isrpz) {
-		lock_rw_unlock(&az->rpz_lock);
-	}
 
 	/* xfer zone */
 	if(x) {
@@ -2261,14 +2190,14 @@ az_delete_deleted_zones(struct auth_zones* az)
 			auth_xfer_delete(xfr);
 		}
 		(void)rbtree_delete(&az->ztree, &z->node);
-		auth_zone_delete(z, az);
+		auth_zone_delete(z);
 		z = next;
 	}
 	lock_rw_unlock(&az->lock);
 }
 
 int auth_zones_apply_cfg(struct auth_zones* az, struct config_file* cfg,
-	int setup, int* is_rpz, struct module_env* env,
+	int setup, struct module_env* env,
 	struct module_stack* mods)
 {
 	struct config_auth* p;
@@ -2278,7 +2207,6 @@ int auth_zones_apply_cfg(struct auth_zones* az, struct config_file* cfg,
 			log_warn("auth-zone without a name, skipped");
 			continue;
 		}
-		*is_rpz = (*is_rpz || p->isrpz);
 		if(!auth_zones_cfg(az, p)) {
 			log_err("cannot config auth zone %s", p->name);
 			return 0;
@@ -2376,7 +2304,7 @@ static void
 auth_zone_del(rbnode_type* n, void* ATTR_UNUSED(arg))
 {
 	struct auth_zone* z = (struct auth_zone*)n->key;
-	auth_zone_delete(z, NULL);
+	auth_zone_delete(z);
 }
 
 /** helper traverse to delete xfer zones */
@@ -2391,7 +2319,6 @@ void auth_zones_delete(struct auth_zones* az)
 {
 	if(!az) return;
 	lock_rw_destroy(&az->lock);
-	lock_rw_destroy(&az->rpz_lock);
 	traverse_postorder(&az->ztree, auth_zone_del, NULL);
 	traverse_postorder(&az->xtree, auth_xfer_del, NULL);
 	free(az);
@@ -5070,9 +4997,6 @@ apply_axfr(struct auth_xfer* xfr, struct auth_zone* z,
 	/* clear the data tree */
 	traverse_postorder(&z->data, auth_data_del, NULL);
 	rbtree_init(&z->data, &auth_data_cmp);
-	/* clear the RPZ policies */
-	if(z->rpz)
-		rpz_clear(z->rpz);
 
 	xfr->have_zone = 0;
 	xfr->serial = 0;
@@ -5172,9 +5096,6 @@ apply_http(struct auth_xfer* xfr, struct auth_zone* z,
 	/* clear the data tree */
 	traverse_postorder(&z->data, auth_data_del, NULL);
 	rbtree_init(&z->data, &auth_data_cmp);
-	/* clear the RPZ policies */
-	if(z->rpz)
-		rpz_clear(z->rpz);
 
 	xfr->have_zone = 0;
 	xfr->serial = 0;
@@ -5423,9 +5344,6 @@ xfr_process_chunk_list(struct auth_xfer* xfr, struct module_env* env,
 	if(xfr->have_zone)
 		xfr->lease_time = *env->now;
 
-	if(z->rpz)
-		rpz_finish_config(z->rpz);
-
 	/* unlock */
 	lock_rw_unlock(&z->lock);
 
@@ -5516,7 +5434,7 @@ xfr_transfer_lookup_host(struct auth_xfer* xfr, struct module_env* env)
 	 * called straight away */
 	lock_basic_unlock(&xfr->lock);
 	if(!mesh_new_callback(env->mesh, &qinfo, qflags, &edns, buf, 0,
-		&auth_xfer_transfer_lookup_callback, xfr, 0)) {
+		&auth_xfer_transfer_lookup_callback, xfr)) {
 		lock_basic_lock(&xfr->lock);
 		log_err("out of memory lookup up master %s", master->host);
 		return 0;
@@ -6711,7 +6629,7 @@ xfr_probe_lookup_host(struct auth_xfer* xfr, struct module_env* env)
 	 * called straight away */
 	lock_basic_unlock(&xfr->lock);
 	if(!mesh_new_callback(env->mesh, &qinfo, qflags, &edns, buf, 0,
-		&auth_xfer_probe_lookup_callback, xfr, 0)) {
+		&auth_xfer_probe_lookup_callback, xfr)) {
 		lock_basic_lock(&xfr->lock);
 		log_err("out of memory lookup up master %s", master->host);
 		return 0;
@@ -8424,11 +8342,8 @@ void auth_zonemd_dnskey_lookup_callback(void* arg, int rcode, sldns_buffer* buf,
 			query_dname_compare(z->name, rq.qname) == 0 &&
 			FLAGS_GET_RCODE(rep->flags) == LDNS_RCODE_NXDOMAIN &&
 			sec == sec_status_secure) {
-			/* secure nxdomain, so the zone is like some RPZ zone
-			 * that does not exist in the wider internet, with
-			 * a secure nxdomain answer outside of it. So we
-			 * treat the zonemd zone without a dnssec chain of
-			 * trust, as insecure. */
+
+			/* Secure NXDOMAIN means this local zone has no public DNSSEC chain. */
 			is_insecure = 1;
 			auth_zone_log(z->name, VERB_ALGO,
 				"zonemd lookup of %s was secure NXDOMAIN, treat as insecure", typestr);
@@ -8436,6 +8351,7 @@ void auth_zonemd_dnskey_lookup_callback(void* arg, int rcode, sldns_buffer* buf,
 			query_dname_compare(z->name, rq.qname) == 0 &&
 			FLAGS_GET_RCODE(rep->flags) == LDNS_RCODE_NXDOMAIN &&
 			sec == sec_status_insecure) {
+			/* Secure NXDOMAIN means this local zone has no public DNSSEC chain. */
 			is_insecure = 1;
 			auth_zone_log(z->name, VERB_ALGO,
 				"zonemd lookup of %s was insecure NXDOMAIN, treat as insecure", typestr);
@@ -8443,6 +8359,7 @@ void auth_zonemd_dnskey_lookup_callback(void* arg, int rcode, sldns_buffer* buf,
 			query_dname_compare(z->name, rq.qname) == 0 &&
 			FLAGS_GET_RCODE(rep->flags) == LDNS_RCODE_NXDOMAIN &&
 			sec == sec_status_indeterminate) {
+			/* Secure NXDOMAIN means this local zone has no public DNSSEC chain. */
 			is_insecure = 1;
 			auth_zone_log(z->name, VERB_ALGO,
 				"zonemd lookup of %s was indeterminate NXDOMAIN, treat as insecure", typestr);
@@ -8545,7 +8462,7 @@ zonemd_lookup_dnskey(struct auth_zone* z, struct module_env* env)
 	/* the callback can be called straight away */
 	lock_rw_unlock(&z->lock);
 	if(!mesh_new_callback(env->mesh, &qinfo, qflags, &edns, buf, 0,
-		&auth_zonemd_dnskey_lookup_callback, z, 0)) {
+		&auth_zonemd_dnskey_lookup_callback, z)) {
 		lock_rw_wrlock(&z->lock);
 		log_err("out of memory lookup of %s for zonemd",
 			(fetch_ds?"DS":"DNSKEY"));
@@ -8700,8 +8617,7 @@ auth_zone_get_mem(struct auth_zone* z)
 	RBTREE_FOR(node, struct auth_data*, &z->data) {
 		m += auth_data_get_mem(node);
 	}
-	if(z->rpz)
-		m += rpz_get_mem(z->rpz);
+
 	return m;
 }
 
@@ -8805,12 +8721,10 @@ size_t auth_zones_get_mem(struct auth_zones* zones)
 	size_t m;
 	if(!zones) return 0;
 	m = sizeof(*zones);
-	lock_rw_rdlock(&zones->rpz_lock);
 	lock_rw_rdlock(&zones->lock);
 	m += az_ztree_get_mem(zones);
 	m += az_xtree_get_mem(zones);
 	lock_rw_unlock(&zones->lock);
-	lock_rw_unlock(&zones->rpz_lock);
 	return m;
 }
 

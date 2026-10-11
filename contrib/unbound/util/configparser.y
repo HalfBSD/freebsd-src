@@ -52,7 +52,6 @@
 int ub_c_lex(void);
 void ub_c_error(const char *message);
 
-static void validate_respip_action(const char* action);
 static void validate_acl_action(const char* action);
 
 /* these need to be global, otherwise they cannot be used inside yacc */
@@ -122,7 +121,6 @@ extern struct config_parser_state* cfg_parser;
 %token VAR_UNBLOCK_LAN_ZONES VAR_INSECURE_LAN_ZONES
 %token VAR_INFRA_CACHE_MIN_RTT VAR_INFRA_CACHE_MAX_RTT VAR_INFRA_KEEP_PROBING
 %token VAR_NAT64_PREFIX
-%token VAR_RESPONSE_IP_TAG VAR_RESPONSE_IP VAR_RESPONSE_IP_DATA
 %token VAR_HARDEN_ALGO_DOWNGRADE VAR_IP_TRANSPARENT
 %token VAR_IP_DSCP
 %token VAR_DISABLE_DNSSEC_LAME_CHECK
@@ -162,12 +160,10 @@ extern struct config_parser_state* cfg_parser;
 %token VAR_STREAM_WAIT_SIZE   VAR_TLS_USE_SNI
 %token VAR_TLS_PROTOCOLS
 %token VAR_IPSET VAR_IPSET_NAME_V4 VAR_IPSET_NAME_V6
-%token  VAR_RPZ VAR_TAGS VAR_RPZ_ACTION_OVERRIDE
-%token VAR_RPZ_CNAME_OVERRIDE VAR_RPZ_LOG VAR_RPZ_LOG_NAME
 %token VAR_EDNS_CLIENT_STRING
 %token VAR_EDNS_CLIENT_STRING_OPCODE VAR_NSID
 %token VAR_ZONEMD_PERMISSIVE_MODE VAR_ZONEMD_CHECK VAR_ZONEMD_REJECT_ABSENCE
-%token VAR_RPZ_SIGNAL_NXDOMAIN_RA VAR_INTERFACE_AUTOMATIC_PORTS VAR_EDE
+%token  VAR_INTERFACE_AUTOMATIC_PORTS VAR_EDE
 %token VAR_DNS_ERROR_REPORTING
 %token VAR_INTERFACE_ACTION  VAR_INTERFACE_TAG
 %token VAR_INTERFACE_TAG_ACTION VAR_INTERFACE_TAG_DATA
@@ -184,7 +180,6 @@ toplevelvars: /* empty */ | toplevelvars toplevelvar ;
 toplevelvar: serverstart contents_server | stub_clause |
 	forward_clause |
 	rcstart contents_rc | ipsetstart contents_ipset | authstart contents_auth |
-	rpzstart contents_rpz |
 	force_toplevel
 	;
 force_toplevel: VAR_FORCE_TOPLEVEL
@@ -277,7 +272,6 @@ content_server: server_num_threads | server_verbosity | server_port |
 	server_serve_expired_reply_ttl | server_serve_expired_client_timeout |
 	server_ede_serve_expired | server_serve_original_ttl | server_fake_dsa |
 	server_log_identity | server_use_systemd |
-	server_response_ip_tag | server_response_ip | server_response_ip_data |
 	server_shm_enable | server_shm_key | server_fake_sha1 |
 	server_hide_trustanchor | server_trust_anchor_signaling |
 	server_root_key_sentinel |
@@ -374,7 +368,6 @@ authstart: VAR_AUTH_ZONE
 			s->fallback_enabled = 0;
 			s->zonemd_check = 0;
 			s->zonemd_reject_absence = 0;
-			s->isrpz = 0;
 		} else {
 			yyerror("out of memory");
 		}
@@ -387,102 +380,6 @@ content_auth: auth_name | auth_zonefile | auth_master | auth_url |
 	auth_allow_notify | auth_zonemd_check | auth_zonemd_reject_absence
 	;
 
-rpz_tag: VAR_TAGS STRING_ARG
-	{
-		uint8_t* bitlist;
-		size_t len = 0;
-		OUTYY(("P(server_local_zone_tag:%s)\n", $2));
-		bitlist = config_parse_taglist(cfg_parser->cfg, $2,
-			&len);
-		free($2);
-		if(!bitlist) {
-			yyerror("could not parse tags, (define-tag them first)");
-		}
-		if(bitlist) {
-			cfg_parser->cfg->auths->rpz_taglist = bitlist;
-			cfg_parser->cfg->auths->rpz_taglistlen = len;
-
-		}
-	}
-	;
-
-rpz_action_override: VAR_RPZ_ACTION_OVERRIDE STRING_ARG
-	{
-		OUTYY(("P(rpz_action_override:%s)\n", $2));
-		if(strcmp($2, "nxdomain")!=0 && strcmp($2, "nodata")!=0 &&
-		   strcmp($2, "passthru")!=0 && strcmp($2, "drop")!=0 &&
-		   strcmp($2, "cname")!=0 && strcmp($2, "disabled")!=0) {
-			yyerror("rpz-action-override action: expected nxdomain, "
-				"nodata, passthru, drop, cname or disabled");
-			free($2);
-			cfg_parser->cfg->auths->rpz_action_override = NULL;
-		}
-		else {
-			cfg_parser->cfg->auths->rpz_action_override = $2;
-		}
-	}
-	;
-
-rpz_cname_override: VAR_RPZ_CNAME_OVERRIDE STRING_ARG
-	{
-		OUTYY(("P(rpz_cname_override:%s)\n", $2));
-		free(cfg_parser->cfg->auths->rpz_cname);
-		cfg_parser->cfg->auths->rpz_cname = $2;
-	}
-	;
-
-rpz_log: VAR_RPZ_LOG STRING_ARG
-	{
-		OUTYY(("P(rpz_log:%s)\n", $2));
-		if(strcmp($2, "yes") != 0 && strcmp($2, "no") != 0)
-			yyerror("expected yes or no.");
-		else cfg_parser->cfg->auths->rpz_log = (strcmp($2, "yes")==0);
-		free($2);
-	}
-	;
-
-rpz_log_name: VAR_RPZ_LOG_NAME STRING_ARG
-	{
-		OUTYY(("P(rpz_log_name:%s)\n", $2));
-		free(cfg_parser->cfg->auths->rpz_log_name);
-		cfg_parser->cfg->auths->rpz_log_name = $2;
-	}
-	;
-rpz_signal_nxdomain_ra: VAR_RPZ_SIGNAL_NXDOMAIN_RA STRING_ARG
-	{
-		OUTYY(("P(rpz_signal_nxdomain_ra:%s)\n", $2));
-		if(strcmp($2, "yes") != 0 && strcmp($2, "no") != 0)
-			yyerror("expected yes or no.");
-		else cfg_parser->cfg->auths->rpz_signal_nxdomain_ra = (strcmp($2, "yes")==0);
-		free($2);
-	}
-	;
-
-rpzstart: VAR_RPZ
-	{
-		struct config_auth* s;
-		OUTYY(("\nP(rpz:)\n"));
-		cfg_parser->started_toplevel = 1;
-		s = (struct config_auth*)calloc(1, sizeof(struct config_auth));
-		if(s) {
-			s->next = cfg_parser->cfg->auths;
-			cfg_parser->cfg->auths = s;
-			/* defaults for RPZ auth zone */
-			s->for_downstream = 0;
-			s->for_upstream = 0;
-			s->fallback_enabled = 0;
-			s->isrpz = 1;
-		} else {
-			yyerror("out of memory");
-		}
-	}
-	;
-contents_rpz: contents_rpz content_rpz
-	| ;
-content_rpz: auth_name | auth_zonefile | rpz_tag | auth_master | auth_url |
-	   auth_allow_notify | rpz_action_override | rpz_cname_override |
-	   rpz_log | rpz_log_name | rpz_signal_nxdomain_ra | auth_for_downstream
-	;
 server_num_threads: VAR_NUM_THREADS STRING_ARG
 	{
 		OUTYY(("P(server_num_threads:%s)\n", $2));
@@ -2309,27 +2206,6 @@ server_interface_tag_data: VAR_INTERFACE_TAG_DATA STRING_ARG STRING_ARG STRING_A
 		}
 	}
 	;
-server_response_ip_tag: VAR_RESPONSE_IP_TAG STRING_ARG STRING_ARG
-	{
-		size_t len = 0;
-		uint8_t* bitlist = config_parse_taglist(cfg_parser->cfg, $3,
-			&len);
-		free($3);
-		OUTYY(("P(response_ip_tag:%s)\n", $2));
-		if(!bitlist) {
-			yyerror("could not parse tags, (define-tag them first)");
-			free($2);
-		}
-		if(bitlist) {
-			if(!cfg_strbytelist_insert(
-				&cfg_parser->cfg->respip_tags,
-				$2, bitlist, len)) {
-				yyerror("out of memory");
-				free($2);
-			}
-		}
-	}
-	;
 server_ip_ratelimit: VAR_IP_RATELIMIT STRING_ARG
 	{
 		OUTYY(("P(server_ip_ratelimit:%s)\n", $2));
@@ -2993,23 +2869,6 @@ server_log_identity: VAR_LOG_IDENTITY STRING_ARG
 		cfg_parser->cfg->log_identity = $2;
 	}
 	;
-server_response_ip: VAR_RESPONSE_IP STRING_ARG STRING_ARG
-	{
-		OUTYY(("P(server_response_ip:%s %s)\n", $2, $3));
-		validate_respip_action($3);
-		if(!cfg_str2list_insert(&cfg_parser->cfg->respip_actions,
-			$2, $3))
-			fatal_exit("out of memory adding response-ip");
-	}
-	;
-server_response_ip_data: VAR_RESPONSE_IP_DATA STRING_ARG STRING_ARG
-	{
-		OUTYY(("P(server_response_ip_data:%s)\n", $2));
-		if(!cfg_str2list_insert(&cfg_parser->cfg->respip_data,
-			$2, $3))
-			fatal_exit("out of memory adding response-ip-data");
-	}
-	;
 server_tcp_connection_limit: VAR_TCP_CONNECTION_LIMIT STRING_ARG STRING_ARG
 	{
 		OUTYY(("P(server_tcp_connection_limit:%s %s)\n", $2, $3));
@@ -3142,23 +3001,6 @@ ipset_name_v6: VAR_IPSET_NAME_V6 STRING_ARG
 %%
 
 /* parse helper routines could be here */
-static void
-validate_respip_action(const char* action)
-{
-	if(strcmp(action, "deny")!=0 &&
-		strcmp(action, "redirect")!=0 &&
-		strcmp(action, "inform")!=0 &&
-		strcmp(action, "inform_deny")!=0 &&
-		strcmp(action, "always_transparent")!=0 &&
-		strcmp(action, "always_refuse")!=0 &&
-		strcmp(action, "always_nxdomain")!=0)
-	{
-		yyerror("response-ip action: expected deny, redirect, "
-			"inform, inform_deny, always_transparent, "
-			"always_refuse or always_nxdomain");
-	}
-}
-
 static void
 validate_acl_action(const char* action)
 {

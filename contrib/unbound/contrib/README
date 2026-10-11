@@ -35,7 +35,6 @@ distribution but may be helpful.
   see comments in the file. Contributed by Frzk.
 * redirect-bogus.patch: Return configured address for bogus A and AAAA answers,
   instead of SERVFAIL. Contributed by SIDN.
-* fastrpz.patch: fastrpz support from Farsight Security.
 * libunbound.so.conf: ltrace.conf file, see ltrace.conf(5), for libunbound.
 
 * unbound-fuzzme.patch: adds unbound-fuzzme program that parses a packet from
@@ -49,8 +48,6 @@ distribution but may be helpful.
   compile.  From Saksham Manchanda (Secure64).  Please note that we think
   this will drop DNSKEY and DS lookups for tlds and hence break DNSSEC
   lookups for downstream clients.
-* drop2rpz: perl script that converts the Spamhaus DROP-List in RPZ-Format,
-  contributed by Andreas Schulze.
 * metrics.awk: awk script that can convert unbound-control stats to
   Prometheus metrics format output.
 * unbound.init_yocto: An init script to start and stop the server. Put it

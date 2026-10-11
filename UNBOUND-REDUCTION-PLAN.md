@@ -155,3 +155,21 @@ forward-delegation handling. Configuration directories remain unchanged.
 
 See UNBOUND-DNS-PROVIDERS-HANDOFF.txt for implementation, measurements, tests,
 upgrade behavior and native-verification limits. This update accompanies the implementation commit, authorized on 2026-10-11.
+
+
+2026-10-11: RPZ and response-IP completed
+--------------------------------------
+The user authorized RPZ-only iterator callback/block removal. RPZ was removed
+first and all four retained utilities compiled; 18 forwarding and 9 provider
+regression groups passed before response-IP removal started. Response-IP was
+then removed independently, including policy-only CNAME rewrites and client
+mesh state. The final build passes 20 forwarding and 9 provider groups plus
+provider-health/allocation-failure checks. Ordinary CNAME, DNSSEC, forwarding,
+cache locking, expired answers, ACLs, local records, TLS and control remain.
+Only policy blocks and an obsolete attach_sub client-policy argument changed
+in iterator.c; unrelated iterator algorithms remain. Authority zones/transfers,
+stubs, other deferred modules and native build/install verification remain.
+No configuration-directory migration or Capsicum implementation was performed.
+This update accompanies the authorized implementation commit; nothing pushed.
+Full inventory, measurements, stage results and handoff context are in
+UNBOUND-POLICY-REMOVAL-HANDOFF.txt.

@@ -57,7 +57,6 @@
 #include "services/localzone.h"
 #include "services/listen_dnsport.h"
 #include "services/authzone.h"
-#include "respip/respip.h"
 #include "sldns/sbuffer.h"
 #include "sldns/str2wire.h"
 #ifdef HAVE_GETOPT_H
@@ -308,26 +307,6 @@ acl_tag_checks(struct config_file* cfg)
 				s3->str, s3->str2, s3->str3);
 		}
 	}
-}
-
-/** check response-ip configuration */
-static void
-respipchecks(struct config_file* cfg)
-{
-	struct respip_set* respip = NULL;
-	int use_response_ip = 0;
-
-	if(!(respip = respip_set_create()))
-		fatal_exit("Could not create respip set: out of memory");
-
-	if(!respip_global_apply_cfg(respip, cfg))
-		fatal_exit("Could not setup respip set");
-
-	use_response_ip = !respip_set_is_empty(respip);
-	if(use_response_ip && !strstr(cfg->module_conf, "respip"))
-		fatal_exit("response-ip options require respip module");
-	acl_tag_checks(cfg);
-	respip_set_delete(respip);
 }
 
 /** emit warnings for IP in hosts */
@@ -772,19 +751,13 @@ morechecks(struct config_file* cfg)
 
 	if(strcmp(cfg->module_conf, "iterator") != 0
 		&& strcmp(cfg->module_conf, "validator iterator") != 0
-		&& strcmp(cfg->module_conf, "respip iterator") != 0
-		&& strcmp(cfg->module_conf, "respip validator iterator") != 0
 #ifdef USE_IPSECMOD
 		&& strcmp(cfg->module_conf, "ipsecmod iterator") != 0
-		&& strcmp(cfg->module_conf, "ipsecmod respip iterator") != 0
 		&& strcmp(cfg->module_conf, "ipsecmod validator iterator") != 0
-		&& strcmp(cfg->module_conf, "ipsecmod respip validator iterator") != 0
 #endif
 #ifdef USE_IPSET
 		&& strcmp(cfg->module_conf, "validator ipset iterator") != 0
-		&& strcmp(cfg->module_conf, "validator ipset respip iterator") != 0
 		&& strcmp(cfg->module_conf, "ipset iterator") != 0
-		&& strcmp(cfg->module_conf, "ipset respip iterator") != 0
 #endif
 		) {
 		fatal_exit("module conf '%s' is not known to work",
@@ -818,7 +791,6 @@ morechecks(struct config_file* cfg)
 
 	donotquerylocalhostcheck(cfg);
 	localzonechecks(cfg);
-	respipchecks(cfg);
 }
 
 /** check forwards */
@@ -847,13 +819,10 @@ check_hints(struct config_file* cfg)
 static void
 check_auth(struct config_file* cfg)
 {
-	int is_rpz = 0;
 	struct auth_zones* az = auth_zones_create();
-	if(!az || !auth_zones_apply_cfg(az, cfg, 0, &is_rpz, NULL, NULL)) {
+	if(!az || !auth_zones_apply_cfg(az, cfg, 0, NULL, NULL)) {
 		fatal_exit("Could not setup authority zones");
 	}
-	if(is_rpz && !strstr(cfg->module_conf, "respip"))
-		fatal_exit("RPZ requires the respip module");
 	auth_zones_delete(az);
 }
 

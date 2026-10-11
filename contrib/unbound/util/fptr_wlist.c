@@ -76,7 +76,6 @@
 #ifdef UB_ON_WINDOWS
 #include "winrc/win_svc.h"
 #endif
-#include "respip/respip.h"
 
 #ifdef USE_IPSECMOD
 #include "ipsecmod/ipsecmod.h"
@@ -310,7 +309,7 @@ fptr_whitelist_modenv_detach_subs(void (*fptr)(
 int 
 fptr_whitelist_modenv_attach_sub(int (*fptr)(
         struct module_qstate* qstate, struct query_info* qinfo,
-	struct respip_client_info* cinfo, uint16_t qflags, int prime,
+	uint16_t qflags, int prime,
 	int valrec, struct module_qstate** newq))
 {
 	if(fptr == &mesh_attach_sub) return 1;
@@ -320,7 +319,7 @@ fptr_whitelist_modenv_attach_sub(int (*fptr)(
 int 
 fptr_whitelist_modenv_add_sub(int (*fptr)(
         struct module_qstate* qstate, struct query_info* qinfo,
-	struct respip_client_info* cinfo, uint16_t qflags, int prime,
+	uint16_t qflags, int prime,
 	int valrec, struct module_qstate** newq, struct mesh_state** sub))
 {
 	if(fptr == &mesh_add_sub) return 1;
@@ -348,7 +347,6 @@ fptr_whitelist_mod_init(int (*fptr)(struct module_env* env, int id))
 {
 	if(fptr == &iter_init) return 1;
 	else if(fptr == &val_init) return 1;
-	else if(fptr == &respip_init) return 1;
 #ifdef USE_IPSECMOD
 	else if(fptr == &ipsecmod_init) return 1;
 #endif
@@ -363,7 +361,6 @@ fptr_whitelist_mod_deinit(void (*fptr)(struct module_env* env, int id))
 {
 	if(fptr == &iter_deinit) return 1;
 	else if(fptr == &val_deinit) return 1;
-	else if(fptr == &respip_deinit) return 1;
 #ifdef USE_IPSECMOD
 	else if(fptr == &ipsecmod_deinit) return 1;
 #endif
@@ -401,7 +398,6 @@ fptr_whitelist_mod_operate(void (*fptr)(struct module_qstate* qstate,
 {
 	if(fptr == &iter_operate) return 1;
 	else if(fptr == &val_operate) return 1;
-	else if(fptr == &respip_operate) return 1;
 #ifdef USE_IPSECMOD
 	else if(fptr == &ipsecmod_operate) return 1;
 #endif
@@ -417,7 +413,6 @@ fptr_whitelist_mod_inform_super(void (*fptr)(
 {
 	if(fptr == &iter_inform_super) return 1;
 	else if(fptr == &val_inform_super) return 1;
-	else if(fptr == &respip_inform_super) return 1;
 #ifdef USE_IPSECMOD
 	else if(fptr == &ipsecmod_inform_super) return 1;
 #endif
@@ -433,7 +428,6 @@ fptr_whitelist_mod_clear(void (*fptr)(struct module_qstate* qstate,
 {
 	if(fptr == &iter_clear) return 1;
 	else if(fptr == &val_clear) return 1;
-	else if(fptr == &respip_clear) return 1;
 #ifdef USE_IPSECMOD
 	else if(fptr == &ipsecmod_clear) return 1;
 #endif
@@ -448,7 +442,6 @@ fptr_whitelist_mod_get_mem(size_t (*fptr)(struct module_env* env, int id))
 {
 	if(fptr == &iter_get_mem) return 1;
 	else if(fptr == &val_get_mem) return 1;
-	else if(fptr == &respip_get_mem) return 1;
 #ifdef USE_IPSECMOD
 	else if(fptr == &ipsecmod_get_mem) return 1;
 #endif

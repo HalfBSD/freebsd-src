@@ -254,7 +254,6 @@ shm_general_info(struct worker* worker)
 	shm_stat->mem.rrset = (long long)slabhash_get_mem(&worker->env.rrset_cache->table);
 	shm_stat->mem.val = (long long)mod_get_mem(&worker->env, "validator");
 	shm_stat->mem.iter = (long long)mod_get_mem(&worker->env, "iterator");
-	shm_stat->mem.respip = (long long)mod_get_mem(&worker->env, "respip");
 
 	/* ipsecmod mem value is available in shm, also when not enabled,
 	 * to make the struct easier to memmap by other applications,

@@ -73,7 +73,6 @@
 #include "services/mesh.h"
 #include "services/localzone.h"
 #include "services/authzone.h"
-#include "services/rpz.h"
 #include "util/storage/slabhash.h"
 #include "util/fptr_wlist.h"
 #include "util/data/dname.h"
@@ -896,7 +895,7 @@ static int
 print_mem(RES* ssl, struct worker* worker, struct daemon* daemon,
 	struct ub_stats_info* s)
 {
-	size_t msg, rrset, val, iter, respip;
+	size_t msg, rrset, val, iter;
 #ifdef USE_IPSECMOD
 	size_t ipsecmod = 0;
 #endif /* USE_IPSECMOD */
@@ -904,7 +903,6 @@ print_mem(RES* ssl, struct worker* worker, struct daemon* daemon,
 	rrset = slabhash_get_mem(&daemon->env->rrset_cache->table);
 	val = mod_get_mem(&worker->env, "validator");
 	iter = mod_get_mem(&worker->env, "iterator");
-	respip = mod_get_mem(&worker->env, "respip");
 #ifdef USE_IPSECMOD
 	ipsecmod = mod_get_mem(&worker->env, "ipsecmod");
 #endif /* USE_IPSECMOD */
@@ -916,8 +914,6 @@ print_mem(RES* ssl, struct worker* worker, struct daemon* daemon,
 	if(!print_longnum(ssl, "mem.mod.iterator"SQ, iter))
 		return 0;
 	if(!print_longnum(ssl, "mem.mod.validator"SQ, val))
-		return 0;
-	if(!print_longnum(ssl, "mem.mod.respip"SQ, respip))
 		return 0;
 #ifdef USE_IPSECMOD
 	if(!print_longnum(ssl, "mem.mod.ipsecmod"SQ, ipsecmod))
@@ -1125,16 +1121,7 @@ print_ext(RES* ssl, struct ub_stats_info* s, int inhibit_zero)
 		(unsigned)s->svr.msg_cache_max_collisions)) return 0;
 	if(!ssl_printf(ssl, "rrset.cache.max_collisions"SQ"%u\n",
 		(unsigned)s->svr.rrset_cache_max_collisions)) return 0;
-	/* applied RPZ actions */
-	for(i=0; i<UB_STATS_RPZ_ACTION_NUM; i++) {
-		if(i == RPZ_NO_OVERRIDE_ACTION)
-			continue;
-		if(inhibit_zero && s->svr.rpz_action[i] == 0)
-			continue;
-		if(!ssl_printf(ssl, "num.rpz.action.%s"SQ"%lu\n",
-			rpz_action_to_string(i),
-			(unsigned long)s->svr.rpz_action[i])) return 0;
-	}
+
 	if(!ssl_printf(ssl, "num.query.authzone.up"SQ"%lu\n",
 		(unsigned long)s->svr.num_query_authzone_up)) return 0;
 	if(!ssl_printf(ssl, "num.query.authzone.down"SQ"%lu\n",
@@ -3104,57 +3091,6 @@ do_ip_ratelimit_list(RES* ssl, struct worker* worker, char* arg)
 	slabhash_traverse(a.infra->client_ip_rates, 0, ip_rate_list, &a);
 }
 
-/** do the rpz_enable/disable command */
-static void
-do_rpz_enable_disable(RES* ssl, struct worker* worker, char* arg, int enable) {
-    size_t nmlen;
-    int nmlabs;
-    uint8_t *nm = NULL;
-    struct auth_zones *az = worker->env.auth_zones;
-    struct auth_zone *z = NULL;
-    if (!parse_arg_name(ssl, arg, &nm, &nmlen, &nmlabs))
-        return;
-    if (az) {
-        lock_rw_rdlock(&az->lock);
-        z = auth_zone_find(az, nm, nmlen, LDNS_RR_CLASS_IN);
-        if (z) {
-            lock_rw_wrlock(&z->lock);
-        }
-        lock_rw_unlock(&az->lock);
-    }
-    free(nm);
-    if (!z) {
-        (void) ssl_printf(ssl, "error no auth-zone %s\n", arg);
-        return;
-    }
-    if (!z->rpz) {
-        (void) ssl_printf(ssl, "error auth-zone %s not RPZ\n", arg);
-        lock_rw_unlock(&z->lock);
-        return;
-    }
-    if (enable) {
-        rpz_enable(z->rpz);
-    } else {
-        rpz_disable(z->rpz);
-    }
-    lock_rw_unlock(&z->lock);
-    send_ok(ssl);
-}
-
-/** do the rpz_enable command */
-static void
-do_rpz_enable(RES* ssl, struct worker* worker, char* arg)
-{
-    do_rpz_enable_disable(ssl, worker, arg, 1);
-}
-
-/** do the rpz_disable command */
-static void
-do_rpz_disable(RES* ssl, struct worker* worker, char* arg)
-{
-    do_rpz_enable_disable(ssl, worker, arg, 0);
-}
-
 /** Write the cookie secrets to file, returns `0` on failure.
  * Caller has to hold the lock. */
 static int
@@ -3612,10 +3548,6 @@ execute_cmd(struct daemon_remote* rc, struct rc_state* s, RES* ssl, char* cmd,
 		do_flush_bogus(ssl, worker, skipwhite(p+11));
 	} else if(cmdcmp(p, "flush_negative", 14)) {
 		do_flush_negative(ssl, worker, skipwhite(p+14));
-	} else if(cmdcmp(p, "rpz_enable", 10)) {
-		do_rpz_enable(ssl, worker, skipwhite(p+10));
-	} else if(cmdcmp(p, "rpz_disable", 11)) {
-		do_rpz_disable(ssl, worker, skipwhite(p+11));
 	} else if(cmdcmp(p, "add_cookie_secret", 17)) {
 		do_add_cookie_secret(ssl, worker, skipwhite(p+17));
 	} else if(cmdcmp(p, "drop_cookie_secret", 18)) {
@@ -4114,8 +4046,6 @@ struct fast_reload_construct {
 	struct iter_forwards* fwds;
 	/** construct for stubs */
 	struct iter_hints* hints;
-	/** construct for respip_set */
-	struct respip_set* respip_set;
 	/** construct for access control */
 	struct acl_list* acl;
 	/** construct for access control interface */
@@ -4124,10 +4054,7 @@ struct fast_reload_construct {
 	struct tcl_list* tcl;
 	/** construct for local zones */
 	struct local_zones* local_zones;
-	/** if there is response ip configuration in use */
-	int use_response_ip;
-	/** if there is an rpz zone */
-	int use_rpz;
+
 	/** construct for edns strings */
 	struct edns_strings* edns_strings;
 	/** construct for trust anchors */
@@ -4488,7 +4415,6 @@ fr_construct_clear(struct fast_reload_construct* ct)
 	auth_zones_delete(ct->auth_zones);
 	forwards_delete(ct->fwds);
 	hints_delete(ct->hints);
-	respip_set_delete(ct->respip_set);
 	local_zones_delete(ct->local_zones);
 	acl_list_delete(ct->acl);
 	acl_list_delete(ct->acl_interface);
@@ -4600,11 +4526,7 @@ getmem_config_auth(struct config_auth* p)
 			+ getmem_config_strlist(s->masters)
 			+ getmem_config_strlist(s->urls)
 			+ getmem_config_strlist(s->allow_notify)
-			+ getmem_str(s->zonefile)
-			+ s->rpz_taglistlen
-			+ getmem_str(s->rpz_action_override)
-			+ getmem_str(s->rpz_log_name)
-			+ getmem_str(s->rpz_cname);
+			+ getmem_str(s->zonefile);
 	return m;
 }
 
@@ -4665,9 +4587,6 @@ config_file_getmem(struct config_file* cfg)
 	m += getmem_config_strbytelist(cfg->interface_tags);
 	m += getmem_config_str3list(cfg->interface_tag_actions);
 	m += getmem_config_str3list(cfg->interface_tag_datas);
-	m += getmem_config_strbytelist(cfg->respip_tags);
-	m += getmem_config_str2list(cfg->respip_actions);
-	m += getmem_config_str2list(cfg->respip_data);
 	m += getmem_ifs(cfg->num_tags, cfg->tagname);
 	m += getmem_config_strlist(cfg->control_ifs.first);
 	m += getmem_str(cfg->server_key_file);
@@ -4697,7 +4616,6 @@ fr_printmem(struct fast_reload_thread* fr,
 	size_t mem = 0;
 	if(fr_poll_for_quit(fr))
 		return 1;
-	mem += respip_set_get_mem(ct->respip_set);
 	mem += auth_zones_get_mem(ct->auth_zones);
 	mem += forwards_get_mem(ct->fwds);
 	mem += hints_get_mem(ct->hints);
@@ -5012,7 +4930,7 @@ fr_construct_from_config(struct fast_reload_thread* fr,
 		fr_construct_clear(ct);
 		return 0;
 	}
-	if(!auth_zones_apply_cfg(ct->auth_zones, newcfg, 1, &ct->use_rpz,
+	if(!auth_zones_apply_cfg(ct->auth_zones, newcfg, 1,
 		fr->worker->daemon->env, &fr->worker->daemon->mods)) {
 		fr_construct_clear(ct);
 		return 0;
@@ -5057,18 +4975,9 @@ fr_construct_from_config(struct fast_reload_thread* fr,
 	if(fr_poll_for_quit(fr))
 		return 1;
 
-	if(!(ct->respip_set = respip_set_create())) {
-		fr_construct_clear(ct);
-		return 0;
-	}
-	if(!respip_global_apply_cfg(ct->respip_set, newcfg)) {
-		fr_construct_clear(ct);
-		return 0;
-	}
 	if(fr_poll_for_quit(fr))
 		return 1;
 
-	ct->use_response_ip = !respip_set_is_empty(ct->respip_set);
 	if(fr_poll_for_quit(fr))
 		return 1;
 
@@ -5209,7 +5118,6 @@ auth_zones_swap(struct auth_zones* az, struct auth_zones* data)
 {
 	rbtree_type oldztree = az->ztree;
 	int old_have_downstream = az->have_downstream;
-	struct auth_zone* old_rpz_first = az->rpz_first;
 
 	az->ztree = data->ztree;
 	data->ztree = oldztree;
@@ -5219,9 +5127,6 @@ auth_zones_swap(struct auth_zones* az, struct auth_zones* data)
 
 	/* Leave num_query_up and num_query_down, the statistics can
 	 * remain counted. */
-
-	az->rpz_first = data->rpz_first;
-	data->rpz_first = old_rpz_first;
 
 	/* The xtree is not swapped. This contains the auth_xfer elements
 	 * that contain tasks in progress, like zone transfers.
@@ -5459,12 +5364,8 @@ fr_atomic_copy_cfg(struct config_file* oldcfg, struct config_file* cfg,
 	COPY_VAR_ptr(interface_tag_datas);
 	*/
 	/* This references tags
-	COPY_VAR_ptr(respip_tags);
 	*/
-	COPY_VAR_ptr(respip_actions);
-	COPY_VAR_ptr(respip_data);
 	/* Not copied because the length and items could then not match.
-	 * also the respip module keeps a pointer to the array in its state.
 	   tagname, num_tags
 	*/
 	COPY_VAR_int(remote_control_enable);
@@ -5706,12 +5607,8 @@ fr_reload_config(struct fast_reload_thread* fr, struct config_file* newcfg,
 	log_assert(ct->hints);
 
 	/* Grab big locks to satisfy lock conditions. */
-	lock_rw_wrlock(&ct->respip_set->lock);
-	lock_rw_wrlock(&env->respip_set->lock);
 	lock_rw_wrlock(&ct->local_zones->lock);
 	lock_rw_wrlock(&daemon->local_zones->lock);
-	lock_rw_wrlock(&ct->auth_zones->rpz_lock);
-	lock_rw_wrlock(&env->auth_zones->rpz_lock);
 	lock_rw_wrlock(&ct->auth_zones->lock);
 	lock_rw_wrlock(&env->auth_zones->lock);
 	lock_rw_wrlock(&ct->fwds->lock);
@@ -5758,9 +5655,6 @@ fr_reload_config(struct fast_reload_thread* fr, struct config_file* newcfg,
 	acl_list_swap_tree(daemon->acl_interface, ct->acl_interface);
 	tcl_list_swap_tree(daemon->tcl, ct->tcl);
 	local_zones_swap_tree(daemon->local_zones, ct->local_zones);
-	respip_set_swap_tree(env->respip_set, ct->respip_set);
-	daemon->use_response_ip = ct->use_response_ip;
-	daemon->use_rpz = ct->use_rpz;
 	auth_zones_swap(env->auth_zones, ct->auth_zones);
 	edns_strings_swap_tree(env->edns_strings, ct->edns_strings);
 	anchors_swap_tree(env->anchors, ct->anchors);
@@ -5777,14 +5671,10 @@ fr_reload_config(struct fast_reload_thread* fr, struct config_file* newcfg,
 	/* Set globals with new config. */
 	config_apply(env->cfg);
 
-	lock_rw_unlock(&ct->respip_set->lock);
-	lock_rw_unlock(&env->respip_set->lock);
 	lock_rw_unlock(&ct->local_zones->lock);
 	lock_rw_unlock(&daemon->local_zones->lock);
 	lock_rw_unlock(&ct->auth_zones->lock);
 	lock_rw_unlock(&env->auth_zones->lock);
-	lock_rw_unlock(&ct->auth_zones->rpz_lock);
-	lock_rw_unlock(&env->auth_zones->rpz_lock);
 	lock_rw_unlock(&ct->fwds->lock);
 	lock_rw_unlock(&env->fwds->lock);
 	lock_rw_unlock(&ct->hints->lock);
@@ -5963,8 +5853,7 @@ fr_load_config(struct fast_reload_thread* fr, struct timeval* time_read,
 		 * it returns immediately, so it does not delay the workers.
 		 * They can be polled one at a time. But its processing causes
 		 * the worker to have released data items from old config.
-		 * This also makes sure the threads are not holding locks on
-		 * individual items in the local_zones and respip_set. */
+		 * This also makes sure the threads are not holding local-zone locks. */
 		fr_send_notification(fr,
 			fast_reload_notification_reload_nopause_poll);
 		fr_poll_for_ack(fr);
@@ -6660,8 +6549,6 @@ fr_worker_pickup_mesh(struct worker* worker)
 {
 	struct mesh_area* mesh = worker->env.mesh;
 	struct config_file* cfg = worker->env.cfg;
-	mesh->use_response_ip = worker->daemon->use_response_ip;
-	mesh->use_rpz = worker->daemon->use_rpz;
 	mesh->max_reply_states = cfg->num_queries_per_thread;
 	mesh->max_forever_states = (mesh->max_reply_states+1)/2;
 #ifndef S_SPLINT_S

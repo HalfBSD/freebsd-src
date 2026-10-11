@@ -586,3 +586,44 @@ The stripped Linux daemon grows 4 KiB; no production library dependency changes.
 Full measurements, source inventory, test commands, remaining features and
 Capsicum considerations: UNBOUND-DNS-PROVIDERS-HANDOFF.txt.
 This update accompanies the implementation commit. Commit and push authorized on 2026-10-11.
+
+
+2026-10-11: RPZ and response-IP removal
+-------------------------------------
+User authorization resolved the prior RPZ iterator-scope obstacle. RPZ was
+removed and independently compiled/tested before response-IP removal.
+Deleted services/rpz.c, services/rpz.h, contrib/drop2rpz, respip/respip.c and
+respip/respip.h: 4750 implementation/header/helper lines in deleted files.
+Removed configuration/parser/generated entries, module/build references,
+policy storage and locks, control commands, statistics, reload structures,
+current documentation and orphaned helpers. Historical Changelog stays intact.
+Ordinary CNAME processing, DNSSEC, forwarding, cache/expired-answer checks and
+locks, retries, ACLs, local records, outbound TLS and authenticated control remain.
+Authority-zone loading/transfers/ZONEMD and stub/shared recursive internals remain.
+
+Stage                    Files  C/H/Y/LEX files  Source lines  Stripped daemon
+Baseline                   327             216        164573          1297056
+RPZ removed                324             214        160284          1235600
+RPZ and response-IP        322             212        158082          1214976
+Net source reduction: 6491 lines, including generated parser/lexer differences.
+Daemon reduction: 82080 bytes (80.2 KiB, 6.3%) in comparable Linux GCC -O2/LTO
+builds. Four retained utilities and direct library dependencies are unchanged.
+External dependencies removed: none; removed internal objects: rpz and respip.
+
+All four utilities compiled at each stage. RPZ stage: 18 forwarding groups and
+9 provider groups passed. Final stage: 20 forwarding and 9 provider groups
+passed, along with infrastructure health/backoff/hysteresis/lease/failed-allocation
+checks. All 24 modified retained C files pass syntax checks with misleading
+indentation treated as an error. Source/build-reference audits, nm symbol audit
+and diff --check pass. Existing const-discard/generated-flex warnings remain.
+
+New tests exercise CNAME-only replies, cached alias restarts, direct CNAME
+UDP/TCP, timed expired CNAME replies, retained authority-zone records/reloads,
+fast_reload preservation, and removed syntax/commands/statistics. Existing
+DNSSEC, caching, TLS control/forwarding, provider recovery and outage checks pass.
+These are controlled loopback runtime tests. Native buildworld/buildkernel,
+live public-provider use, deployed privilege dropping/chroot and RFC5011 rollover
+were not tested. Shared security mechanisms remain. No tools were installed.
+No configuration-directory migration or Capsicum implementation occurred.
+This update accompanies the authorized implementation commit; nothing pushed.
+Authoritative handoff and complete file inventory: UNBOUND-POLICY-REMOVAL-HANDOFF.txt.

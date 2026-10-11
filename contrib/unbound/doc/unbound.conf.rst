@@ -129,9 +129,6 @@ The recognized section clauses are:
     :ref:`auth-zone:<unbound.conf.auth>`
         Configuration for local authoritative zones.
 
-    :ref:`rpz:<unbound.conf.rpz>`
-        Configuration for Response Policy Zones that allows for DNS filtering.
-        Requires the ``respip`` module.
 
 Section clauses can be repeated throughout the file (or included files) to
 logically group options in one visually cohesive group.
@@ -1088,7 +1085,7 @@ These options are part of the ``server:`` section.
     by configuration).
 
     The proxied address (if any) will then be used as the true client address
-    and will be used where applicable for logging, ACL, RPZ and IP
+    and will be used where applicable for logging, ACL and IP
     ratelimiting.
 
     PROXYv2 is supported for UDP and TCP listening interfaces.
@@ -1895,7 +1892,7 @@ These options are part of the ``server:`` section.
 @@UAHL@unbound.conf@module-config@@: *"<module names>"*
     Module configuration, a list of module names separated by spaces, surround
     the string with quotes (``""``).
-    The modules can be ``respip``, ``validator``, or ``iterator`` (and possibly
+    The modules can be ``validator``, or ``iterator`` (and possibly
     more, see below).
 
     .. note::
@@ -1908,8 +1905,6 @@ These options are part of the ``server:`` section.
     .. note::
         You must also set trust-anchors for validation to be useful.
 
-    Adding ``respip`` to the front will cause RPZ processing to be done on all
-    queries.
 
     Most modules that need to be listed here have to be listed at the beginning
     of the line.
@@ -2359,9 +2354,7 @@ These options are part of the ``server:`` section.
     sections below.
     If you want to perform filtering of the information that the users can
     fetch, the :ref:`local-zone<unbound.conf.local-zone>` and
-    :ref:`local-data<unbound.conf.local-data>` statements allow for this, but
-    also the :ref:`rpz<unbound.conf.rpz>` functionality can be used, described
-    in the RPZ section.
+    :ref:`local-data<unbound.conf.local-data>` statements allow for this.
 
     @@UAHL@unbound.conf.local-zone.type@deny@@
         Do not send an answer, drop the query.
@@ -2702,100 +2695,6 @@ These options are part of the ``server:`` section.
     Use this localzone type, regardless the type configured for the local zone
     (both tagged and untagged) and regardless the type configured using
     :ref:`access-control-tag-action<unbound.conf.access-control-tag-action>`.
-
-
-@@UAHL@unbound.conf@response-ip@@: *<IP-netblock> <action>*
-    This requires use of the ``respip`` module.
-
-    If the IP address in an AAAA or A RR in the answer section of a response
-    matches the specified IP netblock, the specified action will apply.
-    *<action>* has generally the same semantics as that for
-    :ref:`access-control-tag-action<unbound.conf.access-control-tag-action>`,
-    but there are some exceptions.
-
-    Actions for :ref:`response-ip<unbound.conf.response-ip>` are different
-    from those for :ref:`local-zone<unbound.conf.local-zone>` in that in case
-    of the former there is no point of such conditions as "the query matches it
-    but there is no local data".
-    Because of this difference, the semantics of
-    :ref:`response-ip<unbound.conf.response-ip>` actions are modified or
-    simplified as follows: The *static*, *refuse*, *transparent*,
-    *typetransparent*, and *nodefault* actions are invalid for *response-ip*.
-    Using any of these will cause the configuration to be rejected as faulty.
-    The *deny* action is non-conditional, i.e. it always results in dropping
-    the corresponding query.
-    The resolution result before applying the *deny* action is still cached and
-    can be used for other queries.
-
-
-@@UAHL@unbound.conf@response-ip-data@@: *<IP-netblock> <"resource record string">*
-    This requires use of the ``respip`` module.
-
-    This specifies the action data for
-    :ref:`response-ip<unbound.conf.response-ip>` with action being to redirect
-    as specified by *<"resource record string">*.
-    *<"Resource record string">* is similar to that of
-    :ref:`access-control-tag-data<unbound.conf.access-control-tag-data>`,
-    but it must be of either AAAA, A or CNAME types.
-    If the *<IP-netblock>* is an IPv6/IPv4 prefix, the record must be AAAA/A
-    respectively, unless it is a CNAME (which can be used for both versions of
-    IP netblocks).
-    If it is CNAME there must not be more than one
-    :ref:`response-ip-data<unbound.conf.response-ip-data>` for the same
-    *<IP-netblock>*.
-    Also, CNAME and other types of records must not coexist for the same
-    *<IP-netblock>*, following the normal rules for CNAME records.
-    The textual domain name for the CNAME does not have to be explicitly
-    terminated with a dot (``"."``); the root name is assumed to be the origin
-    for the name.
-
-
-@@UAHL@unbound.conf@response-ip-tag@@: *<IP-netblock> <"list of tags">*
-    This requires use of the ``respip`` module.
-
-    Assign tags to response *<IP-netblock>*.
-    If the IP address in an AAAA or A RR in the answer section of a response
-    matches the specified *<IP-netblock>*, the specified tags are assigned to
-    the IP address.
-    Then, if an :ref:`access-control-tag<unbound.conf.access-control-tag>` is
-    defined for the client and it includes one of the tags for the response IP,
-    the corresponding
-    :ref:`access-control-tag-action<unbound.conf.access-control-tag-action>`
-    will apply.
-    Tag matching rule is the same as that for
-    :ref:`access-control-tag<unbound.conf.access-control-tag>` and
-    :ref:`local-zone<unbound.conf.local-zone>`.
-    Unlike :ref:`local-zone-tag<unbound.conf.local-zone-tag>`,
-    :ref:`response-ip-tag<unbound.conf.response-ip-tag>` can be defined for an
-    *<IP-netblock>* even if no :ref:`response-ip<unbound.conf.response-ip>` is
-    defined for that netblock.
-    If multiple :ref:`response-ip-tag<unbound.conf.response-ip-tag>` options
-    are specified for the same *<IP-netblock>* in different statements, all but
-    the first will be ignored.
-    However, this will not be flagged as a configuration error, but the result
-    is probably not what was intended.
-
-    Actions specified in an
-    :ref:`access-control-tag-action<unbound.conf.access-control-tag-action>`
-    that has a matching tag with
-    :ref:`response-ip-tag<unbound.conf.response-ip-tag>` can be those that are
-    "invalid" for :ref:`response-ip<unbound.conf.response-ip>` listed above,
-    since
-    :ref:`access-control-tag-action<unbound.conf.access-control-tag-action>`
-    can be shared with local zones.
-    For these actions, if they behave differently depending on whether local
-    data exists or not in case of local zones, the behavior for
-    :ref:`response-ip-data<unbound.conf.response-ip-data>` will generally
-    result in NOERROR/NODATA instead of NXDOMAIN, since the
-    :ref:`response-ip<unbound.conf.response-ip>` data are inherently type
-    specific, and non-existence of data does not indicate anything about the
-    existence or non-existence of the qname itself.
-    For example, if the matching tag action is static but there is no data for
-    the corresponding :ref:`response-ip<unbound.conf.response-ip>`
-    configuration, then the result will be NOERROR/NODATA.
-    The only case where NXDOMAIN is returned is when an
-    :ref:`always_nxdomain<unbound.conf.local-zone.type.always_nxdomain>`
-    action applies.
 
 
 @@UAHL@unbound.conf@ratelimit@@: *<number or 0>*
@@ -3887,206 +3786,6 @@ answer given from cache is still relevant for opportunistic IPsec.
 
 @@UAHL@unbound.conf@ipsecmod-whitelist@@: *<domain>*
     Alternate syntax for :ref:`ipsecmod-allow<unbound.conf.ipsecmod-allow>`.
-
-.. _unbound.conf.rpz:
-
-Response Policy Zone Options
-----------------------------
-
-These options are part of the ``rpz:`` section.
-
-Response Policy Zones are configured with ``rpz:`` section clauses, and each
-one must have a :ref:`name<unbound.conf.rpz.name>` option.
-There can be multiple ones, by listing multiple ``rpz:`` section clauses, each
-with a different name.
-RPZ sections are applied in order of configuration and any match from an
-earlier RPZ zone will terminate the RPZ lookup.
-Note that a PASSTHRU action is still considered a match.
-
-The respip module needs to be added to the
-:ref:`module-config<unbound.conf.module-config>`, e.g.:
-
-.. code-block:: text
-
-    module-config: "respip validator iterator"
-
-
-QNAME, Response IP Address, nsdname, nsip and clientip triggers are supported.
-Supported actions are: NXDOMAIN, NODATA, PASSTHRU, DROP, Local Data, tcp-only
-and drop.
-RPZ QNAME triggers are applied after any
-:ref:`local-zone<unbound.conf.local-zone>` and before any
-:ref:`auth-zone<unbound.conf.auth>`.
-
-The RPZ zone is a regular DNS zone formatted with a SOA start record as usual.
-The items in the zone are entries, that specify what to act on (the trigger)
-and what to do (the action).
-The trigger to act on is recorded in the name, the action to do is recorded as
-the resource record.
-The names all end in the zone name, so you could type the trigger names without
-a trailing dot in the zonefile.
-
-An example RPZ record, that answers ``example.com`` with ``NXDOMAIN``:
-
-.. code-block:: text
-
-    example.com CNAME .
-
-The triggers are encoded in the name on the left
-
-.. code-block:: text
-
-    name                          query name
-    netblock.rpz-client-ip        client IP address
-    netblock.rpz-ip               response IP address in the answer
-    name.rpz-nsdname              nameserver name
-    netblock.rpz-nsip             nameserver IP address
-
-The netblock is written as ``<netblocklen>.<ip address in reverse>``.
-For IPv6 use ``'zz'`` for ``'::'``.
-Specify individual addresses with scope length of 32 or 128.
-For example, ``24.10.100.51.198.rpz-ip`` is ``198.51.100.10/24`` and
-``32.10.zz.db8.2001.rpz-ip`` is ``2001:db8:0:0:0:0:0:10/32``.
-
-The actions are specified with the record on the right
-
-.. code-block:: text
-
-    CNAME .                      nxdomain reply
-    CNAME *.                     nodata reply
-    CNAME rpz-passthru.          do nothing, allow to continue
-    CNAME rpz-drop.              the query is dropped
-    CNAME rpz-tcp-only.          answer over TCP
-    A 192.0.2.1                  answer with this IP address
-
-Other records like AAAA, TXT and other CNAMEs (not rpz-..) can also be used to
-answer queries with that content.
-
-
-@@UAHL@unbound.conf.rpz@name@@: *<zone name>*
-    Name of the authority zone.
-
-
-@@UAHL@unbound.conf.rpz@primary@@: *<IP address or host name>*
-    Where to download a copy of the zone from, with AXFR and IXFR.
-    Multiple primaries can be specified.
-    They are all tried if one fails.
-
-    To use a non-default port for DNS communication append ``'@'`` with the
-    port number.
-
-    You can append a ``'#'`` and a name, then AXFR over TLS can be used and the
-    TLS authentication certificates will be checked with that name.
-
-    If you combine the ``'@'`` and ``'#'``, the ``'@'`` comes first.
-    If you point it at another Unbound instance, it would not work because that
-    does not support AXFR/IXFR for the zone, but if you used
-    :ref:`url<unbound.conf.rpz.url>` to download the zonefile as a text file
-    from a webserver that would work.
-
-    If you specify the hostname, you cannot use the domain from the zonefile,
-    because it may not have that when retrieving that data, instead use a plain
-    IP address to avoid a circular dependency on retrieving that IP address.
-
-
-@@UAHL@unbound.conf.rpz@master@@: *<IP address or host name>*
-    Alternate syntax for :ref:`primary<unbound.conf.rpz.primary>`.
-
-
-@@UAHL@unbound.conf.rpz@url@@: *<url to zonefile>*
-    Where to download a zonefile for the zone.
-    With HTTP or HTTPS.
-    An example for the url is:
-
-    .. code-block:: text
-
-        http://www.example.com/example.org.zone
-
-    Multiple url statements can be given, they are tried in turn.
-
-    If only urls are given the SOA refresh timer is used to wait for making new
-    downloads.
-    If also primaries are listed, the primaries are first probed with UDP SOA
-    queries to see if the SOA serial number has changed, reducing the number of
-    downloads.
-    If none of the URLs work, the primaries are tried with IXFR and AXFR.
-
-    For HTTPS, the :ref:`tls-cert-bundle<unbound.conf.tls-cert-bundle>` and
-    the hostname from the url are used to authenticate the connection.
-
-
-@@UAHL@unbound.conf.rpz@allow-notify@@: *<IP address or host name or netblockIP/prefix>*
-    With :ref:`allow-notify<unbound.conf.rpz.allow-notify>` you can specify
-    additional sources of notifies.
-    When notified, the server attempts to first probe and then zone transfer.
-    If the notify is from a primary, it first attempts that primary.
-    Otherwise other primaries are attempted.
-    If there are no primaries, but only urls, the file is downloaded when
-    notified.
-
-    .. note::
-        The primaries from :ref:`primary<unbound.conf.rpz.primary>` and
-        :ref:`url<unbound.conf.rpz.url>` statements are allowed notify by
-        default.
-
-
-@@UAHL@unbound.conf.rpz@zonefile@@: *<filename>*
-    The filename where the zone is stored.
-    If not given then no zonefile is used.
-    If the file does not exist or is empty, Unbound will attempt to fetch zone
-    data (eg. from the primary servers).
-
-
-@@UAHL@unbound.conf.rpz@rpz-action-override@@: *<action>*
-    Always use this RPZ action for matching triggers from this zone.
-    Possible actions are: *nxdomain*, *nodata*, *passthru*, *drop*, *disabled*
-    and *cname*.
-
-
-@@UAHL@unbound.conf.rpz@rpz-cname-override@@: *<domain>*
-    The CNAME target domain to use if the cname action is configured for
-    :ref:`rpz-action-override<unbound.conf.rpz.rpz-action-override>`.
-
-
-@@UAHL@unbound.conf.rpz@rpz-log@@: *<yes or no>*
-    Log all applied RPZ actions for this RPZ zone.
-
-    Default: no
-
-
-@@UAHL@unbound.conf.rpz@rpz-log-name@@: *<name>*
-    Specify a string to be part of the log line, for easy referencing.
-
-
-@@UAHL@unbound.conf.rpz@rpz-signal-nxdomain-ra@@: *<yes or no>*
-    Signal when a query is blocked by the RPZ with NXDOMAIN with an unset RA
-    flag.
-    This allows certain clients, like dnsmasq, to infer that the domain is
-    externally blocked.
-
-    Default: no
-
-
-@@UAHL@unbound.conf.rpz@for-downstream@@: *<yes or no>*
-    If enabled the zone is authoritatively answered for and queries for the RPZ
-    zone information are answered to downstream clients.
-    This is useful for monitoring scripts, that can then access the SOA
-    information to check if the RPZ information is up to date.
-
-    Default: no
-
-
-@@UAHL@unbound.conf.rpz@tags@@: *"<list of tags>"*
-    Limit the policies from this RPZ section to clients with a matching tag.
-
-    Tags need to be defined in :ref:`define-tag<unbound.conf.define-tag>` and
-    can be assigned to client addresses using
-    :ref:`access-control-tag<unbound.conf.access-control-tag>` or
-    :ref:`interface-tag<unbound.conf.interface-tag>`.
-    Enclose list of tags in quotes (``""``) and put spaces between tags.
-
-    If no tags are specified the policies from this section will be applied for
-    all clients.
 
 Memory Control Example
 ----------------------

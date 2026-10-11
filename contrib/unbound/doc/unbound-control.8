@@ -121,14 +121,13 @@ The amount of temporal memory needed during a fast_reload is twice the
 amount needed for configuration.
 This is because Unbound temporarily needs to store both current
 configuration values and new ones while trying to fast_reload.
-Zones loaded from disk (authority zones and RPZ zones) are included in such
+Zones loaded from disk (authority zones) are included in such
 memory needs.
 .sp
 Options that can be changed are for
 \fI\%forwards\fP,
 \fI\%stubs\fP,
 \fI\%authority zones\fP,
-\fI\%RPZ zones\fP and
 \fI\%local zones\fP\&.
 .sp
 Also
@@ -247,12 +246,6 @@ queries.
 If the number of tags is increased in the newly loaded config, by
 adding tags at the end, then the implicit \fB+d\fP option is not needed.
 .sp
-For response ip, that is actions associated with IP addresses, and perhaps
-intersected with access control tag and action information, those settings
-are stored with a query when it comes in based on its source IP address.
-The old information is kept with the query until the queries are done.
-This is gone when those queries are resolved and finished, or it is
-possible to flush the requestlist with \fB+d\fP\&.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -646,12 +639,11 @@ The ratelimited ips are dropped before checking the cache.
 List the auth zones that are configured.
 Printed one per line with a status, indicating if the zone is expired and
 current serial number.
-Configured RPZ zones are included.
 .UNINDENT
 .INDENT 0.0
 .TP
 .B auth_zone_reload \fIzone\fP 
-Reload the auth zone (or RPZ zone) from zonefile.
+Reload the auth zone from zonefile.
 The zonefile is read in overwriting the current contents of the zone in
 memory.
 This changes the auth zone contents itself, not the cache contents.
@@ -661,20 +653,10 @@ Such cache contents exists if you set Unbound to validate with
 .INDENT 0.0
 .TP
 .B auth_zone_transfer \fIzone\fP 
-Transfer the auth zone (or RPZ zone) from master.
+Transfer the auth zone from master.
 The auth zone probe sequence is started, where the masters are probed to
 see if they have an updated zone (with the SOA serial check).
 And then the zone is transferred for a newer zone version.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B rpz_enable \fIzone\fP 
-Enable the RPZ zone if it had previously been disabled.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B rpz_disable \fIzone\fP 
-Disable the RPZ zone.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -1370,13 +1352,6 @@ answered using cached data.
 .INDENT 0.0
 .UNINDENT
 .INDENT 0.0
-.TP
-.B num.rpz.action.<rpz_action> 
-Number of queries answered using configured RPZ policy, per RPZ action
-type.
-Possible actions are: nxdomain, nodata, passthru, drop, tcp\-only,
-local\-data, disabled, and cname\-override.
-.UNINDENT
 .SH FILES
 .INDENT 0.0
 .TP

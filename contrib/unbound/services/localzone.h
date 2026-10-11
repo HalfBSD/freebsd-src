@@ -540,56 +540,6 @@ int
 local_rrset_remove_rr(struct packed_rrset_data* pd, size_t index);
 
 /**
-  * Valid response ip actions for the IP-response-driven-action feature;
-  * defined here instead of in the respip module to enable sharing of enum
-  * values with the localzone_type enum.
-  * Note that these values except 'none' are the same as localzone types of
-  * the 'same semantics'.  It's intentional as we use these values via
-  * access-control-tags, which can be shared for both response ip actions and
-  * local zones.
-  */
-enum respip_action {
-	/** no respip action */
-	respip_none = local_zone_unset,
-	/** don't answer */
-	respip_deny = local_zone_deny,
-	/** redirect as per provided data */
-	respip_redirect = local_zone_redirect,
-        /** log query source and answer query */
-	respip_inform = local_zone_inform,
-        /** log query source and don't answer query */
-	respip_inform_deny = local_zone_inform_deny,
-        /** log query source and redirect */
-	respip_inform_redirect = local_zone_inform_redirect,
-        /** resolve normally, even when there is response-ip data */
-	respip_always_transparent = local_zone_always_transparent,
-        /** answer with 'refused' response */
-	respip_always_refuse = local_zone_always_refuse,
-        /** answer with 'no such domain' response */
-	respip_always_nxdomain = local_zone_always_nxdomain,
-        /** answer with nodata response */
-	respip_always_nodata = local_zone_always_nodata,
-        /** answer with nodata response */
-	respip_always_deny = local_zone_always_deny,
-	/** RPZ: truncate answer in order to force switch to tcp */
-	respip_truncate = local_zone_truncate,
-
-	/* The rest of the values are only possible as
-	 * access-control-tag-action */
-
-	/** serves response data (if any), else, drops queries. */
-	respip_refuse = local_zone_refuse,
-	/** serves response data, else, nodata answer. */
-	respip_static = local_zone_static,
-	/** gives response data (if any), else nodata answer. */
-	respip_transparent = local_zone_transparent,
-	/** gives response data (if any), else nodata answer. */
-	respip_typetransparent = local_zone_typetransparent,
-	/** type invalid */
-	respip_invalid = local_zone_invalid,
-};
-
-/**
  * Get local data from local zone and encode answer.
  * @param z: local zone to use
  * @param env: module env

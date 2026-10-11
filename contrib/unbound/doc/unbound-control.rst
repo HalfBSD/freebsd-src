@@ -123,14 +123,13 @@ There are several commands that the server understands.
     amount needed for configuration.
     This is because Unbound temporarily needs to store both current
     configuration values and new ones while trying to fast_reload.
-    Zones loaded from disk (authority zones and RPZ zones) are included in such
+    Zones loaded from disk (authority zones) are included in such
     memory needs.
 
     Options that can be changed are for
     :ref:`forwards<unbound.conf.forward>`,
     :ref:`stubs<unbound.conf.stub>`,
     :ref:`authority zones<unbound.conf.auth>`,
-    :ref:`RPZ zones<unbound.conf.rpz>` and
     :ref:`local zones<unbound.conf.local-zone>`.
 
     Also
@@ -249,12 +248,6 @@ There are several commands that the server understands.
     If the number of tags is increased in the newly loaded config, by
     adding tags at the end, then the implicit ``+d`` option is not needed.
 
-    For response ip, that is actions associated with IP addresses, and perhaps
-    intersected with access control tag and action information, those settings
-    are stored with a query when it comes in based on its source IP address.
-    The old information is kept with the query until the queries are done.
-    This is gone when those queries are resolved and finished, or it is
-    possible to flush the requestlist with ``+d``.
 
 
 @@UAHL@unbound-control.commands@verbosity@@ *number*
@@ -591,11 +584,10 @@ There are several commands that the server understands.
     List the auth zones that are configured.
     Printed one per line with a status, indicating if the zone is expired and
     current serial number.
-    Configured RPZ zones are included.
 
 
 @@UAHL@unbound-control.commands@auth_zone_reload@@ *zone*
-    Reload the auth zone (or RPZ zone) from zonefile.
+    Reload the auth zone from zonefile.
     The zonefile is read in overwriting the current contents of the zone in
     memory.
     This changes the auth zone contents itself, not the cache contents.
@@ -604,18 +596,10 @@ There are several commands that the server understands.
 
 
 @@UAHL@unbound-control.commands@auth_zone_transfer@@ *zone*
-    Transfer the auth zone (or RPZ zone) from master.
+    Transfer the auth zone from master.
     The auth zone probe sequence is started, where the masters are probed to
     see if they have an updated zone (with the SOA serial check).
     And then the zone is transferred for a newer zone version.
-
-
-@@UAHL@unbound-control.commands@rpz_enable@@ *zone*
-    Enable the RPZ zone if it had previously been disabled.
-
-
-@@UAHL@unbound-control.commands@rpz_disable@@ *zone*
-    Disable the RPZ zone.
 
 
 @@UAHL@unbound-control.commands@add_cookie_secret@@ *secret*
@@ -1170,12 +1154,6 @@ Extended Statistics
     These queries would otherwise have been sent to the internet, but are now
     answered using cached data.
 
-
-@@UAHL@unbound-control.stats@num.rpz.action@@.<rpz_action>
-    Number of queries answered using configured RPZ policy, per RPZ action
-    type.
-    Possible actions are: nxdomain, nodata, passthru, drop, tcp-only,
-    local-data, disabled, and cname-override.
 
 Files
 -----

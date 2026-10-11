@@ -45,7 +45,6 @@
 #include "util/fptr_wlist.h"
 #include "iterator/iterator.h"
 #include "validator/validator.h"
-#include "respip/respip.h"
 
 #ifdef USE_IPSECMOD
 #include "ipsecmod/ipsecmod.h"
@@ -145,7 +144,6 @@ module_list_avail(void)
 #ifdef USE_IPSET
 		"ipset",
 #endif
-		"respip",
 		"validator",
 		"iterator",
 		NULL};
@@ -166,7 +164,6 @@ module_funcs_avail(void)
 #ifdef USE_IPSET
 		&ipset_get_funcblock,
 #endif
-		&respip_get_funcblock,
 		&val_get_funcblock,
 		&iter_get_funcblock,
 		NULL};

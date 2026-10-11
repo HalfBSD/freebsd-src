@@ -46,7 +46,6 @@
 #include "util/rbtree.h"
 #include "util/locks.h"
 #include "services/mesh.h"
-#include "services/rpz.h"
 struct ub_packed_rrset_key;
 struct regional;
 struct config_file;
@@ -70,7 +69,7 @@ struct auth_chunk;
  * Authoritative zones, shared.
  */
 struct auth_zones {
-	/** lock on the authzone trees. It is locked after respip,
+	/** lock on the authzone trees. It is locked after
 	 * local_zones and before fwds and stubs. */
 	lock_rw_type lock;
 	/** rbtree of struct auth_zone */
@@ -79,11 +78,6 @@ struct auth_zones {
 	rbtree_type xtree;
 	/** do we have downstream enabled */
 	int have_downstream;
-	/** first auth zone containing rpz item in linked list */
-	struct auth_zone* rpz_first;
-	/** rw lock for rpz linked list, needed when iterating or editing linked
-	 * list. */
-	lock_rw_type rpz_lock;
 };
 
 /**
@@ -135,8 +129,6 @@ struct auth_zone {
 	int zonemd_check;
 	/** reject absence of ZONEMD records */
 	int zonemd_reject_absence;
-	/** RPZ zones */
-	struct rpz* rpz;
 	/** store the env (worker thread specific) for the zonemd callbacks
 	 * from the mesh with the results of the lookup, if nonNULL, some
 	 * worker has already picked up the zonemd verification task and
@@ -148,11 +140,6 @@ struct auth_zone {
 	int zone_deleted;
 	/** deletelist pointer, unused normally except during delete */
 	struct auth_zone* delete_next;
-	/* not protected by auth_zone lock, must be last items in struct */
-	/** next auth zone containing RPZ data, or NULL */
-	struct auth_zone* rpz_az_next;
-	/** previous auth zone containing RPZ data, or NULL */
-	struct auth_zone* rpz_az_prev;
 };
 
 /**
@@ -482,18 +469,8 @@ struct auth_chunk {
  */
 struct auth_zones* auth_zones_create(void);
 
-/**
- * Apply configuration to auth zones.  Reads zonefiles.
- * @param az: auth zones structure
- * @param cfg: config to apply.
- * @param setup: if true, also sets up values in the auth zones structure
- * @param is_rpz: set to 1 if at least one RPZ zone is configured.
- * @param env: environment for offline verification.
- * @param mods: modules in environment.
- * @return false on failure.
- */
 int auth_zones_apply_cfg(struct auth_zones* az, struct config_file* cfg,
-	int setup, int* is_rpz, struct module_env* env,
+	int setup, struct module_env* env,
 	struct module_stack* mods);
 
 /** initial pick up of worker timeouts, ties events to worker event loop

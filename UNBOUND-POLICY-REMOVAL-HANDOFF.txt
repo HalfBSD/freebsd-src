@@ -1,0 +1,237 @@
+HALFBSD UNBOUND: RPZ AND RESPONSE-IP REMOVAL HANDOFF
+Date: 2026-10-11
+Base: 0ff7ff5de0f8 (Use built-in prioritized DNS forwarders for HalfBSD)
+Status: Implemented and tested. This report accompanies the implementation commit. Nothing pushed.
+
+SCOPE AND SEQUENCE
+
+The user authorized deletion of RPZ callbacks and policy-only blocks in
+iterator.c, preserving ordinary resolution algorithms. RPZ was removed first.
+All four utilities compiled and the forwarding and provider suites passed
+before response-IP removal began. Response-IP was then removed and tested as
+an independent second stage. Neither stage introduces build options, disabled
+implementations, compatibility shims, or a replacement policy abstraction.
+
+RPZ REMOVAL
+
+Deleted services/rpz.c and services/rpz.h, including QNAME, client-address,
+response-address, nameserver-name and nameserver-address triggers; policy
+synthesis; passthrough state; policy actions; logging; and policy statistics.
+Deleted contrib/drop2rpz and its support documentation.
+
+Removed the three RPZ-only blocks in iterator.c: before cache lookup, before
+upstream selection, and after ordinary CNAME processing. Ordinary CNAME
+handling, query restarts, delegation/response processing, DNSSEC, caching,
+timeouts, target selection and retries remain. A subsequent mechanical edit
+removes the obsolete client-policy argument to attach_sub; its resolution
+behavior is unchanged. No unrelated iterator algorithm was changed.
+
+Removed RPZ mirrors and linked-list locks from authority-zone storage and
+updates, while preserving authority-zone loading, transfers, ZONEMD and ordinary
+zone data. Removed RPZ-specific DNSSEC validation bypasses for synthesized
+answers and DS/DNSKEY lookups. DNSSEC now always follows ordinary validation.
+Removed RPZ configuration fields, grammar/lexer entries and generated entries,
+control commands, statistics fields/printers, reload structures and documentation.
+
+RESPONSE-IP REMOVAL
+
+Deleted respip/respip.c and respip/respip.h. Removed module registration and
+callback whitelists, response-ip/response-ip-data/response-ip-tag configuration,
+policy address trees, reload swaps, per-client mesh policy state, policy logging,
+and memory statistics, including the metrics.awk output for the removed module.
+Removed build source/object/header references from Makefile.in and the native
+lib/libunbound/Makefile. No external library dependency belonged to either
+subsystem, so the shared TLS and other linked libraries remain.
+
+Removed policy-only partial-CNAME rewriting and two-pass cache processing from
+worker cache replies and the timed serve-expired callback. Cached ordinary
+CNAME integrity checks, tomsg checks, DNSSEC security checks, CD handling,
+message/rrset locks, EDE handling, reply encoding and expired-answer accounting
+remain. Complete ordinary CNAME chains are still served from cache.
+Removed the unused policy TCP-required field; ordinary DNS truncation and TCP
+fallback remain. Removed orphaned cfg_region_strlist_copy, dname_has_label,
+RPZ network-address decoders, and the now-unused authority-zone-delete argument.
+Shared local-zone actions, local data helpers, ACLs and configuration tags remain.
+
+Added direct includes to msgreply.c and outside_network.c for shared types
+previously made available indirectly through RPZ headers. Shared TLS code,
+certificate validation and remote-control TLS authentication are unchanged.
+Existing configuration and service directories are unchanged.
+
+DELETED FILES (BASELINE LINE COUNTS)
+
+contrib/unbound/services/rpz.c                   2843
+contrib/unbound/services/rpz.h                    279
+contrib/unbound/contrib/drop2rpz                   39
+contrib/unbound/respip/respip.c                   1286
+contrib/unbound/respip/respip.h                    303
+Total deleted implementation/helper-file lines: 4750.
+
+SOURCE AND BINARY MEASUREMENTS
+
+Scope: all files under contrib/unbound; source lines count .c/.h/.y/.lex,
+including generated parser/lexer code. Generated-code churn is included in net
+line counts and is distinct from deleting implementation files.
+
+Stage                  Files  Source files  Source lines
+Baseline                 327           216        164573
+RPZ removed              324           214        160284
+RPZ and response-IP      322           212        158082
+Net: 5 files removed, 4 C/header files removed, 6491 fewer source lines.
+
+Stripped executable bytes, identical portable configure/compiler settings:
+Utility               Baseline     RPZ removed     Final
+unbound                1297056         1235600   1214976
+unbound-control         220080          215984    215984
+unbound-checkconf       948640          891296    874912
+unbound-anchor           51328           51328     51328
+Daemon reduction: 82080 bytes (about 80.2 KiB, 6.3%).
+
+Final unstripped sizes: unbound 5491704; control 1311352; checkconf 3906144;
+anchor ELF 174016. Final unstripped libunbound.so: 4512560 bytes.
+The anchor measurement is the actual .libs ELF, not its libtool wrapper.
+These are Linux GCC -O2/LTO measurements, not native HalfBSD release sizes.
+Baseline binaries were saved before editing from the successfully built previous
+implementation. Native binary sizes have not been measured.
+
+Direct executable dependencies remain unchanged:
+unbound/control/checkconf: libssl.so.3, libcrypto.so.3, libc.so.6.
+anchor: libunbound.so.8, libexpat.so.1, libssl.so.3, libcrypto.so.3, libc.so.6.
+Removed internal objects: rpz and respip. External libraries removed: none.
+All four retained utilities, the existing setup helper and libunbound remain.
+This pass does not change libunbound's installed utility/library selection.
+Removed statistics fields change the bundled statistics structure layout; rebuild
+consumers together with the bundled library. Public resolution APIs remain.
+
+VERIFICATION
+
+RPZ-only stage: all four utilities compiled; 18 forwarding regression groups
+and 9 provider regression groups passed. The RPZ stage retained response-IP.
+Final stage: all four utilities compiled; 20 forwarding regression groups passed.
+Final provider suite: 9 groups passed.
+Infrastructure provider-health/backoff/hysteresis/lease/allocation-failure unit
+executable passed against the final library.
+All 24 modified, retained C files passed syntax checks with
+-Werror=misleading-indentation. Source/build-reference audits and git diff
+--check pass. nm finds no rpz/respip symbols or the removed orphan helpers in
+the final daemon/shared library. Existing compiler const-discard and generated
+flex macro warnings remain; no unresolved compile failures.
+
+Added regressions cover CNAME-only upstream responses requiring iterator
+restarts, cached intermediate aliases after flushing the terminal answer,
+direct CNAME UDP/TCP queries, complete timed serve-expired CNAME responses,
+retained authority-zone records and zonefile reloads, authority-zone preservation
+through fast_reload, removed directives/module/control-command rejection and
+absence of removed statistics. The fixture retries a TCP/UDP port reservation
+collision and reports the daemon exit status if startup fails.
+
+Retained coverage includes local A/CNAME/PTR, LAN ACLs, UDP/TCP and pipelining,
+positive/negative cache hits, cache administration, EDNS, upstream truncation
+and TCP fallback, DNSSEC AD/bogus/CD, prefetch, immediate serve-expired, runtime
+forwarding changes, reload/fast_reload, outbound TLS hostname/CA validation,
+and mutual-TLS remote administration. Provider tests cover strict priority,
+healthy peers, transport failure, silent timeouts, idle recovery, valid negative
+and DNSSEC-failure responses, all-provider outages, runtime overrides, TLS
+failover, certificate rejection and no plaintext/recursive fallback.
+
+Tests use controlled loopback servers and DNSSEC/TLS fixtures. No live public
+provider interoperability, RFC5011 rollover/bootstrap, deployed chroot/privilege
+dropping, native service installation, buildworld or buildkernel was run. Host is
+Linux; native HalfBSD build/install verification remains required. Existing
+security mechanisms were preserved, not newly certified by these tests.
+
+A startup regression caught an inadvertently removed adjacent module setup call;
+it was restored before successful final testing. The new authority fixture must
+have a transparent local-zone beneath reserved .test to reach its authority data.
+These issues were corrected, not accepted as residual failures.
+
+REPRODUCTION AND EVIDENCE
+
+Using a disposable copy of contrib/unbound with system OpenSSL/Expat:
+  ./configure --with-libevent=no
+  make -j4 unbound unbound-control unbound-checkconf unbound-anchor
+From repository root:
+  PYTHONDONTWRITEBYTECODE=1 python3 usr.sbin/unbound/tests/forwarding.py "$BUILD"
+  PYTHONDONTWRITEBYTECODE=1 python3 usr.sbin/unbound/tests/providers.py "$BUILD"
+  cc -I"$BUILD" -Icontrib/unbound -Wl,--wrap=strdup -o /tmp/provider-health \
+    usr.sbin/unbound/tests/provider-health.c "$BUILD/.libs/libunbound.a" \
+    -lssl -lcrypto -lpthread
+  /tmp/provider-health
+
+Build copies: /tmp/unbound-policy-rpz and /tmp/unbound-policy-respip.
+Logs: /tmp/unbound-policy-{rpz,respip}-{build,tests,providers}.log.
+RPZ-only source snapshot and patch: /tmp/unbound-policy-rpz-source and
+/tmp/unbound-policy-rpz.patch. These are local evidence, not repository
+requirements. Source/binary metrics JSON and syntax log use the same prefix.
+No tools/packages were downloaded or installed; temporary files are build,
+measurement, regression and editing artifacts.
+
+REMAINING FUNCTIONALITY AND FUTURE CAPSICUM
+
+Authority zones/transfers/ZONEMD, stub-zone configuration and shared recursive
+internals remain. Optional IPsec/ipset and other previously deferred machinery
+remain. Local-zone actions and ACL/tag infrastructure still serve retained
+local DNS and access controls and were not removed as response-IP policy.
+Compiled Cloudflare -> Google -> OpenDNS priority and no-recursive-fallback
+behavior from the preceding commit remain. Configuration directories have not
+been reorganized, and no Capsicum implementation has been added.
+
+Future sandbox design still needs configuration/include/CA/control-key reads on
+reload, log reopening, PID/control socket lifecycle, worker command channels,
+outgoing UDP/TCP/TLS sockets, trust-anchor temporary writes and atomic root.key
+replacement, anchor DNS/HTTPS bootstrap, and retained authority-zone files and
+transfers. RPZ policy zone mirrors and response-IP reload trees no longer need
+sandbox consideration. Runtime behavior of retained operations is unchanged.
+
+MODIFIED FILE INVENTORY
+contrib/unbound/Makefile.in
+contrib/unbound/contrib/README
+contrib/unbound/contrib/metrics.awk
+contrib/unbound/daemon/daemon.c
+contrib/unbound/daemon/daemon.h
+contrib/unbound/daemon/remote.c
+contrib/unbound/daemon/stats.c
+contrib/unbound/daemon/worker.c
+contrib/unbound/doc/example.conf
+contrib/unbound/doc/example.conf.in
+contrib/unbound/doc/unbound-control.8
+contrib/unbound/doc/unbound-control.8.in
+contrib/unbound/doc/unbound-control.rst
+contrib/unbound/doc/unbound.conf.5
+contrib/unbound/doc/unbound.conf.5.in
+contrib/unbound/doc/unbound.conf.rst
+contrib/unbound/ipsecmod/ipsecmod.c
+contrib/unbound/iterator/iterator.c
+contrib/unbound/libunbound/context.c
+contrib/unbound/libunbound/libworker.c
+contrib/unbound/libunbound/unbound.h
+contrib/unbound/services/authzone.c
+contrib/unbound/services/authzone.h
+contrib/unbound/services/localzone.h
+contrib/unbound/services/mesh.c
+contrib/unbound/services/mesh.h
+contrib/unbound/services/modstack.c
+contrib/unbound/services/outside_network.c
+contrib/unbound/smallapp/unbound-checkconf.c
+contrib/unbound/smallapp/unbound-control.c
+contrib/unbound/util/config_file.c
+contrib/unbound/util/config_file.h
+contrib/unbound/util/configlexer.c
+contrib/unbound/util/configlexer.lex
+contrib/unbound/util/configparser.c
+contrib/unbound/util/configparser.h
+contrib/unbound/util/configparser.y
+contrib/unbound/util/data/dname.c
+contrib/unbound/util/data/dname.h
+contrib/unbound/util/data/msgreply.c
+contrib/unbound/util/data/packed_rrset.h
+contrib/unbound/util/fptr_wlist.c
+contrib/unbound/util/fptr_wlist.h
+contrib/unbound/util/module.h
+contrib/unbound/util/net_help.c
+contrib/unbound/util/net_help.h
+contrib/unbound/util/shm_side/shm_main.c
+contrib/unbound/validator/autotrust.c
+contrib/unbound/validator/validator.c
+lib/libunbound/Makefile
+usr.sbin/unbound/tests/forwarding.py

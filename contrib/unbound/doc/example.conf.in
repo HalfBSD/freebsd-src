@@ -39,7 +39,7 @@ server:
 	# extended-statistics: no
 
 	# Inhibits selected extended statistics (qtype, qclass, qopcode, rcode,
-	# rpz-actions) from printing if their value is 0.
+	# other counters) from printing if their value is 0.
 	# Default on.
 	# statistics-inhibit-zero: yes
 
@@ -919,22 +919,6 @@ server:
 	# add a netblock specific override to a localzone, with zone type
 	# local-zone-override: "example.com" 192.0.2.0/24 refuse
 
-	# Action to apply when the IP address in an AAAA or A RR in the answer
-	# section of a response matches the specified IP netblock.
-	# Requires use of the respip module.
-	# response-ip: 192.0.2.0/24 redirect
-
-	# Redirect as specified by the "resource record string" when the IP
-	# address in an AAAA or A RR in the answer section of a response
-	# matches the specified IP netblock.
-	# Requires use of the respip module.
-	# response-ip-data: 192.0.2.0/24 "example. A 192.0.2.1"
-
-	# Apply tag(s) when the IP address in an AAAA or A RR in the answer
-	# section of a response matches the specified IP netblock.
-	# Requires use of the respip module.
-	# response-ip-tag: 192.0.2.0/24 "tag1 tag2"
-
 	# Use the SNI extension for TLS connections.  Default is yes.
 	# Changing the value requires a restart.
 	# tls-use-sni: yes
@@ -1208,24 +1192,3 @@ remote-control:
 #     # set name for ip v6 addresses
 #     name-v6: "list-v6"
 #
-
-# RPZ policies. Applied in order of configuration. Any match from an earlier
-# RPZ zone will terminate the RPZ lookup. QNAME, Response IP
-# Address, nsdname, nsip and clientip triggers are supported. Supported
-# actions are: NXDOMAIN, NODATA, PASSTHRU, DROP, Local Data, tcp-only
-# and drop.  Policies can be loaded from a file, or using zone
-# transfer, or using HTTP. The respip module needs to be added
-# to the module-config, e.g.: module-config: "respip validator iterator".
-# rpz:
-#     name: "rpz.example.com"
-#     zonefile: "rpz.example.com"
-#     primary: 192.0.2.0
-#     allow-notify: 192.0.2.0/32
-#     url: http://www.example.com/rpz.example.org.zone
-#     rpz-action-override: cname
-#     rpz-cname-override: www.example.org
-#     rpz-log: yes
-#     rpz-log-name: "example policy"
-#     rpz-signal-nxdomain-ra: no
-#     for-downstream: no
-#     tags: "example"

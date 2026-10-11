@@ -46,6 +46,7 @@
 #endif
 #include <sys/time.h>
 #include "services/outside_network.h"
+#include "util/config_file.h"
 #include "services/listen_dnsport.h"
 #include "services/cache/infra.h"
 #include "iterator/iterator.h"

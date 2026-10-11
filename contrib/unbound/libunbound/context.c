@@ -59,7 +59,6 @@
 int 
 context_finalize(struct ub_ctx* ctx)
 {
-	int is_rpz = 0;
 	struct config_file* cfg = ctx->env->cfg;
 	verbosity = cfg->verbosity;
 	if(ctx_logfile_overridden && !ctx->logfile_override) {
@@ -86,7 +85,7 @@ context_finalize(struct ub_ctx* ctx)
 		return UB_NOMEM;
 	if(!local_zones_apply_cfg(ctx->local_zones, cfg))
 		return UB_INITFAIL;
-	if(!auth_zones_apply_cfg(ctx->env->auth_zones, cfg, 1, &is_rpz,
+	if(!auth_zones_apply_cfg(ctx->env->auth_zones, cfg, 1,
 		ctx->env, &ctx->mods))
 		return UB_INITFAIL;
 	if(!(ctx->env->fwds = forwards_create()) ||

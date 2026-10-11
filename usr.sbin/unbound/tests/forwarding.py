@@ -8,6 +8,7 @@ from 2020 until 2036. It is never an operational trust anchor.
 """
 import base64
 import collections
+import errno
 import json
 from pathlib import Path
 import socket
@@ -94,10 +95,19 @@ class Upstream:
                 owner.connections.append(sock)
                 return sock, address
 
-        self.tcp = Server(('127.0.0.1', 0), TCP)
-        self.tcp.daemon_threads = True
-        self.port = self.tcp.server_address[1]
-        self.udp = socketserver.ThreadingUDPServer(('127.0.0.1', self.port), UDP)
+        # TCP's ephemeral port can already be occupied by a UDP socket.
+        # Retry the reservation instead of failing unrelated DNS regressions.
+        for attempt in range(20):
+            self.tcp = Server(('127.0.0.1', 0), TCP)
+            self.tcp.daemon_threads = True
+            self.port = self.tcp.server_address[1]
+            try:
+                self.udp = socketserver.ThreadingUDPServer(('127.0.0.1', self.port), UDP)
+                break
+            except OSError as error:
+                self.tcp.server_close()
+                if error.errno != errno.EADDRINUSE or attempt == 19:
+                    raise
         self.udp.daemon_threads = True
         for server in (self.tcp, self.udp):
             threading.Thread(target=server.serve_forever, daemon=True).start()
@@ -125,6 +135,12 @@ class Upstream:
         flags, answer, authority = 0x8180, [], []
         if name == 'fallback.forward.test.' and not tcp:
             flags |= 0x200
+        elif name in ('chain.forward.test.', 'middle.forward.test.',
+                      'chainexpired.forward.test.', 'middleexpired.forward.test.') and rtype in (1, 5):
+            expired = 'expired.' in name
+            target = ('middle' if name.startswith('chain') else 'terminal')
+            target += ('expired' if expired else '') + '.forward.test.'
+            answer.append(rr(name, 5, wire_name(target), 2 if expired else 60))
         elif name == 'servfail.forward.test.':
             flags |= 2
         elif name == 'negative.forward.test.':
@@ -148,7 +164,7 @@ class Upstream:
             if name == 'alias.forward.test.':
                 answer.append(rr(name, 5, wire_name('answer.forward.test.')))
                 name = 'answer.forward.test.'
-            answer.append(rr(name, 1, self.address, 2 if name == 'expired.forward.test.' else 10 if name == 'prefetch.forward.test.' else 60))
+            answer.append(rr(name, 1, self.address, 2 if 'expired.forward.test.' in name else 10 if name == 'prefetch.forward.test.' else 60))
         return packet[:2] + struct.pack('!HHHHH', flags, 1, len(answer), len(authority), 0) + question + b''.join(answer + authority)
 
     def close(self):
@@ -202,10 +218,18 @@ def main():
             with socket.socket() as reserve:
                 reserve.bind(('127.0.0.1', 0))
                 port = reserve.getsockname()[1]
+            zonefile = root / 'authority.zone'
+            def write_zone(address):
+                zonefile.write_text('authority.test. 60 IN SOA ns.authority.test. hostmaster.authority.test. 1 60 60 60 60\n'
+                                    'authority.test. 60 IN NS ns.authority.test.\n'
+                                    'ns.authority.test. 60 IN A 192.0.2.43\n'
+                                    f'host.authority.test. 60 IN A {address}\n'
+                                    'alias.authority.test. 60 IN CNAME host.authority.test.\n')
+            write_zone('192.0.2.44')
             key = base64.b64decode(fixture['dnskey'])
             trust = base64.b64encode(key[4:]).decode()
 
-            def write_config(upstream_port, local='192.0.2.10'):
+            def write_config(upstream_port, local='192.0.2.10', expired_timeout=0):
                 config.write_text(f'''server:
     interface: 127.0.0.1@{port}
     do-ip6: no
@@ -221,15 +245,21 @@ def main():
     access-control: 127.0.0.3/32 refuse
     prefetch: yes
     serve-expired: yes
-    serve-expired-client-timeout: 0
+    serve-expired-client-timeout: {expired_timeout}
     statistics-cumulative: yes
     local-zone: "home.test." static
     local-zone: "forward.test." transparent
     local-zone: "signed.test." transparent
+    local-zone: "authority.test." transparent
     local-data: "host.home.test. 60 IN A {local}"
     local-data: "alias.home.test. 60 IN CNAME host.home.test."
     local-data-ptr: "192.0.2.10 host.home.test."
     trust-anchor: "signed.test. DNSKEY 257 3 15 {trust}"
+auth-zone:
+    name: "authority.test."
+    zonefile: "{zonefile}"
+    for-upstream: no
+    for-downstream: yes
 remote-control:
     control-enable: yes
     control-interface: "{root}/control.sock"
@@ -248,7 +278,7 @@ forward-zone:
             process = subprocess.Popen([str(bindir / 'unbound'), '-d', '-c', str(config)])
             for _ in range(100):
                 if process.poll() is not None:
-                    raise RuntimeError(log.read_text())
+                    raise RuntimeError(f"resolver exited {process.returncode}: {log.read_text()}")
                 try:
                     query(port, 'host.home.test.')
                     break
@@ -263,6 +293,17 @@ forward-zone:
             assert any(t == 5 for t, _ in query(port, 'alias.home.test.')[1])
             assert any(t == 12 for t, _ in query(port, '10.2.0.192.in-addr.arpa.', 12)[1])
             print('PASS local A/CNAME/PTR and incoming UDP/TCP')
+
+            for tcp in (False, True):
+                assert (1, socket.inet_aton('192.0.2.44')) in query(
+                    port, 'host.authority.test.', tcp=tcp)[1]
+                assert any(t == 5 for t, _ in query(
+                    port, 'alias.authority.test.', 5, tcp=tcp)[1])
+            write_zone('192.0.2.45')
+            assert 'ok' in control('auth_zone_reload', 'authority.test.')
+            assert (1, socket.inet_aton('192.0.2.45')) in query(
+                port, 'host.authority.test.')[1]
+            print('PASS retained authority-zone loading, records, and runtime zonefile reload')
 
             for tcp in (False, True):
                 assert (1, socket.inet_aton('192.0.2.10')) in query(
@@ -294,6 +335,24 @@ forward-zone:
             assert sum(upstream.count.values()) == count
             assert any(t == 5 for t, _ in query(port, 'alias.forward.test.')[1])
             print('PASS forwarding, CNAME chain, positive and negative cache hits')
+
+            # CNAME-only upstream packets require iterator query restarts.
+            # Repeat after dropping just the terminal answer to exercise cached
+            # aliases, and retain direct CNAME queries over UDP and TCP.
+            for tcp in (False, True):
+                flags, answers = query(port, 'chain.forward.test.', tcp=tcp)
+                assert flags & 15 == 0
+                assert sum(t == 5 for t, _ in answers) == 2, answers
+                assert (1, socket.inet_aton('192.0.2.80')) in answers
+            control('flush', 'chain.forward.test.')
+            control('flush', 'terminal.forward.test.')
+            count = upstream.count[('terminal.forward.test.', 1, False)]
+            flags, answers = query(port, 'chain.forward.test.')
+            assert flags & 15 == 0 and sum(t == 5 for t, _ in answers) == 2
+            assert upstream.count[('terminal.forward.test.', 1, False)] > count
+            assert any(t == 5 for t, _ in query(port, 'middle.forward.test.', 5)[1])
+            assert any(t == 5 for t, _ in query(port, 'middle.forward.test.', 5, tcp=True)[1])
+            print('PASS CNAME-only chains, cached alias restarts, and direct CNAME queries')
 
             for command, argument, name in (
                     ('flush_type', 'answer.forward.test. A', 'answer.forward.test.'),
@@ -388,6 +447,25 @@ forward-zone:
             upstream.drop = False
             print('PASS serve-expired with unavailable upstream')
 
+            # The mesh timer serves an intact cached CNAME chain after the
+            # client timeout, independently of the immediate worker cache path.
+            write_config(upstream.port, expired_timeout=50)
+            assert 'ok' in control('reload')
+            time.sleep(.3)
+            flags, answers = query(port, 'chainexpired.forward.test.')
+            assert flags & 15 == 0 and sum(t == 5 for t, _ in answers) == 2
+            time.sleep(3)
+            upstream.drop = True
+            for tcp in (False, True):
+                flags, answers = query(port, 'chainexpired.forward.test.', tcp=tcp)
+                assert flags & 15 == 0 and sum(t == 5 for t, _ in answers) == 2
+                assert (1, socket.inet_aton('192.0.2.80')) in answers
+            upstream.drop = False
+            write_config(upstream.port)
+            assert 'ok' in control('reload')
+            time.sleep(.3)
+            print('PASS timed serve-expired preserves complete CNAME chains over UDP/TCP')
+
             upstream.drop = True
             assert 'ok' in control('forward_add', '.', f'127.0.0.1@{upstream.port}', f'127.0.0.1@{replacement.port}')
             assert (1, socket.inet_aton('192.0.2.82')) in query(port, 'failover.forward.test.')[1]
@@ -396,6 +474,11 @@ forward-zone:
 
             stats = control('stats_noreset')
             assert 'total.num.cachehits=' in stats and 'total.num.cachemiss=' in stats
+            assert 'num.rpz.action' not in stats and 'mem.mod.respip' not in stats
+            for command in ('rpz_enable', 'rpz_disable'):
+                result = subprocess.run([str(bindir / 'unbound-control'), '-c',
+                                         str(config), command, 'policy.test.'], capture_output=True)
+                assert result.returncode != 0, command
             write_config(replacement.port, '192.0.2.11')
             assert 'ok' in control('reload')
             for _ in range(100):
@@ -415,7 +498,8 @@ forward-zone:
                 assert (1, socket.inet_aton('192.0.2.12')) in query(
                     port, 'host.home.test.', tcp=tcp, source='127.0.0.2')[1]
                 assert query(port, 'host.home.test.', tcp=tcp, source='127.0.0.3')[0] & 15 == 5
-            print('PASS fast reload preserving global records and source ACLs')
+            assert (1, socket.inet_aton('192.0.2.45')) in query(port, 'host.authority.test.')[1]
+            print('PASS fast reload preserving global records, authority zones, and source ACLs')
 
             # Use a private test CA to exercise both acceptance and rejection
             # of upstream certificates, without external network access.
@@ -521,7 +605,13 @@ forward-zone:
             process.wait(timeout=10)
             print('PASS remote-control mutual TLS, reload/fast_reload, and missing certificate rejection')
 
-            for text in ('view:\n name: private\n',
+            for text in ('server:\n response-ip: 192.0.2.0/24 deny\n',
+                         'server:\n response-ip-data: 192.0.2.0/24 \"test. A 192.0.2.1\"\n',
+                         'server:\n response-ip-tag: 192.0.2.0/24 \"tag\"\n',
+                         'server:\n module-config: \"respip validator iterator\"\n',
+                         'rpz:\n name: policy.test.\n',
+                         'server:\n rpz-log: yes\n',
+                         'view:\n name: private\n',
                          'server:\n access-control-view: 127.0.0.0/8 private\n',
                          'server:\n interface-view: 127.0.0.1 private\n',
                          'server:\n local-zone: home.test. noview\n',

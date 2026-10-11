@@ -63,7 +63,6 @@
 #include "daemon/stats.h"
 #include "sldns/wire2str.h"
 #include "sldns/pkthdr.h"
-#include "services/rpz.h"
 #include "services/listen_dnsport.h"
 
 #ifdef HAVE_SYS_IPC_H
@@ -181,14 +180,11 @@ usage(void)
 	printf("  ratelimit_list [+a]		list ratelimited domains\n");
 	printf("  ip_ratelimit_list [+a]	list ratelimited ip addresses\n");
 	printf("		+a		list all, also not ratelimited\n");
-	printf("  list_auth_zones		list auth zones (includes RPZ zones)\n");
-	printf("  auth_zone_reload zone		reload auth zone (or RPZ zone) from zonefile\n");
-	printf("  auth_zone_transfer zone	transfer auth zone (or RPZ zone) from master\n");
+	printf("  list_auth_zones		list auth zones\n");
+	printf("  auth_zone_reload zone		reload auth zone from zonefile\n");
+	printf("  auth_zone_transfer zone	transfer auth zone from master\n");
 	printf("  					one entry per line read from stdin\n");
 	printf("  					one entry per line read from stdin\n");
-	printf("  rpz_enable zone		Enable the RPZ zone if it had previously\n");
-	printf("  				been disabled\n");
-	printf("  rpz_disable zone		Disable the RPZ zone\n");
 	printf("  add_cookie_secret <secret>	add (or replace) a new cookie secret <secret>\n");
 	printf("  drop_cookie_secret		drop a staging cookie secret\n");
 	printf("  activate_cookie_secret	make a staging cookie secret active\n");
@@ -277,7 +273,6 @@ static void print_mem(struct ub_shm_stat_info* shm_stat,
 	PR_LL("mem.cache.message", shm_stat->mem.msg);
 	PR_LL("mem.mod.iterator", shm_stat->mem.iter);
 	PR_LL("mem.mod.validator", shm_stat->mem.val);
-	PR_LL("mem.mod.respip", shm_stat->mem.respip);
 #ifdef USE_IPSECMOD
 	PR_LL("mem.mod.ipsecmod", shm_stat->mem.ipsecmod);
 #endif
@@ -389,14 +384,7 @@ static void print_extended(struct ub_stats_info* s, int inhibit_zero)
 	/* max collisions */
 	PR_UL("msg.cache.max_collisions", s->svr.msg_cache_max_collisions);
 	PR_UL("rrset.cache.max_collisions", s->svr.rrset_cache_max_collisions);
-	/* applied RPZ actions */
-	for(i=0; i<UB_STATS_RPZ_ACTION_NUM; i++) {
-		if(i == RPZ_NO_OVERRIDE_ACTION)
-			continue;
-		if(inhibit_zero && s->svr.rpz_action[i] == 0)
-			continue;
-		PR_UL_SUB("num.rpz.action", rpz_action_to_string(i), s->svr.rpz_action[i]);
-	}
+
 	PR_UL("num.query.authzone.up", s->svr.num_query_authzone_up);
 	PR_UL("num.query.authzone.down", s->svr.num_query_authzone_down);
 }

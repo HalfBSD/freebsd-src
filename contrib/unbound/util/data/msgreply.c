@@ -41,6 +41,7 @@
 
 #include "config.h"
 #include "util/data/msgreply.h"
+#include "services/localzone.h"
 #include "util/storage/lookup3.h"
 #include "util/log.h"
 #include "util/alloc.h"

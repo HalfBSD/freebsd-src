@@ -89,7 +89,6 @@
 #include "util/tube.h"
 #include "util/net_help.h"
 #include "sldns/keyraw.h"
-#include "respip/respip.h"
 #include "iterator/iter_fwd.h"
 #include "iterator/iter_hints.h"
 #include <signal.h>
@@ -814,39 +813,17 @@ daemon_fork(struct daemon* daemon)
 		!hints_apply_cfg(daemon->env->hints, daemon->cfg))
 		fatal_exit("Could not set root or stub hints");
 
-	/* process raw response-ip configuration data */
-	if(!(daemon->env->respip_set = respip_set_create()))
-		fatal_exit("Could not create response IP set");
-	if(!respip_global_apply_cfg(daemon->env->respip_set, daemon->cfg))
-		fatal_exit("Could not set up response IP set");
-
-	daemon->use_response_ip = !respip_set_is_empty(
-		daemon->env->respip_set);
-
 	/* setup modules */
 	daemon_setup_modules(daemon);
 
 	/* read auth zonefiles */
 	if(!auth_zones_apply_cfg(daemon->env->auth_zones, daemon->cfg, 1,
-		&daemon->use_rpz, daemon->env, &daemon->mods))
+		daemon->env, &daemon->mods))
 		fatal_exit("auth_zones could not be setup");
 
 	/* Set-up EDNS strings */
 	if(!edns_strings_apply_cfg(daemon->env->edns_strings, daemon->cfg))
 		fatal_exit("Could not set up EDNS strings");
-
-	/* response-ip-xxx options don't work as expected without the respip
-	 * module.  To avoid run-time operational surprise we reject such
-	 * configuration. */
-	if(daemon->use_response_ip &&
-		modstack_find(&daemon->mods, "respip") < 0)
-		fatal_exit("response-ip options require respip module");
-	/* RPZ response ip triggers don't work as expected without the respip
-	 * module.  To avoid run-time operational surprise we reject such
-	 * configuration. */
-	if(daemon->use_rpz &&
-		modstack_find(&daemon->mods, "respip") < 0)
-		fatal_exit("RPZ requires the respip module");
 
 	/* first create all the worker structures, so we can pass
 	 * them to the newly created threads.
@@ -943,8 +920,6 @@ daemon_cleanup(struct daemon* daemon)
 	daemon->env->hints = NULL;
 	local_zones_delete(daemon->local_zones);
 	daemon->local_zones = NULL;
-	respip_set_delete(daemon->env->respip_set);
-	daemon->env->respip_set = NULL;
 	if(daemon->env->auth_zones)
 		auth_zones_cleanup(daemon->env->auth_zones);
 	/* key cache is cleared by module deinit during next daemon_fork() */

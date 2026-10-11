@@ -131,10 +131,6 @@ Configuration for a zone that forwards to specific DNS resolvers.
 .TP
 .B \fI\%auth\-zone:\fP
 Configuration for local authoritative zones.
-.TP
-.B \fI\%rpz:\fP
-Configuration for Response Policy Zones that allows for DNS filtering.
-Requires the \fBrespip\fP module.
 .UNINDENT
 .UNINDENT
 .UNINDENT
@@ -1247,7 +1243,7 @@ communication and initial ACL (check if the proxy itself is denied/refused
 by configuration).
 .sp
 The proxied address (if any) will then be used as the true client address
-and will be used where applicable for logging, ACL, RPZ and IP
+and will be used where applicable for logging, ACL and IP
 ratelimiting.
 .sp
 PROXYv2 is supported for UDP and TCP listening interfaces.
@@ -2185,7 +2181,7 @@ Default: no
 .B module\-config: \fI\(dq<module names>\(dq\fP 
 Module configuration, a list of module names separated by spaces, surround
 the string with quotes (\fB\(dq\(dq\fP).
-The modules can be \fBrespip\fP, \fBvalidator\fP, or \fBiterator\fP (and possibly
+The modules can be \fBvalidator\fP, or \fBiterator\fP (and possibly
 more, see below).
 .sp
 \fBNOTE:\fP
@@ -2206,8 +2202,6 @@ You must also set trust\-anchors for validation to be useful.
 .UNINDENT
 .UNINDENT
 .sp
-Adding \fBrespip\fP to the front will cause RPZ processing to be done on all
-queries.
 .sp
 Most modules that need to be listed here have to be listed at the beginning
 of the line.
@@ -2710,9 +2704,7 @@ The \fI\%forward\-zone\fP and
 sections below.
 If you want to perform filtering of the information that the users can
 fetch, the \fI\%local\-zone\fP and
-\fI\%local\-data\fP statements allow for this, but
-also the \fI\%rpz\fP functionality can be used, described
-in the RPZ section.
+\fI\%local\-data\fP statements allow for this.
 .INDENT 7.0
 .TP
 .B deny 
@@ -3211,103 +3203,6 @@ Override the local zone type for queries from addresses matching netblock.
 Use this localzone type, regardless the type configured for the local zone
 (both tagged and untagged) and regardless the type configured using
 \fI\%access\-control\-tag\-action\fP\&.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B response\-ip: \fI<IP\-netblock> <action>\fP 
-This requires use of the \fBrespip\fP module.
-.sp
-If the IP address in an AAAA or A RR in the answer section of a response
-matches the specified IP netblock, the specified action will apply.
-\fI<action>\fP has generally the same semantics as that for
-\fI\%access\-control\-tag\-action\fP,
-but there are some exceptions.
-.sp
-Actions for \fI\%response\-ip\fP are different
-from those for \fI\%local\-zone\fP in that in case
-of the former there is no point of such conditions as \(dqthe query matches it
-but there is no local data\(dq.
-Because of this difference, the semantics of
-\fI\%response\-ip\fP actions are modified or
-simplified as follows: The \fIstatic\fP, \fIrefuse\fP, \fItransparent\fP,
-\fItypetransparent\fP, and \fInodefault\fP actions are invalid for \fIresponse\-ip\fP\&.
-Using any of these will cause the configuration to be rejected as faulty.
-The \fIdeny\fP action is non\-conditional, i.e. it always results in dropping
-the corresponding query.
-The resolution result before applying the \fIdeny\fP action is still cached and
-can be used for other queries.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B response\-ip\-data: \fI<IP\-netblock> <\(dqresource record string\(dq>\fP 
-This requires use of the \fBrespip\fP module.
-.sp
-This specifies the action data for
-\fI\%response\-ip\fP with action being to redirect
-as specified by \fI<\(dqresource record string\(dq>\fP\&.
-\fI<\(dqResource record string\(dq>\fP is similar to that of
-\fI\%access\-control\-tag\-data\fP,
-but it must be of either AAAA, A or CNAME types.
-If the \fI<IP\-netblock>\fP is an IPv6/IPv4 prefix, the record must be AAAA/A
-respectively, unless it is a CNAME (which can be used for both versions of
-IP netblocks).
-If it is CNAME there must not be more than one
-\fI\%response\-ip\-data\fP for the same
-\fI<IP\-netblock>\fP\&.
-Also, CNAME and other types of records must not coexist for the same
-\fI<IP\-netblock>\fP, following the normal rules for CNAME records.
-The textual domain name for the CNAME does not have to be explicitly
-terminated with a dot (\fB\(dq.\(dq\fP); the root name is assumed to be the origin
-for the name.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B response\-ip\-tag: \fI<IP\-netblock> <\(dqlist of tags\(dq>\fP 
-This requires use of the \fBrespip\fP module.
-.sp
-Assign tags to response \fI<IP\-netblock>\fP\&.
-If the IP address in an AAAA or A RR in the answer section of a response
-matches the specified \fI<IP\-netblock>\fP, the specified tags are assigned to
-the IP address.
-Then, if an \fI\%access\-control\-tag\fP is
-defined for the client and it includes one of the tags for the response IP,
-the corresponding
-\fI\%access\-control\-tag\-action\fP
-will apply.
-Tag matching rule is the same as that for
-\fI\%access\-control\-tag\fP and
-\fI\%local\-zone\fP\&.
-Unlike \fI\%local\-zone\-tag\fP,
-\fI\%response\-ip\-tag\fP can be defined for an
-\fI<IP\-netblock>\fP even if no \fI\%response\-ip\fP is
-defined for that netblock.
-If multiple \fI\%response\-ip\-tag\fP options
-are specified for the same \fI<IP\-netblock>\fP in different statements, all but
-the first will be ignored.
-However, this will not be flagged as a configuration error, but the result
-is probably not what was intended.
-.sp
-Actions specified in an
-\fI\%access\-control\-tag\-action\fP
-that has a matching tag with
-\fI\%response\-ip\-tag\fP can be those that are
-\(dqinvalid\(dq for \fI\%response\-ip\fP listed above,
-since
-\fI\%access\-control\-tag\-action\fP
-can be shared with local zones.
-For these actions, if they behave differently depending on whether local
-data exists or not in case of local zones, the behavior for
-\fI\%response\-ip\-data\fP will generally
-result in NOERROR/NODATA instead of NXDOMAIN, since the
-\fI\%response\-ip\fP data are inherently type
-specific, and non\-existence of data does not indicate anything about the
-existence or non\-existence of the qname itself.
-For example, if the matching tag action is static but there is no data for
-the corresponding \fI\%response\-ip\fP
-configuration, then the result will be NOERROR/NODATA.
-The only case where NXDOMAIN is returned is when an
-\fI\%always_nxdomain\fP
-action applies.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -4506,254 +4401,6 @@ If the option is not specified, all domains are treated as being allowed
 .TP
 .B ipsecmod\-whitelist: \fI<domain>\fP 
 Alternate syntax for \fI\%ipsecmod\-allow\fP\&.
-.UNINDENT
-.SH RESPONSE POLICY ZONE OPTIONS
-.sp
-These options are part of the \fBrpz:\fP section.
-.sp
-Response Policy Zones are configured with \fBrpz:\fP section clauses, and each
-one must have a \fI\%name\fP option.
-There can be multiple ones, by listing multiple \fBrpz:\fP section clauses, each
-with a different name.
-RPZ sections are applied in order of configuration and any match from an
-earlier RPZ zone will terminate the RPZ lookup.
-Note that a PASSTHRU action is still considered a match.
-.sp
-The respip module needs to be added to the
-\fI\%module\-config\fP, e.g.:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-module\-config: \(dqrespip validator iterator\(dq
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-\fBNOTE:\fP
-.INDENT 0.0
-.INDENT 3.5
-.UNINDENT
-.UNINDENT
-.sp
-QNAME, Response IP Address, nsdname, nsip and clientip triggers are supported.
-Supported actions are: NXDOMAIN, NODATA, PASSTHRU, DROP, Local Data, tcp\-only
-and drop.
-RPZ QNAME triggers are applied after any
-\fI\%local\-zone\fP and before any
-\fI\%auth\-zone\fP\&.
-.sp
-The RPZ zone is a regular DNS zone formatted with a SOA start record as usual.
-The items in the zone are entries, that specify what to act on (the trigger)
-and what to do (the action).
-The trigger to act on is recorded in the name, the action to do is recorded as
-the resource record.
-The names all end in the zone name, so you could type the trigger names without
-a trailing dot in the zonefile.
-.sp
-An example RPZ record, that answers \fBexample.com\fP with \fBNXDOMAIN\fP:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-example.com CNAME .
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-The triggers are encoded in the name on the left
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-name                          query name
-netblock.rpz\-client\-ip        client IP address
-netblock.rpz\-ip               response IP address in the answer
-name.rpz\-nsdname              nameserver name
-netblock.rpz\-nsip             nameserver IP address
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-The netblock is written as \fB<netblocklen>.<ip address in reverse>\fP\&.
-For IPv6 use \fB\(aqzz\(aq\fP for \fB\(aq::\(aq\fP\&.
-Specify individual addresses with scope length of 32 or 128.
-For example, \fB24.10.100.51.198.rpz\-ip\fP is \fB198.51.100.10/24\fP and
-\fB32.10.zz.db8.2001.rpz\-ip\fP is \fB2001:db8:0:0:0:0:0:10/32\fP\&.
-.sp
-The actions are specified with the record on the right
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-CNAME .                      nxdomain reply
-CNAME *.                     nodata reply
-CNAME rpz\-passthru.          do nothing, allow to continue
-CNAME rpz\-drop.              the query is dropped
-CNAME rpz\-tcp\-only.          answer over TCP
-A 192.0.2.1                  answer with this IP address
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-Other records like AAAA, TXT and other CNAMEs (not rpz\-..) can also be used to
-answer queries with that content.
-.INDENT 0.0
-.TP
-.B name: \fI<zone name>\fP 
-Name of the authority zone.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B primary: \fI<IP address or host name>\fP 
-Where to download a copy of the zone from, with AXFR and IXFR.
-Multiple primaries can be specified.
-They are all tried if one fails.
-.sp
-To use a non\-default port for DNS communication append \fB\(aq@\(aq\fP with the
-port number.
-.sp
-You can append a \fB\(aq#\(aq\fP and a name, then AXFR over TLS can be used and the
-TLS authentication certificates will be checked with that name.
-.sp
-If you combine the \fB\(aq@\(aq\fP and \fB\(aq#\(aq\fP, the \fB\(aq@\(aq\fP comes first.
-If you point it at another Unbound instance, it would not work because that
-does not support AXFR/IXFR for the zone, but if you used
-\fI\%url\fP to download the zonefile as a text file
-from a webserver that would work.
-.sp
-If you specify the hostname, you cannot use the domain from the zonefile,
-because it may not have that when retrieving that data, instead use a plain
-IP address to avoid a circular dependency on retrieving that IP address.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B master: \fI<IP address or host name>\fP 
-Alternate syntax for \fI\%primary\fP\&.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B url: \fI<url to zonefile>\fP 
-Where to download a zonefile for the zone.
-With HTTP or HTTPS.
-An example for the url is:
-.INDENT 7.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-http://www.example.com/example.org.zone
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-Multiple url statements can be given, they are tried in turn.
-.sp
-If only urls are given the SOA refresh timer is used to wait for making new
-downloads.
-If also primaries are listed, the primaries are first probed with UDP SOA
-queries to see if the SOA serial number has changed, reducing the number of
-downloads.
-If none of the URLs work, the primaries are tried with IXFR and AXFR.
-.sp
-For HTTPS, the \fI\%tls\-cert\-bundle\fP and
-the hostname from the url are used to authenticate the connection.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B allow\-notify: \fI<IP address or host name or netblockIP/prefix>\fP 
-With \fI\%allow\-notify\fP you can specify
-additional sources of notifies.
-When notified, the server attempts to first probe and then zone transfer.
-If the notify is from a primary, it first attempts that primary.
-Otherwise other primaries are attempted.
-If there are no primaries, but only urls, the file is downloaded when
-notified.
-.sp
-\fBNOTE:\fP
-.INDENT 7.0
-.INDENT 3.5
-The primaries from \fI\%primary\fP and
-\fI\%url\fP statements are allowed notify by
-default.
-.UNINDENT
-.UNINDENT
-.UNINDENT
-.INDENT 0.0
-.TP
-.B zonefile: \fI<filename>\fP 
-The filename where the zone is stored.
-If not given then no zonefile is used.
-If the file does not exist or is empty, Unbound will attempt to fetch zone
-data (eg. from the primary servers).
-.UNINDENT
-.INDENT 0.0
-.TP
-.B rpz\-action\-override: \fI<action>\fP 
-Always use this RPZ action for matching triggers from this zone.
-Possible actions are: \fInxdomain\fP, \fInodata\fP, \fIpassthru\fP, \fIdrop\fP, \fIdisabled\fP
-and \fIcname\fP\&.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B rpz\-cname\-override: \fI<domain>\fP 
-The CNAME target domain to use if the cname action is configured for
-\fI\%rpz\-action\-override\fP\&.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B rpz\-log: \fI<yes or no>\fP 
-Log all applied RPZ actions for this RPZ zone.
-.sp
-Default: no
-.UNINDENT
-.INDENT 0.0
-.TP
-.B rpz\-log\-name: \fI<name>\fP 
-Specify a string to be part of the log line, for easy referencing.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B rpz\-signal\-nxdomain\-ra: \fI<yes or no>\fP 
-Signal when a query is blocked by the RPZ with NXDOMAIN with an unset RA
-flag.
-This allows certain clients, like dnsmasq, to infer that the domain is
-externally blocked.
-.sp
-Default: no
-.UNINDENT
-.INDENT 0.0
-.TP
-.B for\-downstream: \fI<yes or no>\fP 
-If enabled the zone is authoritatively answered for and queries for the RPZ
-zone information are answered to downstream clients.
-This is useful for monitoring scripts, that can then access the SOA
-information to check if the RPZ information is up to date.
-.sp
-Default: no
-.UNINDENT
-.INDENT 0.0
-.TP
-.B tags: \fI\(dq<list of tags>\(dq\fP 
-Limit the policies from this RPZ section to clients with a matching tag.
-.sp
-Tags need to be defined in \fI\%define\-tag\fP and
-can be assigned to client addresses using
-\fI\%access\-control\-tag\fP or
-\fI\%interface\-tag\fP\&.
-Enclose list of tags in quotes (\fB\(dq\(dq\fP) and put spaces between tags.
-.sp
-If no tags are specified the policies from this section will be applied for
-all clients.
 .UNINDENT
 .SH MEMORY CONTROL EXAMPLE
 .sp

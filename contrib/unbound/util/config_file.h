@@ -442,12 +442,6 @@ struct config_file {
 	struct config_str3list* interface_tag_actions;
 	/** list of interface, tagname, redirectdata */
 	struct config_str3list* interface_tag_datas;
-	/** list of IP-netblock, tagbitlist */
-	struct config_strbytelist* respip_tags;
-	/** list of response-driven access control entries, linked list */
-	struct config_str2list* respip_actions;
-	/** RRs configured for response-driven access controls */
-	struct config_str2list* respip_data;
 	/** tag list, array with tagname[i] is malloced string */
 	char** tagname;
 	/** number of items in the taglist */
@@ -676,23 +670,6 @@ struct config_auth {
 	/** fallback to recursion to authorities if zone expired and other
 	 * reasons perhaps (like, query bogus) */
 	int fallback_enabled;
-	/** this zone is used to create local-zone policies */
-	int isrpz;
-	/** rpz tags (or NULL) */
-	uint8_t* rpz_taglist;
-	/** length of the taglist (in bytes) */
-	size_t rpz_taglistlen;
-	/** Override RPZ action for this zone, regardless of zone content */
-	char* rpz_action_override;
-	/** Log when this RPZ policy is applied */
-	int rpz_log;
-	/** Display this name in the log when RPZ policy is applied */
-	char* rpz_log_name;
-	/** Always reply with this CNAME target if the cname override action is
-	 * used */
-	char* rpz_cname;
-	/** signal nxdomain block with unset RA */
-	int rpz_signal_nxdomain_ra;
 	/** Check ZONEMD records for this zone */
 	int zonemd_check;
 	/** Reject absence of ZONEMD records, zone must have one */

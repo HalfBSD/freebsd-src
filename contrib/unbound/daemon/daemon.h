@@ -55,7 +55,6 @@ struct acl_list;
 struct local_zones;
 struct ub_randstate;
 struct daemon_remote;
-struct respip_set;
 struct shm_main_info;
 struct cookie_secrets;
 struct fast_reload_thread;
@@ -130,10 +129,7 @@ struct daemon {
 	int stat_time_specific;
 	/** if the timeout is specific, what offset in the period. */
 	int stat_time_offset;
-	/** some response-ip tags or actions are configured if true */
-	int use_response_ip;
-	/** some RPZ policies are configured */
-	int use_rpz;
+
 	/** reuse existing cache on reload if other conditions allow it. */
 	int reuse_cache;
 	/** the EDNS cookie secrets from the cookie-secret-file */

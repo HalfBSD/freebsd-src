@@ -330,13 +330,6 @@ forward-ssl-upstream{COLON}	{ YDVAR(1, VAR_FORWARD_SSL_UPSTREAM) }
 forward-tls-upstream{COLON}	{ YDVAR(1, VAR_FORWARD_SSL_UPSTREAM) }
 forward-tcp-upstream{COLON}	{ YDVAR(1, VAR_FORWARD_TCP_UPSTREAM) }
 auth-zone{COLON}		{ YDVAR(0, VAR_AUTH_ZONE) }
-rpz{COLON}			{ YDVAR(0, VAR_RPZ) }
-tags{COLON}			{ YDVAR(1, VAR_TAGS) }
-rpz-action-override{COLON}	{ YDVAR(1, VAR_RPZ_ACTION_OVERRIDE) }
-rpz-cname-override{COLON}	{ YDVAR(1, VAR_RPZ_CNAME_OVERRIDE) }
-rpz-log{COLON}			{ YDVAR(1, VAR_RPZ_LOG) }
-rpz-log-name{COLON}		{ YDVAR(1, VAR_RPZ_LOG_NAME) }
-rpz-signal-nxdomain-ra{COLON}	{ YDVAR(1, VAR_RPZ_SIGNAL_NXDOMAIN_RA) }
 zonefile{COLON}			{ YDVAR(1, VAR_ZONEFILE) }
 master{COLON}			{ YDVAR(1, VAR_MASTER) }
 primary{COLON}			{ YDVAR(1, VAR_MASTER) }
@@ -470,9 +463,6 @@ fast-server-num{COLON}		{ YDVAR(1, VAR_FAST_SERVER_NUM) }
 low-rtt-pct{COLON}		{ YDVAR(1, VAR_FAST_SERVER_PERMIL) }
 low-rtt-permil{COLON}		{ YDVAR(1, VAR_FAST_SERVER_PERMIL) }
 fast-server-permil{COLON}	{ YDVAR(1, VAR_FAST_SERVER_PERMIL) }
-response-ip-tag{COLON}		{ YDVAR(2, VAR_RESPONSE_IP_TAG) }
-response-ip{COLON}		{ YDVAR(2, VAR_RESPONSE_IP) }
-response-ip-data{COLON}		{ YDVAR(2, VAR_RESPONSE_IP_DATA) }
 pad-queries{COLON}		{ YDVAR(1, VAR_PAD_QUERIES) }
 pad-queries-block-size{COLON}	{ YDVAR(1, VAR_PAD_QUERIES_BLOCK_SIZE) }
 ipsecmod-enabled{COLON}		{ YDVAR(1, VAR_IPSECMOD_ENABLED) }

@@ -177,9 +177,6 @@ struct val_anchors;
 struct val_neg_cache;
 struct iter_forwards;
 struct iter_hints;
-struct respip_set;
-struct respip_client_info;
-struct respip_addr_info;
 struct module_stack;
 
 /** Maximum number of modules in operation */
@@ -395,7 +392,7 @@ struct module_env {
 	 */
 	void (*detach_subs)(struct module_qstate* qstate);
 
-	/**
+/**
 	 * Attach subquery.
 	 * Creates it if it does not exist already.
 	 * Keeps sub and super references correct.
@@ -410,8 +407,6 @@ struct module_env {
 	 * @param qstate: the state to find mesh state, and that wants to 
 	 * 	receive the results from the new subquery.
 	 * @param qinfo: what to query for (copied).
-	 * @param cinfo: if non-NULL client specific info that may affect
-	 *	IP-based actions that apply to the query result.
 	 * @param qflags: what flags to use (RD, CD flag or not).
 	 * @param prime: if it is a (stub) priming query.
 	 * @param valrec: validation lookup recursion, does not need validation
@@ -420,11 +415,11 @@ struct module_env {
 	 * @return: false on error, true if success (and init may be needed).
 	 */ 
 	int (*attach_sub)(struct module_qstate* qstate, 
-		struct query_info* qinfo, struct respip_client_info* cinfo,
+		struct query_info* qinfo,
 		uint16_t qflags, int prime, int valrec,
 		struct module_qstate** newq);
 
-	/**
+/**
 	 * Add detached query.
 	 * Creates it if it does not exist already.
 	 * Does not make super/sub references.
@@ -442,8 +437,6 @@ struct module_env {
 	 * @param qstate: the state to find mesh state, and that wants to receive
 	 * 	the results from the new subquery.
 	 * @param qinfo: what to query for (copied).
-	 * @param cinfo: if non-NULL client specific info that may affect
-	 *	IP-based actions that apply to the query result.
 	 * @param qflags: what flags to use (RD / CD flag or not).
 	 * @param prime: if it is a (stub) priming query.
 	 * @param valrec: if it is a validation recursion query (lookup of key, DS).
@@ -453,7 +446,7 @@ struct module_env {
 	 * @return: false on error, true if success (and init may be needed).
 	 */
 	int (*add_sub)(struct module_qstate* qstate, 
-		struct query_info* qinfo, struct respip_client_info* cinfo,
+		struct query_info* qinfo,
 		uint16_t qflags, int prime, int valrec,
 		struct module_qstate** newq, struct mesh_state** sub);
 
@@ -529,8 +522,6 @@ struct module_env {
 	 * data structure. 
 	 */
 	struct iter_hints* hints;
-	/** response-ip set with associated actions and tags. */
-	struct respip_set* respip_set;
 	/** module specific data. indexed by module id. */
 	void* modinfo[MAX_MODULE];
 
@@ -607,8 +598,6 @@ struct sock_list {
 	/** sockaddr */
 	struct sockaddr_storage addr;
 };
-
-struct respip_action_info;
 
 /**
  * Struct to hold relevant data for serve expired
@@ -687,22 +676,6 @@ struct module_qstate {
 	 * suitable for caching (briefly) the error response. Set by the
 	 * iterator when no_cache_store is enabled, and there is an error. */
 	int error_response_cache;
-
-	/**
-	 * Attributes of clients that share the qstate that may affect IP-based
-	 * actions.
-	 */
-	struct respip_client_info* client_info;
-
-	/** Extended result of response-ip action processing, mainly
-	 *  for logging purposes. */
-	struct respip_action_info* respip_action_info;
-	/** if the query has been modified by rpz processing. */
-	int rpz_applied;
-	/** if the query is rpz passthru, no further rpz processing for it */
-	int rpz_passthru;
-	/* Flag tcp required. */
-	int tcp_required;
 
 	/** whether the reply should be dropped */
 	int is_drop;

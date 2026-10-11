@@ -233,7 +233,7 @@ int fptr_whitelist_modenv_detach_subs(void (*fptr)(
  */
 int fptr_whitelist_modenv_attach_sub(int (*fptr)(
 	struct module_qstate* qstate, struct query_info* qinfo, 
-	struct respip_client_info* cinfo, uint16_t qflags, int prime,
+	uint16_t qflags, int prime,
 	int valrec, struct module_qstate** newq));
 
 /**
@@ -243,7 +243,7 @@ int fptr_whitelist_modenv_attach_sub(int (*fptr)(
  * @return false if not in whitelist.
  */
 int fptr_whitelist_modenv_add_sub(int (*fptr)(struct module_qstate* qstate,
-	struct query_info* qinfo, struct respip_client_info* cinfo,
+	struct query_info* qinfo,
 	uint16_t qflags, int prime, int valrec, struct module_qstate** newq,
 	struct mesh_state** sub));
 /**

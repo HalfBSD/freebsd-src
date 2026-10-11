@@ -60,9 +60,6 @@ END {
 	if(val["mem.mod.ipsecmod"] != "") {
 		print "unbound_memory_bytes{type=\"mem.mod.ipsecmod\"} " val["mem.mod.ipsecmod"];
 	}
-	if(val["mem.mod.dynlibmod"] != "") {
-		print "unbound_memory_bytes{type=\"mem.mod.dynlibmod\"} " val["mem.mod.dynlibmod"];
-	}
 	print "unbound_memory_bytes{type=\"msg.cache.count\"} " val["msg.cache.count"];
 	print "unbound_memory_bytes{type=\"rrset.cache.count\"} " val["rrset.cache.count"];
 	print "unbound_memory_bytes{type=\"infra.cache.count\"} " val["infra.cache.count"];

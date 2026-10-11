@@ -72,9 +72,6 @@
 #include "util/tube.h"
 #include "sldns/sbuffer.h"
 #include "sldns/str2wire.h"
-#ifdef USE_DNSTAP
-#include "dnstap/dtstream.h"
-#endif
 
 #ifdef HAVE_TARGETCONDITIONALS_H
 #include <TargetConditionals.h>
@@ -227,7 +224,7 @@ libworker_setup(struct ub_ctx* ctx, int is_bg, struct ub_event_base* eb)
 		ports, numports, cfg->unwanted_threshold,
 		cfg->outgoing_tcp_mss, &libworker_alloc_cleanup, w,
 		cfg->do_udp || cfg->udp_upstream_without_downstream, w->sslctx,
-		cfg->delay_close, cfg->tls_use_sni, NULL, cfg->udp_connect,
+		cfg->delay_close, cfg->tls_use_sni, cfg->udp_connect,
 		cfg->max_reuse_tcp_queries, cfg->tcp_reuse_timeout,
 		cfg->tcp_auth_query_timeout);
 	w->env->outnet = w->back;
@@ -1046,21 +1043,7 @@ wsvc_cron_cb(void* ATTR_UNUSED(arg))
 }
 #endif /* UB_ON_WINDOWS */
 
-#ifdef USE_DNSTAP
-void dtio_tap_callback(int ATTR_UNUSED(fd), short ATTR_UNUSED(ev),
-	void* ATTR_UNUSED(arg))
-{
-	log_assert(0);
-}
-#endif
 
-#ifdef USE_DNSTAP
-void dtio_mainfdcallback(int ATTR_UNUSED(fd), short ATTR_UNUSED(ev),
-	void* ATTR_UNUSED(arg))
-{
-	log_assert(0);
-}
-#endif
 
 void fast_reload_service_cb(int ATTR_UNUSED(fd), short ATTR_UNUSED(ev),
 	void* ATTR_UNUSED(arg))

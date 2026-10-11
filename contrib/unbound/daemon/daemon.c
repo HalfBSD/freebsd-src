@@ -833,15 +833,6 @@ daemon_create_workers(struct daemon* daemon)
 		sizeof(struct worker*));
 	if(!daemon->workers)
 		fatal_exit("out of memory during daemon init");
-	if(daemon->cfg->dnstap) {
-#ifdef USE_DNSTAP
-		daemon->dtenv = dt_create(daemon->cfg);
-		if (!daemon->dtenv)
-			fatal_exit("dt_create failed");
-#else
-		fatal_exit("dnstap enabled in config but not built with dnstap support");
-#endif
-	}
 	for(i=0; i<daemon->num; i++) {
 		if(!(daemon->workers[i] = worker_create(daemon, i,
 			shufport+numport*i/daemon->num, 
@@ -1204,10 +1195,6 @@ daemon_cleanup(struct daemon* daemon)
 	if(!daemon->reuse_cache || daemon->need_to_exit)
 		daemon_clear_allocs(daemon);
 	daemon->num = 0;
-#ifdef USE_DNSTAP
-	dt_delete(daemon->dtenv);
-	daemon->dtenv = NULL;
-#endif
 #ifdef USE_DNSCRYPT
 	dnsc_delete(daemon->dnscenv);
 	daemon->dnscenv = NULL;

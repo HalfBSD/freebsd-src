@@ -924,9 +924,6 @@ print_mem(RES* ssl, struct worker* worker, struct daemon* daemon,
 	size_t dnscrypt_shared_secret = 0;
 	size_t dnscrypt_nonce = 0;
 #endif /* USE_DNSCRYPT */
-#ifdef WITH_DYNLIBMODULE
-    size_t dynlib = 0;
-#endif /* WITH_DYNLIBMODULE */
 	msg = slabhash_get_mem(daemon->env->msg_cache);
 	rrset = slabhash_get_mem(&daemon->env->rrset_cache->table);
 	val = mod_get_mem(&worker->env, "validator");
@@ -945,9 +942,6 @@ print_mem(RES* ssl, struct worker* worker, struct daemon* daemon,
 		dnscrypt_nonce = slabhash_get_mem(daemon->dnscenv->nonces_cache);
 	}
 #endif /* USE_DNSCRYPT */
-#ifdef WITH_DYNLIBMODULE
-    dynlib = mod_get_mem(&worker->env, "dynlib");
-#endif /* WITH_DYNLIBMODULE */
 
 	if(!print_longnum(ssl, "mem.cache.rrset"SQ, rrset))
 		return 0;
@@ -975,10 +969,6 @@ print_mem(RES* ssl, struct worker* worker, struct daemon* daemon,
 			dnscrypt_nonce))
 		return 0;
 #endif /* USE_DNSCRYPT */
-#ifdef WITH_DYNLIBMODULE
-	if(!print_longnum(ssl, "mem.mod.dynlibmod"SQ, dynlib))
-		return 0;
-#endif /* WITH_DYNLIBMODULE */
 	if(!print_longnum(ssl, "mem.streamwait"SQ,
 		(size_t)s->svr.mem_stream_wait))
 		return 0;
@@ -2129,11 +2119,6 @@ do_cache_remove(struct worker* worker, uint8_t* nm, size_t nmlen,
 	k.local_alias = NULL;
 	h = query_info_hash(&k, 0);
 	slabhash_remove(worker->env.msg_cache, h, &k);
-	if(t == LDNS_RR_TYPE_AAAA) {
-		/* for AAAA also flush dns64 bit_cd packet */
-		h = query_info_hash(&k, BIT_CD);
-		slabhash_remove(worker->env.msg_cache, h, &k);
-	}
 #ifdef USE_CACHEDB
 	if(remcachedb && worker->env.cachedb_enabled)
 		cachedb_msg_remove_qinfo(&worker->env, &k);
@@ -5039,11 +5024,6 @@ fr_check_nopause_compat_cfg(struct fast_reload_thread* fr, struct config_file* n
 	FR_CHECK_CHANGED_CFG_STR2LIST("ratelimit-below-domain", ratelimit_below_domain, changed_str);
 	FR_CHECK_CHANGED_CFG_STR2LIST("ratelimit-for-domain", ratelimit_for_domain, changed_str);
 
-	/* Check for dnstap. */
-	FR_CHECK_CHANGED_CFG("dnstap-send-identity", dnstap_send_identity, changed_str);
-	FR_CHECK_CHANGED_CFG("dnstap-send-version", dnstap_send_version, changed_str);
-	FR_CHECK_CHANGED_CFG_STR("dnstap-identity", dnstap_identity, changed_str);
-	FR_CHECK_CHANGED_CFG_STR("dnstap-version", dnstap_version, changed_str);
 
 	if(changed_str[0] != 0) {
 		/* The new config changes some items that need a pause,
@@ -5296,19 +5276,7 @@ config_file_getmem(struct config_file* cfg)
 	m += getmem_str(cfg->server_cert_file);
 	m += getmem_str(cfg->control_key_file);
 	m += getmem_str(cfg->control_cert_file);
-	m += getmem_config_strlist(cfg->python_script);
-	m += getmem_config_strlist(cfg->dynlib_file);
-	m += getmem_str(cfg->dns64_prefix);
-	m += getmem_config_strlist(cfg->dns64_ignore_aaaa);
 	m += getmem_str(cfg->nat64_prefix);
-	m += getmem_str(cfg->dnstap_socket_path);
-	m += getmem_str(cfg->dnstap_ip);
-	m += getmem_str(cfg->dnstap_tls_server_name);
-	m += getmem_str(cfg->dnstap_tls_cert_bundle);
-	m += getmem_str(cfg->dnstap_tls_client_key_file);
-	m += getmem_str(cfg->dnstap_tls_client_cert_file);
-	m += getmem_str(cfg->dnstap_identity);
-	m += getmem_str(cfg->dnstap_version);
 	m += getmem_config_str2list(cfg->ratelimit_for_domain);
 	m += getmem_config_str2list(cfg->ratelimit_below_domain);
 	m += getmem_config_str2list(cfg->edns_client_strings);
@@ -6255,8 +6223,6 @@ fr_atomic_copy_cfg(struct config_file* oldcfg, struct config_file* cfg,
 	COPY_VAR_ptr(server_cert_file);
 	COPY_VAR_ptr(control_key_file);
 	COPY_VAR_ptr(control_cert_file);
-	COPY_VAR_ptr(python_script);
-	COPY_VAR_ptr(dynlib_file);
 	COPY_VAR_int(use_systemd);
 	COPY_VAR_int(do_daemonize);
 	COPY_VAR_int(minimal_responses);
@@ -6268,30 +6234,7 @@ fr_atomic_copy_cfg(struct config_file* oldcfg, struct config_file* cfg,
 	COPY_VAR_ptr(wait_limit_netblock);
 	COPY_VAR_ptr(wait_limit_cookie_netblock);
 	COPY_VAR_size_t(max_udp_size);
-	COPY_VAR_ptr(dns64_prefix);
-	COPY_VAR_int(dns64_synthall);
-	COPY_VAR_ptr(dns64_ignore_aaaa);
 	COPY_VAR_ptr(nat64_prefix);
-	COPY_VAR_int(dnstap);
-	COPY_VAR_int(dnstap_bidirectional);
-	COPY_VAR_ptr(dnstap_socket_path);
-	COPY_VAR_ptr(dnstap_ip);
-	COPY_VAR_int(dnstap_tls);
-	COPY_VAR_ptr(dnstap_tls_server_name);
-	COPY_VAR_ptr(dnstap_tls_cert_bundle);
-	COPY_VAR_ptr(dnstap_tls_client_key_file);
-	COPY_VAR_ptr(dnstap_tls_client_cert_file);
-	COPY_VAR_int(dnstap_send_identity);
-	COPY_VAR_int(dnstap_send_version);
-	COPY_VAR_ptr(dnstap_identity);
-	COPY_VAR_ptr(dnstap_version);
-	COPY_VAR_int(dnstap_sample_rate);
-	COPY_VAR_int(dnstap_log_resolver_query_messages);
-	COPY_VAR_int(dnstap_log_resolver_response_messages);
-	COPY_VAR_int(dnstap_log_client_query_messages);
-	COPY_VAR_int(dnstap_log_client_response_messages);
-	COPY_VAR_int(dnstap_log_forwarder_query_messages);
-	COPY_VAR_int(dnstap_log_forwarder_response_messages);
 	COPY_VAR_int(disable_dnssec_lame_check);
 	COPY_VAR_int(ip_ratelimit);
 	COPY_VAR_int(ip_ratelimit_cookie);
@@ -6613,13 +6556,6 @@ fr_reload_config(struct fast_reload_thread* fr, struct config_file* newcfg,
 	if(fr->sslctxs_changed) {
 		sslctxs_swap(daemon, ct);
 	}
-#ifdef USE_DNSTAP
-	if(env->cfg->dnstap) {
-		if(!fr->fr_nopause)
-			dt_apply_cfg(daemon->dtenv, env->cfg);
-		else dt_apply_logcfg(daemon->dtenv, env->cfg);
-	}
-#endif
 	fr_adjust_cache(env, ct->oldcfg);
 	if(!fr->fr_nopause) {
 		fr_adjust_iter_env(env, ct);
@@ -7204,8 +7140,7 @@ fast_reload_thread_setup(struct worker* worker, int fr_verb, int fr_nopause,
 	fr->fr_nopause = fr_nopause;
 	fr->fr_drop_mesh = fr_drop_mesh;
 	worker->daemon->fast_reload_drop_mesh = fr->fr_drop_mesh;
-	/* The thread id printed in logs, numworker+1 is the dnstap thread.
-	 * This is numworkers+2. */
+	/* Thread id used for reload logging. */
 	fr->threadnum = numworkers+2;
 	fr->commpair[0] = -1;
 	fr->commpair[1] = -1;
@@ -7877,40 +7812,6 @@ fr_worker_pickup_outside_network(struct worker* worker)
 	}
 }
 
-#ifdef USE_DNSTAP
-/** Fast reload, the worker picks up changes to DNSTAP configuration. */
-static void
-fr_worker_pickup_dnstap_changes(struct worker* worker)
-{
-	struct dt_env* w_dtenv = &worker->dtenv;
-	struct dt_env* d_dtenv = worker->daemon->dtenv;
-	log_assert(d_dtenv != NULL || !worker->daemon->cfg->dnstap);
-	if(d_dtenv == NULL) {
-		/* There is no environment when DNSTAP was not enabled
-		 * in the configuration. */
-		return;
-	}
-	w_dtenv->identity = d_dtenv->identity;
-	w_dtenv->len_identity = d_dtenv->len_identity;
-	w_dtenv->version = d_dtenv->version;
-	w_dtenv->len_version = d_dtenv->len_version;
-	w_dtenv->log_resolver_query_messages =
-		d_dtenv->log_resolver_query_messages;
-	w_dtenv->log_resolver_response_messages =
-		d_dtenv->log_resolver_response_messages;
-	w_dtenv->log_client_query_messages =
-		d_dtenv->log_client_query_messages;
-	w_dtenv->log_client_response_messages =
-		d_dtenv->log_client_response_messages;
-	w_dtenv->log_forwarder_query_messages =
-		d_dtenv->log_forwarder_query_messages;
-	w_dtenv->log_forwarder_response_messages =
-		d_dtenv->log_forwarder_response_messages;
-	lock_basic_lock(&d_dtenv->sample_lock);
-	w_dtenv->sample_rate = d_dtenv->sample_rate;
-	lock_basic_unlock(&d_dtenv->sample_lock);
-}
-#endif /* USE_DNSTAP */
 
 void
 fast_reload_worker_pickup_changes(struct worker* worker)
@@ -7941,9 +7842,6 @@ fast_reload_worker_pickup_changes(struct worker* worker)
 #endif
 	fr_worker_pickup_listen_dnsport(worker);
 	fr_worker_pickup_outside_network(worker);
-#ifdef USE_DNSTAP
-	fr_worker_pickup_dnstap_changes(worker);
-#endif
 }
 
 /** fast reload thread, handle reload_stop notification, send reload stop

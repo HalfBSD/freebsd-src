@@ -184,34 +184,7 @@ There are several commands that the server understands.
     any **\*-slabs** options and
     :ref:`statistics-interval<unbound.conf.statistics-interval>` changes.
 
-    For :ref:`dnstap<unbound.conf.dnstap>` these options can be changed:
-    :ref:`dnstap-log-resolver-query-messages<unbound.conf.dnstap.dnstap-log-resolver-query-messages>`,
-    :ref:`dnstap-log-resolver-response-messages<unbound.conf.dnstap.dnstap-log-resolver-response-messages>`,
-    :ref:`dnstap-log-client-query-messages<unbound.conf.dnstap.dnstap-log-client-query-messages>`,
-    :ref:`dnstap-log-client-response-messages<unbound.conf.dnstap.dnstap-log-client-response-messages>`,
-    :ref:`dnstap-log-forwarder-query-messages<unbound.conf.dnstap.dnstap-log-forwarder-query-messages>` and
-    :ref:`dnstap-log-forwarder-response-messages<unbound.conf.dnstap.dnstap-log-forwarder-response-messages>`.
-
-    It does not work with these options:
-    :ref:`dnstap-enable<unbound.conf.dnstap.dnstap-enable>`,
-    :ref:`dnstap-bidirectional<unbound.conf.dnstap.dnstap-bidirectional>`,
-    :ref:`dnstap-socket-path<unbound.conf.dnstap.dnstap-socket-path>`,
-    :ref:`dnstap-ip<unbound.conf.dnstap.dnstap-ip>`,
-    :ref:`dnstap-tls<unbound.conf.dnstap.dnstap-tls>`,
-    :ref:`dnstap-tls-server-name<unbound.conf.dnstap.dnstap-tls-server-name>`,
-    :ref:`dnstap-tls-cert-bundle<unbound.conf.dnstap.dnstap-tls-cert-bundle>`,
-    :ref:`dnstap-tls-client-key-file<unbound.conf.dnstap.dnstap-tls-client-key-file>` and
-    :ref:`dnstap-tls-client-cert-file<unbound.conf.dnstap.dnstap-tls-client-cert-file>`.
-
-    The options
-    :ref:`dnstap-send-identity<unbound.conf.dnstap.dnstap-send-identity>`,
-    :ref:`dnstap-send-version<unbound.conf.dnstap.dnstap-send-version>`,
-    :ref:`dnstap-identity<unbound.conf.dnstap.dnstap-identity>`, and
-    :ref:`dnstap-version<unbound.conf.dnstap.dnstap-version>` can be loaded
-    when ``+p`` is not used.
-
-    The ``+v`` option makes the output verbose which includes the time it took
-    to do the reload.
+    The ``+v`` option makes the output verbose and includes the reload time.
     With ``+vv`` it is more verbose which includes the amount of memory that
     was allocated temporarily to perform the reload; this amount of memory can
     be big if the config has large contents.

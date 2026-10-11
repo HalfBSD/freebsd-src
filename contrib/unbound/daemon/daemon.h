@@ -63,10 +63,6 @@ struct cookie_secrets;
 struct fast_reload_thread;
 struct fast_reload_printq;
 
-#include "dnstap/dnstap_config.h"
-#ifdef USE_DNSTAP
-struct dt_env;
-#endif
 
 #include "dnscrypt/dnscrypt_config.h"
 #ifdef USE_DNSCRYPT
@@ -151,10 +147,6 @@ struct daemon {
 	struct timeval time_last_stat;
 	/** time when daemon started */
 	struct timeval time_boot;
-#ifdef USE_DNSTAP
-	/** the dnstap environment master value, copied and changed by threads*/
-	struct dt_env* dtenv;
-#endif
 	/** The SHM info for shared memory stats. */
 	struct shm_main_info* shm_info;
 	/** if the timeout for statistics is attempted at specific offset.

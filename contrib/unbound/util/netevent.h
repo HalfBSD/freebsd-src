@@ -297,9 +297,6 @@ struct comm_point {
 	struct doq_server_socket* doq_socket;
 #endif
 
-	/* -------- dnstap ------- */
-	/** the dnstap environment */
-	struct dt_env* dtenv;
 
 	/** is this a UDP, TCP-accept or TCP socket. */
 	enum comm_point_type {

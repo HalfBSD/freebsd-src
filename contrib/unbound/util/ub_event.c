@@ -47,9 +47,6 @@
 #include "util/netevent.h"
 #include "util/tube.h"
 #include "daemon/remote.h"
-#ifdef USE_DNSTAP
-#include "dnstap/dtstream.h"
-#endif
 #ifdef UB_ON_WINDOWS
 #include "winrc/win_svc.h"
 #endif
@@ -109,15 +106,6 @@ UB_EV_BITS_CB(comm_point_http_handle_callback)
 UB_EV_BITS_CB(comm_point_doq_callback)
 #endif
 UB_EV_BITS_CB(fast_reload_service_cb)
-#ifdef USE_DNSTAP
-UB_EV_BITS_CB(dtio_output_cb)
-UB_EV_BITS_CB(dtio_cmd_cb)
-UB_EV_BITS_CB(dtio_reconnect_timeout_cb)
-UB_EV_BITS_CB(dtio_stop_timer_cb)
-UB_EV_BITS_CB(dtio_stop_ev_cb)
-UB_EV_BITS_CB(dtio_tap_callback)
-UB_EV_BITS_CB(dtio_mainfdcallback)
-#endif
 #ifdef HAVE_NGTCP2
 UB_EV_BITS_CB(doq_client_event_cb)
 UB_EV_BITS_CB(doq_client_timer_cb)
@@ -156,22 +144,6 @@ static void (*NATIVE_BITS_CB(void (*cb)(int, short, void*)))(int, short, void*)
 #endif
 	else if(cb == fast_reload_service_cb)
 		return my_fast_reload_service_cb;
-#ifdef USE_DNSTAP
-	else if(cb == dtio_output_cb)
-		return my_dtio_output_cb;
-	else if(cb == dtio_cmd_cb)
-		return my_dtio_cmd_cb;
-	else if(cb == dtio_reconnect_timeout_cb)
-		return my_dtio_reconnect_timeout_cb;
-	else if(cb == dtio_stop_timer_cb)
-		return my_dtio_stop_timer_cb;
-	else if(cb == dtio_stop_ev_cb)
-		return my_dtio_stop_ev_cb;
-	else if(cb == dtio_tap_callback)
-		return my_dtio_tap_callback;
-	else if(cb == dtio_mainfdcallback)
-		return my_dtio_mainfdcallback;
-#endif
 #ifdef HAVE_NGTCP2
 	else if(cb == doq_client_event_cb)
 		return my_doq_client_event_cb;

@@ -112,7 +112,7 @@ struct iter_nat64 {
 	/** A flag to locally apply NAT64 to make IPv4 addrs into IPv6 */
 	int use_nat64;
 
-	/** NAT64 prefix address, cf. dns64_env->prefix_addr */
+	/** NAT64 prefix address */
 	struct sockaddr_storage nat64_prefix_addr;
 
 	/** sizeof(sockaddr_in6) */

@@ -47,7 +47,6 @@
 #include "util/rbtree.h"
 #include "util/regional.h"
 #include "util/netevent.h"
-#include "dnstap/dnstap_config.h"
 #ifdef __QNX__
 /* For struct timeval */
 #include <sys/time.h>
@@ -64,7 +63,6 @@ struct port_comm;
 struct port_if;
 struct sldns_buffer;
 struct serviced_query;
-struct dt_env;
 struct edns_option;
 struct module_env;
 struct module_qstate;
@@ -147,10 +145,6 @@ struct outside_network {
 	void* sslctx;
 	/** if SNI will be used for TLS connections */
 	int tls_use_sni;
-#ifdef USE_DNSTAP
-	/** dnstap environment */
-	struct dt_env* dtenv;
-#endif
 	/** maximum segment size of tcp socket */
 	int tcp_mss;
 	/** IP_TOS socket option requested on the sockets */
@@ -425,10 +419,6 @@ struct waiting_tcp {
 	int error_count;
 	/** if true, the item is at the cb_and_decommission stage */
 	int in_cb_and_decommission;
-#ifdef USE_DNSTAP
-	/** serviced query pointer for dnstap to get logging info, if nonNULL*/
-	struct serviced_query* sq;
-#endif
 };
 
 /**
@@ -562,7 +552,6 @@ struct serviced_query {
  * @param delayclose: if not 0, udp sockets are delayed before timeout closure.
  * 	msec to wait on timeouted udp sockets.
  * @param tls_use_sni: if SNI is used for TLS connections.
- * @param dtenv: environment to send dnstap events with (if enabled).
  * @param udp_connect: if the udp_connect option is enabled.
  * @param max_reuse_tcp_queries: max number of queries on a reuse connection.
  * @param tcp_reuse_timeout: timeout for REUSE entries in milliseconds.
@@ -575,7 +564,7 @@ struct outside_network* outside_network_create(struct comm_base* base,
 	struct ub_randstate* rnd, int use_caps_for_id, int* availports, 
 	int numavailports, size_t unwanted_threshold, int tcp_mss,
 	void (*unwanted_action)(void*), void* unwanted_param, int do_udp,
-	void* sslctx, int delayclose, int tls_use_sni, struct dt_env *dtenv,
+	void* sslctx, int delayclose, int tls_use_sni,
 	int udp_connect, int max_reuse_tcp_queries, int tcp_reuse_timeout,
 	int tcp_auth_query_timeout);
 

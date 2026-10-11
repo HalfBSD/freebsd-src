@@ -395,9 +395,7 @@ needs_validation(struct module_qstate* qstate, int ret_rc,
 	 * But this is signalled internally with the valrec flag.
 	 * User queries are validated with BIT_CD to make our cache clean
 	 * so that bogus messages get retried by the upstream also for
-	 * downstream validators that set BIT_CD.
-	 * For DNS64 bit_cd signals no dns64 processing, but we want to
-	 * provide validation there too */
+	 * downstream validators that set BIT_CD. */
 	/*
 	if((qstate->query_flags & BIT_CD)) {
 		verbose(VERB_ALGO, "not validating response due to CD bit");

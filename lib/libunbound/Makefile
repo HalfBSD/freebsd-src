@@ -3,7 +3,7 @@ LDNSDIR= ${SRCTOP}/contrib/ldns
 UNBOUNDDIR= ${SRCTOP}/contrib/unbound
 
 # Hold my beer and watch this
-.PATH: ${UNBOUNDDIR} ${UNBOUNDDIR}/cachedb ${UNBOUNDDIR}/dns64 ${UNBOUNDDIR}/iterator ${UNBOUNDDIR}/sldns ${UNBOUNDDIR}/libunbound ${UNBOUNDDIR}/services ${UNBOUNDDIR}/services/cache ${UNBOUNDDIR}/util ${UNBOUNDDIR}/util/data ${UNBOUNDDIR}/respip ${UNBOUNDDIR}/util/storage ${UNBOUNDDIR}/validator 
+.PATH: ${UNBOUNDDIR} ${UNBOUNDDIR}/cachedb ${UNBOUNDDIR}/iterator ${UNBOUNDDIR}/sldns ${UNBOUNDDIR}/libunbound ${UNBOUNDDIR}/services ${UNBOUNDDIR}/services/cache ${UNBOUNDDIR}/util ${UNBOUNDDIR}/util/data ${UNBOUNDDIR}/respip ${UNBOUNDDIR}/util/storage ${UNBOUNDDIR}/validator
 
 PACKAGE=	local-unbound
 
@@ -14,7 +14,7 @@ CFLAGS+= -I${UNBOUNDDIR} -I${LDNSDIR} -I${.OBJDIR} -I${.CURDIR}
 CFLAGS+= -DOPENSSL_API_COMPAT=0x10100000L
 
 SRCS=	alloc.c as112.c authzone.c autotrust.c config_file.c configlexer.l \
-	configparser.y context.c dname.c dns.c dns64.c dnstree.c edns.c \
+	configparser.y context.c dname.c dns.c dnstree.c edns.c \
 	fptr_wlist.c infra.c iter_delegpt.c iter_donotq.c iter_fwd.c \
 	iter_hints.c iter_priv.c iter_resptype.c iter_scrub.c iter_utils.c \
 	iterator.c keyraw.c libunbound.c libworker.c listen_dnsport.c \

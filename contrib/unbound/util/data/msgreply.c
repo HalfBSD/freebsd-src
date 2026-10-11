@@ -748,12 +748,10 @@ reply_info_delete(void* d, void* ATTR_UNUSED(arg))
 }
 
 hashvalue_type
-query_info_hash(struct query_info *q, uint16_t flags)
+query_info_hash(struct query_info *q, uint16_t ATTR_UNUSED(flags))
 {
 	hashvalue_type h = 0xab;
 	h = hashlittle(&q->qtype, sizeof(q->qtype), h);
-	if(q->qtype == LDNS_RR_TYPE_AAAA && (flags&BIT_CD))
-		h++;
 	h = hashlittle(&q->qclass, sizeof(q->qclass), h);
 	h = dname_query_hash(q->qname, h);
 	return h;

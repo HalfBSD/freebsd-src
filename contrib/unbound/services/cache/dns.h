@@ -85,7 +85,7 @@ struct dns_msg {
  * 	can be updated to full TTL even in prefetch situations.
  * @param region: region to allocate better entries from cache into.
  *   (used when is_referral is false).
- * @param flags: flags with BIT_CD for AAAA queries in dns64 translation.
+ * @param flags: query flags.
  *   The higher 16 bits are used internally to customize the cache policy.
  *   (See DNSCACHE_STORE_xxx flags).
  * @param qstarttime: time when the query was started, and thus when the
@@ -183,7 +183,7 @@ struct dns_msg* dns_msg_deepcopy_region(struct dns_msg* origin,
  * @param qnamelen: length of qname.
  * @param qtype: query type.
  * @param qclass: query class.
- * @param flags: flags with BIT_CD for AAAA queries in dns64 translation.
+ * @param flags: query flags.
  * @param region: where to allocate result.
  * @param scratch: where to allocate temporary data.
  * @param no_partial: if true, only complete messages and not a partial
@@ -256,7 +256,7 @@ int dns_msg_ansadd(struct dns_msg* msg, struct regional* region,
  * @param env: module environment with caches and time.
  * @param qinfo: query info for the query that needs adjustment.
  * @param adjust: time in seconds to add to the prefetch_leeway.
- * @param flags: flags with BIT_CD for AAAA queries in dns64 translation.
+ * @param flags: query flags.
  * @return false if not in cache. true if added.
  */
 int dns_cache_prefetch_adjust(struct module_env* env, struct query_info* qinfo,

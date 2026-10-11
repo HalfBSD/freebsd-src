@@ -142,7 +142,7 @@ struct dns_msg* dns_copy_msg(struct dns_msg* from, struct regional* regional);
  * @param pside: true if dp is parentside, thus message is 'fresh' and NS
  * 	can be prefetch-updates.
  * @param region: to copy modified (cache is better) rrs back to.
- * @param flags: with BIT_CD for dns64 AAAA translated queries.
+ * @param flags: query flags.
  * @param qstarttime: time of query start.
  * @param is_valrec: if the query is validation recursion and does not get
  * return void, because we are not interested in alloc errors,

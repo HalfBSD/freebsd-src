@@ -1,0 +1,192 @@
+Unbound reduction results
+
+Completed pass
+
+DNS64 synthesis, the dynamic-library query module, Python query-module and
+PyUnbound build/loader machinery, and dnstap were removed. Python module and
+binding implementation directories were already absent in the imported tree;
+this pass removed their remaining configuration, registration, callbacks,
+Autoconf/SWIG probes, and build/install rules. No new feature switches were added.
+
+The removed DNS64 implementation included its special AAAA cache-key separation
+by the CD bit. Ordinary AAAA records now use the ordinary message-cache key.
+DNSSEC's CD-bit handling and validation were retained and tested. NAT64 transport
+is separate from DNS64 synthesis and remains; its existing default prefix is
+64:ff9b::/96 without the removed DNS64 configuration dependency.
+
+Dnstap removal includes its structured logging transport, protobuf schema,
+frame-streams callbacks, daemon/worker state, outgoing and incoming transport
+parameters, fast-reload handling, and unbound-dnstap-socket source. Ordinary
+logging and statistics remain. User documentation and configuration examples were
+updated. Historical Changelog and CREDITS entries remain as provenance.
+
+Removed dependencies
+
+Python development libraries, SWIG, dynamic query-module loading and its dlopen
+probe, libfstrm, protobuf-c, and protoc-c are no longer requested by the removed
+build machinery. These were optional and were already absent from the baseline
+HalfBSD build, so this is removal of source/dependency support, not removal of
+libraries that had previously been linked into the daemon. OpenSSL, pthread, and
+anchor's XML support remain required. Redis/hiredis remains pending cachedb
+removal. No installed program or private library was removed in this pass.
+
+Source and size measurements
+
+                                  Before       After       Reduction
+Files under contrib/unbound          372         348              24
+C/header/lexer/parser files           247         234              13
+Lines in those source files       194386      184242           10144
+Handwritten source lines          177120      168478            8642
+Unbound binary, bytes            6241272     6151984           89288
+Unbound stripped binary, bytes   1370896     1354416           16480
+HalfBSD installed utilities            4           4               0
+
+Source line counts include blank lines and comments. The handwritten count
+excludes configparser.c, configparser.h, and configlexer.c. Autoconf, parser, and
+lexer outputs were regenerated. File deletion is distinct from removal of build
+references: 13 source files were deleted, plus configuration macros, feature
+readme, distribution packaging, and obsolete downstream patches.
+
+Binary measurements are from matched portable Linux builds using GCC 15.2,
+-g -O2, upstream LTO, the internal event implementation, and OpenSSL 3.5.5.
+They are not HalfBSD installed-binary measurements. The stripped daemon decreased
+by approximately 1.2 percent. Optional dnstap and dynlib were already unlinked
+in the baseline, which limits their impact on binary size.
+
+ELF NEEDED entries were unchanged: libssl.so.3, libcrypto.so.3, libc.so.6.
+Pthread is supplied by libc on this Linux host; the HalfBSD LIBADD still contains
+ssl, crypto, and pthread. Anchor additionally links XML support.
+
+Compilation and runtime checks
+
+The baseline, first removal group, and final dnstap removal builds compiled all
+four retained programs: unbound, unbound-control, unbound-checkconf, and
+unbound-anchor. The generated private libunbound also linked. The portable lexer
+rule now explicitly uses the same ub_c_ prefix as HalfBSD's lexer build.
+Existing compiler warnings include const-qualification and generated-lexer macro
+redefinitions; these also occur in the baseline. git diff --check passes.
+
+The first group passed an offline runtime regression. The final group passed the
+expanded suite in usr.sbin/unbound/tests/forwarding.py, using only the Python
+standard library at runtime and controlled loopback upstream servers:
+
+- Local A, CNAME, and PTR records; incoming UDP and TCP.
+- Forwarded positive answers and CNAME chains; positive and negative cache hits.
+- Truncated UDP responses followed by outgoing TCP retries.
+- Ordinary AAAA records and cache reuse between CD and non-CD queries.
+- DNSSEC-valid signed answers with AD; corrupted signatures returning SERVFAIL;
+  CD queries receiving the unvalidated answer as required.
+- Cache prefetch generating a new upstream query.
+- Serve-expired answers while the configured upstream is unavailable.
+- Multiple forwarders with one unavailable server, and runtime forward changes.
+- Statistics, Unix-socket control, configuration reload and upstream replacement.
+- Fast reload after removing dnstap hooks.
+- Outgoing TLS with a private test CA; a mismatched hostname returning SERVFAIL.
+- Rejection of removed directives and module names by unbound-checkconf.
+
+The fixture's public DNSSEC key, TLS key and certificates are test-only. Their
+validity window ends in 2036. The suite starts the resolver as the invoking user
+with privilege-dropping and chroot settings disabled for the fixture; it does not
+verify production privilege dropping, chroot, or trust-anchor updates. The tests
+resolve external-style names through controlled upstreams, not live public DNS.
+They exercise multiple forwarders, but do not force every server-selection order.
+
+The vendor import contains no testcode or testdata directories, so upstream's
+regression runner cannot run from this tree. No valuable upstream protocol tests
+were deleted. buildworld and buildkernel were not run: this Linux toolchain does
+not provide the supported HalfBSD build environment. Portable compilation and
+loopback runtime success do not establish full HalfBSD integration success.
+
+Build and test logs are in /tmp/unbound-before-build.log,
+/tmp/unbound-after-build.log, /tmp/unbound-final-build.log, and
+/tmp/unbound-final-regression.log. Temporary tools and build artifacts are outside
+the repository.
+
+Remaining work
+
+This is an independently tested first pass, not completion of the original full
+reduction. HTTPS, QUIC, DNSCrypt and incoming TLS, cachedb/Redis, Client Subnet,
+RPZ/response-IP, views, authority zones/transfers, and stub zones remain. The
+iterator remains intact apart from removing DNS64-specific cache lookups and the
+NAT64 default's dependence on the removed field. Ordinary recursive resolution
+has not yet been prohibited: mandatory catch-all forwarding and runtime/reload
+invariant enforcement remain a separate step.
+
+Generic module callback plumbing remains shared with Client Subnet. Removing
+that plumbing should accompany subnetcache removal, with response-path tests.
+There are no remaining live feature-name or feature-directory references for
+the completed removals, apart from historical Changelog/CREDITS entries.
+
+libunbound is a required private build library: all four retained HalfBSD
+programs link it and unbound-anchor uses its resolver API for DNSSEC bootstrap.
+There are no other HalfBSD Makefile consumers found by the whole-tree search.
+Its shared resolver internals cannot simply be deleted. The portable vendor
+unbound-host remains in the tree; HalfBSD does not install it. Auxiliary API and
+vendor packaging cleanup needs a separate consumer review.
+
+Configuration-directory migration remains pending. local-unbound-setup still
+uses /var/unbound for configuration and generates control.conf and lan-zones.conf;
+resolvconf and rc integration rely on that established layout. This pass does
+not change deployed configuration paths. Moving static configuration to /etc,
+retaining /var/unbound/root.key, and consolidating generated includes requires
+coordinated setup, resolvconf, rc, installation, permissions, and chroot-path
+changes with migration tests for existing installations.
+
+Future Capsicum considerations
+
+Configuration reads and included-file globbing occur again on reload. Log files
+can be reopened at runtime. TLS contexts read CA bundles and configured keys and
+certificates when recreated. Remote control and reload create/use Unix sockets,
+socketpairs and worker notification channels. PID-file operations occur during
+startup and shutdown. Outgoing UDP/TCP/TLS socket creation continues during query
+processing, retries, upstream changes and trust-anchor probes, so limiting the
+initial descriptor set alone would not be sufficient.
+
+RFC 5011 trust-anchor maintenance in validator/autotrust.c reads managed state,
+creates a temporary state file, writes and flushes updates, and renames the file
+atomically over the configured root.key path. This needs write and directory
+capabilities. unbound-anchor bootstrap can also fetch and replace trust-anchor
+state, using the resolver and HTTPS. Existing chroot and privilege behavior was
+preserved, not sandboxed. Remaining authority-zone transfer and update machinery
+adds runtime file and network operations until its later removal. A future design
+must arrange access to reload/configuration files, logging, mutable anchor state,
+and socket creation before capability mode, potentially using narrowly scoped
+brokers. No Capsicum implementation was introduced.
+
+Deleted files
+
+contrib/unbound/acx_python.m4
+contrib/unbound/ax_pkg_swig.m4
+contrib/unbound/contrib/aaaa-filter-iterator.patch
+contrib/unbound/contrib/fastrpz.patch
+contrib/unbound/contrib/redirect-bogus.patch
+contrib/unbound/contrib/unbound-fuzzme.patch
+contrib/unbound/contrib/unbound.spec_fedora
+contrib/unbound/dns64/dns64.c
+contrib/unbound/dns64/dns64.h
+contrib/unbound/dnstap/dnstap.c
+contrib/unbound/dnstap/dnstap.h
+contrib/unbound/dnstap/dnstap.m4
+contrib/unbound/dnstap/dnstap.proto
+contrib/unbound/dnstap/dnstap_config.h
+contrib/unbound/dnstap/dnstap_config.h.in
+contrib/unbound/dnstap/dnstap_fstrm.c
+contrib/unbound/dnstap/dnstap_fstrm.h
+contrib/unbound/dnstap/dtstream.c
+contrib/unbound/dnstap/dtstream.h
+contrib/unbound/dnstap/unbound-dnstap-socket.c
+contrib/unbound/doc/README.DNS64
+contrib/unbound/dynlibmod/dynlibmod.c
+contrib/unbound/dynlibmod/dynlibmod.h
+contrib/unbound/dynlibmod/examples/helloworld.c
+
+Major modified files
+
+lib/libunbound/Makefile and config.h; contrib/unbound/Makefile.in, configure.ac,
+configure and config.h.in; services/modstack.c; util/config_file.c/.h,
+configlexer.lex/.c, configparser.y/.c/.h and fptr_wlist.c; daemon/daemon.c/.h,
+worker.c/.h and remote.c; services/listen_dnsport.c/.h and
+outside_network.c/.h; util/netevent.c/.h and ub_event.c; libunbound/libworker.c
+and unbound.h; services/cache/dns.c/.h and util/data/msgreply.c; iterator NAT64
+configuration; configuration/control manuals, examples, README and metrics.awk.
+The complete per-file diff is available with git diff --stat.

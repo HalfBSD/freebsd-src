@@ -82,7 +82,6 @@
 #include "sldns/wire2str.h"
 #include "util/shm_side/shm_main.h"
 #include "dnscrypt/dnscrypt.h"
-#include "dnstap/dtstream.h"
 
 #ifdef HAVE_SYS_TYPES_H
 #  include <sys/types.h>
@@ -1576,17 +1575,6 @@ worker_handle_request(struct comm_point* c, void* arg, int error,
 		worker->stats.num_query_dnscrypt_crypted++;
 	}
 #endif
-#ifdef USE_DNSTAP
-	/*
-	 * sending src (client)/dst (local service) addresses over DNSTAP from incoming request handler
-	 */
-	if(worker->dtenv.log_client_query_messages) {
-		log_addr(VERB_ALGO, "request from client", &repinfo->client_addr, repinfo->client_addrlen);
-		log_addr(VERB_ALGO, "to local addr", (void*)repinfo->c->socket->addr, repinfo->c->socket->addrlen);
-		dt_msg_send_client_query(&worker->dtenv, &repinfo->client_addr, (void*)repinfo->c->socket->addr, c->type, c->ssl, c->buffer,
-		((worker->env.cfg->sock_queue_timeout && timeval_isset(&c->recv_tv))?&c->recv_tv:NULL));
-	}
-#endif
 	/* Check deny/refuse ACLs */
 	if(repinfo->is_proxied) {
 		if((ret=deny_refuse_all(c, &acl, worker, repinfo, &acladdr,
@@ -2079,16 +2067,6 @@ send_reply_rc:
 	if(worker->stats.extended) {
 		if(is_secure_answer) worker->stats.ans_secure++;
 	}
-#ifdef USE_DNSTAP
-	/*
-	 * sending src (client)/dst (local service) addresses over DNSTAP from send_reply code label (when we serviced local zone for ex.)
-	 */
-	if(worker->dtenv.log_client_response_messages && rc !=0) {
-		log_addr(VERB_ALGO, "from local addr", (void*)repinfo->c->socket->addr, repinfo->c->socket->addrlen);
-		log_addr(VERB_ALGO, "response to client", &repinfo->client_addr, repinfo->client_addrlen);
-		dt_msg_send_client_response(&worker->dtenv, &repinfo->client_addr, (void*)repinfo->c->socket->addr, c->type, c->ssl, c->buffer);
-	}
-#endif
 	if(worker->env.cfg->log_replies)
 	{
 		struct timeval tv;
@@ -2261,11 +2239,6 @@ int
 worker_init(struct worker* worker, struct config_file *cfg,
 	struct listen_port* ports, int do_sigs)
 {
-#ifdef USE_DNSTAP
-	struct dt_env* dtenv = &worker->dtenv;
-#else
-	void* dtenv = NULL;
-#endif
 	worker->need_to_exit = 0;
 	worker->base = comm_base_create(do_sigs);
 	if(!worker->base) {
@@ -2318,14 +2291,6 @@ worker_init(struct worker* worker, struct config_file *cfg,
 	} else { /* !do_sigs */
 		worker->comsig = NULL;
 	}
-#ifdef USE_DNSTAP
-	if(cfg->dnstap) {
-		log_assert(worker->daemon->dtenv != NULL);
-		memcpy(&worker->dtenv, worker->daemon->dtenv, sizeof(struct dt_env));
-		if(!dt_init(&worker->dtenv, worker->base))
-			fatal_exit("dt_init failed");
-	}
-#endif
 	worker->front = listen_create(worker->base, ports,
 		cfg->msg_buffer_size, (int)cfg->incoming_num_tcp,
 		cfg->do_tcp_keepalive
@@ -2336,7 +2301,7 @@ worker_init(struct worker* worker, struct config_file *cfg,
 		worker->daemon->tcl, worker->daemon->listen_dot_sslctx,
 		worker->daemon->listen_doh_sslctx,
 		worker->daemon->listen_quic_sslctx,
-		dtenv, worker->daemon->doq_table, worker->env.rnd,
+		worker->daemon->doq_table, worker->env.rnd,
 		cfg, worker_handle_request, worker);
 	if(!worker->front) {
 		log_err("could not create listening sockets");
@@ -2353,7 +2318,7 @@ worker_init(struct worker* worker, struct config_file *cfg,
 		&worker_alloc_cleanup, worker,
 		cfg->do_udp || cfg->udp_upstream_without_downstream,
 		worker->daemon->connect_dot_sslctx, cfg->delay_close,
-		cfg->tls_use_sni, dtenv, cfg->udp_connect,
+		cfg->tls_use_sni, cfg->udp_connect,
 		cfg->max_reuse_tcp_queries, cfg->tcp_reuse_timeout,
 		cfg->tcp_auth_query_timeout);
 	if(!worker->back) {
@@ -2456,20 +2421,6 @@ worker_init(struct worker* worker, struct config_file *cfg,
 		auth_zones_pickup_zonemd_verify(worker->env.auth_zones,
 			&worker->env);
 	}
-#ifdef USE_DNSTAP
-	if(worker->daemon->cfg->dnstap
-#ifndef THREADS_DISABLED
-		&& worker->thread_num == 0
-#endif
-		) {
-		if(!dt_io_thread_start(dtenv->dtio, comm_base_internal(
-			worker->base), worker->daemon->num)) {
-			log_err("could not start dnstap io thread");
-			worker_delete(worker);
-			return 0;
-		}
-	}
-#endif /* USE_DNSTAP */
 	worker_mem_report(worker, NULL);
 	/* if statistics enabled start timer */
 	if(worker->env.cfg->stat_interval > 0) {
@@ -2512,16 +2463,6 @@ worker_delete(struct worker* worker)
 		wsvc_desetup_worker(worker);
 #endif /* UB_ON_WINDOWS */
 	}
-#ifdef USE_DNSTAP
-	if(worker->daemon->cfg->dnstap
-#ifndef THREADS_DISABLED
-		&& worker->thread_num == 0
-#endif
-		) {
-		dt_io_thread_stop(worker->dtenv.dtio);
-	}
-	dt_deinit(&worker->dtenv);
-#endif /* USE_DNSTAP */
 	comm_base_delete(worker->base);
 	ub_randfree(worker->rndstate);
 	/* don't touch worker->alloc, as it's maintained in daemon */
@@ -2656,21 +2597,7 @@ int codeline_cmp(const void* ATTR_UNUSED(a), const void* ATTR_UNUSED(b))
 	return 0;
 }
 
-#ifdef USE_DNSTAP
-void dtio_tap_callback(int ATTR_UNUSED(fd), short ATTR_UNUSED(ev),
-	void* ATTR_UNUSED(arg))
-{
-	log_assert(0);
-}
-#endif
 
-#ifdef USE_DNSTAP
-void dtio_mainfdcallback(int ATTR_UNUSED(fd), short ATTR_UNUSED(ev),
-	void* ATTR_UNUSED(arg))
-{
-	log_assert(0);
-}
-#endif
 
 #ifdef HAVE_NGTCP2
 void doq_client_event_cb(int ATTR_UNUSED(fd), short ATTR_UNUSED(ev),

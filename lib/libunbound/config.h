@@ -38,8 +38,6 @@
 /* Define this to enable kernel based UDP source port randomization. */
 /* #undef DISABLE_EXPLICIT_PORT_RANDOMISATION */
 
-/* default dnstap socket path */
-/* #undef DNSTAP_SOCKET_PATH */
 
 /* Define if you want to use debug lock checking (slow). */
 /* #undef ENABLE_LOCK_CHECKS */
@@ -592,8 +590,6 @@
 /* Define to 1 if you have the <pwd.h> header file. */
 #define HAVE_PWD_H 1
 
-/* Define if you have Python libraries and header files. */
-/* #undef HAVE_PYTHON */
 
 /* Define to 1 if you have the `random' function. */
 #define HAVE_RANDOM 1
@@ -757,8 +753,6 @@
 /* Define to 1 if `st_mtim.tv_nsec' is a member of `struct stat'. */
 #define HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC 1
 
-/* Define if you have Swig libraries and header files. */
-/* #undef HAVE_SWIG */
 
 /* Define to 1 if you have the <syslog.h> header file. */
 #define HAVE_SYSLOG_H 1
@@ -1011,8 +1005,6 @@
 /* Define to 1 to enable dnscrypt with xchacha20 support */
 /* #undef USE_DNSCRYPT_XCHACHA20 */
 
-/* Define to 1 to enable dnstap support */
-/* #undef USE_DNSTAP */
 
 /* Define this to enable DSA support. */
 /* #undef USE_DSA */
@@ -1167,14 +1159,8 @@
 /* the version of the windows API enabled */
 #define WINVER 0x0502
 
-/* Define if you want dynlib module. */
-/* #undef WITH_DYNLIBMODULE */
 
-/* Define if you want Python module. */
-/* #undef WITH_PYTHONMODULE */
 
-/* Define if you want PyUnbound. */
-/* #undef WITH_PYUNBOUND */
 
 /* Define to 1 if `lex' declares `yytext' as a `char *' by default, not a
    `char[]'. */

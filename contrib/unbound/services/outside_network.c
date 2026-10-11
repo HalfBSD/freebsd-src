@@ -60,7 +60,6 @@
 #include "util/fptr_wlist.h"
 #include "util/edns.h"
 #include "sldns/sbuffer.h"
-#include "dnstap/dnstap.h"
 #ifdef HAVE_OPENSSL_SSL_H
 #include <openssl/ssl.h>
 #endif
@@ -1003,9 +1002,6 @@ use_free_buffer(struct outside_network* outnet)
 {
 	struct waiting_tcp* w;
 	while(outnet->tcp_wait_first && !outnet->want_to_quit) {
-#ifdef USE_DNSTAP
-		struct pending_tcp* pend_tcp = NULL;
-#endif
 		struct reuse_tcp* reuse = NULL;
 		w = outnet_waiting_tcp_list_pop(outnet);
 		log_assert(
@@ -1019,9 +1015,6 @@ use_free_buffer(struct outside_network* outnet)
 		if(reuse) {
 			log_reuse_tcp(VERB_CLIENT, "use free buffer for waiting tcp: "
 				"found reuse", reuse);
-#ifdef USE_DNSTAP
-			pend_tcp = reuse->pending;
-#endif
 			reuse_tcp_lru_touch(outnet, reuse);
 			comm_timer_disable(w->timer);
 			w->next_waiting = (void*)reuse->pending;
@@ -1048,29 +1041,12 @@ use_free_buffer(struct outside_network* outnet)
 				waiting_tcp_callback(w, NULL, NETEVENT_CLOSED,
 					NULL);
 				waiting_tcp_delete(w);
-#ifdef USE_DNSTAP
-				w = NULL;
-#endif
 			}
-#ifdef USE_DNSTAP
-			pend_tcp = pend;
-#endif
 		} else {
 			/* no reuse and no free buffer, put back at the start */
 			outnet_waiting_tcp_list_add_first(outnet, w, 0);
 			break;
 		}
-#ifdef USE_DNSTAP
-		if(outnet->dtenv && pend_tcp && w && w->sq &&
-			(outnet->dtenv->log_resolver_query_messages ||
-			outnet->dtenv->log_forwarder_query_messages)) {
-			sldns_buffer tmp;
-			sldns_buffer_init_frm_data(&tmp, w->pkt, w->pkt_len);
-			dt_msg_send_outside_query(outnet->dtenv, &w->sq->addr,
-				&pend_tcp->pi->addr, comm_tcp, NULL, w->sq->zone,
-				w->sq->zonelen, &tmp);
-		}
-#endif
 	}
 }
 
@@ -1723,7 +1699,7 @@ outside_network_create(struct comm_base *base, size_t bufsize,
 	struct ub_randstate* rnd, int use_caps_for_id, int* availports, 
 	int numavailports, size_t unwanted_threshold, int tcp_mss,
 	void (*unwanted_action)(void*), void* unwanted_param, int do_udp,
-	void* sslctx, int delayclose, int tls_use_sni, struct dt_env* dtenv,
+	void* sslctx, int delayclose, int tls_use_sni,
 	int udp_connect, int max_reuse_tcp_queries, int tcp_reuse_timeout,
 	int tcp_auth_query_timeout)
 {
@@ -1746,11 +1722,6 @@ outside_network_create(struct comm_base *base, size_t bufsize,
 	outnet->rnd = rnd;
 	outnet->sslctx = sslctx;
 	outnet->tls_use_sni = tls_use_sni;
-#ifdef USE_DNSTAP
-	outnet->dtenv = dtenv;
-#else
-	(void)dtenv;
-#endif
 	outnet->svcd_overhead = 0;
 	outnet->want_to_quit = 0;
 	outnet->unwanted_threshold = unwanted_threshold;
@@ -2301,23 +2272,6 @@ randomize_and_send_udp(struct pending* pend, sldns_buffer* packet, int timeout)
 #endif
 	comm_timer_set(pend->timer, &tv);
 
-#ifdef USE_DNSTAP
-	/*
-	 * sending src (local service)/dst (upstream) addresses over DNSTAP
-	 * There are no chances to get the src (local service) addr if unbound
-	 * is not configured with specific outgoing IP-addresses. So we will
-	 * pass 0.0.0.0 (::) to argument for
-	 * dt_msg_send_outside_query()/dt_msg_send_outside_response() calls.
-	 */
-	if(outnet->dtenv &&
-	   (outnet->dtenv->log_resolver_query_messages ||
-		outnet->dtenv->log_forwarder_query_messages)) {
-			log_addr(VERB_ALGO, "from local addr", &pend->pc->pif->addr, pend->pc->pif->addrlen);
-			log_addr(VERB_ALGO, "request to upstream", &pend->addr, pend->addrlen);
-			dt_msg_send_outside_query(outnet->dtenv, &pend->addr, &pend->pc->pif->addr, comm_udp, NULL,
-				pend->sq->zone, pend->sq->zonelen, packet);
-	}
-#endif
 	return 1;
 }
 
@@ -2547,9 +2501,6 @@ pending_tcp_query(struct serviced_query* sq, sldns_buffer* packet,
 	w->write_wait_next = NULL;
 	w->write_wait_queued = 0;
 	w->error_count = 0;
-#ifdef USE_DNSTAP
-	w->sq = NULL;
-#endif
 	w->in_cb_and_decommission = 0;
 	if(pend) {
 		/* we have a buffer available right now */
@@ -2586,26 +2537,11 @@ pending_tcp_query(struct serviced_query* sq, sldns_buffer* packet,
 				return NULL;
 			}
 		}
-#ifdef USE_DNSTAP
-		if(sq->outnet->dtenv &&
-		   (sq->outnet->dtenv->log_resolver_query_messages ||
-		    sq->outnet->dtenv->log_forwarder_query_messages)) {
-			/* use w->pkt, because it has the ID value */
-			sldns_buffer tmp;
-			sldns_buffer_init_frm_data(&tmp, w->pkt, w->pkt_len);
-			dt_msg_send_outside_query(sq->outnet->dtenv, &sq->addr,
-				&pend->pi->addr, comm_tcp, NULL, sq->zone,
-				sq->zonelen, &tmp);
-		}
-#endif
 	} else {
 		/* queue up */
 		/* waiting for a buffer on the outside network buffer wait
 		 * list */
 		verbose(VERB_CLIENT, "pending_tcp_query: queue to wait");
-#ifdef USE_DNSTAP
-		w->sq = sq;
-#endif
 		outnet_waiting_tcp_list_add(sq->outnet, w, 1);
 	}
 	return w;
@@ -3141,15 +3077,6 @@ serviced_tcp_callback(struct comm_point* c, void* arg, int error,
 {
 	struct serviced_query* sq = (struct serviced_query*)arg;
 	struct comm_reply r2;
-#ifdef USE_DNSTAP
-	struct waiting_tcp* w = (struct waiting_tcp*)sq->pending;
-	struct pending_tcp* pend_tcp = NULL;
-	struct port_if* pi = NULL;
-	if(w && !w->on_tcp_waiting_list && w->next_waiting) {
-		pend_tcp = (struct pending_tcp*)w->next_waiting;
-		pi = pend_tcp->pi;
-	}
-#endif
 	sq->pending = NULL; /* removed after this callback */
 	if(error != NETEVENT_NOERROR)
 		log_addr(VERB_QUERY, "tcp error for address", 
@@ -3157,21 +3084,6 @@ serviced_tcp_callback(struct comm_point* c, void* arg, int error,
 	if(error==NETEVENT_NOERROR)
 		infra_update_tcp_works(sq->outnet->infra, &sq->addr,
 			sq->addrlen, sq->zone, sq->zonelen);
-#ifdef USE_DNSTAP
-	/*
-	 * sending src (local service)/dst (upstream) addresses over DNSTAP
-	 */
-	if(error==NETEVENT_NOERROR && pi && sq->outnet->dtenv &&
-	   (sq->outnet->dtenv->log_resolver_response_messages ||
-	    sq->outnet->dtenv->log_forwarder_response_messages)) {
-		log_addr(VERB_ALGO, "response from upstream", &sq->addr, sq->addrlen);
-		log_addr(VERB_ALGO, "to local addr", &pi->addr, pi->addrlen);
-		dt_msg_send_outside_response(sq->outnet->dtenv, &sq->addr,
-			&pi->addr, c->type, c->ssl, sq->zone, sq->zonelen, sq->qbuf,
-			sq->qbuflen, &sq->last_sent_time, sq->outnet->now_tv,
-			c->buffer);
-	}
-#endif
 	if(error==NETEVENT_NOERROR && sq->status == serviced_query_TCP_EDNS &&
 		(LDNS_RCODE_WIRE(sldns_buffer_begin(c->buffer)) == 
 		LDNS_RCODE_FORMERR || LDNS_RCODE_WIRE(sldns_buffer_begin(
@@ -3330,9 +3242,6 @@ serviced_udp_callback(struct comm_point* c, void* arg, int error,
 	struct serviced_query* sq = (struct serviced_query*)arg;
 	struct outside_network* outnet = sq->outnet;
 	struct timeval now = *sq->outnet->now_tv;
-#ifdef USE_DNSTAP
-	struct pending* p = (struct pending*)sq->pending;
-#endif
 
 	sq->pending = NULL; /* removed after callback */
 	if(error == NETEVENT_TIMEOUT) {
@@ -3370,22 +3279,6 @@ serviced_udp_callback(struct comm_point* c, void* arg, int error,
 		serviced_callbacks(sq, error, c, rep);
 		return 0;
 	}
-#ifdef USE_DNSTAP
-	/*
-	 * sending src (local service)/dst (upstream) addresses over DNSTAP
-	 */
-	if(error == NETEVENT_NOERROR && outnet->dtenv && p->pc &&
-		(outnet->dtenv->log_resolver_response_messages ||
-		outnet->dtenv->log_forwarder_response_messages)) {
-		log_addr(VERB_ALGO, "response from upstream", &sq->addr, sq->addrlen);
-		log_addr(VERB_ALGO, "to local addr", &p->pc->pif->addr,
-			p->pc->pif->addrlen);
-		dt_msg_send_outside_response(outnet->dtenv, &sq->addr,
-			&p->pc->pif->addr, c->type, c->ssl, sq->zone, sq->zonelen,
-			sq->qbuf, sq->qbuflen, &sq->last_sent_time,
-			sq->outnet->now_tv, c->buffer);
-	}
-#endif
 	if( (sq->status == serviced_query_UDP_EDNS 
 		||sq->status == serviced_query_UDP_EDNS_FRAG)
 		&& (LDNS_RCODE_WIRE(sldns_buffer_begin(c->buffer)) 

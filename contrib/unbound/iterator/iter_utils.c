@@ -71,9 +71,7 @@
 /** time when nameserver glue is said to be 'recent' */
 #define SUSPICION_RECENT_EXPIRY 86400
 
-/** if NAT64 is enabled and no NAT64 prefix is configured, first fall back to
- * DNS64 prefix.  If that is not configured, fall back to this default value.
- */
+/** Default prefix when NAT64 is enabled without an explicit prefix. */
 static const char DEFAULT_NAT64_PREFIX[] = "64:ff9b::/96";
 
 /** fillup fetch policy array */
@@ -182,8 +180,6 @@ nat64_apply_cfg(struct iter_nat64* nat64, struct config_file* cfg)
 	const char *nat64_prefix;
 
 	nat64_prefix = cfg->nat64_prefix;
-	if(!nat64_prefix)
-		nat64_prefix = cfg->dns64_prefix;
 	if(!nat64_prefix)
 		nat64_prefix = DEFAULT_NAT64_PREFIX;
 	if(!netblockstrtoaddr(nat64_prefix, 0, &nat64->nat64_prefix_addr,

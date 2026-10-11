@@ -106,7 +106,7 @@ extern struct config_parser_state* cfg_parser;
 %token VAR_CONTROL_USE_CERT VAR_TCP_REUSE_TIMEOUT VAR_MAX_REUSE_TCP_QUERIES
 %token VAR_EXTENDED_STATISTICS VAR_LOCAL_DATA_PTR VAR_JOSTLE_TIMEOUT
 %token VAR_STUB_PRIME VAR_UNWANTED_REPLY_THRESHOLD VAR_LOG_TIME_ASCII
-%token VAR_DOMAIN_INSECURE VAR_PYTHON VAR_PYTHON_SCRIPT VAR_VAL_SIG_SKEW_MIN
+%token VAR_DOMAIN_INSECURE VAR_VAL_SIG_SKEW_MIN
 %token VAR_VAL_SIG_SKEW_MAX VAR_VAL_MAX_RESTART VAR_CACHE_MIN_TTL
 %token VAR_VAL_LOG_LEVEL VAR_AUTO_TRUST_ANCHOR_FILE VAR_KEEP_MISSING
 %token VAR_ADD_HOLDDOWN VAR_DEL_HOLDDOWN VAR_SO_RCVBUF VAR_EDNS_BUFFER_SIZE
@@ -124,20 +124,7 @@ extern struct config_parser_state* cfg_parser;
 %token VAR_MAX_UDP_SIZE VAR_DELAY_CLOSE VAR_UDP_CONNECT
 %token VAR_UNBLOCK_LAN_ZONES VAR_INSECURE_LAN_ZONES
 %token VAR_INFRA_CACHE_MIN_RTT VAR_INFRA_CACHE_MAX_RTT VAR_INFRA_KEEP_PROBING
-%token VAR_DNS64_PREFIX VAR_DNS64_SYNTHALL VAR_DNS64_IGNORE_AAAA
 %token VAR_NAT64_PREFIX
-%token VAR_DNSTAP VAR_DNSTAP_ENABLE VAR_DNSTAP_SOCKET_PATH VAR_DNSTAP_IP
-%token VAR_DNSTAP_TLS VAR_DNSTAP_TLS_SERVER_NAME VAR_DNSTAP_TLS_CERT_BUNDLE
-%token VAR_DNSTAP_TLS_CLIENT_KEY_FILE VAR_DNSTAP_TLS_CLIENT_CERT_FILE
-%token VAR_DNSTAP_SEND_IDENTITY VAR_DNSTAP_SEND_VERSION VAR_DNSTAP_BIDIRECTIONAL
-%token VAR_DNSTAP_IDENTITY VAR_DNSTAP_VERSION
-%token VAR_DNSTAP_LOG_RESOLVER_QUERY_MESSAGES
-%token VAR_DNSTAP_LOG_RESOLVER_RESPONSE_MESSAGES
-%token VAR_DNSTAP_LOG_CLIENT_QUERY_MESSAGES
-%token VAR_DNSTAP_LOG_CLIENT_RESPONSE_MESSAGES
-%token VAR_DNSTAP_LOG_FORWARDER_QUERY_MESSAGES
-%token VAR_DNSTAP_LOG_FORWARDER_RESPONSE_MESSAGES
-%token VAR_DNSTAP_SAMPLE_RATE
 %token VAR_RESPONSE_IP_TAG VAR_RESPONSE_IP VAR_RESPONSE_IP_DATA
 %token VAR_HARDEN_ALGO_DOWNGRADE VAR_IP_TRANSPARENT
 %token VAR_IP_DSCP
@@ -203,7 +190,7 @@ extern struct config_parser_state* cfg_parser;
 %token VAR_IPSET VAR_IPSET_NAME_V4 VAR_IPSET_NAME_V6
 %token VAR_TLS_SESSION_TICKET_KEYS VAR_RPZ VAR_TAGS VAR_RPZ_ACTION_OVERRIDE
 %token VAR_RPZ_CNAME_OVERRIDE VAR_RPZ_LOG VAR_RPZ_LOG_NAME
-%token VAR_DYNLIB VAR_DYNLIB_FILE VAR_EDNS_CLIENT_STRING
+%token VAR_EDNS_CLIENT_STRING
 %token VAR_EDNS_CLIENT_STRING_OPCODE VAR_NSID
 %token VAR_ZONEMD_PERMISSIVE_MODE VAR_ZONEMD_CHECK VAR_ZONEMD_REJECT_ABSENCE
 %token VAR_RPZ_SIGNAL_NXDOMAIN_RA VAR_INTERFACE_AUTOMATIC_PORTS VAR_EDE
@@ -222,11 +209,11 @@ extern struct config_parser_state* cfg_parser;
 %%
 toplevelvars: /* empty */ | toplevelvars toplevelvar ;
 toplevelvar: serverstart contents_server | stub_clause |
-	forward_clause | pythonstart contents_py |
-	rcstart contents_rc | dtstart contents_dt | view_clause |
+	forward_clause |
+	rcstart contents_rc | view_clause |
 	dnscstart contents_dnsc | cachedbstart contents_cachedb |
 	ipsetstart contents_ipset | authstart contents_auth |
-	rpzstart contents_rpz | dynlibstart contents_dl |
+	rpzstart contents_rpz |
 	force_toplevel
 	;
 force_toplevel: VAR_FORCE_TOPLEVEL
@@ -297,7 +284,6 @@ content_server: server_num_threads | server_verbosity | server_port |
 	server_minimal_responses | server_rrset_roundrobin | server_max_udp_size |
 	server_so_reuseport | server_delay_close | server_udp_connect |
 	server_unblock_lan_zones | server_insecure_lan_zones |
-	server_dns64_prefix | server_dns64_synthall | server_dns64_ignore_aaaa |
 	server_nat64_prefix |
 	server_infra_cache_min_rtt | server_infra_cache_max_rtt | server_harden_algo_downgrade |
 	server_ip_transparent | server_ip_ratelimit | server_ratelimit |
@@ -2542,30 +2528,6 @@ server_max_udp_size: VAR_MAX_UDP_SIZE STRING_ARG
 		free($2);
 	}
 	;
-server_dns64_prefix: VAR_DNS64_PREFIX STRING_ARG
-	{
-		OUTYY(("P(dns64_prefix:%s)\n", $2));
-		free(cfg_parser->cfg->dns64_prefix);
-		cfg_parser->cfg->dns64_prefix = $2;
-	}
-	;
-server_dns64_synthall: VAR_DNS64_SYNTHALL STRING_ARG
-	{
-		OUTYY(("P(server_dns64_synthall:%s)\n", $2));
-		if(strcmp($2, "yes") != 0 && strcmp($2, "no") != 0)
-			yyerror("expected yes or no.");
-		else cfg_parser->cfg->dns64_synthall = (strcmp($2, "yes")==0);
-		free($2);
-	}
-	;
-server_dns64_ignore_aaaa: VAR_DNS64_IGNORE_AAAA STRING_ARG
-	{
-		OUTYY(("P(dns64_ignore_aaaa:%s)\n", $2));
-		if(!cfg_strlist_insert(&cfg_parser->cfg->dns64_ignore_aaaa,
-			$2))
-			fatal_exit("out of memory adding dns64-ignore-aaaa");
-	}
-	;
 server_nat64_prefix: VAR_NAT64_PREFIX STRING_ARG
 	{
 		OUTYY(("P(nat64_prefix:%s)\n", $2));
@@ -3528,235 +3490,6 @@ rc_control_cert_file: VAR_CONTROL_CERT_FILE STRING_ARG
 		OUTYY(("P(rc_control_cert_file:%s)\n", $2));
 		free(cfg_parser->cfg->control_cert_file);
 		cfg_parser->cfg->control_cert_file = $2;
-	}
-	;
-dtstart: VAR_DNSTAP
-	{
-		OUTYY(("\nP(dnstap:)\n"));
-		cfg_parser->started_toplevel = 1;
-	}
-	;
-contents_dt: contents_dt content_dt
-	| ;
-content_dt: dt_dnstap_enable | dt_dnstap_socket_path | dt_dnstap_bidirectional |
-	dt_dnstap_ip | dt_dnstap_tls | dt_dnstap_tls_server_name |
-	dt_dnstap_tls_cert_bundle |
-	dt_dnstap_tls_client_key_file | dt_dnstap_tls_client_cert_file |
-	dt_dnstap_send_identity | dt_dnstap_send_version |
-	dt_dnstap_identity | dt_dnstap_version |
-	dt_dnstap_log_resolver_query_messages |
-	dt_dnstap_log_resolver_response_messages |
-	dt_dnstap_log_client_query_messages |
-	dt_dnstap_log_client_response_messages |
-	dt_dnstap_log_forwarder_query_messages |
-	dt_dnstap_log_forwarder_response_messages |
-	dt_dnstap_sample_rate
-	;
-dt_dnstap_enable: VAR_DNSTAP_ENABLE STRING_ARG
-	{
-		OUTYY(("P(dt_dnstap_enable:%s)\n", $2));
-		if(strcmp($2, "yes") != 0 && strcmp($2, "no") != 0)
-			yyerror("expected yes or no.");
-		else cfg_parser->cfg->dnstap = (strcmp($2, "yes")==0);
-		free($2);
-	}
-	;
-dt_dnstap_bidirectional: VAR_DNSTAP_BIDIRECTIONAL STRING_ARG
-	{
-		OUTYY(("P(dt_dnstap_bidirectional:%s)\n", $2));
-		if(strcmp($2, "yes") != 0 && strcmp($2, "no") != 0)
-			yyerror("expected yes or no.");
-		else cfg_parser->cfg->dnstap_bidirectional =
-			(strcmp($2, "yes")==0);
-		free($2);
-	}
-	;
-dt_dnstap_socket_path: VAR_DNSTAP_SOCKET_PATH STRING_ARG
-	{
-		OUTYY(("P(dt_dnstap_socket_path:%s)\n", $2));
-		free(cfg_parser->cfg->dnstap_socket_path);
-		cfg_parser->cfg->dnstap_socket_path = $2;
-	}
-	;
-dt_dnstap_ip: VAR_DNSTAP_IP STRING_ARG
-	{
-		OUTYY(("P(dt_dnstap_ip:%s)\n", $2));
-		free(cfg_parser->cfg->dnstap_ip);
-		cfg_parser->cfg->dnstap_ip = $2;
-	}
-	;
-dt_dnstap_tls: VAR_DNSTAP_TLS STRING_ARG
-	{
-		OUTYY(("P(dt_dnstap_tls:%s)\n", $2));
-		if(strcmp($2, "yes") != 0 && strcmp($2, "no") != 0)
-			yyerror("expected yes or no.");
-		else cfg_parser->cfg->dnstap_tls = (strcmp($2, "yes")==0);
-		free($2);
-	}
-	;
-dt_dnstap_tls_server_name: VAR_DNSTAP_TLS_SERVER_NAME STRING_ARG
-	{
-		OUTYY(("P(dt_dnstap_tls_server_name:%s)\n", $2));
-		free(cfg_parser->cfg->dnstap_tls_server_name);
-		cfg_parser->cfg->dnstap_tls_server_name = $2;
-	}
-	;
-dt_dnstap_tls_cert_bundle: VAR_DNSTAP_TLS_CERT_BUNDLE STRING_ARG
-	{
-		OUTYY(("P(dt_dnstap_tls_cert_bundle:%s)\n", $2));
-		free(cfg_parser->cfg->dnstap_tls_cert_bundle);
-		cfg_parser->cfg->dnstap_tls_cert_bundle = $2;
-	}
-	;
-dt_dnstap_tls_client_key_file: VAR_DNSTAP_TLS_CLIENT_KEY_FILE STRING_ARG
-	{
-		OUTYY(("P(dt_dnstap_tls_client_key_file:%s)\n", $2));
-		free(cfg_parser->cfg->dnstap_tls_client_key_file);
-		cfg_parser->cfg->dnstap_tls_client_key_file = $2;
-	}
-	;
-dt_dnstap_tls_client_cert_file: VAR_DNSTAP_TLS_CLIENT_CERT_FILE STRING_ARG
-	{
-		OUTYY(("P(dt_dnstap_tls_client_cert_file:%s)\n", $2));
-		free(cfg_parser->cfg->dnstap_tls_client_cert_file);
-		cfg_parser->cfg->dnstap_tls_client_cert_file = $2;
-	}
-	;
-dt_dnstap_send_identity: VAR_DNSTAP_SEND_IDENTITY STRING_ARG
-	{
-		OUTYY(("P(dt_dnstap_send_identity:%s)\n", $2));
-		if(strcmp($2, "yes") != 0 && strcmp($2, "no") != 0)
-			yyerror("expected yes or no.");
-		else cfg_parser->cfg->dnstap_send_identity = (strcmp($2, "yes")==0);
-		free($2);
-	}
-	;
-dt_dnstap_send_version: VAR_DNSTAP_SEND_VERSION STRING_ARG
-	{
-		OUTYY(("P(dt_dnstap_send_version:%s)\n", $2));
-		if(strcmp($2, "yes") != 0 && strcmp($2, "no") != 0)
-			yyerror("expected yes or no.");
-		else cfg_parser->cfg->dnstap_send_version = (strcmp($2, "yes")==0);
-		free($2);
-	}
-	;
-dt_dnstap_identity: VAR_DNSTAP_IDENTITY STRING_ARG
-	{
-		OUTYY(("P(dt_dnstap_identity:%s)\n", $2));
-		free(cfg_parser->cfg->dnstap_identity);
-		cfg_parser->cfg->dnstap_identity = $2;
-	}
-	;
-dt_dnstap_version: VAR_DNSTAP_VERSION STRING_ARG
-	{
-		OUTYY(("P(dt_dnstap_version:%s)\n", $2));
-		free(cfg_parser->cfg->dnstap_version);
-		cfg_parser->cfg->dnstap_version = $2;
-	}
-	;
-dt_dnstap_log_resolver_query_messages: VAR_DNSTAP_LOG_RESOLVER_QUERY_MESSAGES STRING_ARG
-	{
-		OUTYY(("P(dt_dnstap_log_resolver_query_messages:%s)\n", $2));
-		if(strcmp($2, "yes") != 0 && strcmp($2, "no") != 0)
-			yyerror("expected yes or no.");
-		else cfg_parser->cfg->dnstap_log_resolver_query_messages =
-			(strcmp($2, "yes")==0);
-		free($2);
-	}
-	;
-dt_dnstap_log_resolver_response_messages: VAR_DNSTAP_LOG_RESOLVER_RESPONSE_MESSAGES STRING_ARG
-	{
-		OUTYY(("P(dt_dnstap_log_resolver_response_messages:%s)\n", $2));
-		if(strcmp($2, "yes") != 0 && strcmp($2, "no") != 0)
-			yyerror("expected yes or no.");
-		else cfg_parser->cfg->dnstap_log_resolver_response_messages =
-			(strcmp($2, "yes")==0);
-		free($2);
-	}
-	;
-dt_dnstap_log_client_query_messages: VAR_DNSTAP_LOG_CLIENT_QUERY_MESSAGES STRING_ARG
-	{
-		OUTYY(("P(dt_dnstap_log_client_query_messages:%s)\n", $2));
-		if(strcmp($2, "yes") != 0 && strcmp($2, "no") != 0)
-			yyerror("expected yes or no.");
-		else cfg_parser->cfg->dnstap_log_client_query_messages =
-			(strcmp($2, "yes")==0);
-		free($2);
-	}
-	;
-dt_dnstap_log_client_response_messages: VAR_DNSTAP_LOG_CLIENT_RESPONSE_MESSAGES STRING_ARG
-	{
-		OUTYY(("P(dt_dnstap_log_client_response_messages:%s)\n", $2));
-		if(strcmp($2, "yes") != 0 && strcmp($2, "no") != 0)
-			yyerror("expected yes or no.");
-		else cfg_parser->cfg->dnstap_log_client_response_messages =
-			(strcmp($2, "yes")==0);
-		free($2);
-	}
-	;
-dt_dnstap_log_forwarder_query_messages: VAR_DNSTAP_LOG_FORWARDER_QUERY_MESSAGES STRING_ARG
-	{
-		OUTYY(("P(dt_dnstap_log_forwarder_query_messages:%s)\n", $2));
-		if(strcmp($2, "yes") != 0 && strcmp($2, "no") != 0)
-			yyerror("expected yes or no.");
-		else cfg_parser->cfg->dnstap_log_forwarder_query_messages =
-			(strcmp($2, "yes")==0);
-		free($2);
-	}
-	;
-dt_dnstap_log_forwarder_response_messages: VAR_DNSTAP_LOG_FORWARDER_RESPONSE_MESSAGES STRING_ARG
-	{
-		OUTYY(("P(dt_dnstap_log_forwarder_response_messages:%s)\n", $2));
-		if(strcmp($2, "yes") != 0 && strcmp($2, "no") != 0)
-			yyerror("expected yes or no.");
-		else cfg_parser->cfg->dnstap_log_forwarder_response_messages =
-			(strcmp($2, "yes")==0);
-		free($2);
-	}
-	;
-dt_dnstap_sample_rate: VAR_DNSTAP_SAMPLE_RATE STRING_ARG
-	{
-		OUTYY(("P(dt_dnstap_sample_rate:%s)\n", $2));
-		if(atoi($2) == 0 && strcmp($2, "0") != 0)
-			yyerror("number expected");
-		else if(atoi($2) < 0)
-			yyerror("dnstap sample rate too small");
-		else	cfg_parser->cfg->dnstap_sample_rate = atoi($2);
-		free($2);
-	}
-	;
-pythonstart: VAR_PYTHON
-	{
-		OUTYY(("\nP(python:)\n"));
-		cfg_parser->started_toplevel = 1;
-	}
-	;
-contents_py: contents_py content_py
-	| ;
-content_py: py_script
-	;
-py_script: VAR_PYTHON_SCRIPT STRING_ARG
-	{
-		OUTYY(("P(python-script:%s)\n", $2));
-		if(!cfg_strlist_append_ex(&cfg_parser->cfg->python_script, $2))
-			yyerror("out of memory");
-	}
-	;
-dynlibstart: VAR_DYNLIB
-	{
-		OUTYY(("\nP(dynlib:)\n"));
-		cfg_parser->started_toplevel = 1;
-	}
-	;
-contents_dl: contents_dl content_dl
-	| ;
-content_dl: dl_file
-	;
-dl_file: VAR_DYNLIB_FILE STRING_ARG
-	{
-		OUTYY(("P(dynlib-file:%s)\n", $2));
-		if(!cfg_strlist_append_ex(&cfg_parser->cfg->dynlib_file, $2))
-			yyerror("out of memory");
 	}
 	;
 server_disable_dnssec_lame_check: VAR_DISABLE_DNSSEC_LAME_CHECK STRING_ARG

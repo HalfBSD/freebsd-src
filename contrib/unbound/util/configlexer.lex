@@ -462,10 +462,6 @@ server-key-file{COLON}		{ YDVAR(1, VAR_SERVER_KEY_FILE) }
 server-cert-file{COLON}		{ YDVAR(1, VAR_SERVER_CERT_FILE) }
 control-key-file{COLON}		{ YDVAR(1, VAR_CONTROL_KEY_FILE) }
 control-cert-file{COLON}	{ YDVAR(1, VAR_CONTROL_CERT_FILE) }
-python-script{COLON}		{ YDVAR(1, VAR_PYTHON_SCRIPT) }
-python{COLON}			{ YDVAR(0, VAR_PYTHON) }
-dynlib-file{COLON}		{ YDVAR(1, VAR_DYNLIB_FILE) }
-dynlib{COLON}			{ YDVAR(0, VAR_DYNLIB) }
 domain-insecure{COLON}		{ YDVAR(1, VAR_DOMAIN_INSECURE) }
 minimal-responses{COLON}	{ YDVAR(1, VAR_MINIMAL_RESPONSES) }
 rrset-roundrobin{COLON}		{ YDVAR(1, VAR_RRSET_ROUNDROBIN) }
@@ -476,9 +472,6 @@ wait-limit-cookie{COLON}	{ YDVAR(1, VAR_WAIT_LIMIT_COOKIE) }
 wait-limit-netblock{COLON}	{ YDVAR(2, VAR_WAIT_LIMIT_NETBLOCK) }
 wait-limit-cookie-netblock{COLON} { YDVAR(2, VAR_WAIT_LIMIT_COOKIE_NETBLOCK) }
 max-udp-size{COLON}		{ YDVAR(1, VAR_MAX_UDP_SIZE) }
-dns64-prefix{COLON}		{ YDVAR(1, VAR_DNS64_PREFIX) }
-dns64-synthall{COLON}		{ YDVAR(1, VAR_DNS64_SYNTHALL) }
-dns64-ignore-aaaa{COLON}	{ YDVAR(1, VAR_DNS64_IGNORE_AAAA) }
 nat64-prefix{COLON}		{ YDVAR(1, VAR_NAT64_PREFIX) }
 define-tag{COLON}		{ YDVAR(1, VAR_DEFINE_TAG) }
 local-zone-tag{COLON}		{ YDVAR(2, VAR_LOCAL_ZONE_TAG) }
@@ -491,35 +484,6 @@ interface-tag-action{COLON}	{ YDVAR(3, VAR_INTERFACE_TAG_ACTION) }
 interface-tag-data{COLON}	{ YDVAR(3, VAR_INTERFACE_TAG_DATA) }
 interface-view{COLON}		{ YDVAR(2, VAR_INTERFACE_VIEW) }
 local-zone-override{COLON}	{ YDVAR(3, VAR_LOCAL_ZONE_OVERRIDE) }
-dnstap{COLON}			{ YDVAR(0, VAR_DNSTAP) }
-dnstap-enable{COLON}		{ YDVAR(1, VAR_DNSTAP_ENABLE) }
-dnstap-bidirectional{COLON}	{ YDVAR(1, VAR_DNSTAP_BIDIRECTIONAL) }
-dnstap-socket-path{COLON}	{ YDVAR(1, VAR_DNSTAP_SOCKET_PATH) }
-dnstap-ip{COLON}		{ YDVAR(1, VAR_DNSTAP_IP) }
-dnstap-tls{COLON}		{ YDVAR(1, VAR_DNSTAP_TLS) }
-dnstap-tls-server-name{COLON}	{ YDVAR(1, VAR_DNSTAP_TLS_SERVER_NAME) }
-dnstap-tls-cert-bundle{COLON}	{ YDVAR(1, VAR_DNSTAP_TLS_CERT_BUNDLE) }
-dnstap-tls-client-key-file{COLON}	{
-		YDVAR(1, VAR_DNSTAP_TLS_CLIENT_KEY_FILE) }
-dnstap-tls-client-cert-file{COLON}	{
-		YDVAR(1, VAR_DNSTAP_TLS_CLIENT_CERT_FILE) }
-dnstap-send-identity{COLON}	{ YDVAR(1, VAR_DNSTAP_SEND_IDENTITY) }
-dnstap-send-version{COLON}	{ YDVAR(1, VAR_DNSTAP_SEND_VERSION) }
-dnstap-identity{COLON}		{ YDVAR(1, VAR_DNSTAP_IDENTITY) }
-dnstap-version{COLON}		{ YDVAR(1, VAR_DNSTAP_VERSION) }
-dnstap-log-resolver-query-messages{COLON}	{
-		YDVAR(1, VAR_DNSTAP_LOG_RESOLVER_QUERY_MESSAGES) }
-dnstap-log-resolver-response-messages{COLON}	{
-		YDVAR(1, VAR_DNSTAP_LOG_RESOLVER_RESPONSE_MESSAGES) }
-dnstap-log-client-query-messages{COLON}		{
-		YDVAR(1, VAR_DNSTAP_LOG_CLIENT_QUERY_MESSAGES) }
-dnstap-log-client-response-messages{COLON}	{
-		YDVAR(1, VAR_DNSTAP_LOG_CLIENT_RESPONSE_MESSAGES) }
-dnstap-log-forwarder-query-messages{COLON}	{
-		YDVAR(1, VAR_DNSTAP_LOG_FORWARDER_QUERY_MESSAGES) }
-dnstap-log-forwarder-response-messages{COLON}	{
-		YDVAR(1, VAR_DNSTAP_LOG_FORWARDER_RESPONSE_MESSAGES) }
-dnstap-sample-rate{COLON}	{ YDVAR(1, VAR_DNSTAP_SAMPLE_RATE) }
 disable-dnssec-lame-check{COLON} { YDVAR(1, VAR_DISABLE_DNSSEC_LAME_CHECK) }
 ip-ratelimit{COLON}		{ YDVAR(1, VAR_IP_RATELIMIT) }
 ip-ratelimit-cookie{COLON}	{ YDVAR(1, VAR_IP_RATELIMIT_COOKIE) }
@@ -620,7 +584,7 @@ iter-scrub-promiscuous{COLON}	{ YDVAR(1, VAR_ITER_SCRUB_PROMISCUOUS) }
 	else		    { BEGIN(val); }
 }
 <quotedstring>{DQANY}*  { LEXOUT(("STR(%s) ", ub_c_text)); yymore(); }
-<quotedstring>{NEWLINE} { ub_c_error("newline inside quoted string, no end \""); 
+<quotedstring>{NEWLINE} { ub_c_error("newline inside quoted string, no end \"");
 			  cfg_parser->line++; BEGIN(INITIAL); }
 <quotedstring>\" {
         LEXOUT(("QE "));
@@ -641,7 +605,7 @@ iter-scrub-promiscuous{COLON}	{ YDVAR(1, VAR_ITER_SCRUB_PROMISCUOUS) }
 	else		    { BEGIN(val); }
 }
 <singlequotedstr>{SQANY}*  { LEXOUT(("STR(%s) ", ub_c_text)); yymore(); }
-<singlequotedstr>{NEWLINE} { ub_c_error("newline inside quoted string, no end '"); 
+<singlequotedstr>{NEWLINE} { ub_c_error("newline inside quoted string, no end '");
 			     cfg_parser->line++; BEGIN(INITIAL); }
 <singlequotedstr>\' {
         LEXOUT(("SQE "));
@@ -655,7 +619,7 @@ iter-scrub-promiscuous{COLON}	{ YDVAR(1, VAR_ITER_SCRUB_PROMISCUOUS) }
 }
 
 	/* include: directive */
-<INITIAL,val>include{COLON}	{ 
+<INITIAL,val>include{COLON}	{
 	LEXOUT(("v(%s) ", ub_c_text)); inc_prev = YYSTATE; BEGIN(include); }
 <include><<EOF>>	{
         ub_c_error("EOF inside include directive");
@@ -674,7 +638,7 @@ iter-scrub-promiscuous{COLON}	{ YDVAR(1, VAR_ITER_SCRUB_PROMISCUOUS) }
         BEGIN(inc_prev);
 }
 <include_quoted>{DQANY}*	{ LEXOUT(("ISTR(%s) ", ub_c_text)); yymore(); }
-<include_quoted>{NEWLINE}	{ ub_c_error("newline before \" in include name"); 
+<include_quoted>{NEWLINE}	{ ub_c_error("newline before \" in include name");
 				  cfg_parser->line++; BEGIN(inc_prev); }
 <include_quoted>\"	{
 	LEXOUT(("IQE "));
@@ -730,7 +694,7 @@ iter-scrub-promiscuous{COLON}	{ YDVAR(1, VAR_ITER_SCRUB_PROMISCUOUS) }
 	return (VAR_FORCE_TOPLEVEL);
 }
 
-<val>{UNQUOTEDLETTER}*	{ LEXOUT(("unquotedstr(%s) ", ub_c_text)); 
+<val>{UNQUOTEDLETTER}*	{ LEXOUT(("unquotedstr(%s) ", ub_c_text));
 			if(--num_args == 0) { BEGIN(INITIAL); }
 			ub_c_lval.str = strdup(ub_c_text); return STRING_ARG; }
 

@@ -43,17 +43,10 @@
 #include "services/modstack.h"
 #include "util/module.h"
 #include "util/fptr_wlist.h"
-#include "dns64/dns64.h"
 #include "iterator/iterator.h"
 #include "validator/validator.h"
 #include "respip/respip.h"
 
-#ifdef WITH_PYTHONMODULE
-#include "pythonmod/pythonmod.h"
-#endif
-#ifdef WITH_DYNLIBMODULE
-#include "dynlibmod/dynlibmod.h"
-#endif
 #ifdef USE_CACHEDB
 #include "cachedb/cachedb.h"
 #endif
@@ -152,13 +145,6 @@ module_list_avail(void)
 {
 	/* these are the modules available */
 	static const char* names[] = {
-		"dns64",
-#ifdef WITH_PYTHONMODULE
-		"python",
-#endif
-#ifdef WITH_DYNLIBMODULE
-		"dynlib",
-#endif
 #ifdef USE_CACHEDB
 		"cachedb",
 #endif
@@ -186,13 +172,6 @@ static fbgetfunctype*
 module_funcs_avail(void)
 {
         static struct module_func_block* (*fb[])(void) = {
-		&dns64_get_funcblock,
-#ifdef WITH_PYTHONMODULE
-		&pythonmod_get_funcblock,
-#endif
-#ifdef WITH_DYNLIBMODULE
-		&dynlibmod_get_funcblock,
-#endif
 #ifdef USE_CACHEDB
 		&cachedb_get_funcblock,
 #endif

@@ -343,8 +343,6 @@ find_add_addrs(struct module_env* env, uint16_t qclass,
 				addr_to_additional(akey, region, *msg, now);
 			lock_rw_unlock(&akey->entry.lock);
 		} else {
-			/* BIT_CD on false because delegpt lookup does
-			 * not use dns64 translation */
 			neg = msg_cache_lookup(env, ns->name, ns->namelen,
 				LDNS_RR_TYPE_A, qclass, 0, now, 0);
 			if(neg) {
@@ -363,17 +361,8 @@ find_add_addrs(struct module_env* env, uint16_t qclass,
 				addr_to_additional(akey, region, *msg, now);
 			lock_rw_unlock(&akey->entry.lock);
 		} else {
-			/* BIT_CD on false because delegpt lookup does
-			 * not use dns64 translation */
 			neg = msg_cache_lookup(env, ns->name, ns->namelen,
 				LDNS_RR_TYPE_AAAA, qclass, 0, now, 0);
-			/* Because recursion for lookup uses BIT_CD, check
-			 * for that so it stops the recursion lookup, if a
-			 * negative answer is cached. Because the cache uses
-			 * the CD flag for type AAAA. */
-			if(!neg)
-				neg = msg_cache_lookup(env, ns->name, ns->namelen,
-					LDNS_RR_TYPE_AAAA, qclass, BIT_CD, now, 0);
 			if(neg) {
 				delegpt_add_neg_msg(dp, neg);
 				lock_rw_unlock(&neg->entry.lock);
@@ -408,8 +397,6 @@ cache_fill_missing(struct module_env* env, uint16_t qclass,
 				ns->name, LDNS_RR_TYPE_A, qclass);
 			lock_rw_unlock(&akey->entry.lock);
 		} else {
-			/* BIT_CD on false because delegpt lookup does
-			 * not use dns64 translation */
 			neg = msg_cache_lookup(env, ns->name, ns->namelen,
 				LDNS_RR_TYPE_A, qclass, 0, now, 0);
 			if(neg) {
@@ -429,17 +416,8 @@ cache_fill_missing(struct module_env* env, uint16_t qclass,
 				ns->name, LDNS_RR_TYPE_AAAA, qclass);
 			lock_rw_unlock(&akey->entry.lock);
 		} else {
-			/* BIT_CD on false because delegpt lookup does
-			 * not use dns64 translation */
 			neg = msg_cache_lookup(env, ns->name, ns->namelen,
 				LDNS_RR_TYPE_AAAA, qclass, 0, now, 0);
-			/* Because recursion for lookup uses BIT_CD, check
-			 * for that so it stops the recursion lookup, if a
-			 * negative answer is cached. Because the cache uses
-			 * the CD flag for type AAAA. */
-			if(!neg)
-				neg = msg_cache_lookup(env, ns->name, ns->namelen,
-					LDNS_RR_TYPE_AAAA, qclass, BIT_CD, now, 0);
 			if(neg) {
 				delegpt_add_neg_msg(dp, neg);
 				lock_rw_unlock(&neg->entry.lock);

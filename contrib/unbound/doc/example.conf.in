@@ -288,13 +288,12 @@ server:
 	# If running unbound on an IPv6-only host, domains that only have
 	# IPv4 servers would become unresolvable.  If NAT64 is available in
 	# the network, unbound can use NAT64 to reach these servers with
-	# the following option.  This is NOT needed for enabling DNS64 on a
-	# system that has IPv4 connectivity.
+	# the following option.
 	# Consider also enabling prefer-ip6 to prefer native IPv6 connections
 	# to nameservers.
 	# do-nat64: no
 
-	# NAT64 prefix.  Defaults to using dns64-prefix value.
+	# NAT64 prefix.  Defaults to 64:ff9b::/96.
 	# nat64-prefix: 64:ff9b::0/96
 
 	# Enable UDP, "yes" or "no".
@@ -659,7 +658,7 @@ server:
 	# disable-dnssec-lame-check: no
 
 	# module configuration of the server. A string with identifiers
-	# separated by spaces. Syntax: "[dns64] [validator] iterator"
+	# separated by spaces. Syntax: "[validator] iterator"
 	# most modules have to be listed at the beginning of the line,
 	# except cachedb(just before iterator), and python (at the beginning,
 	# or, just before the iterator).
@@ -1033,12 +1032,8 @@ server:
 	# expect PROXYv2. For UDP and TCP/TLS interfaces.
 	# proxy-protocol-port: portno for each of the port numbers.
 
-	# DNS64 prefix. Must be specified when DNS64 is use.
-	# Enable dns64 in module-config.  Used to synthesize IPv6 from IPv4.
-	# dns64-prefix: 64:ff9b::0/96
 
-	# DNS64 ignore AAAA records for these domains and use A instead.
-	# dns64-ignore-aaaa: "example.com"
+
 
 	# ratelimit for uncached, new queries, this limits recursion effort.
 	# ratelimiting is experimental, and may help against randomqueryflood.
@@ -1158,27 +1153,6 @@ server:
 	# Timeout in milliseconds for TCP queries to auth servers.
 	# tcp-auth-query-timeout: 3000
 
-
-# Python config section. To enable:
-# o use --with-pythonmodule to configure before compiling.
-# o list python in the module-config string (above) to enable.
-#   It can be at the start, it gets validated results, or just before
-#   the iterator and process before DNSSEC validation.
-# o and give a python-script to run.
-python:
-	# Script file to load
-	# python-script: "@UNBOUND_SHARE_DIR@/ubmodule-tst.py"
-
-# Dynamic library config section. To enable:
-# o use --with-dynlibmodule to configure before compiling.
-# o list dynlib in the module-config string (above) to enable.
-#   It can be placed anywhere, the dynlib module is only a very thin wrapper
-#   to load modules dynamically.
-# o and give a dynlib-file to run. If more than one dynlib entry is listed in
-#   the module-config then you need one dynlib-file per instance.
-dynlib:
-	# Script file to load
-	# dynlib-file: "@UNBOUND_SHARE_DIR@/dynlib.so"
 
 # Remote control config section.
 remote-control:
@@ -1395,44 +1369,6 @@ remote-control:
 #     name-v6: "list-v6"
 #
 
-# Dnstap logging support, if compiled in by using --enable-dnstap to configure.
-# To enable, set the dnstap-enable to yes and also some of
-# dnstap-log-..-messages to yes.  And select an upstream log destination, by
-# socket path, TCP or TLS destination.
-# dnstap:
-# 	dnstap-enable: no
-# 	# if set to yes frame streams will be used in bidirectional mode
-# 	dnstap-bidirectional: yes
-# 	dnstap-socket-path: "@DNSTAP_SOCKET_PATH@"
-# 	# if "" use the unix socket in dnstap-socket-path, otherwise,
-# 	# set it to "IPaddress[@port]" of the destination.
-# 	dnstap-ip: ""
-# 	# if set to yes if you want to use TLS to dnstap-ip, no for TCP.
-# 	dnstap-tls: yes
-# 	# name for authenticating the upstream server. or "" disabled.
-# 	dnstap-tls-server-name: ""
-# 	# if "", it uses the cert bundle from the main Unbound config.
-# 	dnstap-tls-cert-bundle: ""
-# 	# key file for client authentication, or "" disabled.
-# 	dnstap-tls-client-key-file: ""
-# 	# cert file for client authentication, or "" disabled.
-# 	dnstap-tls-client-cert-file: ""
-# 	dnstap-send-identity: no
-# 	dnstap-send-version: no
-# 	# if "" it uses the hostname.
-# 	dnstap-identity: ""
-# 	# if "" it uses the package version.
-# 	dnstap-version: ""
-# 	# log only 1/N messages, if 0 it is disabled. default 0.
-# 	dnstap-sample-rate: 0
-# 	dnstap-log-resolver-query-messages: no
-# 	dnstap-log-resolver-response-messages: no
-# 	dnstap-log-client-query-messages: no
-# 	dnstap-log-client-response-messages: no
-# 	dnstap-log-forwarder-query-messages: no
-# 	dnstap-log-forwarder-response-messages: no
-
-# Response Policy Zones
 # RPZ policies. Applied in order of configuration. Any match from an earlier
 # RPZ zone will terminate the RPZ lookup. QNAME, Response IP
 # Address, nsdname, nsip and clientip triggers are supported. Supported

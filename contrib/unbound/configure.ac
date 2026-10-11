@@ -4,9 +4,6 @@ AC_PREREQ([2.56])
 sinclude(acx_nlnetlabs.m4)
 sinclude(ax_build_date_epoch.m4)
 sinclude(ax_pthread.m4)
-sinclude(acx_python.m4)
-sinclude(ax_pkg_swig.m4)
-sinclude(dnstap/dnstap.m4)
 sinclude(dnscrypt/dnscrypt.m4)
 
 # must be numbers. ac_defun because of later processing
@@ -477,7 +474,7 @@ AC_CHECK_TOOL(STRIP, strip)
 ACX_LIBTOOL_C_ONLY
 
 # pkg-config is only needed for these options, do not require it otherwise
-if test "$enable_systemd" = "yes" -o "$enable_dnstap" = "yes" -o "$with_pyunbound" = "yes" -o "$with_pythonmod" = "yes"; then
+if test "$enable_systemd" = "yes"; then
 PKG_PROG_PKG_CONFIG
 fi
 
@@ -835,154 +832,6 @@ case "${UNBOUND_SYSLOG_FACILITY}" in
 
 esac
 AC_DEFINE_UNQUOTED(UB_SYSLOG_FACILITY,${UNBOUND_SYSLOG_FACILITY},[the SYSLOG_FACILITY to use, default LOG_DAEMON])
-
-# Check for dynamic library module
-AC_ARG_WITH(dynlibmodule,
-   AS_HELP_STRING([--with-dynlibmodule],[build dynamic library module, or --without-dynlibmodule to disable it. (default=no)]),
-   [], [ withval="no" ])
-
-if test x_$withval != x_no; then
-  AC_DEFINE(WITH_DYNLIBMODULE, 1, [Define if you want dynlib module.])
-  WITH_DYNLIBMODULE=yes
-  AC_SUBST(WITH_DYNLIBMODULE)
-  DYNLIBMOD_OBJ="dynlibmod.lo"
-  AC_SUBST(DYNLIBMOD_OBJ)
-  DYNLIBMOD_HEADER='$(srcdir)/dynlibmod/dynlibmod.h'
-  AC_SUBST(DYNLIBMOD_HEADER)
-  if test $on_mingw = "no"; then
-    # link with -ldl if not already there, for all executables because
-    # dlopen call is in the dynlib module.  For unbound executable, also
-    # export symbols.
-    AC_SEARCH_LIBS([dlopen], [dl])
-    DYNLIBMOD_EXTRALIBS="-export-dynamic"
-  else
-    DYNLIBMOD_EXTRALIBS="-Wl,--export-all-symbols,--out-implib,libunbound.dll.a"
-  fi
-  AC_SUBST(DYNLIBMOD_EXTRALIBS)
-fi
-
-# Check for PyUnbound
-AC_ARG_WITH(pyunbound,
-   AS_HELP_STRING([--with-pyunbound],[build PyUnbound, or --without-pyunbound to skip it. (default=no)]),
-   [], [ withval="no" ])
-
-ub_test_python=no
-ub_with_pyunbound=no
-if test x_$withval != x_no; then
-   ub_with_pyunbound=yes
-   ub_test_python=yes
-fi
-
-# Check for Python module
-AC_ARG_WITH(pythonmodule,
-   AS_HELP_STRING([--with-pythonmodule],[build Python module, or --without-pythonmodule to disable script engine. (default=no)]),
-   [], [ withval="no" ])
-
-ub_with_pythonmod=no
-if test x_$withval != x_no; then
-   ub_with_pythonmod=yes
-   ub_test_python=yes
-fi
-
-# Check for Python & SWIG only on PyUnbound or PyModule
-if test x_$ub_test_python != x_no; then
-
-   # Check for Python
-   ub_have_python=no
-   ac_save_LIBS="$LIBS" dnl otherwise AC_PYTHON_DEVEL thrashes $LIBS
-   AC_PYTHON_DEVEL
-   if test ! -z "$PYTHON_VERSION"; then
-	badversion="no"
-	if test "$PYTHON_VERSION_MAJOR" -lt 2; then
-		badversion="yes"
-	fi
-	if test "$PYTHON_VERSION_MAJOR" -eq 2 -a "$PYTHON_VERSION_MINOR" -lt 4; then
-		badversion="yes"
-	fi
-	if test "$badversion" = "yes"; then
-		AC_MSG_ERROR([Python version >= 2.4.0 is required])
-	fi
-
-      [PY_MAJOR_VERSION="`$PYTHON -c \"import sys; print(sys.version_info[0])\"`"]
-      AC_SUBST(PY_MAJOR_VERSION)
-      # Have Python
-      AC_DEFINE(HAVE_PYTHON,1,[Define if you have Python libraries and header files.])
-      if test x_$ub_with_pythonmod != x_no; then
-        if test -n "$LIBS"; then
-          LIBS="$PYTHON_LDFLAGS $LIBS"
-        else
-          LIBS="$PYTHON_LDFLAGS"
-        fi
-      fi
-      PYTHON_LIBS="$PYTHON_LDFLAGS"
-      AC_SUBST(PYTHON_LIBS)
-      if test -n "$CPPFLAGS"; then
-        CPPFLAGS="$CPPFLAGS $PYTHON_CPPFLAGS"
-      else
-        CPPFLAGS="$PYTHON_CPPFLAGS"
-      fi
-      if test "$PYTHON_LIBDIR" != "/usr/lib" -a "$PYTHON_LIBDIR" != "" -a "$PYTHON_LIBDIR" != "/usr/lib64"; then
-        ACX_RUNTIME_PATH_ADD([$PYTHON_LIBDIR])
-      fi
-      ub_have_python=yes
-      PKG_CHECK_EXISTS(["python${PY_MAJOR_VERSION}"],
-                       [PC_PY_DEPENDENCY="python${PY_MAJOR_VERSION}"],
-                       [PC_PY_DEPENDENCY="python"])
-      AC_SUBST(PC_PY_DEPENDENCY)
-
-      # Check for SWIG
-      ub_have_swig=no
-      AC_ARG_ENABLE(swig-version-check, AS_HELP_STRING([--disable-swig-version-check],[Disable swig version check to build python modules with older swig even though that is unreliable]))
-      if test "$enable_swig_version_check" = "yes"; then
-      	AX_PKG_SWIG(2.0.1)
-      else
-      	AX_PKG_SWIG
-      fi
-      AC_MSG_CHECKING(SWIG)
-      if test ! -x "$SWIG"; then
-         AC_MSG_ERROR([failed to find swig tool, install it, or do not build Python module and PyUnbound])
-      else
-         AC_DEFINE(HAVE_SWIG, 1, [Define if you have Swig libraries and header files.])
-         AC_SUBST(swig, "$SWIG")
-         AC_MSG_RESULT(present)
-
-         # If have Python & SWIG
-         # Declare PythonMod
-         if test x_$ub_with_pythonmod != x_no; then
-            AC_DEFINE(WITH_PYTHONMODULE, 1, [Define if you want Python module.])
-            WITH_PYTHONMODULE=yes
-            AC_SUBST(WITH_PYTHONMODULE)
-	    PYTHONMOD_OBJ="pythonmod.lo pythonmod_utils.lo"
-	    AC_SUBST(PYTHONMOD_OBJ)
-	    PYTHONMOD_HEADER='$(srcdir)/pythonmod/pythonmod.h'
-	    AC_SUBST(PYTHONMOD_HEADER)
-	    PYTHONMOD_INSTALL=pythonmod-install
-	    AC_SUBST(PYTHONMOD_INSTALL)
-	    PYTHONMOD_UNINSTALL=pythonmod-uninstall
-	    AC_SUBST(PYTHONMOD_UNINSTALL)
-         fi
-
-         # Declare PyUnbound
-         if test x_$ub_with_pyunbound != x_no; then
-            AC_DEFINE(WITH_PYUNBOUND, 1, [Define if you want PyUnbound.])
-            WITH_PYUNBOUND=yes
-            AC_SUBST(WITH_PYUNBOUND)
-	    PYUNBOUND_OBJ="libunbound_wrap.lo"
-	    AC_SUBST(PYUNBOUND_OBJ)
-	    PYUNBOUND_TARGET="_unbound.la"
-	    AC_SUBST(PYUNBOUND_TARGET)
-	    PYUNBOUND_INSTALL=pyunbound-install
-	    AC_SUBST(PYUNBOUND_INSTALL)
-	    PYUNBOUND_UNINSTALL=pyunbound-uninstall
-	    AC_SUBST(PYUNBOUND_UNINSTALL)
-         fi
-      fi
-   else
-      AC_MSG_RESULT([*** Python libraries not found, won't build PythonMod or PyUnbound ***])
-      ub_with_pyunbound=no
-      ub_with_pythonmod=no
-   fi
-fi
 
 if test "`uname`" = "NetBSD"; then
 	NETBSD_LINTFLAGS='"-D__RENAME(x)=" -D_NETINET_IN_H_'
@@ -2089,26 +1938,6 @@ if test x_$enable_lock_checks = x_yes; then
 	echo checklock_thrjoin >> clubsyms.def
 fi
 
-# check for dnstap if requested
-dt_DNSTAP([$UNBOUND_RUN_DIR/dnstap.sock],
-    [
-        AC_DEFINE([USE_DNSTAP], [1], [Define to 1 to enable dnstap support])
-        AC_SUBST([ENABLE_DNSTAP], [1])
-
-        AC_SUBST([opt_dnstap_socket_path])
-        ACX_ESCAPE_BACKSLASH($opt_dnstap_socket_path, hdr_dnstap_socket_path)
-        AC_DEFINE_UNQUOTED(DNSTAP_SOCKET_PATH,
-            ["$hdr_dnstap_socket_path"], [default dnstap socket path])
-	AC_SUBST(DNSTAP_SOCKET_PATH,["$hdr_dnstap_socket_path"])
-	AC_SUBST(DNSTAP_SOCKET_TESTBIN,['unbound-dnstap-socket$(EXEEXT)'])
-        AC_SUBST([DNSTAP_SRC], ["dnstap/dnstap.c dnstap/dnstap.pb-c.c dnstap/dnstap_fstrm.c dnstap/dtstream.c"])
-        AC_SUBST([DNSTAP_OBJ], ["dnstap.lo dnstap.pb-c.lo dnstap_fstrm.lo dtstream.lo"])
-    ],
-    [
-        AC_SUBST([ENABLE_DNSTAP], [0])
-    ]
-)
-
 # check for dnscrypt if requested
 dnsc_DNSCRYPT([
         AC_DEFINE([USE_DNSCRYPT], [1], [Define to 1 to enable dnscrypt support])
@@ -2562,6 +2391,6 @@ AC_SUBST(version, [VERSION_MAJOR.VERSION_MINOR.VERSION_MICRO])
 AX_BUILD_DATE_EPOCH(date, [[%b %e, %Y]])
 AC_SUBST(date)
 
-AC_CONFIG_FILES([Makefile doc/example.conf doc/libunbound.3 doc/unbound.8 doc/unbound-anchor.8 doc/unbound-checkconf.8 doc/unbound.conf.5 doc/unbound-control.8 doc/unbound-host.1 smallapp/unbound-control-setup.sh dnstap/dnstap_config.h dnscrypt/dnscrypt_config.h contrib/libunbound.pc contrib/unbound.socket contrib/unbound.service contrib/unbound_portable.service])
+AC_CONFIG_FILES([Makefile doc/example.conf doc/libunbound.3 doc/unbound.8 doc/unbound-anchor.8 doc/unbound-checkconf.8 doc/unbound.conf.5 doc/unbound-control.8 doc/unbound-host.1 smallapp/unbound-control-setup.sh dnscrypt/dnscrypt_config.h contrib/libunbound.pc contrib/unbound.socket contrib/unbound.service contrib/unbound_portable.service])
 AC_CONFIG_HEADERS([config.h])
 AC_OUTPUT

@@ -138,13 +138,6 @@ Requests are mapped to views with
 \fI\%access\-control\-view\fP and
 \fI\%interface\-view\fP\&.
 .TP
-.B \fI\%python:\fP
-Configuration for the optional \fBpython\fP script module.
-.TP
-.B \fI\%dynlib:\fP
-Configuration for the optional \fBdynlib\fP module that loads dynamic
-libraries into Unbound.
-.TP
 .B \fI\%dnscrypt:\fP
 Configuration for the optional DNSCrypt feature.
 .TP
@@ -152,10 +145,6 @@ Configuration for the optional DNSCrypt feature.
 Configuration for the optional \fBcachedb\fP module that can interface
 with second level caches, currently Redis or Redis\-complatible
 databases.
-.TP
-.B \fI\%dnstap:\fP
-Configuration of the optional dnstap logging feature; a flexible,
-structured binary log format for DNS software.
 .TP
 .B \fI\%rpz:\fP
 Configuration for Response Policy Zones that allows for DNS filtering.
@@ -1431,7 +1420,7 @@ communication and initial ACL (check if the proxy itself is denied/refused
 by configuration).
 .sp
 The proxied address (if any) will then be used as the true client address
-and will be used where applicable for logging, ACL, DNSTAP, RPZ and IP
+and will be used where applicable for logging, ACL, RPZ and IP
 ratelimiting.
 .sp
 PROXYv2 is supported for UDP and TCP/TLS listening interfaces.
@@ -2433,12 +2422,6 @@ Most modules that need to be listed here have to be listed at the beginning
 of the line.
 .sp
 The \fBsubnetcache\fP module has to be listed just before the iterator.
-.sp
-The \fBpython\fP module can be listed in different places, it then processes
-the output of the module it is just before.
-.sp
-The \fBdynlib\fP module can be listed pretty much anywhere, it is only a very
-thin wrapper that allows dynamic libraries to run in its place.
 .sp
 Default: \(dqvalidator iterator\(dq
 .UNINDENT
@@ -4674,119 +4657,6 @@ view specific options.
 .sp
 Default: no
 .UNINDENT
-.SH PYTHON MODULE OPTIONS
-.sp
-These options are part of the \fBpython:\fP section.
-.sp
-The \fBpython:\fP section gives the settings for the \fIpython(1)\fP script module.
-This module acts like the iterator and validator modules do, on queries and
-answers.
-To enable the script module it has to be compiled into the daemon, and the word
-\fBpython\fP has to be put in the
-\fI\%module\-config\fP option (usually first, or
-between the validator and iterator).
-Multiple instances of the python module are supported by adding the word
-\fBpython\fP more than once.
-.sp
-If the \fI\%chroot\fP option is enabled, you should make
-sure Python\(aqs library directory structure is bind mounted in the new root
-environment, see \fImount(8)\fP\&.
-Also the \fI\%python\-script\fP path should
-be specified as an absolute path relative to the new root, or as a relative
-path to the working directory.
-.INDENT 0.0
-.TP
-.B python\-script: \fI<python file>\fP 
-The script file to load.
-Repeat this option for every python module instance added to the
-\fI\%module\-config\fP option.
-.UNINDENT
-.SH DYNAMIC LIBRARY MODULE OPTIONS
-.sp
-These options are part of the \fBdynlib:\fP section.
-.sp
-The \fBdynlib:\fP section gives the settings for the \fBdynlib\fP module.
-This module is only a very small wrapper that allows dynamic modules to be
-loaded on runtime instead of being compiled into the application.
-To enable the dynlib module it has to be compiled into the daemon, and the word
-\fBdynlib\fP has to be put in the
-\fI\%module\-config\fP option.
-Multiple instances of dynamic libraries are supported by adding the word
-\fBdynlib\fP more than once.
-.sp
-The \fI\%dynlib\-file\fP path should be
-specified as an absolute path relative to the new path set by
-\fI\%chroot\fP, or as a relative path to the working
-directory.
-.INDENT 0.0
-.TP
-.B dynlib\-file: \fI<dynlib file>\fP 
-The dynamic library file to load.
-Repeat this option for every dynlib module instance added to the
-\fI\%module\-config\fP option.
-.UNINDENT
-.SH DNS64 MODULE OPTIONS
-.sp
-These options are part of the \fBserver:\fP section.
-.sp
-The \fBdns64\fP module must be configured in the
-\fI\%module\-config\fP directive, e.g.:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-module\-config: \(dqdns64 validator iterator\(dq
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-and be compiled into the daemon to be enabled.
-.sp
-\fBNOTE:\fP
-.INDENT 0.0
-.INDENT 3.5
-If combining the \fBrespip\fP and \fBdns64\fP modules, the \fBrespip\fP module
-needs to appear before the \fBdns64\fP module in the
-\fI\%module\-config\fP
-configuration option so that response IP and/or RPZ feeds can properly
-filter responses regardless of DNS64 synthesis.
-.UNINDENT
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dns64\-prefix: \fI<IPv6 prefix>\fP 
-This sets the DNS64 prefix to use to synthesize AAAA records with.
-It must be /96 or shorter.
-.sp
-Default: 64:ff9b::/96
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dns64\-synthall: \fI<yes or no>\fP 
-.sp
-\fBWARNING:\fP
-.INDENT 7.0
-.INDENT 3.5
-Debugging feature!
-.UNINDENT
-.UNINDENT
-.sp
-If enabled, synthesize all AAAA records despite the presence of actual AAAA
-records.
-.sp
-Default: no
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dns64\-ignore\-aaaa: \fI<domain name>\fP 
-List domain for which the AAAA records are ignored and the A record is used
-by DNS64 processing instead.
-Can be entered multiple times, list a new domain for which it applies, one
-per line.
-Applies also to names underneath the name given.
-.UNINDENT
 .SH NAT64 OPTIONS
 .sp
 These options are part of the \fBserver:\fP section.
@@ -4819,7 +4689,7 @@ Allowing the NAT64 prefix is useful when using do\-not\-query\-address
 for a cluster of machines that is IPv6\-only and uses NAT64, but does
 not have internet access.
 .sp
-Default: 64:ff9b::/96 (same as \fI\%dns64\-prefix\fP)
+Default: 64:ff9b::/96
 .UNINDENT
 .SH DNSCRYPT OPTIONS
 .sp
@@ -5503,178 +5373,6 @@ for the Redis replica server.
 .sp
 Default: 0
 .UNINDENT
-.SH DNSTAP OPTIONS
-.sp
-These options are part of the \fBdnstap:\fP section.
-.sp
-DNSTAP is a flexible, structured binary log format for DNS software.
-When compiled in by using \fB\-\-enable\-dnstap\fP, it can be enabled in the
-\fBdnstap:\fP section.
-This starts an extra thread (when compiled with threading) that writes the log
-information to the destination.
-If Unbound is compiled without threading it does not spawn a thread, but
-connects per\-process to the destination.
-.INDENT 0.0
-.TP
-.B dnstap\-enable: \fI<yes or no>\fP 
-If dnstap is enabled.
-If yes, it connects to the DNSTAP server and if any of the
-\fIdnstap\-log\-..\-messages:\fP options is enabled it sends logs for those
-messages to the server.
-.sp
-Default: no
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnstap\-bidirectional: \fI<yes or no>\fP 
-Use frame streams in bidirectional mode to transfer DNSTAP messages.
-.sp
-Default: yes
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnstap\-socket\-path: \fI<file name>\fP 
-Sets the unix socket file name for connecting to the server that is
-listening on that socket.
-.sp
-Default: 
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnstap\-ip: \fI<IPaddress[@port]>\fP 
-If \fB\(dq\(dq\fP, the unix socket is used, if set with an IP address (IPv4 or
-IPv6) that address is used to connect to the server.
-.sp
-Default: \(dq\(dq
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnstap\-tls: \fI<yes or no>\fP 
-Set this to use TLS to connect to the server specified in
-\fI\%dnstap\-ip\fP\&.
-If set to no, TCP is used to connect to the server.
-.sp
-Default: yes
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnstap\-tls\-server\-name: \fI<name of TLS authentication>\fP 
-The TLS server name to authenticate the server with.
-Used when \fI\%dnstap\-tls: yes\fP is set.
-If \fB\(dq\(dq\fP it is ignored.
-.sp
-Default: \(dq\(dq
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnstap\-tls\-cert\-bundle: \fI<file name of cert bundle>\fP 
-The pem file with certs to verify the TLS server certificate.
-If \fB\(dq\(dq\fP the server default cert bundle is used, or the windows cert
-bundle on windows.
-.sp
-Default: \(dq\(dq
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnstap\-tls\-client\-key\-file: \fI<file name>\fP 
-The client key file for TLS client authentication.
-If \fB\(dq\(dq\fP client authentication is not used.
-.sp
-Default: \(dq\(dq
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnstap\-tls\-client\-cert\-file: \fI<file name>\fP 
-The client cert file for TLS client authentication.
-.sp
-Default: \(dq\(dq
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnstap\-send\-identity: \fI<yes or no>\fP 
-If enabled, the server identity is included in the log messages.
-.sp
-Default: no
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnstap\-send\-version: \fI<yes or no>\fP 
-If enabled, the server version if included in the log messages.
-.sp
-Default: no
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnstap\-identity: \fI<string>\fP 
-The identity to send with messages, if \fB\(dq\(dq\fP the hostname is used.
-.sp
-Default: \(dq\(dq
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnstap\-version: \fI<string>\fP 
-The version to send with messages, if \fB\(dq\(dq\fP the package version is used.
-.sp
-Default: \(dq\(dq
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnstap\-sample\-rate: \fI<number>\fP 
-The sample rate for log of messages, it logs only 1/N messages.
-With 0 it is disabled.
-This is useful in a high volume environment, where log functionality would
-otherwise not be reliable.
-For example 10 would spend only 1/10th time on logging, and 100 would only
-spend a hundredth of the time on logging.
-.sp
-Default: 0 (disabled)
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnstap\-log\-resolver\-query\-messages: \fI<yes or no>\fP 
-Enable to log resolver query messages.
-These are messages from Unbound to upstream servers.
-.sp
-Default: no
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnstap\-log\-resolver\-response\-messages: \fI<yes or no>\fP 
-Enable to log resolver response messages.
-These are replies from upstream servers to Unbound.
-.sp
-Default: no
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnstap\-log\-client\-query\-messages: \fI<yes or no>\fP 
-Enable to log client query messages.
-These are client queries to Unbound.
-.sp
-Default: no
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnstap\-log\-client\-response\-messages: \fI<yes or no>\fP 
-Enable to log client response messages.
-These are responses from Unbound to clients.
-.sp
-Default: no
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnstap\-log\-forwarder\-query\-messages: \fI<yes or no>\fP 
-Enable to log forwarder query messages.
-.sp
-Default: no
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnstap\-log\-forwarder\-response\-messages: \fI<yes or no>\fP 
-Enable to log forwarder response messages.
-.sp
-Default: no
-.UNINDENT
 .SH RESPONSE POLICY ZONE OPTIONS
 .sp
 These options are part of the \fBrpz:\fP section.
@@ -5703,11 +5401,6 @@ module\-config: \(dqrespip validator iterator\(dq
 \fBNOTE:\fP
 .INDENT 0.0
 .INDENT 3.5
-If combining the \fBrespip\fP and \fBdns64\fP modules, the \fBrespip\fP module
-needs to appear before the \fBdns64\fP module in the
-\fI\%module\-config\fP
-configuration option so that response IP and/or RPZ feeds can properly
-filter responses regardless of DNS64 synthesis.
 .UNINDENT
 .UNINDENT
 .sp

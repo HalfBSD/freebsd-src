@@ -248,7 +248,7 @@ struct inplace_cb {
 /**
  * Inplace callback function called before replying.
  * Called as func(qinfo, qstate, rep, rcode, edns, opt_list_out, repinfo,
- *                region, id, python_callback)
+ *                region, id, callback)
  * Where:
  *	qinfo: the query info.
  *	qstate: the module state. NULL when calling before the query reaches the
@@ -263,7 +263,7 @@ struct inplace_cb {
  *		qstate->mesh_info->reply_list.
  *	region: region to store data.
  *	id: module id.
- *	python_callback: only used for registering a python callback function.
+ *	callback: argument passed when registering the callback.
  */
 typedef int inplace_cb_reply_func_type(struct query_info* qinfo,
 	struct module_qstate* qstate, struct reply_info* rep, int rcode,
@@ -274,7 +274,7 @@ typedef int inplace_cb_reply_func_type(struct query_info* qinfo,
 /**
  * Inplace callback function called before sending the query to a nameserver.
  * Called as func(qinfo, flags, qstate, addr, addrlen, zone, zonelen, region,
- *                id, python_callback)
+ *                id, callback)
  * Where:
  *	qinfo: query info.
  *	flags: flags of the query.
@@ -287,7 +287,7 @@ typedef int inplace_cb_reply_func_type(struct query_info* qinfo,
  *	zonelen: length of zone.
  *	region: region to store data.
  *	id: module id.
- *	python_callback: only used for registering a python callback function.
+ *	callback: argument passed when registering the callback.
  */
 typedef int inplace_cb_query_func_type(struct query_info* qinfo, uint16_t flags,
 	struct module_qstate* qstate, struct sockaddr_storage* addr,

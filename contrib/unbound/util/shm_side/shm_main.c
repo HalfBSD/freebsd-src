@@ -281,9 +281,6 @@ shm_general_info(struct worker* worker)
 	shm_stat->mem.ipsecmod = (long long)mod_get_mem(&worker->env,
 		"ipsecmod");
 #endif
-#ifdef WITH_DYNLIBMODULE
-	shm_stat->mem.dynlib = (long long)mod_get_mem(&worker->env, "dynlib");
-#endif
 }
 #endif /* HAVE_SHMGET */
 

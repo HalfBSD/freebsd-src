@@ -135,13 +135,6 @@ The recognized section clauses are:
         :ref:`access-control-view<unbound.conf.access-control-view>` and
         :ref:`interface-view<unbound.conf.interface-view>`.
 
-    :ref:`python:<unbound.conf.python>`
-        Configuration for the optional ``python`` script module.
-
-    :ref:`dynlib:<unbound.conf.dynlib>`
-        Configuration for the optional ``dynlib`` module that loads dynamic
-        libraries into Unbound.
-
     :ref:`dnscrypt:<unbound.conf.dnscrypt>`
         Configuration for the optional DNSCrypt feature.
 
@@ -149,10 +142,6 @@ The recognized section clauses are:
         Configuration for the optional ``cachedb`` module that can interface
         with second level caches, currently Redis or Redis-complatible
         databases.
-
-    :ref:`dnstap:<unbound.conf.dnstap>`
-        Configuration of the optional dnstap logging feature; a flexible,
-        structured binary log format for DNS software.
 
     :ref:`rpz:<unbound.conf.rpz>`
         Configuration for Response Policy Zones that allows for DNS filtering.
@@ -1293,7 +1282,7 @@ These options are part of the ``server:`` section.
     by configuration).
 
     The proxied address (if any) will then be used as the true client address
-    and will be used where applicable for logging, ACL, DNSTAP, RPZ and IP
+    and will be used where applicable for logging, ACL, RPZ and IP
     ratelimiting.
 
     PROXYv2 is supported for UDP and TCP/TLS listening interfaces.
@@ -2159,12 +2148,6 @@ These options are part of the ``server:`` section.
     of the line.
 
     The ``subnetcache`` module has to be listed just before the iterator.
-
-    The ``python`` module can be listed in different places, it then processes
-    the output of the module it is just before.
-
-    The ``dynlib`` module can be listed pretty much anywhere, it is only a very
-    thin wrapper that allows dynamic libraries to run in its place.
 
     Default: "validator iterator"
 
@@ -4088,108 +4071,6 @@ view does not have the option specified.
 
     Default: no
 
-.. _unbound.conf.python:
-
-Python Module Options
----------------------
-
-These options are part of the ``python:`` section.
-
-The ``python:`` section gives the settings for the *python(1)* script module.
-This module acts like the iterator and validator modules do, on queries and
-answers.
-To enable the script module it has to be compiled into the daemon, and the word
-``python`` has to be put in the
-:ref:`module-config<unbound.conf.module-config>` option (usually first, or
-between the validator and iterator).
-Multiple instances of the python module are supported by adding the word
-``python`` more than once.
-
-If the :ref:`chroot<unbound.conf.chroot>` option is enabled, you should make
-sure Python's library directory structure is bind mounted in the new root
-environment, see *mount(8)*.
-Also the :ref:`python-script<unbound.conf.python.python-script>` path should
-be specified as an absolute path relative to the new root, or as a relative
-path to the working directory.
-
-
-@@UAHL@unbound.conf.python@python-script@@: *<python file>*
-    The script file to load.
-    Repeat this option for every python module instance added to the
-    :ref:`module-config<unbound.conf.module-config>` option.
-
-.. _unbound.conf.dynlib:
-
-Dynamic Library Module Options
-------------------------------
-
-These options are part of the ``dynlib:`` section.
-
-The ``dynlib:`` section gives the settings for the ``dynlib`` module.
-This module is only a very small wrapper that allows dynamic modules to be
-loaded on runtime instead of being compiled into the application.
-To enable the dynlib module it has to be compiled into the daemon, and the word
-``dynlib`` has to be put in the
-:ref:`module-config<unbound.conf.module-config>` option.
-Multiple instances of dynamic libraries are supported by adding the word
-``dynlib`` more than once.
-
-The :ref:`dynlib-file<unbound.conf.dynlib.dynlib-file>` path should be
-specified as an absolute path relative to the new path set by
-:ref:`chroot<unbound.conf.chroot>`, or as a relative path to the working
-directory.
-
-
-@@UAHL@unbound.conf.dynlib@dynlib-file@@: *<dynlib file>*
-    The dynamic library file to load.
-    Repeat this option for every dynlib module instance added to the
-    :ref:`module-config<unbound.conf.module-config>` option.
-
-DNS64 Module Options
---------------------
-
-These options are part of the ``server:`` section.
-
-The ``dns64`` module must be configured in the
-:ref:`module-config<unbound.conf.module-config>` directive, e.g.:
-
-.. code-block:: text
-
-    module-config: "dns64 validator iterator"
-
-and be compiled into the daemon to be enabled.
-
-.. note::
-    If combining the ``respip`` and ``dns64`` modules, the ``respip`` module
-    needs to appear before the ``dns64`` module in the
-    :ref:`module-config<unbound.conf.module-config>`
-    configuration option so that response IP and/or RPZ feeds can properly
-    filter responses regardless of DNS64 synthesis.
-
-
-@@UAHL@unbound.conf.dns64@dns64-prefix@@: *<IPv6 prefix>*
-    This sets the DNS64 prefix to use to synthesize AAAA records with.
-    It must be /96 or shorter.
-
-    Default: 64:ff9b::/96
-
-
-@@UAHL@unbound.conf.dns64@dns64-synthall@@: *<yes or no>*
-    .. warning:: Debugging feature!
-
-    If enabled, synthesize all AAAA records despite the presence of actual AAAA
-    records.
-
-    Default: no
-
-
-@@UAHL@unbound.conf.dns64@dns64-ignore-aaaa@@: *<domain name>*
-    List domain for which the AAAA records are ignored and the A record is used
-    by DNS64 processing instead.
-    Can be entered multiple times, list a new domain for which it applies, one
-    per line.
-    Applies also to names underneath the name given.
-
 NAT64 Options
 -------------
 
@@ -4222,7 +4103,7 @@ servers.
     for a cluster of machines that is IPv6-only and uses NAT64, but does
     not have internet access.
 
-    Default: 64:ff9b::/96 (same as :ref:`dns64-prefix<unbound.conf.dns64.dns64-prefix>`)
+    Default: 64:ff9b::/96
 
 .. _unbound.conf.dnscrypt:
 
@@ -4829,162 +4710,6 @@ The following ``cachedb:`` options are specific to the ``redis`` backend.
     Default: 0
 
 
-.. _unbound.conf.dnstap:
-
-DNSTAP Options
---------------
-
-These options are part of the ``dnstap:`` section.
-
-DNSTAP is a flexible, structured binary log format for DNS software.
-When compiled in by using ``--enable-dnstap``, it can be enabled in the
-``dnstap:`` section.
-This starts an extra thread (when compiled with threading) that writes the log
-information to the destination.
-If Unbound is compiled without threading it does not spawn a thread, but
-connects per-process to the destination.
-
-
-@@UAHL@unbound.conf.dnstap@dnstap-enable@@: *<yes or no>*
-    If dnstap is enabled.
-    If yes, it connects to the DNSTAP server and if any of the
-    *dnstap-log-..-messages:* options is enabled it sends logs for those
-    messages to the server.
-
-    Default: no
-
-
-@@UAHL@unbound.conf.dnstap@dnstap-bidirectional@@: *<yes or no>*
-    Use frame streams in bidirectional mode to transfer DNSTAP messages.
-
-    Default: yes
-
-
-@@UAHL@unbound.conf.dnstap@dnstap-socket-path@@: *<file name>*
-    Sets the unix socket file name for connecting to the server that is
-    listening on that socket.
-
-    Default: @DNSTAP_SOCKET_PATH@
-
-
-@@UAHL@unbound.conf.dnstap@dnstap-ip@@: *<IPaddress[@port]>*
-    If ``""``, the unix socket is used, if set with an IP address (IPv4 or
-    IPv6) that address is used to connect to the server.
-
-    Default: ""
-
-
-@@UAHL@unbound.conf.dnstap@dnstap-tls@@: *<yes or no>*
-    Set this to use TLS to connect to the server specified in
-    :ref:`dnstap-ip<unbound.conf.dnstap.dnstap-ip>`.
-    If set to no, TCP is used to connect to the server.
-
-    Default: yes
-
-
-@@UAHL@unbound.conf.dnstap@dnstap-tls-server-name@@: *<name of TLS authentication>*
-    The TLS server name to authenticate the server with.
-    Used when :ref:`dnstap-tls: yes<unbound.conf.dnstap.dnstap-tls>` is set.
-    If ``""`` it is ignored.
-
-    Default: ""
-
-
-@@UAHL@unbound.conf.dnstap@dnstap-tls-cert-bundle@@: *<file name of cert bundle>*
-    The pem file with certs to verify the TLS server certificate.
-    If ``""`` the server default cert bundle is used, or the windows cert
-    bundle on windows.
-
-    Default: ""
-
-
-@@UAHL@unbound.conf.dnstap@dnstap-tls-client-key-file@@: *<file name>*
-    The client key file for TLS client authentication.
-    If ``""`` client authentication is not used.
-
-    Default: ""
-
-
-@@UAHL@unbound.conf.dnstap@dnstap-tls-client-cert-file@@: *<file name>*
-    The client cert file for TLS client authentication.
-
-    Default: ""
-
-
-@@UAHL@unbound.conf.dnstap@dnstap-send-identity@@: *<yes or no>*
-    If enabled, the server identity is included in the log messages.
-
-    Default: no
-
-
-@@UAHL@unbound.conf.dnstap@dnstap-send-version@@: *<yes or no>*
-    If enabled, the server version if included in the log messages.
-
-    Default: no
-
-
-@@UAHL@unbound.conf.dnstap@dnstap-identity@@: *<string>*
-    The identity to send with messages, if ``""`` the hostname is used.
-
-    Default: ""
-
-
-@@UAHL@unbound.conf.dnstap@dnstap-version@@: *<string>*
-    The version to send with messages, if ``""`` the package version is used.
-
-    Default: ""
-
-
-@@UAHL@unbound.conf.dnstap@dnstap-sample-rate@@: *<number>*
-    The sample rate for log of messages, it logs only 1/N messages.
-    With 0 it is disabled.
-    This is useful in a high volume environment, where log functionality would
-    otherwise not be reliable.
-    For example 10 would spend only 1/10th time on logging, and 100 would only
-    spend a hundredth of the time on logging.
-
-    Default: 0 (disabled)
-
-
-@@UAHL@unbound.conf.dnstap@dnstap-log-resolver-query-messages@@: *<yes or no>*
-    Enable to log resolver query messages.
-    These are messages from Unbound to upstream servers.
-
-    Default: no
-
-
-@@UAHL@unbound.conf.dnstap@dnstap-log-resolver-response-messages@@: *<yes or no>*
-    Enable to log resolver response messages.
-    These are replies from upstream servers to Unbound.
-
-    Default: no
-
-
-@@UAHL@unbound.conf.dnstap@dnstap-log-client-query-messages@@: *<yes or no>*
-    Enable to log client query messages.
-    These are client queries to Unbound.
-
-    Default: no
-
-
-@@UAHL@unbound.conf.dnstap@dnstap-log-client-response-messages@@: *<yes or no>*
-    Enable to log client response messages.
-    These are responses from Unbound to clients.
-
-    Default: no
-
-
-@@UAHL@unbound.conf.dnstap@dnstap-log-forwarder-query-messages@@: *<yes or no>*
-    Enable to log forwarder query messages.
-
-    Default: no
-
-
-@@UAHL@unbound.conf.dnstap@dnstap-log-forwarder-response-messages@@: *<yes or no>*
-    Enable to log forwarder response messages.
-
-    Default: no
-
 .. _unbound.conf.rpz:
 
 Response Policy Zone Options
@@ -5007,12 +4732,6 @@ The respip module needs to be added to the
 
     module-config: "respip validator iterator"
 
-.. note::
-    If combining the ``respip`` and ``dns64`` modules, the ``respip`` module
-    needs to appear before the ``dns64`` module in the
-    :ref:`module-config<unbound.conf.module-config>`
-    configuration option so that response IP and/or RPZ feeds can properly
-    filter responses regardless of DNS64 synthesis.
 
 QNAME, Response IP Address, nsdname, nsip and clientip triggers are supported.
 Supported actions are: NXDOMAIN, NODATA, PASSTHRU, DROP, Local Data, tcp-only

@@ -308,8 +308,6 @@ config_create(void)
 	cfg->local_zone_overrides = NULL;
 	cfg->unblock_lan_zones = 0;
 	cfg->insecure_lan_zones = 0;
-	cfg->python_script = NULL;
-	cfg->dynlib_file = NULL;
 	cfg->remote_control_enable = 0;
 	cfg->control_ifs.first = NULL;
 	cfg->control_ifs.last = NULL;
@@ -336,12 +334,6 @@ config_create(void)
 	if(!(cfg->module_conf = strdup("validator iterator"))) goto error_exit;
 	if(!(cfg->val_nsec3_key_iterations =
 		strdup("1024 150 2048 150 4096 150"))) goto error_exit;
-#if defined(DNSTAP_SOCKET_PATH)
-	if(!(cfg->dnstap_socket_path = strdup(DNSTAP_SOCKET_PATH)))
-		goto error_exit;
-#endif
-	cfg->dnstap_bidirectional = 1;
-	cfg->dnstap_tls = 1;
 	cfg->disable_dnssec_lame_check = 0;
 	cfg->ip_ratelimit_cookie = 0;
 	cfg->ip_ratelimit = 0;
@@ -810,43 +802,12 @@ int config_set_option(struct config_file* cfg, const char* opt,
 	else S_STR("control-key-file:", control_key_file)
 	else S_STR("control-cert-file:", control_cert_file)
 	else S_STR("module-config:", module_conf)
-	else S_STRLIST("python-script:", python_script)
-	else S_STRLIST("dynlib-file:", dynlib_file)
 	else S_YNO("disable-dnssec-lame-check:", disable_dnssec_lame_check)
 #ifdef CLIENT_SUBNET
 	/* Can't set max subnet prefix here, since that value is used when
 	 * generating the address tree. */
 	/* No client-subnet-always-forward here, module registration depends on
 	 * this option. */
-#endif
-#ifdef USE_DNSTAP
-	else S_YNO("dnstap-enable:", dnstap)
-	else S_YNO("dnstap-bidirectional:", dnstap_bidirectional)
-	else S_STR("dnstap-socket-path:", dnstap_socket_path)
-	else S_STR("dnstap-ip:", dnstap_ip)
-	else S_YNO("dnstap-tls:", dnstap_tls)
-	else S_STR("dnstap-tls-server-name:", dnstap_tls_server_name)
-	else S_STR("dnstap-tls-cert-bundle:", dnstap_tls_cert_bundle)
-	else S_STR("dnstap-tls-client-key-file:", dnstap_tls_client_key_file)
-	else S_STR("dnstap-tls-client-cert-file:",
-		dnstap_tls_client_cert_file)
-	else S_YNO("dnstap-send-identity:", dnstap_send_identity)
-	else S_YNO("dnstap-send-version:", dnstap_send_version)
-	else S_STR("dnstap-identity:", dnstap_identity)
-	else S_STR("dnstap-version:", dnstap_version)
-	else S_NUMBER_OR_ZERO("dnstap-sample-rate:", dnstap_sample_rate)
-	else S_YNO("dnstap-log-resolver-query-messages:",
-		dnstap_log_resolver_query_messages)
-	else S_YNO("dnstap-log-resolver-response-messages:",
-		dnstap_log_resolver_response_messages)
-	else S_YNO("dnstap-log-client-query-messages:",
-		dnstap_log_client_query_messages)
-	else S_YNO("dnstap-log-client-response-messages:",
-		dnstap_log_client_response_messages)
-	else S_YNO("dnstap-log-forwarder-query-messages:",
-		dnstap_log_forwarder_query_messages)
-	else S_YNO("dnstap-log-forwarder-response-messages:",
-		dnstap_log_forwarder_response_messages)
 #endif
 #ifdef USE_DNSCRYPT
 	else S_YNO("dnscrypt-enable:", dnscrypt)
@@ -1312,36 +1273,6 @@ config_get_option(struct config_file* cfg, const char* opt,
 	else O_YNO(opt, "client-subnet-always-forward:",
 		client_subnet_always_forward)
 #endif
-#ifdef USE_DNSTAP
-	else O_YNO(opt, "dnstap-enable", dnstap)
-	else O_YNO(opt, "dnstap-bidirectional", dnstap_bidirectional)
-	else O_STR(opt, "dnstap-socket-path", dnstap_socket_path)
-	else O_STR(opt, "dnstap-ip", dnstap_ip)
-	else O_YNO(opt, "dnstap-tls", dnstap_tls)
-	else O_STR(opt, "dnstap-tls-server-name", dnstap_tls_server_name)
-	else O_STR(opt, "dnstap-tls-cert-bundle", dnstap_tls_cert_bundle)
-	else O_STR(opt, "dnstap-tls-client-key-file",
-		dnstap_tls_client_key_file)
-	else O_STR(opt, "dnstap-tls-client-cert-file",
-		dnstap_tls_client_cert_file)
-	else O_YNO(opt, "dnstap-send-identity", dnstap_send_identity)
-	else O_YNO(opt, "dnstap-send-version", dnstap_send_version)
-	else O_STR(opt, "dnstap-identity", dnstap_identity)
-	else O_STR(opt, "dnstap-version", dnstap_version)
-	else O_UNS(opt, "dnstap-sample-rate", dnstap_sample_rate)
-	else O_YNO(opt, "dnstap-log-resolver-query-messages",
-		dnstap_log_resolver_query_messages)
-	else O_YNO(opt, "dnstap-log-resolver-response-messages",
-		dnstap_log_resolver_response_messages)
-	else O_YNO(opt, "dnstap-log-client-query-messages",
-		dnstap_log_client_query_messages)
-	else O_YNO(opt, "dnstap-log-client-response-messages",
-		dnstap_log_client_response_messages)
-	else O_YNO(opt, "dnstap-log-forwarder-query-messages",
-		dnstap_log_forwarder_query_messages)
-	else O_YNO(opt, "dnstap-log-forwarder-response-messages",
-		dnstap_log_forwarder_response_messages)
-#endif
 #ifdef USE_DNSCRYPT
 	else O_YNO(opt, "dnscrypt-enable", dnscrypt)
 	else O_DEC(opt, "dnscrypt-port", dnscrypt_port)
@@ -1361,8 +1292,6 @@ config_get_option(struct config_file* cfg, const char* opt,
 	else O_YNO(opt, "unblock-lan-zones", unblock_lan_zones)
 	else O_YNO(opt, "insecure-lan-zones", insecure_lan_zones)
 	else O_DEC(opt, "max-udp-size", max_udp_size)
-	else O_LST(opt, "python-script", python_script)
-	else O_LST(opt, "dynlib-file", dynlib_file)
 	else O_YNO(opt, "disable-dnssec-lame-check", disable_dnssec_lame_check)
 	else O_DEC(opt, "ip-ratelimit-cookie", ip_ratelimit_cookie)
 	else O_DEC(opt, "ip-ratelimit", ip_ratelimit)
@@ -1830,20 +1759,8 @@ config_delete(struct config_file* cfg)
 	free(cfg->control_key_file);
 	free(cfg->control_cert_file);
 	free(cfg->nat64_prefix);
-	free(cfg->dns64_prefix);
-	config_delstrlist(cfg->dns64_ignore_aaaa);
-	free(cfg->dnstap_socket_path);
-	free(cfg->dnstap_ip);
-	free(cfg->dnstap_tls_server_name);
-	free(cfg->dnstap_tls_cert_bundle);
-	free(cfg->dnstap_tls_client_key_file);
-	free(cfg->dnstap_tls_client_cert_file);
-	free(cfg->dnstap_identity);
-	free(cfg->dnstap_version);
 	config_deldblstrlist(cfg->ratelimit_for_domain);
 	config_deldblstrlist(cfg->ratelimit_below_domain);
-	config_delstrlist(cfg->python_script);
-	config_delstrlist(cfg->dynlib_file);
 	config_deldblstrlist(cfg->edns_client_strings);
 	config_delstrlist(cfg->proxy_protocol_port);
 #ifdef USE_IPSECMOD

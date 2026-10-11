@@ -530,12 +530,6 @@ struct config_file {
 	/** certificate file for unbound-control */
 	char* control_cert_file;
 
-	/** Python script file */
-	struct config_strlist* python_script;
-
-	/** Dynamic library file */
-	struct config_strlist* dynlib_file;
-
 	/** Use systemd socket activation. */
 	int use_systemd;
 
@@ -569,58 +563,8 @@ struct config_file {
 	/* maximum UDP response size */
 	size_t max_udp_size;
 
-	/* DNS64 prefix */
-	char* dns64_prefix;
-
-	/* Synthetize all AAAA record despite the presence of an authoritative one */
-	int dns64_synthall;
-	/** ignore AAAAs for these domain names and use A record anyway */
-	struct config_strlist* dns64_ignore_aaaa;
-
-	/* NAT64 prefix; if unset defaults to dns64_prefix */
+	/* NAT64 prefix; if unset defaults to 64:ff9b::/96 */
 	char* nat64_prefix;
-
-	/** true to enable dnstap support */
-	int dnstap;
-	/** using bidirectional frame streams if true */
-	int dnstap_bidirectional;
-	/** dnstap socket path */
-	char* dnstap_socket_path;
-	/** dnstap IP */
-	char* dnstap_ip;
-	/** dnstap TLS enable */
-	int dnstap_tls;
-	/** dnstap tls server authentication name */
-	char* dnstap_tls_server_name;
-	/** dnstap server cert bundle */
-	char* dnstap_tls_cert_bundle;
-	/** dnstap client key for client authentication */
-	char* dnstap_tls_client_key_file;
-	/** dnstap client cert for client authentication */
-	char* dnstap_tls_client_cert_file;
-	/** true to send "identity" via dnstap */
-	int dnstap_send_identity;
-	/** true to send "version" via dnstap */
-	int dnstap_send_version;
-	/** dnstap "identity", hostname is used if "". */
-	char* dnstap_identity;
-	/** dnstap "version", package version is used if "". */
-	char* dnstap_version;
-	/** dnstap sample rate */
-	int dnstap_sample_rate;
-
-	/** true to log dnstap RESOLVER_QUERY message events */
-	int dnstap_log_resolver_query_messages;
-	/** true to log dnstap RESOLVER_RESPONSE message events */
-	int dnstap_log_resolver_response_messages;
-	/** true to log dnstap CLIENT_QUERY message events */
-	int dnstap_log_client_query_messages;
-	/** true to log dnstap CLIENT_RESPONSE message events */
-	int dnstap_log_client_response_messages;
-	/** true to log dnstap FORWARDER_QUERY message events */
-	int dnstap_log_forwarder_query_messages;
-	/** true to log dnstap FORWARDER_RESPONSE message events */
-	int dnstap_log_forwarder_response_messages;
 
 	/** true to disable DNSSEC lameness check in iterator */
 	int disable_dnssec_lame_check;
@@ -948,7 +892,6 @@ struct config_str3list {
 	/** third string */
 	char* str3;
 };
-
 
 /**
  * List of string, bytestring for config options

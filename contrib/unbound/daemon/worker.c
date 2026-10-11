@@ -71,6 +71,7 @@
 #include "util/edns.h"
 #include "util/timeval_func.h"
 #include "iterator/iter_fwd.h"
+#include "iterator/iter_delegpt.h"
 #include "iterator/iter_hints.h"
 #include "iterator/iter_utils.h"
 #include "validator/autotrust.h"
@@ -2061,6 +2062,30 @@ void worker_stat_timer_cb(void* arg)
 	worker_restart_timer(worker);
 }
 
+void
+worker_forward_timer_cb(void* arg)
+{
+	struct worker* worker = (struct worker*)arg;
+	struct timeval interval = {5, 0};
+	struct delegpt* dp = forwards_find(worker->env.fwds,
+		(uint8_t*)"", LDNS_RR_CLASS_IN, 0);
+	int builtin = dp && dp->builtin_forwarders;
+	if(dp) { lock_rw_unlock(&worker->env.fwds->lock); }
+	if(builtin && infra_forward_due(worker->env.infra_cache,
+		*worker->env.now)) {
+		struct query_info qinfo;
+		memset(&qinfo, 0, sizeof(qinfo));
+		qinfo.qname = (uint8_t*)"";
+		qinfo.qname_len = 1;
+		qinfo.qtype = LDNS_RR_TYPE_NS;
+		qinfo.qclass = LDNS_RR_CLASS_IN;
+		/* Prefetch bypasses cache and reuses normal DNSSEC, transport,
+		 * timeout and forwarding processing. No client is attached. */
+		mesh_new_prefetch(worker->env.mesh, &qinfo, BIT_RD, 1, 0);
+	}
+	comm_timer_set(worker->forward_timer, &interval);
+}
+
 void worker_probe_timer_cb(void* arg)
 {
 	struct worker* worker = (struct worker*)arg;
@@ -2295,6 +2320,17 @@ worker_init(struct worker* worker, struct config_file *cfg,
 		worker_restart_timer(worker);
 	}
 	pp_init(&sldns_write_uint16, &sldns_write_uint32);
+	worker->forward_timer = comm_timer_create(worker->base,
+		worker_forward_timer_cb, worker);
+	if(!worker->forward_timer) {
+		log_err("could not create forwarding recovery timer");
+		worker_delete(worker);
+		return 0;
+	}
+	{
+		struct timeval interval = {5, 0};
+		comm_timer_set(worker->forward_timer, &interval);
+	}
 	return 1;
 }
 
@@ -2322,6 +2358,7 @@ worker_delete(struct worker* worker)
 	comm_signal_delete(worker->comsig);
 	tube_delete(worker->cmd);
 	comm_timer_delete(worker->stat_timer);
+	comm_timer_delete(worker->forward_timer);
 	comm_timer_delete(worker->env.probe_timer);
 	free(worker->ports);
 	if(worker->thread_num == 0) {

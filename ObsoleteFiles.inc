@@ -51,6 +51,9 @@
 #   xargs -n1 | sort | uniq -d;
 # done
 
+# 20261011: DHCP must not generate local Unbound forwarding configuration.
+OLD_FILES+=libexec/resolvconf/unbound
+
 # 20261006: Remove en_US.UTF-8; retain C.UTF-8.
 OLD_FILES+=usr/share/locale/en_US.UTF-8/LC_COLLATE
 OLD_FILES+=usr/share/locale/en_US.UTF-8/LC_CTYPE

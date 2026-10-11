@@ -1,0 +1,229 @@
+HalfBSD built-in DNS forwarding: implementation handoff
+Date: 2026-10-11
+Status: IMPLEMENTED AND TESTED ON LINUX. This report accompanies the implementation commit; commit and push authorized on 2026-10-11.
+Base commit: 1ae498ac4d489014b2d5d370c95c7c3089a83cb3
+
+Purpose
+=======
+Replace generated upstream configuration and DHCP DNS selection with compiled
+defaults. Keep Unbound's mature forwarding, caching, DNSSEC and transport code.
+No new build switches, profiles, processing modules or external services.
+
+Provider policy
+===============
+The default IN-class root forward zone contains these six literal IPv4 targets:
+  Cloudflare: 1.1.1.1, 1.0.0.1
+  Google:     8.8.8.8, 8.8.4.4
+  OpenDNS:    208.67.222.222, 208.67.220.220
+
+Existing RTT selection still chooses between addresses within a provider.
+A provider mask excludes lower providers while a higher provider has a healthy
+address. Only final transport failures mark an address unavailable. Valid DNS
+responses, including NXDOMAIN and SERVFAIL, count as transport success. DNSSEC
+validation happens afterwards and cannot trigger provider switching.
+
+Failure backoff is 30, 60, 120, 240, then at most 300 seconds per address.
+Two successful exchanges are needed to clear failure history, so a single
+successful recovery followed by another failure retains increased backoff.
+Recovery attempts have a 30-second lease shared between workers. A five-second
+worker timer schedules a normal root-NS prefetch when a higher provider is due;
+this also works while clients are idle. Timer dispatch can add up to five seconds
+to backoff. Ordinary cache misses can recover a provider earlier. Existing mesh
+coalescing, DNSSEC, UDP/TCP retry logic and TLS transport handle these probes.
+No new DNS proxy or daemon was introduced.
+
+Health lives in the existing infrastructure cache, with a lock shared by workers.
+Custom ports other than 53 and 853 do not affect built-in endpoint health.
+An explicit root forward-zone or an unbound-control forward/forward_add override
+uses ordinary configured forwarding, without the built-in provider priority.
+The recovery timer does not alter an explicit or runtime root override.
+Runtime overrides remain in memory and are reset by configuration reload.
+
+Recursive fallback is blocked
+=============================
+A default root forward zone is installed if the configuration has none.
+forward-first: yes fails configuration parsing and application.
+unbound-control forward off and forward_remove . return errors.
+A missing forwarding delegation returns SERVFAIL instead of using root hints.
+All-six-upstream outages preserve local DNS and existing cache/serve-expired
+behavior, and return SERVFAIL for uncached external requests.
+The offline interposer aborts on any non-loopback destination outside the six
+provider addresses, so passing outage tests also verifies no recursive socket
+attempts on the tested paths.
+
+The shared iterator and recursive internals remain in the source tree. This is
+an enforcement change in forwarding initialization/selection, not an iterator
+rewrite. Stub/auth-zone/RPZ/response-IP internals remaining from earlier passes
+were not removed in this task; forwarding holes cannot enable recursive fallback.
+
+TLS and existing security
+=========================
+Default transport is ordinary UDP/TCP on port 53. Existing global tls-upstream
+enables TLS on port 853 for built-ins, with authentication names:
+  one.one.one.one, dns.google, dns.opendns.com
+A trusted certificate bundle (or the existing Windows trust store support) is
+required. TLS failure never enables plaintext fallback. Explicit forwarding TLS
+configuration and remote-control mutual TLS remain supported.
+
+Also fixed an existing TLS target-allocation failure: only link an address into
+the delegation lists after its TLS authentication name has been copied. A failed
+allocation previously could leave freed memory linked into those lists. The
+target-add API now accepts a const name, which it already duplicates.
+
+Privilege dropping, chroot, local-zone/data, access controls, logging/statistics,
+DNSSEC algorithms, RFC5011 trust-anchor maintenance and their paths remain.
+No Capsicum implementation or directory migration was introduced.
+
+Setup, DHCP and upgrade behavior
+===============================
+Deleted contrib/openresolv/unbound.in (97 lines), its native and upstream build
+entries, its configuration documentation and obsolete service settings.
+ObsoleteFiles.inc lists libexec/resolvconf/unbound for delete-old.
+local-unbound-setup no longer accepts forwarder arguments or -f, or extracts
+upstreams from resolv.conf. It no longer creates an upstream file or configures
+a resolver subscriber. resolvconf.conf retains libc="NO"; resolv.conf points at localhost.
+DHCP still runs its normal address/gateway configuration; its DNS addresses are
+never supplied to the new default forwarding zone.
+
+Fresh unbound.conf has no forwarding include. Existing unbound.conf is preserved,
+with a one-time removal of the legacy forwarding include. That migration reads
+only the former TLS transport setting, never its DNS server addresses. Existing
+TLS opt-in and explicitly configured certificate bundles are preserved. -t still
+enables authenticated TLS. The old unused file is left for administrator archival;
+it is neither generated nor read for runtime forwarding. Legacy-filename regexes
+remaining in setup are solely for this one-time migration, not compatibility
+support for old upstream generation.
+
+The service setup command validates configuration and restarts an already running
+daemon after successful setup. This replaces an old binary that otherwise could
+reload the include-free configuration and use its old recursive defaults. A
+stopped service is not started by setup. Setup/configuration-test failures do not
+stop or restart a working service. The existing installworld setup hook therefore
+activates the new binary for a running, enabled local_unbound service.
+
+Existing /var/unbound layout, control.conf, lan-zones.conf, root.key and runtime
+paths remain. Those other generated files and the eventual /etc migration are
+separate work. Local records and ACLs are no longer overwritten by repeated setup.
+
+Major changed files
+===================
+  iterator/iter_fwd.c: default root delegation, TLS parameters, fallback rejection
+  iterator/iter_delegpt.[ch]: built-in marker/copy, const input and allocation fix
+  iterator/iter_utils.c: provider filter before ordinary RTT ranking
+  iterator/iterator.c: fail closed when a forwarding delegation is unavailable
+  services/cache/infra.[ch]: fixed endpoints and shared transport-health state
+  services/outside_network.c: final transport outcomes and recovery leases
+  daemon/worker.[ch]: periodic recovery through existing mesh prefetch
+  daemon/remote.c: reject commands that enable recursion/remove root forwarding
+  util/configparser.y and generated .c: reject forward-first: yes
+  util/fptr_wlist.c, libunbound/worker.h, libunbound/libworker.c,
+    smallapp/worker_cb.c: normal callback declaration/whitelist/linkage pattern
+  usr.sbin/unbound/setup/local-unbound-setup.sh and libexec/rc/rc.d/local_unbound
+  sbin/resolvconf/Makefile, contrib/openresolv/Makefile, ObsoleteFiles.inc,
+    release/packages/ucl/local-unbound.ucl
+  Unbound example configuration/control/configuration manuals and resolvconf manual
+
+No external production dependency was added or removed in this pass. TLS/crypto
+remain required. libunbound remains required by unbound-anchor. Four executable
+programs remain: unbound, unbound-control, unbound-checkconf, unbound-anchor.
+Existing setup scripts remain; one installed resolvconf subscriber was removed.
+Test-only LD_PRELOAD/dlsym usage does not reintroduce dynlib processing or a
+production libdl dependency. No tools were downloaded or installed into /tmp.
+
+Measurements
+============
+Baseline is HEAD above; before/after use identical existing Linux portable
+configure settings (--with-libevent=no), GCC -O2/LTO and system OpenSSL/Expat.
+These are Linux ELF measurements, not HalfBSD release binary sizes.
+
+  contrib/unbound tracked files:                  327 -> 327
+  contrib/unbound C/H/Y/LEX files:                 216 -> 216
+  contrib/unbound C/H/Y/LEX source lines:     164,323 -> 164,573 (+250)
+  local-unbound-setup.sh lines:                   498 -> 412 (-86)
+  removed resolvconf subscriber lines:             97 -> 0
+
+Byte sizes                       before       after       stripped before/after
+  unbound                      5,898,312   5,903,336       1,292,960 / 1,297,056
+  unbound-control              1,425,272   1,428,672         220,080 / 220,080
+  unbound-checkconf            4,305,416   4,306,584         948,640 / 948,640
+  unbound-anchor ELF             174,016     174,016          51,328 / 51,328
+  libunbound.so (unstripped)    4,855,224   4,857,056
+
+The anchor ELF was measured, not its libtool shell wrapper. Stripped copies use
+strip --strip-all. unbound's stripped file grew 4 KiB; text+data grew 416 bytes.
+This task removes generation infrastructure but adds priority/recovery logic;
+it does not reduce the resolver executable. Added regression helpers are tests,
+not installed production programs. Debug/path/layout differences affect ELF sizes.
+
+Direct dynamic dependencies are unchanged:
+  daemon/control/checkconf: libssl.so.3, libcrypto.so.3, libc.so.6
+  anchor: libunbound.so.8, libexpat.so.1, libssl.so.3, libcrypto.so.3, libc.so.6
+
+Verification
+============
+All four retained utilities compile/link successfully. All modified production C
+files pass GCC syntax and -Werror=misleading-indentation checks; changed const
+interfaces also pass -Werror=discarded-qualifiers. Parser C/header regenerated
+with system bison; header contents did not change. Shell syntax and git diff
+--check pass.
+
+Final runtime suites:
+  forwarding.py: 17 PASS groups, preserving local A/CNAME/PTR, ACLs, UDP/TCP,
+    CNAME forwarding, positive/negative caching, EDNS/TCP fallback, pipelining,
+    DNSSEC valid/bogus/CD handling, prefetch, serve-expired, administration,
+    reload/fast_reload, outbound TLS CA/name validation and remote mutual TLS.
+  providers.py: 9 PASS groups, exercising compiled defaults, priority/healthy
+    peers, error/timeout failover, idle recovery, caching, NXDOMAIN/SERVFAIL and
+    DNSSEC failure without switching, all-six outage/expired cache/local DNS,
+    two-worker shared health, runtime overrides, reload/fast_reload, unsafe
+    configuration rejection, three-provider authenticated TLS and untrusted-CA
+    rejection without plaintext downgrade.
+  setup.py: 3 PASS groups, exercising actual setup in an isolated DESTDIR,
+    TLS opt-in, static-record/ACL preservation, idempotent migration, and the
+    actual rc setup function with mocked configuration-test/restart actions.
+  provider-health.c: PASS, actual health-state boundaries, probe leases,
+    backoff cap, hysteresis, custom-port isolation and injected strdup failure
+    followed by safe delegation cleanup.
+
+Reproduce with a configured/built portable source directory in $BUILD:
+  python3 usr.sbin/unbound/tests/forwarding.py "$BUILD"
+  python3 usr.sbin/unbound/tests/providers.py "$BUILD"
+  python3 usr.sbin/unbound/tests/setup.py
+  cc -I"$BUILD" -Icontrib/unbound -Wl,--wrap=strdup \
+    -o /tmp/unbound-provider-health usr.sbin/unbound/tests/provider-health.c \
+    "$BUILD/.libs/libunbound.a" -lssl -lcrypto -lpthread
+  /tmp/unbound-provider-health
+
+Portable build: /tmp/unbound-indentation-check
+Baseline build: /tmp/unbound-provider-baseline
+Logs: /tmp/unbound-provider-build.log, /tmp/unbound-provider-baseline-build.log,
+  /tmp/unbound-forwarding-final.log, /tmp/unbound-providers-final.log,
+  /tmp/unbound-setup-final.log
+These /tmp artifacts are disposable and not repository deliverables.
+
+Limits and remaining work
+=========================
+No native HalfBSD buildworld/buildkernel, rc.subr service execution, DHCP lease
+acquisition, real chroot/UID drop or RFC5011 key rotation was performed in this
+Linux environment. Those mechanisms were preserved; compilation is not runtime
+proof for them. Public Internet resolver availability/certificates were not tested.
+The upstream testcode directory is absent from the vendor tree, so its make test
+target cannot replace the checked-in HalfBSD forwarding regressions.
+
+The OpenDNS TLS authentication name is selected from Cisco's documented encrypted
+resolver identity; actual port-853 identity/availability remains a live integration
+check. Cloudflare/Google names and Cisco core TLS support were checked against:
+  https://developers.cloudflare.com/1.1.1.1/encryption/dns-over-tls/
+  https://developers.google.com/speed/public-dns/docs/dns-over-tls
+  https://umbrella.cisco.com/blog/enhancing-support-dns-encryption-with-dns-over-https
+Failure of certificate authentication remains fail-closed.
+
+Future Capsicum considerations
+=============================
+Recovery timers use existing post-initialization outbound socket creation.
+Reloads still read configuration/includes and can replace TLS certificate contexts.
+Logging can reopen files; RFC5011 still modifies/renames trust-anchor state under
+/var/unbound. Remote administration can initiate reloads and new forwarding
+sockets. Removing the resolver subscriber eliminates its runtime upstream-file
+writes. Future sandbox work must account for those existing file/socket operations
+and periodic recovery traffic; their security mechanisms were not replaced here.

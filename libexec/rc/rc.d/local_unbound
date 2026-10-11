@@ -28,10 +28,8 @@ load_rc_config $name
 : ${local_unbound_workdir:=/var/unbound}
 : ${local_unbound_config:=${local_unbound_workdir}/unbound.conf}
 : ${local_unbound_flags:="-c ${local_unbound_config}"}
-: ${local_unbound_forwardconf:=${local_unbound_workdir}/forward.conf}
 : ${local_unbound_controlconf:=${local_unbound_workdir}/control.conf}
 : ${local_unbound_anchor:=${local_unbound_workdir}/root.key}
-: ${local_unbound_forwarders:=}
 : ${local_unbound_tls:=}
 : ${local_unbound_pidfile:=${pidfile}}
 pidfile=${local_unbound_pidfile}
@@ -75,11 +73,15 @@ local_unbound_setup()
 	    -u unbound \
 	    -w ${local_unbound_workdir} \
 	    -c ${local_unbound_config} \
-	    -f ${local_unbound_forwardconf} \
 	    -o ${local_unbound_controlconf} \
 	    -a ${local_unbound_anchor} \
-	    ${tls_flag} \
-	    ${local_unbound_forwarders}
+	    ${tls_flag} || return 1
+	# A running daemon must use the newly installed forwarding defaults.
+	# Reloading an old binary after removing its include could enable recursion.
+	if [ -n "${rc_pid:-}" ] ; then
+		local_unbound_configtest || return 1
+		run_rc_command restart
+	fi
 }
 
 #

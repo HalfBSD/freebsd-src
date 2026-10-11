@@ -298,7 +298,7 @@ iter_apply_cfg(struct iter_env* iter_env, struct config_file* cfg)
 static int
 iter_filter_unsuitable(struct iter_env* iter_env, struct module_env* env,
 	uint8_t* name, size_t namelen, uint16_t qtype, time_t now,
-	struct delegpt_addr* a)
+	struct delegpt_addr* a, int builtin)
 {
 	int rtt, lame, reclame, dnsseclame;
 	if(a->bogus)
@@ -370,7 +370,7 @@ iter_filter_unsuitable(struct iter_env* iter_env, struct module_env* env,
 			 * blacklisted later, instead, remove it here, so
 			 * other choices (that are not blacklisted) can be
 			 * tried */
-			return -1;
+			return builtin ? UNKNOWN_SERVER_NICENESS : -1;
 		/* select remainder from worst to best */
 		else if(reclame)
 			return rtt+USEFUL_SERVER_TOP_TIMEOUT*3; /* nonpref */
@@ -396,14 +396,23 @@ iter_fill_rtt(struct iter_env* iter_env, struct module_env* env,
 	size_t* num_suitable_results)
 {
 	int got_it = 0;
+	unsigned provider_mask = dp->builtin_forwarders ?
+		infra_forward_mask(env->infra_cache, now) : 0;
 	struct delegpt_addr* a;
 	*num_suitable_results = 0;
 
 	if(dp->bogus)
 		return 0; /* NS bogus, all bogus, nothing found */
 	for(a=dp->result_list; a; a = a->next_result) {
+		if(dp->builtin_forwarders) {
+			int index = infra_forward_index(&a->addr);
+			if(index < 0 || !(provider_mask & (1U << index))) {
+				a->sel_rtt = -1;
+				continue;
+			}
+		}
 		a->sel_rtt = iter_filter_unsuitable(iter_env, env,
-			name, namelen, qtype, now, a);
+			name, namelen, qtype, now, a, dp->builtin_forwarders);
 		if(a->sel_rtt != -1) {
 			if(sock_list_find(blacklist, &a->addr, a->addrlen))
 				a->sel_rtt += BLACKLIST_PENALTY;

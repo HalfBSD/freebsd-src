@@ -212,9 +212,7 @@ openresolv ships with subscribers for the name servers
 .Xr dnsmasq 8 ,
 .Xr named 8 ,
 .Xr pdnsd 8 ,
-.Xr pdns_recursor 8 ,
-and
-.Xr unbound 8 .
+.Xr pdns_recursor 8 .
 Each subscriber can create configuration files which should be included in
 in the subscribers main configuration file.
 .Pp
@@ -314,21 +312,6 @@ Example recursor.conf:
 allow-from=127.0.0.0/8, ::1/128
 forward-zones-file=/etc/pdns/recursor-zones.conf
 .Ed
-.It Sy unbound_conf
-This file tells unbound about specific and global name servers.
-.It Sy unbound_insecure
-When set to YES, unbound marks the domains as insecure, thus ignoring DNSSEC.
-.Pp
-Example resolvconf.conf for unbound:
-.Bd -compact -literal -offset indent
-name_servers=127.0.0.1
-unbound_conf=/etc/unbound-resolvconf.conf
-.Ed
-.Pp
-Example unbound.conf:
-.Bd -compact -literal -offset indent
-include: /etc/unbound-resolvconf.conf
-.Ed
 .El
 .Sh SUBSCRIBER INTEGRATION
 Not all distributions store the files the subscribers need in the same
@@ -363,12 +346,6 @@ Command to restart the pdnsd service.
 Command to restart the pdns_recursor service.
 .It Sy pdns_restart
 Command to restart the pdns_recursor service.
-.It Sy unbound_service
-Name of the unbound service.
-.It Sy unbound_restart
-Command to restart the unbound service.
-.It Sy unbound_pid
-Location of the unbound pidfile.
 .El
 .Sh SEE ALSO
 .Xr sh 1 ,

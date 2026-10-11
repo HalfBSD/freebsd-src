@@ -21,7 +21,7 @@ DOCMODE?=	0644
 MANMODE?=	0444
 
 RESOLVCONF=	resolvconf resolvconf.8 resolvconf.conf.5
-SUBSCRIBERS=	libc dnsmasq named pdnsd pdns_recursor unbound
+SUBSCRIBERS=	libc dnsmasq named pdnsd pdns_recursor
 TARGET=		${RESOLVCONF} ${SUBSCRIBERS}
 SRCS=		${TARGET:C,$,.in,} # pmake
 SRCS:=		${TARGET:=.in} # gmake

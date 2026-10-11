@@ -4,7 +4,7 @@ DIST=		${SRCTOP}/contrib/openresolv
 
 SCRIPTS=	resolvconf
 
-FILES=		libc dnsmasq named pdnsd pdns_recursor unbound
+FILES=		libc dnsmasq named pdnsd pdns_recursor
 FILESDIR=	/libexec/resolvconf
 
 MAN=		resolvconf.conf.5 resolvconf.8

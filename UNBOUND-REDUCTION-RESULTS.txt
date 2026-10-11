@@ -566,3 +566,23 @@ reopening, PID/control socket and worker channels, outgoing UDP/TCP/TLS creation
 RFC5011 temporary writes and atomic root.key rename, anchor DNS/HTTPS and retained
 authority-zone files/transfers. DNS listener certificate/ticket operations and
 view reload trees are now eliminated. Existing sandbox-related behavior is intact.
+
+2026-10-11: built-in forwarding providers and generated-upstream removal
+--------------------------------------------------------------------
+Implemented Cloudflare -> Google -> OpenDNS priority using compiled IPv4
+targets, final transport outcomes, shared infrastructure-cache health, capped
+backoff/hysteresis and idle recovery through existing mesh prefetch. Removed
+upstream-file generation, resolvconf's Unbound subscriber and DHCP DNS selection.
+Configuration/runtime operations cannot enable recursive fallback. Existing
+static records, ACLs, TLS opt-in and directory layout are preserved on migration.
+Service setup validates configuration and replaces an already running daemon
+so an old binary cannot reload the include-free configuration and recurse.
+
+All four retained programs compile. Final offline checks pass: 17 retained
+forwarding regression groups, 9 provider groups, 3 setup/service-policy groups,
+and health-boundary/hysteresis/lease/allocation-failure tests. Native HalfBSD
+buildworld/buildkernel and live public-provider checks were not performed.
+The stripped Linux daemon grows 4 KiB; no production library dependency changes.
+Full measurements, source inventory, test commands, remaining features and
+Capsicum considerations: UNBOUND-DNS-PROVIDERS-HANDOFF.txt.
+This update accompanies the implementation commit. Commit and push authorized on 2026-10-11.

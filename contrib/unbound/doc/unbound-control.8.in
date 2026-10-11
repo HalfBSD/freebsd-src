@@ -569,7 +569,7 @@ The \fB+t\fP option sets it to use TLS upstream, like
 .INDENT 0.0
 .TP
 .B forward_remove [\fB+i\fP] \fIzone\fP 
-Remove a forward zone from running Unbound.
+Remove a forward zone from running Unbound. The root zone cannot be removed.
 The \fB+i\fP also removes a domain\-insecure for the zone.
 .UNINDENT
 .INDENT 0.0
@@ -592,23 +592,11 @@ The \fB+i\fP also removes a domain\-insecure for the zone.
 .UNINDENT
 .INDENT 0.0
 .TP
-.B forward [\fIoff\fP | \fIaddr ...\fP ] 
-Setup forwarding mode.
-Configures if the server should ask other upstream nameservers, should go
-to the internet root nameservers itself, or show the current config.
-You could pass the nameservers after a DHCP update.
-.sp
-Without arguments the current list of addresses used to forward all queries
-to is printed.
-On startup this is from the forward\-zone \fB\(dq.\(dq\fP configuration.
-Afterwards it shows the status.
-It prints off when no forwarding is used.
-.sp
-If off is passed, forwarding is disabled and the root nameservers are
-used.
-This can be used to avoid to avoid buggy or non\-DNSSEC supporting
-nameservers returned from DHCP.
-But may not work in hotels or hotspots.
+.B forward [\fIaddr ...\fP ]
+Display or replace catch-all forwarding targets. Without arguments, display
+current addresses. HalfBSD defaults to Cloudflare, then Google, then OpenDNS,
+with transport-health priority between providers. DHCP DNS servers are ignored.
+Recursive resolution cannot be enabled.
 .sp
 If one or more IPv4 or IPv6 addresses are given, those are then used to
 forward queries to.
@@ -616,8 +604,7 @@ The addresses must be separated with spaces.
 With \fB\(aq@port\(aq\fP the port number can be set explicitly (default port is 53
 (DNS)).
 .sp
-By default the forwarder information from the config file for the root
-\fB\(dq.\(dq\fP is used.
+An explicit root forward-zone overrides the built-in provider policy.
 The config file is not changed, so after a reload these changes are gone.
 Other forward zones from the config file are not affected by this command.
 .UNINDENT

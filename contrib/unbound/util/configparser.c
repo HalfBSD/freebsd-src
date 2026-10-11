@@ -5696,9 +5696,9 @@ yyreduce:
 #line 2780 "util/configparser.y"
         {
 		OUTYY(("P(forward-first:%s)\n", (yyvsp[0].str)));
-		if(strcmp((yyvsp[0].str), "yes") != 0 && strcmp((yyvsp[0].str), "no") != 0)
-			yyerror("expected yes or no.");
-		else cfg_parser->cfg->forwards->isfirst=(strcmp((yyvsp[0].str), "yes")==0);
+		if(strcmp((yyvsp[0].str), "no") != 0)
+			yyerror("forward-first must be no: recursive fallback is prohibited");
+		else cfg_parser->cfg->forwards->isfirst=0;
 		free((yyvsp[0].str));
 	}
 #line 5705 "util/configparser.c"

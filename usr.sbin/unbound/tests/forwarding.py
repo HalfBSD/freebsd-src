@@ -60,6 +60,7 @@ class Upstream:
         self.count = collections.Counter()
         self.edns_options = collections.Counter()
         self.drop = False
+        self.connections = []
         owner = self
 
         class UDP(socketserver.BaseRequestHandler):
@@ -90,6 +91,7 @@ class Upstream:
                     except OSError:
                         sock.close()
                         raise
+                owner.connections.append(sock)
                 return sock, address
 
         self.tcp = Server(('127.0.0.1', 0), TCP)
@@ -123,6 +125,8 @@ class Upstream:
         flags, answer, authority = 0x8180, [], []
         if name == 'fallback.forward.test.' and not tcp:
             flags |= 0x200
+        elif name == 'servfail.forward.test.':
+            flags |= 2
         elif name == 'negative.forward.test.':
             flags |= 3
             soa = wire_name('ns.forward.test.') + wire_name('hostmaster.forward.test.')

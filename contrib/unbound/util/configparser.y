@@ -2779,9 +2779,9 @@ forward_addr: VAR_FORWARD_ADDR STRING_ARG
 forward_first: VAR_FORWARD_FIRST STRING_ARG
 	{
 		OUTYY(("P(forward-first:%s)\n", $2));
-		if(strcmp($2, "yes") != 0 && strcmp($2, "no") != 0)
-			yyerror("expected yes or no.");
-		else cfg_parser->cfg->forwards->isfirst=(strcmp($2, "yes")==0);
+		if(strcmp($2, "no") != 0)
+			yyerror("forward-first must be no: recursive fallback is prohibited");
+		else cfg_parser->cfg->forwards->isfirst=0;
 		free($2);
 	}
 	;

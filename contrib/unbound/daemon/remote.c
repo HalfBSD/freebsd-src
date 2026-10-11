@@ -300,7 +300,7 @@ add_open(const char* ip, int nr, struct listen_port** list, int noproto_is_err,
 #endif
 		}
 	} else {
-		char* s = strchr(ip, '@');
+		const char* s = strchr(ip, '@');
 		char newif[128];
 		if(s) {
 			/* override port with ifspec@port */
@@ -2210,13 +2210,15 @@ do_forward(RES* ssl, struct worker* worker, char* args)
 		(void)print_root_fwds(ssl, fwd, root);
 		return;
 	}
+	if(strcmp(args, "off") == 0) {
+		(void)ssl_printf(ssl, "error: recursive fallback is prohibited\n");
+		return;
+	}
 	/* set root forwards for this thread. since we are in remote control
 	 * the actual mesh is not running, so we can freely edit it. */
 	/* delete all the existing queries first */
 	mesh_delete_all(worker->env.mesh);
-	if(strcmp(args, "off") == 0) {
-		forwards_delete_zone(fwd, LDNS_RR_CLASS_IN, root, nolock);
-	} else {
+	{
 		struct delegpt* dp;
 		if(!(dp = parse_delegpt(ssl, args, root)))
 			return;
@@ -2320,6 +2322,11 @@ do_forward_remove(RES* ssl, struct worker* worker, char* args)
 	int nolock = 1;
 	if(!parse_fs_args(ssl, args, &nm, NULL, &insecure, NULL, NULL))
 		return;
+	if(dname_is_root(nm)) {
+		free(nm);
+		(void)ssl_printf(ssl, "error: catch-all forwarding cannot be removed\n");
+		return;
+	}
 	/* prelock forwarders for atomic operation with anchors */
 	lock_rw_wrlock(&fwd->lock);
 	if(insecure && worker->env.anchors)

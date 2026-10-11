@@ -533,7 +533,7 @@ There are several commands that the server understands.
 
 
 @@UAHL@unbound-control.commands@forward_remove@@ [``+i``] *zone*
-    Remove a forward zone from running Unbound.
+    Remove a forward zone from running Unbound. The root zone cannot be removed.
     The ``+i`` also removes a domain-insecure for the zone.
 
 
@@ -553,23 +553,11 @@ There are several commands that the server understands.
     The ``+i`` also removes a domain-insecure for the zone.
 
 
-@@UAHL@unbound-control.commands@forward@@ [*off* | *addr ...* ]
-    Setup forwarding mode.
-    Configures if the server should ask other upstream nameservers, should go
-    to the internet root nameservers itself, or show the current config.
-    You could pass the nameservers after a DHCP update.
-
-    Without arguments the current list of addresses used to forward all queries
-    to is printed.
-    On startup this is from the forward-zone ``"."`` configuration.
-    Afterwards it shows the status.
-    It prints off when no forwarding is used.
-
-    If off is passed, forwarding is disabled and the root nameservers are
-    used.
-    This can be used to avoid to avoid buggy or non-DNSSEC supporting
-    nameservers returned from DHCP.
-    But may not work in hotels or hotspots.
+@@UAHL@unbound-control.commands@forward@@ [*addr ...* ]
+    Display or replace catch-all forwarding targets. Without arguments,
+    display the current addresses. HalfBSD defaults to Cloudflare, then Google,
+    then OpenDNS, with transport-health priority between providers.
+    DHCP DNS servers are ignored. Recursive resolution cannot be enabled.
 
     If one or more IPv4 or IPv6 addresses are given, those are then used to
     forward queries to.
@@ -577,8 +565,7 @@ There are several commands that the server understands.
     With ``'@port'`` the port number can be set explicitly (default port is 53
     (DNS)).
 
-    By default the forwarder information from the config file for the root
-    ``"."`` is used.
+    An explicit root forward-zone overrides the built-in provider policy.
     The config file is not changed, so after a reload these changes are gone.
     Other forward zones from the config file are not affected by this command.
 

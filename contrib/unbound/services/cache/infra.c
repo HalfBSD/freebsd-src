@@ -52,6 +52,118 @@
 #include "util/config_file.h"
 #include "iterator/iterator.h"
 
+const char* const infra_forward_addresses[6] = {
+	"1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4",
+	"208.67.222.222", "208.67.220.220"
+};
+
+int
+infra_forward_index(const struct sockaddr_storage* addr)
+{
+	unsigned i;
+	struct in_addr ip;
+	if(addr->ss_family != AF_INET) return -1;
+	if(((const struct sockaddr_in*)addr)->sin_port != htons(53) &&
+		((const struct sockaddr_in*)addr)->sin_port != htons(853)) return -1;
+	for(i=0; i<6; i++) {
+		(void)inet_pton(AF_INET, infra_forward_addresses[i], &ip);
+		if(ip.s_addr == ((const struct sockaddr_in*)addr)->sin_addr.s_addr)
+			return (int)i;
+	}
+	return -1;
+}
+
+/* Only transport outcomes change provider priority. DNS error responses and
+ * validation results deliberately do not enter this state machine. Probes
+ * use existing forwarding and prefetch machinery, paced by exponential backoff. */
+unsigned
+infra_forward_mask(struct infra_cache* infra, time_t now)
+{
+	unsigned i, mask = 0;
+	lock_basic_lock(&infra->forward_lock);
+	for(i=0; i<6; i+=2) {
+		if(infra->forward_health[i].retry_after <= now &&
+			infra->forward_health[i].probe_until <= now) mask |= 1U<<i;
+		if(infra->forward_health[i+1].retry_after <= now &&
+			infra->forward_health[i+1].probe_until <= now) mask |= 1U<<(i+1);
+		if(mask) break;
+	}
+	lock_basic_unlock(&infra->forward_lock);
+	return mask;
+}
+
+/* Find a due recovery attempt ahead of the first healthy provider. Also
+ * coordinate timer-driven prefetch across workers without a separate probe
+ * service. Cache misses can recover a provider before the next timer tick. */
+int
+infra_forward_due(struct infra_cache* infra, time_t now)
+{
+	unsigned i, active = 6;
+	int due = 0;
+	lock_basic_lock(&infra->forward_lock);
+	if(infra->forward_next_probe <= now) {
+		for(i=0; i<6; i+=2)
+			if(!infra->forward_health[i].retry_after ||
+				!infra->forward_health[i+1].retry_after) {
+				active = i;
+				break;
+			}
+		for(i=0; i<active; i++)
+			if(infra->forward_health[i].retry_after <= now &&
+				infra->forward_health[i].probe_until <= now) {
+				due = 1;
+				infra->forward_next_probe = now + 5;
+				break;
+			}
+	}
+	lock_basic_unlock(&infra->forward_lock);
+	return due;
+}
+
+/* Lease recovery attempts across workers; normal healthy traffic is unlimited.
+ * An abandoned exchange releases its lease after 30 seconds. */
+void
+infra_forward_probe(struct infra_cache* infra,
+	const struct sockaddr_storage* addr, time_t now)
+{
+	int i = infra_forward_index(addr);
+	if(i < 0) return;
+	lock_basic_lock(&infra->forward_lock);
+	if(infra->forward_health[i].retry_after &&
+		infra->forward_health[i].retry_after <= now)
+		infra->forward_health[i].probe_until = now + 30;
+	lock_basic_unlock(&infra->forward_lock);
+}
+
+void
+infra_forward_result(struct infra_cache* infra,
+	const struct sockaddr_storage* addr, time_t now, int success)
+{
+	int i = infra_forward_index(addr);
+	unsigned interval;
+	if(i < 0) return;
+	lock_basic_lock(&infra->forward_lock);
+	if(success) {
+		infra->forward_health[i].probe_until = 0;
+		infra->forward_health[i].retry_after = 0;
+		/* Require two successful exchanges before forgetting failure history. */
+		if(infra->forward_health[i].successes < 2)
+			infra->forward_health[i].successes++;
+		if(infra->forward_health[i].successes >= 2)
+			infra->forward_health[i].retry_interval = 0;
+	} else if(infra->forward_health[i].retry_after <= now ||
+		infra->forward_health[i].probe_until) {
+		infra->forward_health[i].probe_until = 0;
+		interval = infra->forward_health[i].retry_interval;
+		interval = interval ? interval*2 : 30;
+		if(interval > 300) interval = 300;
+		infra->forward_health[i].retry_interval = interval;
+		infra->forward_health[i].retry_after = now + interval;
+		infra->forward_health[i].successes = 0;
+	}
+	lock_basic_unlock(&infra->forward_lock);
+}
+
 /** ratelimit value for delegation point */
 int infra_dp_ratelimit = 0;
 
@@ -352,10 +464,12 @@ infra_create(struct config_file* cfg)
 	if(!infra) {
 		return NULL;
 	}
+	lock_basic_init(&infra->forward_lock);
 	infra->hosts = slabhash_create(cfg->infra_cache_slabs,
 		INFRA_HOST_STARTSIZE, maxmem, &infra_sizefunc, &infra_compfunc,
 		&infra_delkeyfunc, &infra_deldatafunc, NULL);
 	if(!infra->hosts) {
+		lock_basic_destroy(&infra->forward_lock);
 		free(infra);
 		return NULL;
 	}
@@ -429,6 +543,7 @@ infra_delete(struct infra_cache* infra)
 {
 	if(!infra)
 		return;
+	lock_basic_destroy(&infra->forward_lock);
 	slabhash_delete(infra->hosts);
 	slabhash_delete(infra->domain_rates);
 	domain_limits_free(&infra->domain_limits);

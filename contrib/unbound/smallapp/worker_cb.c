@@ -186,6 +186,11 @@ void worker_stat_timer_cb(void* ATTR_UNUSED(arg))
 	log_assert(0);
 }
 
+void worker_forward_timer_cb(void* ATTR_UNUSED(arg))
+{
+	log_assert(0);
+}
+
 void worker_probe_timer_cb(void* ATTR_UNUSED(arg))
 {
 	log_assert(0);

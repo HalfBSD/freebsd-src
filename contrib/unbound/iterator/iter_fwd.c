@@ -40,6 +40,7 @@
  * Keep track of forward zones and config settings.
  */
 #include "config.h"
+#include "services/cache/infra.h"
 #include "iterator/iter_fwd.h"
 #include "iterator/iter_delegpt.h"
 #include "util/log.h"
@@ -298,6 +299,11 @@ read_forwards(struct iter_forwards* fwd, struct config_file* cfg)
 		dp->has_parent_side_NS = (uint8_t)!s->isfirst;
 		/* Do not cache if set. */
 		dp->no_cache = s->no_cache;
+		if(s->isfirst) {
+			log_err("forward-first is unavailable: recursive fallback is prohibited");
+			delegpt_free_mlc(dp);
+			return 0;
+		}
 		/* use SSL for queries to this forwarder */
 		dp->ssl_upstream = (uint8_t)s->ssl_upstream;
 		/* use TCP for queries to this forwarder */
@@ -398,6 +404,38 @@ forwards_apply_cfg(struct iter_forwards* fwd, struct config_file* cfg)
 	if(!read_forwards(fwd, cfg)) {
 		lock_rw_unlock(&fwd->lock);
 		return 0;
+	}
+	if(!fwd_zone_find(fwd, LDNS_RR_CLASS_IN, (uint8_t*)"")) {
+		static const char* const tls_names[3] = {
+			"one.one.one.one", "dns.google", "dns.opendns.com"
+		};
+		struct delegpt* dp = delegpt_create_mlc((uint8_t*)"");
+		unsigned i;
+		if(!dp) { lock_rw_unlock(&fwd->lock); return 0; }
+		if(cfg->ssl_upstream && !cfg->tls_cert_bundle && !cfg->tls_win_cert) {
+			log_err("built-in TLS forwarding requires a trusted certificate bundle");
+			delegpt_free_mlc(dp);
+			lock_rw_unlock(&fwd->lock);
+			return 0;
+		}
+		dp->has_parent_side_NS = 1;
+		dp->builtin_forwarders = 1;
+		dp->ssl_upstream = (uint8_t)cfg->ssl_upstream;
+		for(i=0; i<6; i++) {
+			struct sockaddr_storage addr;
+			socklen_t len;
+			if(!ipstrtoaddr(infra_forward_addresses[i],
+				cfg->ssl_upstream ? 853 : 53, &addr, &len) ||
+				!delegpt_add_addr_mlc(dp, &addr, len, 0, 0,
+				cfg->ssl_upstream ? tls_names[i/2] : NULL, -1)) {
+				delegpt_free_mlc(dp);
+				lock_rw_unlock(&fwd->lock);
+				return 0;
+			}
+		}
+		if(!forwards_insert(fwd, LDNS_RR_CLASS_IN, dp)) {
+			lock_rw_unlock(&fwd->lock); return 0;
+		}
 	}
 	if(!make_stub_holes(fwd, cfg)) {
 		lock_rw_unlock(&fwd->lock);

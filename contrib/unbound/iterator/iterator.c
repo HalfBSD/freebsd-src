@@ -1340,7 +1340,8 @@ forward_request(struct module_qstate* qstate, struct iter_qstate* iq)
 		dname_remove_label(&delname, &delnamelen);
 	dp = forwards_lookup(qstate->env->fwds, delname, iq->qchase.qclass,
 		nolock);
-	if(!dp) return 0;
+	/* A missing forwarding entry must fail closed, never consult root hints. */
+	if(!dp) { iq->dp = NULL; return 1; }
 	/* send recursion desired to forward addr */
 	iq->chase_flags |= BIT_RD; 
 	iq->dp = delegpt_copy(dp, qstate->region);
@@ -1567,8 +1568,8 @@ processInitRequest(struct module_qstate* qstate, struct iter_qstate* iq,
 	if(forward_request(qstate, iq))
 	{
 		if(!iq->dp) {
-			log_err("alloc failure for forward dp");
-			errinf(qstate, "malloc failure for forward zone");
+			verbose(VERB_QUERY, "forwarding delegation unavailable");
+			errinf(qstate, "forwarding delegation unavailable");
 			return error_response(qstate, id, LDNS_RCODE_SERVFAIL);
 		}
 		if(!cache_fill_missing(qstate->env, iq->qchase.qclass,

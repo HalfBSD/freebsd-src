@@ -71,6 +71,7 @@ struct delegpt* delegpt_copy(struct delegpt* dp, struct regional* region)
 	if(!delegpt_set_name(copy, region, dp->name))
 		return NULL;
 	copy->bogus = dp->bogus;
+	copy->builtin_forwarders = dp->builtin_forwarders;
 	copy->has_parent_side_NS = dp->has_parent_side_NS;
 	copy->ssl_upstream = dp->ssl_upstream;
 	copy->tcp_upstream = dp->tcp_upstream;
@@ -683,7 +684,7 @@ int delegpt_add_ns_mlc(struct delegpt* dp, uint8_t* name, uint8_t lame,
 }
 
 int delegpt_add_addr_mlc(struct delegpt* dp, struct sockaddr_storage* addr,
-	socklen_t addrlen, uint8_t bogus, uint8_t lame, char* tls_auth_name,
+	socklen_t addrlen, uint8_t bogus, uint8_t lame, const char* tls_auth_name,
 	int port)
 {
 	struct delegpt_addr* a;
@@ -704,11 +705,6 @@ int delegpt_add_addr_mlc(struct delegpt* dp, struct sockaddr_storage* addr,
 	a = (struct delegpt_addr*)malloc(sizeof(struct delegpt_addr));
 	if(!a)
 		return 0;
-	a->next_target = dp->target_list;
-	dp->target_list = a;
-	a->next_result = 0;
-	a->next_usable = dp->usable_list;
-	dp->usable_list = a;
 	memcpy(&a->addr, addr, addrlen);
 	a->addrlen = addrlen;
 	a->attempts = 0;
@@ -724,6 +720,11 @@ int delegpt_add_addr_mlc(struct delegpt* dp, struct sockaddr_storage* addr,
 	} else {
 		a->tls_auth_name = NULL;
 	}
+	a->next_target = dp->target_list;
+	dp->target_list = a;
+	a->next_result = 0;
+	a->next_usable = dp->usable_list;
+	dp->usable_list = a;
 	return 1;
 }
 

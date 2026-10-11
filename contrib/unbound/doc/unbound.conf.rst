@@ -3420,6 +3420,21 @@ The :ref:`local-zone: nodefault<unbound.conf.local-zone.type.nodefault>` (or
 Forward Zone Options
 --------------------
 
+HalfBSD installs a built-in catch-all forwarding zone when no explicit root
+forward-zone is configured. Provider priority is Cloudflare (1.1.1.1 and
+1.0.0.1), Google (8.8.8.8 and 8.8.4.4), then OpenDNS (208.67.222.222 and
+208.67.220.220). A lower provider is used only after both higher-provider
+addresses have transport failures. DNS error answers and DNSSEC validation
+failures do not change provider health. Retry backoff is 30 to 300 seconds,
+with a five-second recovery timer and two successful exchanges required to
+clear failure history. Recovery also occurs during ordinary cache misses.
+If all providers are unavailable, return SERVFAIL; never resolve recursively.
+DHCP DNS addresses are ignored. An explicit root forward-zone or a runtime
+forward command overrides the built-in provider policy. With global
+tls-upstream enabled, built-in targets use port 853 and authenticated provider
+names; a trusted certificate bundle is required, and plaintext fallback is
+prohibited.
+
 These options are part of the ``forward-zone:`` section.
 
 There may be multiple ``forward-zone:`` sections.
@@ -3458,12 +3473,7 @@ cache).
         addresses of the name server.
         In that case, it is suggested to use
         :ref:`forward-addr<unbound.conf.forward.forward-addr>` instead.
-        Alternatively,
-        :ref:`forward-first: yes<unbound.conf.forward.forward-first>` can also
-        work around the circular dependency by trying resolution outside of
-        this zone.
-        However this has the caveat that it would allow escaping this zone when
-        any resolution attempt fails within this zone.
+
 
     To use a non-default port for DNS communication append ``'@'`` with the
     port number.
@@ -3497,11 +3507,8 @@ cache).
 
 
 @@UAHL@unbound.conf.forward@forward-first@@: *<yes or no>*
-    If a forwarded query is met with a SERVFAIL error and this option is
-    enabled Unbound will fall back to less specific resolution.
-    This can lead to using less specific configured forward/stub/auth zones if
-    any, or end up to otherwise normal recursive resolution for that particular
-    query.
+    HalfBSD only accepts no. Unavailable forwarders return SERVFAIL;
+    recursive fallback is prohibited.
 
     Default: no
 

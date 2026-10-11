@@ -1140,11 +1140,13 @@ remote-control:
 #	stub-host: ns.example.com.
 
 # Forward zones
+# The root zone defaults to Cloudflare, Google, then OpenDNS in strict priority.
+# DHCP upstreams are ignored. An explicit root zone overrides those defaults.
 # Create entries like below, to make all queries for 'example.com' and
 # 'example.org' go to the given list of servers. These servers have to handle
 # recursion to other nameservers. List zero or more nameservers by hostname
 # or by ipaddress. Use an entry with name "." to forward all queries.
-# If you enable forward-first, it attempts without the forward if it fails.
+# HalfBSD prohibits recursive fallback; forward-first must remain no.
 # forward-zone:
 # 	name: "example.com"
 # 	forward-addr: 192.0.2.68

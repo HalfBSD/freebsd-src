@@ -123,6 +123,13 @@ struct infra_data {
  * Infra cache 
  */
 struct infra_cache {
+	/** Transport health of the six built-in forwarders, shared by workers. */
+	lock_basic_type forward_lock;
+	time_t forward_next_probe;
+	struct {
+		time_t retry_after, probe_until;
+		unsigned retry_interval, successes;
+	} forward_health[6];
 	/** The hash table with hosts */
 	struct slabhash* hosts;
 	/** TTL value for host information, in seconds */
@@ -140,6 +147,15 @@ struct infra_cache {
 	/** tree of addr_tree_node, with wait_limit_netblock_info information */
 	rbtree_type wait_limits_cookie_netblock;
 };
+
+extern const char* const infra_forward_addresses[6];
+int infra_forward_index(const struct sockaddr_storage* addr);
+unsigned infra_forward_mask(struct infra_cache* infra, time_t now);
+int infra_forward_due(struct infra_cache* infra, time_t now);
+void infra_forward_probe(struct infra_cache* infra,
+	const struct sockaddr_storage* addr, time_t now);
+void infra_forward_result(struct infra_cache* infra,
+	const struct sockaddr_storage* addr, time_t now, int success);
 
 /** ratelimit, unless overridden by domain_limits, 0 is off */
 extern int infra_dp_ratelimit;

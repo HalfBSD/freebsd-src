@@ -113,6 +113,8 @@ struct worker {
 	struct comm_point* cmd_com;
 	/** timer for statistics */
 	struct comm_timer* stat_timer;
+	/** Recovery of higher-priority built-in forwarding providers. */
+	struct comm_timer* forward_timer;
 	/** ratelimit for errors, time value */
 	time_t err_limit_time;
 	/** ratelimit for errors, packet count */

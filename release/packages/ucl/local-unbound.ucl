@@ -27,8 +27,7 @@ EOM
 ]
 
 deps {
-	# local-unbound uses resolvconf to update resolv.conf and to generate
-	# its forward.conf.
+	# local-unbound uses resolvconf to keep the libc resolver local.
 	"resolvconf" {
 		version = "${VERSION}"
 	},

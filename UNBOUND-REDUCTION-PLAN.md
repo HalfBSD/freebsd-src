@@ -142,3 +142,16 @@ requested removals. See the third-pass results appendix and handoff report.
 
 Configuration directories and service integration remain unchanged. No Capsicum,
 build switches, compatibility layers, commit, or push were introduced.
+# 2026-10-11 forwarding-policy update
+
+The built-in provider policy supersedes the earlier requirement to configure an
+explicit catch-all zone. Without an explicit root override, the resolver now
+installs Cloudflare, Google, then OpenDNS forwarding targets from its source.
+Provider selection uses transport health, bounded backoff and periodic recovery;
+DNS error answers and DNSSEC validation failures do not change provider priority.
+Generated upstream configuration and DHCP upstream selection are removed.
+Recursive fallback is prohibited in configuration, runtime control and missing
+forward-delegation handling. Configuration directories remain unchanged.
+
+See UNBOUND-DNS-PROVIDERS-HANDOFF.txt for implementation, measurements, tests,
+upgrade behavior and native-verification limits. This update accompanies the implementation commit, authorized on 2026-10-11.

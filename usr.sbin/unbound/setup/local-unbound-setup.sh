@@ -36,7 +36,6 @@ echo "destination: ${D}"
 #
 user=""
 unbound_conf=""
-forward_conf=""
 lanzones_conf=""
 control_conf=""
 control_socket=""
@@ -50,7 +49,6 @@ resolvconf_conf=""
 service=""
 start_unbound=""
 use_tls=""
-forwarders=""
 
 #
 # Global variables
@@ -60,19 +58,6 @@ bkdir=/var/backups
 bkext=$(date "+%Y%m%d.%H%M%S")
 
 #
-# Regular expressions
-#
-RE_octet="([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])"
-RE_ipv4="(${RE_octet}(\\.${RE_octet}){3})"
-RE_word="([0-9A-Fa-f]{1,4})"
-RE_ipv6="((${RE_word}:){1,}(:|${RE_word}?(:${RE_word})*)|::1)"
-RE_port="([1-9][0-9]{0,3}|[1-5][0-9]{4,4}|6([0-4][0-9]{3}|5([0-4][0-9]{2}|5([0-2][0-9]|3[0-5]))))"
-RE_dnsname="([0-9A-Za-z-]{1,}(\\.[0-9A-Za-z-]{1,})*\\.?)"
-RE_forward_addr="((${RE_ipv4}|${RE_ipv6})(@${RE_port})?)"
-RE_forward_name="(${RE_dnsname}(@${RE_port})?)"
-RE_forward_tls="(${RE_forward_addr}(#${RE_dnsname})?)"
-
-#
 # Set default values for unset configuration variables.
 #
 set_defaults() {
@@ -80,7 +65,6 @@ set_defaults() {
 	: ${workdir:=/var/unbound}
 	: ${confdir:=${workdir}/conf.d}
 	: ${unbound_conf:=${workdir}/unbound.conf}
-	: ${forward_conf:=${workdir}/forward.conf}
 	: ${lanzones_conf:=${workdir}/lan-zones.conf}
 	: ${control_conf:=${workdir}/control.conf}
 	: ${control_socket:=/var/run/local_unbound.ctl}
@@ -99,7 +83,7 @@ set_defaults() {
 #
 set_chrootdir() {
 	chrootdir="${workdir}"
-	for file in "${unbound_conf}" "${forward_conf}" \
+	for file in "${unbound_conf}" \
 	    "${lanzones_conf}" "${control_conf}" "${anchor}" ; do
 		if [ "${file#${workdir%/}/}" = "${file}" ] ; then
 			echo "warning: ${file} is outside ${workdir}" >&2
@@ -109,29 +93,6 @@ set_chrootdir() {
 	if [ -z "${chrootdir}" ] ; then
 		echo "warning: disabling chroot" >&2
 	fi
-}
-
-#
-# Scan through /etc/resolv.conf looking for uncommented nameserver
-# lines that don't point to localhost and return their values.
-#
-get_nameservers() {
-	while read line ; do
-		local bareline=${line%%\#*}
-		local key=${bareline%%[[:space:]]*}
-		local value=${bareline#*[[:space:]]}
-		case ${key} in
-		nameserver)
-			case ${value} in
-			127.0.0.1|::1|localhost|localhost.*)
-				;;
-			*)
-				echo "${value}"
-				;;
-			esac
-			;;
-		esac
-	done
 }
 
 #
@@ -185,44 +146,11 @@ do_not_edit() {
 }
 
 #
-# Generate resolvconf.conf so it updates forward.conf in addition to
-# resolv.conf.  Note "in addition to" rather than "instead of",
-# because we still want it to update the domain name and search path
-# if they change.  Setting name_servers to "127.0.0.1" ensures that
-# the libc resolver will try unbound first.
+# Keep DHCP DNS information away from the local resolver.
 #
 gen_resolvconf_conf() {
-	local style="$1"
 	do_not_edit
-	echo "libc=\"NO\""
-	if [ "${style}" = "dynamic" ] ; then
-		echo "unbound_conf=\"${forward_conf}\""
-		echo "unbound_pid=\"${pidfile}\""
-		echo "unbound_service=\"${service}\""
-		# resolvconf(8) likes to restart rather than reload
-		echo "unbound_restart=\"service ${service} reload\""
-	else
-		echo "# Static DNS configuration"
-	fi
-}
-
-#
-# Generate forward.conf
-#
-gen_forward_conf() {
-	do_not_edit
-	echo "forward-zone:"
-	echo "        name: ."
-	for forwarder ; do echo "${forwarder}" ; done |
-	if [ "${use_tls}" = "yes" ] ; then
-		echo "        forward-tls-upstream: yes"
-		sed -nE \
-		    -e "s/^${RE_forward_tls}\$/        forward-addr: \\1/p"
-	else
-		sed -nE \
-		    -e "s/^${RE_forward_addr}\$/        forward-addr: \\1/p" \
-		    -e "s/^${RE_forward_name}\$/        forward-host: \\1/p"
-	fi
+	echo 'libc="NO"'
 }
 
 #
@@ -259,20 +187,18 @@ gen_unbound_conf() {
 	echo "        pidfile: ${pidfile}"
 	echo "        auto-trust-anchor-file: ${anchor}"
 	if [ "${use_tls}" = "yes" ] ; then
+		echo "        tls-upstream: yes"
 		echo "        tls-cert-bundle: /etc/ssl/cert.pem"
 	fi
 	echo "        so-sndbuf: 0"
 	echo ""
-	if [ -f "${forward_conf}" ] ; then
-		echo "include: ${forward_conf}"
-	fi
-	if [ -f "${lanzones_conf}" ] ; then
+	if [ -f "${D}${lanzones_conf}" ] ; then
 		echo "include: ${lanzones_conf}"
 	fi
-	if [ -f "${control_conf}" ] ; then
+	if [ -f "${D}${control_conf}" ] ; then
 		echo "include: ${control_conf}"
 	fi
-	if [ -d "${confdir}" ] ; then
+	if [ -d "${D}${confdir}" ] ; then
 		echo "include: ${confdir}/*.conf"
 	fi
 }
@@ -321,13 +247,12 @@ replace() {
 #
 usage() {
 	exec >&2
-	echo "usage: $self [options] [forwarder ...]"
+	echo "usage: $self [options]"
 	echo "options:"
 	echo "    -n          do not start unbound"
 	echo "    -a path     full path to trust anchor file"
 	echo "    -C path     full path to additional configuration directory"
 	echo "    -c path     full path to unbound configuration file"
-	echo "    -f path     full path to forwarding configuration"
 	echo "    -O path     full path to remote control socket"
 	echo "    -o path     full path to remote control configuration"
 	echo "    -p path     full path to pid file"
@@ -348,7 +273,7 @@ main() {
 	#
 	# Parse and validate command-line options
 	#
-	while getopts "a:C:c:f:no:p:R:r:s:tu:w:" option ; do
+	while getopts "a:C:c:nO:o:p:R:r:s:tu:w:" option ; do
 		case $option in
 		a)
 			anchor="$OPTARG"
@@ -358,9 +283,6 @@ main() {
 			;;
 		c)
 			unbound_conf="$OPTARG"
-			;;
-		f)
-			forward_conf="$OPTARG"
 			;;
 		n)
 			start_unbound="no"
@@ -401,45 +323,7 @@ main() {
 	set_defaults
 
 	#
-	# Get the list of forwarders, either from the command line or
-	# from resolv.conf.
-	#
-	forwarders="$@"
-	case "${forwarders}" in
-	[Nn][Oo][Nn][Ee])
-		forwarders="none"
-		style=recursing
-		;;
-	"")
-		if [ -f "${D}${resolv_conf}" ] ; then
-			echo "Extracting forwarders from ${resolv_conf}."
-			forwarders=$(get_nameservers <"${D}${resolv_conf}")
-		fi
-		style=dynamic
-		;;
-	*)
-		style=static
-		;;
-	esac
-
-	#
-	# Generate forward.conf.
-	#
-	if [ -z "${forwarders}" ] ; then
-		echo -n "No forwarders found in ${resolv_conf##*/}, "
-		if [ -f "${forward_conf}" ] ; then
-			echo "using existing ${forward_conf##*/}."
-		else
-			echo "unbound will recurse."
-		fi
-	elif [ "${forwarders}" = "none" ] ; then
-		echo "Forwarding disabled, unbound will recurse."
-		backup "${forward_conf}"
-	else
-		local tmp_forward_conf=$(tmp "${forward_conf}")
-		gen_forward_conf ${forwarders} | unexpand >"${tmp_forward_conf}"
-		replace "${forward_conf}" "${tmp_forward_conf}"
-	fi
+	[ "$#" -eq 0 ] || usage
 
 	#
 	# Generate lan-zones.conf.
@@ -459,8 +343,39 @@ main() {
 	# Generate unbound.conf.
 	#
 	local tmp_unbound_conf=$(tmp "${unbound_conf}")
-	set_chrootdir
-	gen_unbound_conf | unexpand >"${tmp_unbound_conf}"
+	if [ -f "${D}${unbound_conf}" ] ; then
+		local legacy_tls=$(awk '
+		    /^[[:space:]]*include:/ {
+		        path = $2; gsub(/"/, "", path)
+		        if (path !~ /\/forward\.conf$/) next
+		        path = ENVIRON["DESTDIR"] path
+		        while ((getline line < path) > 0)
+		            if (line ~ /^[[:space:]]*forward-(tls|ssl)-upstream:[[:space:]]*yes/)
+		                tls = "yes"
+		        close(path)
+		    }
+		    END { print tls }
+		' "${D}${unbound_conf}")
+		# One-time migration: retain user settings, remove the legacy include.
+		# The obsolete file itself is left for the administrator to archive.
+		sed '/^[[:space:]]*include:[[:space:]]*"*[^[:space:]]*\/forward\.conf"*[[:space:]]*\(#.*\)\{0,1\}$/d' \
+		    "${D}${unbound_conf}" >"${tmp_unbound_conf}"
+		if [ "${legacy_tls}" = "yes" ] || [ "${use_tls}" = "yes" ] ; then
+			# Keep the former catch-all zone's authenticated TLS transport.
+			if ! sed -n '/^[[:space:]]*\(tls\|ssl\)-upstream:[[:space:]]*yes/p' \
+			    "${tmp_unbound_conf}" | grep -q . ; then
+				printf '\nserver:\n    tls-upstream: yes\n' >>"${tmp_unbound_conf}"
+			fi
+			if [ "${use_tls}" = "yes" ] &&
+			    ! sed -n '/^[[:space:]]*\(tls\|ssl\)-cert-bundle:/p' \
+			    "${tmp_unbound_conf}" | grep -q . ; then
+				printf '\nserver:\n    tls-cert-bundle: /etc/ssl/cert.pem\n' >>"${tmp_unbound_conf}"
+			fi
+		fi
+	else
+		set_chrootdir
+		gen_unbound_conf | unexpand >"${tmp_unbound_conf}"
+	fi
 	replace "${unbound_conf}" "${tmp_unbound_conf}"
 
 	#
@@ -470,7 +385,7 @@ main() {
 	# wouldn't stick.
 	#
 	if [ "${start_unbound}" = "no" ] ; then
-		# skip
+		: # skip
 	elif ! service "${service}" enabled ; then
 		echo "Please enable $service in rc.conf(5) and try again."
 		return 1
@@ -480,11 +395,10 @@ main() {
 	fi
 
 	#
-	# Rewrite resolvconf.conf so resolvconf updates forward.conf
-	# instead of resolv.conf.
+	# Keep the libc resolver pointed at the local DNS service.
 	#
 	local tmp_resolvconf_conf=$(tmp "${resolvconf_conf}")
-	gen_resolvconf_conf "${style}" | unexpand >"${tmp_resolvconf_conf}"
+	gen_resolvconf_conf | unexpand >"${tmp_resolvconf_conf}"
 	replace "${resolvconf_conf}" "${tmp_resolvconf_conf}"
 
 	#

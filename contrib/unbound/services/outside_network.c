@@ -2906,6 +2906,8 @@ serviced_udp_send(struct serviced_query* sq, sldns_buffer* buff)
 	int rtt, vs;
 	uint8_t edns_lame_known;
 	time_t now = *sq->outnet->now_secs;
+	if(sq->zonelen == 1 && sq->zone[0] == 0)
+		infra_forward_probe(sq->outnet->infra, &sq->addr, now);
 
 	if(!infra_host(sq->outnet->infra, &sq->addr, sq->addrlen, sq->zone,
 		sq->zonelen, now, &vs, &edns_lame_known, &rtt))
@@ -2990,6 +2992,11 @@ serviced_callbacks(struct serviced_query* sq, int error, struct comm_point* c,
 	int dobackup = (sq->cblist && sq->cblist->next); /* >1 cb*/
 	uint8_t *backup_p = NULL;
 	size_t backlen = 0;
+	if(sq->zonelen == 1 && sq->zone[0] == 0 &&
+		(error == NETEVENT_NOERROR || error == NETEVENT_TIMEOUT ||
+		 error == NETEVENT_CLOSED))
+		infra_forward_result(sq->outnet->infra, &sq->addr,
+			*sq->outnet->now_secs, error == NETEVENT_NOERROR);
 #ifdef UNBOUND_DEBUG
 	rbnode_type* rem =
 #else
@@ -3172,6 +3179,9 @@ serviced_tcp_send(struct serviced_query* sq, sldns_buffer* buff)
 {
 	int vs, rtt, timeout;
 	uint8_t edns_lame_known;
+	if(sq->zonelen == 1 && sq->zone[0] == 0)
+		infra_forward_probe(sq->outnet->infra, &sq->addr,
+			*sq->outnet->now_secs);
 	if(!infra_host(sq->outnet->infra, &sq->addr, sq->addrlen, sq->zone,
 		sq->zonelen, *sq->outnet->now_secs, &vs, &edns_lame_known,
 		&rtt))

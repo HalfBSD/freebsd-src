@@ -55,6 +55,8 @@ struct msgreply_entry;
  * For a domain name, the NS rrset, and the A and AAAA records for those.
  */
 struct delegpt {
+	/** Apply the fixed provider priority to this forwarding delegation. */
+	uint8_t builtin_forwarders;
 	/** the domain name of the delegation point. */
 	uint8_t* name;
 	/** length of the delegation point name */
@@ -445,7 +447,7 @@ int delegpt_add_ns_mlc(struct delegpt* dp, uint8_t* name, uint8_t lame,
  * @return false on error.
  */
 int delegpt_add_addr_mlc(struct delegpt* dp, struct sockaddr_storage* addr,
-	socklen_t addrlen, uint8_t bogus, uint8_t lame, char* tls_auth_name,
+	socklen_t addrlen, uint8_t bogus, uint8_t lame, const char* tls_auth_name,
 	int port);
 
 /**

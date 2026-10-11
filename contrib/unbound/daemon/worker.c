@@ -81,7 +81,6 @@
 #include "sldns/sbuffer.h"
 #include "sldns/wire2str.h"
 #include "util/shm_side/shm_main.h"
-#include "dnscrypt/dnscrypt.h"
 
 #ifdef HAVE_SYS_TYPES_H
 #  include <sys/types.h>
@@ -123,9 +122,6 @@ worker_mem_report(struct worker* ATTR_UNUSED(worker),
 	size_t total, front, back, mesh, msg, rrset, infra, ac, superac;
 	size_t me, iter, val, anch;
 	int i;
-#ifdef CLIENT_SUBNET
-	size_t subnet = 0;
-#endif /* CLIENT_SUBNET */
 	if(verbosity < VERB_ALGO)
 		return;
 	front = listen_get_mem(worker->front);
@@ -145,12 +141,6 @@ worker_mem_report(struct worker* ATTR_UNUSED(worker),
 		if(strcmp(worker->env.mesh->mods.mod[i]->name, "validator")==0)
 			val += (*worker->env.mesh->mods.mod[i]->get_mem)
 				(&worker->env, i);
-#ifdef CLIENT_SUBNET
-		else if(strcmp(worker->env.mesh->mods.mod[i]->name,
-			"subnetcache")==0)
-			subnet += (*worker->env.mesh->mods.mod[i]->get_mem)
-				(&worker->env, i);
-#endif /* CLIENT_SUBNET */
 		else	iter += (*worker->env.mesh->mods.mod[i]->get_mem)
 				(&worker->env, i);
 	}
@@ -170,17 +160,6 @@ worker_mem_report(struct worker* ATTR_UNUSED(worker),
 		me += serviced_get_mem(cur_serv);
 	}
 	total = front+back+mesh+msg+rrset+infra+iter+val+ac+superac+me;
-#ifdef CLIENT_SUBNET
-	total += subnet;
-	log_info("Memory conditions: %u front=%u back=%u mesh=%u msg=%u "
-		"rrset=%u infra=%u iter=%u val=%u subnet=%u anchors=%u "
-		"alloccache=%u globalalloccache=%u me=%u",
-		(unsigned)total, (unsigned)front, (unsigned)back,
-		(unsigned)mesh, (unsigned)msg, (unsigned)rrset, (unsigned)infra,
-		(unsigned)iter, (unsigned)val,
-		(unsigned)subnet, (unsigned)anch, (unsigned)ac,
-		(unsigned)superac, (unsigned)me);
-#else /* no CLIENT_SUBNET */
 	log_info("Memory conditions: %u front=%u back=%u mesh=%u msg=%u "
 		"rrset=%u infra=%u iter=%u val=%u anchors=%u "
 		"alloccache=%u globalalloccache=%u me=%u",
@@ -188,15 +167,11 @@ worker_mem_report(struct worker* ATTR_UNUSED(worker),
 		(unsigned)mesh, (unsigned)msg, (unsigned)rrset,
 		(unsigned)infra, (unsigned)iter, (unsigned)val, (unsigned)anch,
 		(unsigned)ac, (unsigned)superac, (unsigned)me);
-#endif /* CLIENT_SUBNET */
 	log_info("Total heap memory estimate: %u  total-alloc: %u  "
 		"total-free: %u", (unsigned)total,
 		(unsigned)unbound_mem_alloc, (unsigned)unbound_mem_freed);
 #else /* no UNBOUND_ALLOC_STATS */
 	size_t val = 0;
-#ifdef CLIENT_SUBNET
-	size_t subnet = 0;
-#endif /* CLIENT_SUBNET */
 	int i;
 	if(verbosity < VERB_QUERY)
 		return;
@@ -206,27 +181,12 @@ worker_mem_report(struct worker* ATTR_UNUSED(worker),
 		if(strcmp(worker->env.mesh->mods.mod[i]->name, "validator")==0)
 			val += (*worker->env.mesh->mods.mod[i]->get_mem)
 				(&worker->env, i);
-#ifdef CLIENT_SUBNET
-		else if(strcmp(worker->env.mesh->mods.mod[i]->name,
-			"subnetcache")==0)
-			subnet += (*worker->env.mesh->mods.mod[i]->get_mem)
-				(&worker->env, i);
-#endif /* CLIENT_SUBNET */
 	}
-#ifdef CLIENT_SUBNET
-	verbose(VERB_QUERY, "cache memory msg=%u rrset=%u infra=%u val=%u "
-		"subnet=%u",
-		(unsigned)slabhash_get_mem(worker->env.msg_cache),
-		(unsigned)slabhash_get_mem(&worker->env.rrset_cache->table),
-		(unsigned)infra_get_mem(worker->env.infra_cache),
-		(unsigned)val, (unsigned)subnet);
-#else /* no CLIENT_SUBNET */
 	verbose(VERB_QUERY, "cache memory msg=%u rrset=%u infra=%u val=%u",
 		(unsigned)slabhash_get_mem(worker->env.msg_cache),
 		(unsigned)slabhash_get_mem(&worker->env.rrset_cache->table),
 		(unsigned)infra_get_mem(worker->env.infra_cache),
 		(unsigned)val);
-#endif /* CLIENT_SUBNET */
 #endif /* UNBOUND_ALLOC_STATS */
 }
 
@@ -792,10 +752,6 @@ answer_from_cache(struct worker* worker, struct query_info* qinfo,
 			 * as we know that recursion is currently failing. */
 			(!worker->env.cfg->serve_expired_client_timeout ||
 			 timenow < rep->serve_expired_norec_ttl)
-#ifdef USE_CACHEDB
-			&& !(worker->env.cachedb_enabled &&
-			  worker->env.cfg->cachedb_check_when_serve_expired)
-#endif
 			) {
 				if(!reply_info_can_answer_expired(rep, timenow))
 					return 0;
@@ -954,9 +910,8 @@ bail_out:
 static void
 reply_and_prefetch(struct worker* worker, struct query_info* qinfo,
 	uint16_t flags, struct comm_reply* repinfo, time_t leeway, int noreply,
-	int rpz_passthru, struct edns_option* opt_list)
+	int rpz_passthru)
 {
-	(void)opt_list;
 	/* first send answer to client to keep its latency
 	 * as small as a cachereply */
 	if(!noreply) {
@@ -968,24 +923,12 @@ reply_and_prefetch(struct worker* worker, struct query_info* qinfo,
 		comm_point_send_reply(repinfo);
 	}
 	server_stats_prefetch(&worker->stats, worker);
-#ifdef CLIENT_SUBNET
-	/* Check if the subnet module is enabled. In that case pass over the
-	 * comm_reply information for ECS generation later. The mesh states are
-	 * unique when subnet is enabled. */
-	if(modstack_find(&worker->env.mesh->mods, "subnetcache") != -1
-		&& worker->env.unique_mesh) {
-		mesh_new_prefetch(worker->env.mesh, qinfo, flags, leeway +
-			PREFETCH_EXPIRY_ADD, rpz_passthru,
-			&repinfo->client_addr, opt_list);
-		return;
-	}
-#endif
 	/* create the prefetch in the mesh as a normal lookup without
 	 * client addrs waiting, which has the cache blacklisted (to bypass
 	 * the cache and go to the network for the data). */
 	/* this (potentially) runs the mesh for the new query */
 	mesh_new_prefetch(worker->env.mesh, qinfo, flags, leeway +
-		PREFETCH_EXPIRY_ADD, rpz_passthru, NULL, NULL);
+		PREFETCH_EXPIRY_ADD, rpz_passthru);
 }
 
 /**
@@ -1476,7 +1419,6 @@ worker_handle_request(struct comm_point* c, void* arg, int error,
 	struct lruhash_entry* e;
 	struct query_info qinfo;
 	struct edns_data edns;
-	struct edns_option* original_edns_list = NULL;
 	enum acl_access acl;
 	struct acl_addr* acladdr;
 	int pre_edns_ip_ratelimit = 1;
@@ -1517,64 +1459,6 @@ worker_handle_request(struct comm_point* c, void* arg, int error,
 		}
 	}
 
-#ifdef USE_DNSCRYPT
-	repinfo->max_udp_size = worker->daemon->cfg->max_udp_size;
-	if(!dnsc_handle_curved_request(worker->daemon->dnscenv, repinfo)) {
-		worker->stats.num_query_dnscrypt_crypted_malformed++;
-		return 0;
-	}
-	if(c->dnscrypt && !repinfo->is_dnscrypted) {
-		char buf[LDNS_MAX_DOMAINLEN];
-		/* Check if this is unencrypted and asking for certs */
-		worker_check_request(c->buffer, worker, &check_result);
-		if(check_result.value != 0) {
-			verbose(VERB_ALGO,
-				"dnscrypt: worker check request: bad query.");
-			log_addr(VERB_CLIENT,"from",&repinfo->client_addr,
-				repinfo->client_addrlen);
-			if(check_result.value != -1) {
-				query_error(c->buffer, check_result.value, 0);
-				return 1;
-			}
-			comm_point_drop_reply(repinfo);
-			return 0;
-		}
-		if(!query_info_parse(&qinfo, c->buffer)) {
-			verbose(VERB_ALGO,
-				"dnscrypt: worker parse request: formerror.");
-			log_addr(VERB_CLIENT, "from", &repinfo->client_addr,
-				repinfo->client_addrlen);
-			if(worker_err_ratelimit(worker, LDNS_RCODE_FORMERR) == -1) {
-				comm_point_drop_reply(repinfo);
-				return 0;
-			}
-			query_error(c->buffer, LDNS_RCODE_FORMERR, 0);
-			return 1;
-		}
-		dname_str(qinfo.qname, buf);
-		if(!(qinfo.qtype == LDNS_RR_TYPE_TXT &&
-			strcasecmp(buf,
-			worker->daemon->dnscenv->provider_name) == 0)) {
-			verbose(VERB_ALGO,
-				"dnscrypt: not TXT \"%s\". Received: %s \"%s\"",
-				worker->daemon->dnscenv->provider_name,
-				sldns_rr_descript(qinfo.qtype)->_name,
-				buf);
-			if(worker_err_ratelimit(worker, LDNS_RCODE_SERVFAIL) == -1) {
-				comm_point_drop_reply(repinfo);
-				return 0;
-			}
-			query_error(c->buffer, LDNS_RCODE_SERVFAIL,
-				qinfo.qname_len);
-			worker->stats.num_query_dnscrypt_cleartext++;
-			return 1;
-		}
-		worker->stats.num_query_dnscrypt_cert++;
-		sldns_buffer_rewind(c->buffer);
-	} else if(c->dnscrypt && repinfo->is_dnscrypted) {
-		worker->stats.num_query_dnscrypt_crypted++;
-	}
-#endif
 	/* Check deny/refuse ACLs */
 	if(repinfo->is_proxied) {
 		if((ret=deny_refuse_all(c, &acl, worker, repinfo, &acladdr,
@@ -1941,11 +1825,6 @@ worker_handle_request(struct comm_point* c, void* arg, int error,
 		cinfo = &cinfo_tmp;
 	}
 
-	/* Keep the original edns list around. The pointer could change if there is
-	 * a cached answer (through the inplace callback function there).
-	 * No need to actually copy the contents as they shouldn't change.
-	 * Used while prefetching and subnet is enabled. */
-	original_edns_list = edns.opt_list_in;
 lookup_cache:
 	/* Lookup the cache.  In case we chase an intermediate CNAME chain
 	 * this is a two-pass operation, and lookup_qinfo is different for
@@ -1982,8 +1861,7 @@ lookup_cache:
 						sldns_buffer_read_u16_at(c->buffer, 2),
 						repinfo, leeway,
 						(partial_rep || need_drop),
-						rpz_passthru,
-						original_edns_list);
+						rpz_passthru);
 					if(!partial_rep) {
 						rc = 0;
 						regional_free_all(worker->scratchpad);
@@ -2089,11 +1967,6 @@ send_reply_rc:
 				c->type, c->ssl);
 		}
 	}
-#ifdef USE_DNSCRYPT
-	if(!dnsc_handle_uncurved_request(repinfo)) {
-		return 0;
-	}
-#endif
 	return rc;
 }
 
@@ -2296,13 +2169,8 @@ worker_init(struct worker* worker, struct config_file *cfg,
 		cfg->do_tcp_keepalive
 			? cfg->tcp_keepalive_timeout
 			: cfg->tcp_idle_timeout,
-		cfg->harden_large_queries, cfg->http_max_streams,
-		cfg->http_endpoint, cfg->http_notls_downstream,
 		worker->daemon->tcl, worker->daemon->listen_dot_sslctx,
-		worker->daemon->listen_doh_sslctx,
-		worker->daemon->listen_quic_sslctx,
-		worker->daemon->doq_table, worker->env.rnd,
-		cfg, worker_handle_request, worker);
+		worker_handle_request, worker);
 	if(!worker->front) {
 		log_err("could not create listening sockets");
 		worker_delete(worker);
@@ -2596,21 +2464,3 @@ int codeline_cmp(const void* ATTR_UNUSED(a), const void* ATTR_UNUSED(b))
 	log_assert(0);
 	return 0;
 }
-
-
-
-#ifdef HAVE_NGTCP2
-void doq_client_event_cb(int ATTR_UNUSED(fd), short ATTR_UNUSED(ev),
-	void* ATTR_UNUSED(arg))
-{
-	log_assert(0);
-}
-#endif
-
-#ifdef HAVE_NGTCP2
-void doq_client_timer_cb(int ATTR_UNUSED(fd), short ATTR_UNUSED(ev),
-	void* ATTR_UNUSED(arg))
-{
-	log_assert(0);
-}
-#endif

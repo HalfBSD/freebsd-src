@@ -263,15 +263,6 @@ tls-ciphers{COLON}		{ YDVAR(1, VAR_TLS_CIPHERS) }
 tls-ciphersuites{COLON}		{ YDVAR(1, VAR_TLS_CIPHERSUITES) }
 tls-use-sni{COLON}		{ YDVAR(1, VAR_TLS_USE_SNI) }
 tls-protocols{COLON}		{ YDVAR(1, VAR_TLS_PROTOCOLS) }
-https-port{COLON}		{ YDVAR(1, VAR_HTTPS_PORT) }
-http-endpoint{COLON}		{ YDVAR(1, VAR_HTTP_ENDPOINT) }
-http-max-streams{COLON}		{ YDVAR(1, VAR_HTTP_MAX_STREAMS) }
-http-query-buffer-size{COLON}	{ YDVAR(1, VAR_HTTP_QUERY_BUFFER_SIZE) }
-http-response-buffer-size{COLON} { YDVAR(1, VAR_HTTP_RESPONSE_BUFFER_SIZE) }
-http-nodelay{COLON}		{ YDVAR(1, VAR_HTTP_NODELAY) }
-http-notls-downstream{COLON}	{ YDVAR(1, VAR_HTTP_NOTLS_DOWNSTREAM) }
-quic-port{COLON}		{ YDVAR(1, VAR_QUIC_PORT) }
-quic-size{COLON}		{ YDVAR(1, VAR_QUIC_SIZE) }
 use-systemd{COLON}		{ YDVAR(1, VAR_USE_SYSTEMD) }
 do-daemonize{COLON}		{ YDVAR(1, VAR_DO_DAEMONIZE) }
 interface{COLON}		{ YDVAR(1, VAR_INTERFACE) }
@@ -373,16 +364,6 @@ do-not-query-address{COLON}	{ YDVAR(1, VAR_DO_NOT_QUERY_ADDRESS) }
 do-not-query-localhost{COLON}	{ YDVAR(1, VAR_DO_NOT_QUERY_LOCALHOST) }
 access-control{COLON}		{ YDVAR(2, VAR_ACCESS_CONTROL) }
 interface-action{COLON}		{ YDVAR(2, VAR_INTERFACE_ACTION) }
-send-client-subnet{COLON}	{ YDVAR(1, VAR_SEND_CLIENT_SUBNET) }
-client-subnet-zone{COLON}	{ YDVAR(1, VAR_CLIENT_SUBNET_ZONE) }
-client-subnet-always-forward{COLON} { YDVAR(1, VAR_CLIENT_SUBNET_ALWAYS_FORWARD) }
-client-subnet-opcode{COLON}	{ YDVAR(1, VAR_CLIENT_SUBNET_OPCODE) }
-max-client-subnet-ipv4{COLON}	{ YDVAR(1, VAR_MAX_CLIENT_SUBNET_IPV4) }
-max-client-subnet-ipv6{COLON}	{ YDVAR(1, VAR_MAX_CLIENT_SUBNET_IPV6) }
-min-client-subnet-ipv4{COLON}	{ YDVAR(1, VAR_MIN_CLIENT_SUBNET_IPV4) }
-min-client-subnet-ipv6{COLON}	{ YDVAR(1, VAR_MIN_CLIENT_SUBNET_IPV6) }
-max-ecs-tree-size-ipv4{COLON}	{ YDVAR(1, VAR_MAX_ECS_TREE_SIZE_IPV4) }
-max-ecs-tree-size-ipv6{COLON}	{ YDVAR(1, VAR_MAX_ECS_TREE_SIZE_IPV6) }
 hide-identity{COLON}		{ YDVAR(1, VAR_HIDE_IDENTITY) }
 hide-version{COLON}		{ YDVAR(1, VAR_HIDE_VERSION) }
 hide-trustanchor{COLON}		{ YDVAR(1, VAR_HIDE_TRUSTANCHOR) }
@@ -509,19 +490,6 @@ fast-server-permil{COLON}	{ YDVAR(1, VAR_FAST_SERVER_PERMIL) }
 response-ip-tag{COLON}		{ YDVAR(2, VAR_RESPONSE_IP_TAG) }
 response-ip{COLON}		{ YDVAR(2, VAR_RESPONSE_IP) }
 response-ip-data{COLON}		{ YDVAR(2, VAR_RESPONSE_IP_DATA) }
-dnscrypt{COLON}			{ YDVAR(0, VAR_DNSCRYPT) }
-dnscrypt-enable{COLON}		{ YDVAR(1, VAR_DNSCRYPT_ENABLE) }
-dnscrypt-port{COLON}		{ YDVAR(1, VAR_DNSCRYPT_PORT) }
-dnscrypt-provider{COLON}	{ YDVAR(1, VAR_DNSCRYPT_PROVIDER) }
-dnscrypt-secret-key{COLON}	{ YDVAR(1, VAR_DNSCRYPT_SECRET_KEY) }
-dnscrypt-provider-cert{COLON}	{ YDVAR(1, VAR_DNSCRYPT_PROVIDER_CERT) }
-dnscrypt-provider-cert-rotated{COLON}	{ YDVAR(1, VAR_DNSCRYPT_PROVIDER_CERT_ROTATED) }
-dnscrypt-shared-secret-cache-size{COLON}	{
-		YDVAR(1, VAR_DNSCRYPT_SHARED_SECRET_CACHE_SIZE) }
-dnscrypt-shared-secret-cache-slabs{COLON}	{
-		YDVAR(1, VAR_DNSCRYPT_SHARED_SECRET_CACHE_SLABS) }
-dnscrypt-nonce-cache-size{COLON}	{ YDVAR(1, VAR_DNSCRYPT_NONCE_CACHE_SIZE) }
-dnscrypt-nonce-cache-slabs{COLON}	{ YDVAR(1, VAR_DNSCRYPT_NONCE_CACHE_SLABS) }
 pad-responses{COLON}		{ YDVAR(1, VAR_PAD_RESPONSES) }
 pad-responses-block-size{COLON}	{ YDVAR(1, VAR_PAD_RESPONSES_BLOCK_SIZE) }
 pad-queries{COLON}		{ YDVAR(1, VAR_PAD_QUERIES) }
@@ -533,28 +501,6 @@ ipsecmod-max-ttl{COLON}		{ YDVAR(1, VAR_IPSECMOD_MAX_TTL) }
 ipsecmod-whitelist{COLON}	{ YDVAR(1, VAR_IPSECMOD_WHITELIST) }
 ipsecmod-allow{COLON}		{ YDVAR(1, VAR_IPSECMOD_WHITELIST) }
 ipsecmod-strict{COLON}		{ YDVAR(1, VAR_IPSECMOD_STRICT) }
-cachedb{COLON}			{ YDVAR(0, VAR_CACHEDB) }
-backend{COLON}			{ YDVAR(1, VAR_CACHEDB_BACKEND) }
-secret-seed{COLON}		{ YDVAR(1, VAR_CACHEDB_SECRETSEED) }
-cachedb-no-store{COLON}		{ YDVAR(1, VAR_CACHEDB_NO_STORE) }
-cachedb-check-when-serve-expired{COLON}		{ YDVAR(1, VAR_CACHEDB_CHECK_WHEN_SERVE_EXPIRED) }
-redis-server-host{COLON}		{ YDVAR(1, VAR_CACHEDB_REDISHOST) }
-redis-replica-server-host{COLON}	{ YDVAR(1, VAR_CACHEDB_REDISREPLICAHOST) }
-redis-server-port{COLON}		{ YDVAR(1, VAR_CACHEDB_REDISPORT) }
-redis-replica-server-port{COLON}	{ YDVAR(1, VAR_CACHEDB_REDISREPLICAPORT) }
-redis-server-path{COLON}		{ YDVAR(1, VAR_CACHEDB_REDISPATH) }
-redis-replica-server-path{COLON}	{ YDVAR(1, VAR_CACHEDB_REDISREPLICAPATH) }
-redis-server-password{COLON}		{ YDVAR(1, VAR_CACHEDB_REDISPASSWORD) }
-redis-replica-server-password{COLON}	{ YDVAR(1, VAR_CACHEDB_REDISREPLICAPASSWORD) }
-redis-timeout{COLON}			{ YDVAR(1, VAR_CACHEDB_REDISTIMEOUT) }
-redis-replica-timeout{COLON}		{ YDVAR(1, VAR_CACHEDB_REDISREPLICATIMEOUT) }
-redis-command-timeout{COLON}	{ YDVAR(1, VAR_CACHEDB_REDISCOMMANDTIMEOUT) }
-redis-replica-command-timeout{COLON}	{ YDVAR(1, VAR_CACHEDB_REDISREPLICACOMMANDTIMEOUT) }
-redis-connect-timeout{COLON}	{ YDVAR(1, VAR_CACHEDB_REDISCONNECTTIMEOUT) }
-redis-replica-connect-timeout{COLON}	{ YDVAR(1, VAR_CACHEDB_REDISREPLICACONNECTTIMEOUT) }
-redis-expire-records{COLON}	{ YDVAR(1, VAR_CACHEDB_REDISEXPIRERECORDS) }
-redis-logical-db{COLON}			{ YDVAR(1, VAR_CACHEDB_REDISLOGICALDB) }
-redis-replica-logical-db{COLON}		{ YDVAR(1, VAR_CACHEDB_REDISREPLICALOGICALDB) }
 ipset{COLON}			{ YDVAR(0, VAR_IPSET) }
 name-v4{COLON}			{ YDVAR(1, VAR_IPSET_NAME_V4) }
 name-v6{COLON}			{ YDVAR(1, VAR_IPSET_NAME_V6) }

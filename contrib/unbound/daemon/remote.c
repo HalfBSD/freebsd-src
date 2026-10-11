@@ -98,13 +98,6 @@
 #include "util/timeval_func.h"
 #include "util/tcp_conn_limit.h"
 #include "util/edns.h"
-#ifdef USE_CACHEDB
-#include "cachedb/cachedb.h"
-#endif
-#ifdef CLIENT_SUBNET
-#include "edns-subnet/subnetmod.h"
-#include "edns-subnet/addrtree.h"
-#endif
 
 #ifdef HAVE_SYS_TYPES_H
 #  include <sys/types.h>
@@ -840,16 +833,6 @@ print_stats(RES* ssl, const char* nm, struct ub_stats_info* s)
 		(unsigned long)s->svr.ans_expired)) return 0;
 	if(!ssl_printf(ssl, "%s.num.recursivereplies"SQ"%lu\n", nm,
 		(unsigned long)s->mesh_replies_sent)) return 0;
-#ifdef USE_DNSCRYPT
-	if(!ssl_printf(ssl, "%s.num.dnscrypt.crypted"SQ"%lu\n", nm,
-		(unsigned long)s->svr.num_query_dnscrypt_crypted)) return 0;
-	if(!ssl_printf(ssl, "%s.num.dnscrypt.cert"SQ"%lu\n", nm,
-		(unsigned long)s->svr.num_query_dnscrypt_cert)) return 0;
-	if(!ssl_printf(ssl, "%s.num.dnscrypt.cleartext"SQ"%lu\n", nm,
-		(unsigned long)s->svr.num_query_dnscrypt_cleartext)) return 0;
-	if(!ssl_printf(ssl, "%s.num.dnscrypt.malformed"SQ"%lu\n", nm,
-		(unsigned long)s->svr.num_query_dnscrypt_crypted_malformed)) return 0;
-#endif
 	if(!ssl_printf(ssl, "%s.num.dns_error_reports"SQ"%lu\n", nm,
 		(unsigned long)s->svr.num_dns_error_reports)) return 0;
 	if(!ssl_printf(ssl, "%s.requestlist.avg"SQ"%g\n", nm,
@@ -914,34 +897,17 @@ print_mem(RES* ssl, struct worker* worker, struct daemon* daemon,
 	struct ub_stats_info* s)
 {
 	size_t msg, rrset, val, iter, respip;
-#ifdef CLIENT_SUBNET
-	size_t subnet = 0;
-#endif /* CLIENT_SUBNET */
 #ifdef USE_IPSECMOD
 	size_t ipsecmod = 0;
 #endif /* USE_IPSECMOD */
-#ifdef USE_DNSCRYPT
-	size_t dnscrypt_shared_secret = 0;
-	size_t dnscrypt_nonce = 0;
-#endif /* USE_DNSCRYPT */
 	msg = slabhash_get_mem(daemon->env->msg_cache);
 	rrset = slabhash_get_mem(&daemon->env->rrset_cache->table);
 	val = mod_get_mem(&worker->env, "validator");
 	iter = mod_get_mem(&worker->env, "iterator");
 	respip = mod_get_mem(&worker->env, "respip");
-#ifdef CLIENT_SUBNET
-	subnet = mod_get_mem(&worker->env, "subnetcache");
-#endif /* CLIENT_SUBNET */
 #ifdef USE_IPSECMOD
 	ipsecmod = mod_get_mem(&worker->env, "ipsecmod");
 #endif /* USE_IPSECMOD */
-#ifdef USE_DNSCRYPT
-	if(daemon->dnscenv) {
-		dnscrypt_shared_secret = slabhash_get_mem(
-			daemon->dnscenv->shared_secrets_cache);
-		dnscrypt_nonce = slabhash_get_mem(daemon->dnscenv->nonces_cache);
-	}
-#endif /* USE_DNSCRYPT */
 
 	if(!print_longnum(ssl, "mem.cache.rrset"SQ, rrset))
 		return 0;
@@ -953,35 +919,13 @@ print_mem(RES* ssl, struct worker* worker, struct daemon* daemon,
 		return 0;
 	if(!print_longnum(ssl, "mem.mod.respip"SQ, respip))
 		return 0;
-#ifdef CLIENT_SUBNET
-	if(!print_longnum(ssl, "mem.mod.subnet"SQ, subnet))
-		return 0;
-#endif /* CLIENT_SUBNET */
 #ifdef USE_IPSECMOD
 	if(!print_longnum(ssl, "mem.mod.ipsecmod"SQ, ipsecmod))
 		return 0;
 #endif /* USE_IPSECMOD */
-#ifdef USE_DNSCRYPT
-	if(!print_longnum(ssl, "mem.cache.dnscrypt_shared_secret"SQ,
-			dnscrypt_shared_secret))
-		return 0;
-	if(!print_longnum(ssl, "mem.cache.dnscrypt_nonce"SQ,
-			dnscrypt_nonce))
-		return 0;
-#endif /* USE_DNSCRYPT */
 	if(!print_longnum(ssl, "mem.streamwait"SQ,
 		(size_t)s->svr.mem_stream_wait))
 		return 0;
-	if(!print_longnum(ssl, "mem.http.query_buffer"SQ,
-		(size_t)s->svr.mem_http2_query_buffer))
-		return 0;
-	if(!print_longnum(ssl, "mem.http.response_buffer"SQ,
-		(size_t)s->svr.mem_http2_response_buffer))
-		return 0;
-#ifdef HAVE_NGTCP2
-	if(!print_longnum(ssl, "mem.quic"SQ, (size_t)s->svr.mem_quic))
-		return 0;
-#endif /* HAVE_NGTCP2 */
 	return 1;
 }
 
@@ -1110,12 +1054,6 @@ print_ext(RES* ssl, struct ub_stats_info* s, int inhibit_zero)
 		(unsigned long)s->svr.qtls_resume)) return 0;
 	if(!ssl_printf(ssl, "num.query.ipv6"SQ"%lu\n",
 		(unsigned long)s->svr.qipv6)) return 0;
-	if(!ssl_printf(ssl, "num.query.https"SQ"%lu\n",
-		(unsigned long)s->svr.qhttps)) return 0;
-#ifdef HAVE_NGTCP2
-	if(!ssl_printf(ssl, "num.query.quic"SQ"%lu\n",
-		(unsigned long)s->svr.qquic)) return 0;
-#endif /* HAVE_NGTCP2 */
 	/* flags */
 	if(!ssl_printf(ssl, "num.query.flags.QR"SQ"%lu\n",
 		(unsigned long)s->svr.qbit_QR)) return 0;
@@ -1201,30 +1139,10 @@ print_ext(RES* ssl, struct ub_stats_info* s, int inhibit_zero)
 			rpz_action_to_string(i),
 			(unsigned long)s->svr.rpz_action[i])) return 0;
 	}
-#ifdef USE_DNSCRYPT
-	if(!ssl_printf(ssl, "dnscrypt_shared_secret.cache.count"SQ"%u\n",
-		(unsigned)s->svr.shared_secret_cache_count)) return 0;
-	if(!ssl_printf(ssl, "dnscrypt_nonce.cache.count"SQ"%u\n",
-		(unsigned)s->svr.nonce_cache_count)) return 0;
-	if(!ssl_printf(ssl, "num.query.dnscrypt.shared_secret.cachemiss"SQ"%lu\n",
-		(unsigned long)s->svr.num_query_dnscrypt_secret_missed_cache)) return 0;
-	if(!ssl_printf(ssl, "num.query.dnscrypt.replay"SQ"%lu\n",
-		(unsigned long)s->svr.num_query_dnscrypt_replay)) return 0;
-#endif /* USE_DNSCRYPT */
 	if(!ssl_printf(ssl, "num.query.authzone.up"SQ"%lu\n",
 		(unsigned long)s->svr.num_query_authzone_up)) return 0;
 	if(!ssl_printf(ssl, "num.query.authzone.down"SQ"%lu\n",
 		(unsigned long)s->svr.num_query_authzone_down)) return 0;
-#ifdef CLIENT_SUBNET
-	if(!ssl_printf(ssl, "num.query.subnet"SQ"%lu\n",
-		(unsigned long)s->svr.num_query_subnet)) return 0;
-	if(!ssl_printf(ssl, "num.query.subnet_cache"SQ"%lu\n",
-		(unsigned long)s->svr.num_query_subnet_cache)) return 0;
-#endif /* CLIENT_SUBNET */
-#ifdef USE_CACHEDB
-	if(!ssl_printf(ssl, "num.query.cachedb"SQ"%lu\n",
-		(unsigned long)s->svr.num_query_cachedb)) return 0;
-#endif /* USE_CACHEDB */
 	return 1;
 }
 
@@ -1772,158 +1690,6 @@ struct cache_lookup_info {
 	size_t nmlen;
 };
 
-#ifdef CLIENT_SUBNET
-static void addrtree_traverse_visit_node(struct addrnode* n, addrkey_t* addr,
-	size_t addr_size, int is_ipv6, time_t now, struct query_info* q,
-	void (*func)(struct query_info*, struct reply_info*, addrkey_t*,
-		size_t, int, addrlen_t, int, time_t, void*), void* arg);
-
-/** Lookup in subnet addrtree */
-static void
-cache_lookup_subnet_addrnode(struct query_info* q, struct reply_info* d,
-	addrkey_t* addr, size_t addr_size, int is_ipv6, addrlen_t scope,
-	int only_match_scope_zero, time_t ttl, void* arg)
-{
-	size_t i;
-	char s[65535], tp[32], cl[32], rc[32], fg[32], astr[64];
-	struct cache_lookup_info* inf = (struct cache_lookup_info*)arg;
-	if(is_ipv6) {
-		if(addr_size < 16 || inet_ntop(AF_INET6, addr, astr,
-			sizeof(astr)) == NULL)
-			snprintf(astr, sizeof(astr), "(inet6ntoperror)");
-	} else {
-		if(addr_size < 4 || inet_ntop(AF_INET, addr, astr,
-			sizeof(astr)) == NULL)
-			snprintf(astr, sizeof(astr), "(inetntoperror)");
-	}
-	sldns_wire2str_dname_buf(q->qname, q->qname_len, s, sizeof(s));
-	sldns_wire2str_type_buf(q->qtype, tp, sizeof(tp));
-	sldns_wire2str_class_buf(q->qclass, cl, sizeof(cl));
-	sldns_wire2str_rcode_buf(FLAGS_GET_RCODE(d->flags),
-		rc, sizeof(rc));
-	snprintf(fg, sizeof(fg), "%s%s%s%s%s%s%s%s",
-		((d->flags&BIT_QR)?" QR":""),
-		((d->flags&BIT_AA)?" AA":""),
-		((d->flags&BIT_TC)?" TC":""),
-		((d->flags&BIT_RD)?" RD":""),
-		((d->flags&BIT_RA)?" RA":""),
-		((d->flags&BIT_Z)?" Z":""),
-		((d->flags&BIT_AD)?" AD":""),
-		((d->flags&BIT_CD)?" CD":""));
-	if(!rrset_array_lock(d->ref, d->rrset_count,
-		*inf->worker->env.now)) {
-		/* rrsets have timed out or do not exist */
-		return;
-	}
-	if(!ssl_printf(inf->ssl, "subnet %s/%d%s %s %s %s " ARG_LL "d\n", astr,
-		(int)scope, (only_match_scope_zero?" scope_zero":""),
-		s, cl, tp, (long long)(ttl-*inf->worker->env.now))) {
-		rrset_array_unlock(d->ref, d->rrset_count);
-		return;
-	}
-	ssl_printf(inf->ssl,
-		"subnet msg %s %s %s%s %s %d %d " ARG_LL "d %d %u %u %u %d %s\n",
-		s, cl, tp, fg, rc,
-		(int)d->flags, (int)d->qdcount,
-		(long long)(d->ttl-*inf->worker->env.now),
-		(int)d->security,
-		(unsigned)d->an_numrrsets,
-		(unsigned)d->ns_numrrsets,
-		(unsigned)d->ar_numrrsets,
-		(int)d->reason_bogus,
-		d->reason_bogus_str?d->reason_bogus_str:"");
-	for(i=0; i<d->rrset_count; i++) {
-		struct ub_packed_rrset_key* rk = d->rrsets[i];
-		struct packed_rrset_data* rd = (struct packed_rrset_data*)rk->entry.data;
-		size_t j;
-		for(j=0; j<rd->count + rd->rrsig_count; j++) {
-			if(!packed_rr_to_string(rk, j,
-				*inf->worker->env.now, s, sizeof(s))) {
-				ssl_printf(inf->ssl, "BADRR\n");
-			} else {
-				ssl_printf(inf->ssl, "%s", s);
-			}
-		}
-	}
-	rrset_array_unlock(d->ref, d->rrset_count);
-	ssl_printf(inf->ssl, "\n");
-}
-
-/** Visit an edge in subnet addrtree traverse */
-static void
-addrtree_traverse_visit_edge(struct addredge* edge, addrkey_t* addr,
-	size_t addr_size, int is_ipv6, time_t now, struct query_info* q,
-	void (*func)(struct query_info*, struct reply_info*, addrkey_t*,
-		size_t, int, addrlen_t, int, time_t, void*), void* arg)
-{
-	size_t n;
-	addrlen_t addrlen;
-	if(!edge || !edge->node)
-		return;
-	addrlen = edge->len;
-	/* ceil() */
-	n = (size_t)((addrlen / KEYWIDTH) + ((addrlen % KEYWIDTH != 0)?1:0));
-	if(n > addr_size)
-		n = addr_size;
-	memset(addr, 0, addr_size);
-	memcpy(addr, edge->str, n);
-	addrtree_traverse_visit_node(edge->node, addr, addr_size, is_ipv6,
-		now, q, func, arg);
-}
-
-/** Visit a node in subnet addrtree traverse */
-static void
-addrtree_traverse_visit_node(struct addrnode* n, addrkey_t* addr,
-	size_t addr_size, int is_ipv6, time_t now, struct query_info* q,
-	void (*func)(struct query_info*, struct reply_info*, addrkey_t*,
-		size_t, int, addrlen_t, int, time_t, void*), void* arg)
-{
-	/* If this node has data, and not expired. */
-	if(n->elem && n->ttl >= now) {
-		func(q, (struct reply_info*)n->elem, addr, addr_size, is_ipv6,
-			n->scope, n->only_match_scope_zero, n->ttl, arg);
-	}
-	/* Traverse edges. */
-	addrtree_traverse_visit_edge(n->edge[0], addr, addr_size, is_ipv6,
-		now, q, func, arg);
-	addrtree_traverse_visit_edge(n->edge[1], addr, addr_size, is_ipv6,
-		now, q, func, arg);
-}
-
-/** Traverse subnet addrtree */
-static void
-addrtree_traverse(struct addrtree* tree, int is_ipv6, time_t now,
-	struct query_info* q,
-	void (*func)(struct query_info*, struct reply_info*, addrkey_t*,
-		size_t, int, addrlen_t, int, time_t, void*), void* arg)
-{
-	uint8_t addr[16]; /* Large enough for IPv4 and IPv6. */
-	memset(addr, 0, sizeof(addr));
-	addrtree_traverse_visit_node(tree->root, (addrkey_t*)addr,
-		sizeof(addr), is_ipv6, now, q, func, arg);
-}
-
-/** Lookup cache_lookup for subnet content. */
-static void
-cache_lookup_subnet_msg(struct lruhash_entry* e, void* arg)
-{
-	struct cache_lookup_info* inf = (struct cache_lookup_info*)arg;
-	struct msgreply_entry *k = (struct msgreply_entry*)e->key;
-	struct subnet_msg_cache_data* d =
-		(struct subnet_msg_cache_data*)e->data;
-	if(!dname_subdomain_c(k->key.qname, inf->nm))
-		return;
-
-	if(d->tree4) {
-		addrtree_traverse(d->tree4, 0, *inf->worker->env.now, &k->key,
-			&cache_lookup_subnet_addrnode, inf);
-	}
-	if(d->tree6) {
-		addrtree_traverse(d->tree6, 1, *inf->worker->env.now, &k->key,
-			&cache_lookup_subnet_addrnode, inf);
-	}
-}
-#endif /* CLIENT_SUBNET */
 
 static void
 cache_lookup_rrset(struct lruhash_entry* e, void* arg)
@@ -2013,26 +1779,12 @@ static void
 do_cache_lookup_domain(RES* ssl, struct worker* worker, uint8_t* nm,
 	size_t nmlen)
 {
-#ifdef CLIENT_SUBNET
-	int m;
-	struct subnet_env* sn_env = NULL;
-#endif /* CLIENT_SUBNET */
 	struct cache_lookup_info inf;
 	inf.ssl = ssl;
 	inf.worker = worker;
 	inf.nm = nm;
 	inf.nmlen = nmlen;
 
-#ifdef CLIENT_SUBNET
-	m = modstack_find(worker->env.modstack, "subnetcache");
-	if(m != -1) sn_env = (struct subnet_env*)worker->env.modinfo[m];
-	if(sn_env) {
-		lock_rw_rdlock(&sn_env->biglock);
-		slabhash_traverse(sn_env->subnet_msg_cache, 0,
-			&cache_lookup_subnet_msg, &inf);
-		lock_rw_unlock(&sn_env->biglock);
-	}
-#endif /* CLIENT_SUBNET */
 
 	slabhash_traverse(&worker->env.rrset_cache->table, 0,
 		&cache_lookup_rrset, &inf);
@@ -2104,7 +1856,7 @@ do_lookup(RES* ssl, struct worker* worker, char* arg)
 /** flush something from rrset and msg caches */
 static void
 do_cache_remove(struct worker* worker, uint8_t* nm, size_t nmlen,
-	uint16_t t, uint16_t c, int remcachedb)
+	uint16_t t, uint16_t c)
 {
 	hashvalue_type h;
 	struct query_info k;
@@ -2119,29 +1871,6 @@ do_cache_remove(struct worker* worker, uint8_t* nm, size_t nmlen,
 	k.local_alias = NULL;
 	h = query_info_hash(&k, 0);
 	slabhash_remove(worker->env.msg_cache, h, &k);
-#ifdef USE_CACHEDB
-	if(remcachedb && worker->env.cachedb_enabled)
-		cachedb_msg_remove_qinfo(&worker->env, &k);
-#else
-	(void)remcachedb;
-#endif
-}
-
-/** parse '+c' option, modifies string to return remainder. */
-static int
-parse_remcachedb(RES* ssl, char** arg, int* pc)
-{
-	*arg = skipwhite(*arg);
-	if((*arg)[0] == '+' && (*arg)[1] == 'c') {
-		char* arg2;
-		*pc = 1;
-		if(!find_arg2(ssl, *arg, &arg2))
-			return 0;
-		*arg = arg2;
-		return 1;
-	}
-	/* The option was not found, no problem */
-	return 1;
 }
 
 /** flush a type */
@@ -2153,9 +1882,6 @@ do_flush_type(RES* ssl, struct worker* worker, char* arg)
 	size_t nmlen;
 	char* arg2;
 	uint16_t t;
-	int pc = 0; /* '+c' option */
-	if(!parse_remcachedb(ssl, &arg, &pc))
-		return;
 	if(!find_arg2(ssl, arg, &arg2))
 		return;
 	if(!parse_arg_name(ssl, arg, &nm, &nmlen, &nmlabs))
@@ -2166,7 +1892,7 @@ do_flush_type(RES* ssl, struct worker* worker, char* arg)
 		free(nm);
 		return;
 	}
-	do_cache_remove(worker, nm, nmlen, t, LDNS_RR_CLASS_IN, pc);
+	do_cache_remove(worker, nm, nmlen, t, LDNS_RR_CLASS_IN);
 
 	free(nm);
 	send_ok(ssl);
@@ -2204,8 +1930,6 @@ struct del_info {
 	socklen_t addrlen;
 	/** socket address for host deletion */
 	struct sockaddr_storage addr;
-	/** if cachedb information should be flushed too */
-	int remcachedb;
 };
 
 /** callback to delete hosts in infra cache */
@@ -2257,7 +1981,6 @@ do_flush_infra(RES* ssl, struct worker* worker, char* arg)
 	inf.num_msgs = 0;
 	inf.num_keys = 0;
 	inf.addrlen = len;
-	inf.remcachedb = 0;
 	memmove(&inf.addr, &addr, len);
 	slabhash_traverse(worker->env.infra_cache->hosts, 1, &infra_del_host,
 		&inf);
@@ -2304,10 +2027,6 @@ zone_del_msg(struct lruhash_entry* e, void* arg)
 			d->serve_expired_ttl = inf->expired;
 			inf->num_msgs++;
 		}
-#ifdef USE_CACHEDB
-		if(inf->remcachedb && inf->worker->env.cachedb_enabled)
-			cachedb_msg_remove_qinfo(&inf->worker->env, &k->key);
-#endif
 	}
 }
 
@@ -2335,9 +2054,6 @@ do_flush_zone(RES* ssl, struct worker* worker, char* arg)
 	int nmlabs;
 	size_t nmlen;
 	struct del_info inf;
-	int pc = 0; /* '+c' option */
-	if(!parse_remcachedb(ssl, &arg, &pc))
-		return;
 	if(!parse_arg_name(ssl, arg, &nm, &nmlen, &nmlabs))
 		return;
 	/* delete all RRs and key entries from zone */
@@ -2351,7 +2067,6 @@ do_flush_zone(RES* ssl, struct worker* worker, char* arg)
 	inf.num_rrsets = 0;
 	inf.num_msgs = 0;
 	inf.num_keys = 0;
-	inf.remcachedb = pc;
 	slabhash_traverse(&worker->env.rrset_cache->table, 1,
 		&zone_del_rrset, &inf);
 
@@ -2395,11 +2110,6 @@ bogus_del_msg(struct lruhash_entry* e, void* arg)
 		d->prefetch_ttl = inf->expired;
 		d->serve_expired_ttl = inf->expired;
 		inf->num_msgs++;
-#ifdef USE_CACHEDB
-		if(inf->remcachedb && inf->worker->env.cachedb_enabled)
-			cachedb_msg_remove_qinfo(&inf->worker->env,
-				&((struct msgreply_entry*)e->key)->key);
-#endif
 	}
 }
 
@@ -2421,9 +2131,10 @@ static void
 do_flush_bogus(RES* ssl, struct worker* worker, char* arg)
 {
 	struct del_info inf;
-	int pc = 0; /* '+c' option */
-	if(!parse_remcachedb(ssl, &arg, &pc))
+	if(*skipwhite(arg)) {
+		(void)ssl_printf(ssl, "error: unexpected flush argument\n");
 		return;
+	}
 	/* what we do is to set them all expired */
 	inf.worker = worker;
 	inf.expired = *worker->env.now;
@@ -2431,7 +2142,6 @@ do_flush_bogus(RES* ssl, struct worker* worker, char* arg)
 	inf.num_rrsets = 0;
 	inf.num_msgs = 0;
 	inf.num_keys = 0;
-	inf.remcachedb = pc;
 	slabhash_traverse(&worker->env.rrset_cache->table, 1,
 		&bogus_del_rrset, &inf);
 
@@ -2481,11 +2191,6 @@ negative_del_msg(struct lruhash_entry* e, void* arg)
 		d->prefetch_ttl = inf->expired;
 		d->serve_expired_ttl = inf->expired;
 		inf->num_msgs++;
-#ifdef USE_CACHEDB
-		if(inf->remcachedb && inf->worker->env.cachedb_enabled)
-			cachedb_msg_remove_qinfo(&inf->worker->env,
-				&((struct msgreply_entry*)e->key)->key);
-#endif
 	}
 }
 
@@ -2509,9 +2214,10 @@ static void
 do_flush_negative(RES* ssl, struct worker* worker, char* arg)
 {
 	struct del_info inf;
-	int pc = 0; /* '+c' option */
-	if(!parse_remcachedb(ssl, &arg, &pc))
+	if(*skipwhite(arg)) {
+		(void)ssl_printf(ssl, "error: unexpected flush argument\n");
 		return;
+	}
 	/* what we do is to set them all expired */
 	inf.worker = worker;
 	inf.expired = *worker->env.now;
@@ -2519,7 +2225,6 @@ do_flush_negative(RES* ssl, struct worker* worker, char* arg)
 	inf.num_rrsets = 0;
 	inf.num_msgs = 0;
 	inf.num_keys = 0;
-	inf.remcachedb = pc;
 	slabhash_traverse(&worker->env.rrset_cache->table, 1,
 		&negative_del_rrset, &inf);
 
@@ -2543,23 +2248,20 @@ do_flush_name(RES* ssl, struct worker* w, char* arg)
 	uint8_t* nm;
 	int nmlabs;
 	size_t nmlen;
-	int pc = 0; /* '+c' option */
-	if(!parse_remcachedb(ssl, &arg, &pc))
-		return;
 	if(!parse_arg_name(ssl, arg, &nm, &nmlen, &nmlabs))
 		return;
-	do_cache_remove(w, nm, nmlen, LDNS_RR_TYPE_A, LDNS_RR_CLASS_IN, pc);
-	do_cache_remove(w, nm, nmlen, LDNS_RR_TYPE_AAAA, LDNS_RR_CLASS_IN, pc);
-	do_cache_remove(w, nm, nmlen, LDNS_RR_TYPE_NS, LDNS_RR_CLASS_IN, pc);
-	do_cache_remove(w, nm, nmlen, LDNS_RR_TYPE_SOA, LDNS_RR_CLASS_IN, pc);
-	do_cache_remove(w, nm, nmlen, LDNS_RR_TYPE_CNAME, LDNS_RR_CLASS_IN, pc);
-	do_cache_remove(w, nm, nmlen, LDNS_RR_TYPE_DNAME, LDNS_RR_CLASS_IN, pc);
-	do_cache_remove(w, nm, nmlen, LDNS_RR_TYPE_MX, LDNS_RR_CLASS_IN, pc);
-	do_cache_remove(w, nm, nmlen, LDNS_RR_TYPE_PTR, LDNS_RR_CLASS_IN, pc);
-	do_cache_remove(w, nm, nmlen, LDNS_RR_TYPE_SRV, LDNS_RR_CLASS_IN, pc);
-	do_cache_remove(w, nm, nmlen, LDNS_RR_TYPE_NAPTR, LDNS_RR_CLASS_IN, pc);
-	do_cache_remove(w, nm, nmlen, LDNS_RR_TYPE_SVCB, LDNS_RR_CLASS_IN, pc);
-	do_cache_remove(w, nm, nmlen, LDNS_RR_TYPE_HTTPS, LDNS_RR_CLASS_IN, pc);
+	do_cache_remove(w, nm, nmlen, LDNS_RR_TYPE_A, LDNS_RR_CLASS_IN);
+	do_cache_remove(w, nm, nmlen, LDNS_RR_TYPE_AAAA, LDNS_RR_CLASS_IN);
+	do_cache_remove(w, nm, nmlen, LDNS_RR_TYPE_NS, LDNS_RR_CLASS_IN);
+	do_cache_remove(w, nm, nmlen, LDNS_RR_TYPE_SOA, LDNS_RR_CLASS_IN);
+	do_cache_remove(w, nm, nmlen, LDNS_RR_TYPE_CNAME, LDNS_RR_CLASS_IN);
+	do_cache_remove(w, nm, nmlen, LDNS_RR_TYPE_DNAME, LDNS_RR_CLASS_IN);
+	do_cache_remove(w, nm, nmlen, LDNS_RR_TYPE_MX, LDNS_RR_CLASS_IN);
+	do_cache_remove(w, nm, nmlen, LDNS_RR_TYPE_PTR, LDNS_RR_CLASS_IN);
+	do_cache_remove(w, nm, nmlen, LDNS_RR_TYPE_SRV, LDNS_RR_CLASS_IN);
+	do_cache_remove(w, nm, nmlen, LDNS_RR_TYPE_NAPTR, LDNS_RR_CLASS_IN);
+	do_cache_remove(w, nm, nmlen, LDNS_RR_TYPE_SVCB, LDNS_RR_CLASS_IN);
+	do_cache_remove(w, nm, nmlen, LDNS_RR_TYPE_HTTPS, LDNS_RR_CLASS_IN);
 
 	free(nm);
 	send_ok(ssl);
@@ -4642,10 +4344,6 @@ struct fast_reload_construct {
 	void* listen_dot_sslctx;
 	/** ssl context for connecting to dnstcp over ssl */
 	void* connect_dot_sslctx;
-	/** ssl context for listening to DoH */
-	void* listen_doh_sslctx;
-	/** ssl context for listening to quic */
-	void* listen_quic_sslctx;
 	/** the file name that the ssl context is made with, private key. */
 	char* ssl_service_key;
 	/** the file name that the ssl context is made with, certificate. */
@@ -4953,13 +4651,7 @@ fr_check_compat_cfg(struct fast_reload_thread* fr, struct config_file* newcfg)
 	FR_CHECK_CHANGED_CFG("edns-tcp-keepalive", do_tcp_keepalive, changed_str);
 	FR_CHECK_CHANGED_CFG("edns-tcp-keepalive-timeout", tcp_keepalive_timeout, changed_str);
 	FR_CHECK_CHANGED_CFG("tcp-idle-timeout", tcp_idle_timeout, changed_str);
-	/* Not changed, only if DoH is used, it is then stored in commpoints,
-	 * as well as used from cfg. */
 	FR_CHECK_CHANGED_CFG("harden-large-queries", harden_large_queries, changed_str);
-	FR_CHECK_CHANGED_CFG("http-max-streams", http_max_streams, changed_str);
-	FR_CHECK_CHANGED_CFG_STR("http-endpoint", http_endpoint, changed_str);
-	FR_CHECK_CHANGED_CFG("http_notls_downstream", http_notls_downstream, changed_str);
-	FR_CHECK_CHANGED_CFG("https-port", https_port, changed_str);
 	FR_CHECK_CHANGED_CFG("tls-port", ssl_port, changed_str);
 	FR_CHECK_CHANGED_CFG_STR("tls-protocols", tls_protocols, changed_str);
 	FR_CHECK_CHANGED_CFG_STRLIST("proxy-protocol-port", proxy_protocol_port, changed_str);
@@ -5071,11 +4763,7 @@ fr_construct_clear(struct fast_reload_construct* ct)
 	 * Once they are done, the context is freed. */
 	SSL_CTX_free((SSL_CTX*)ct->listen_dot_sslctx);
 	SSL_CTX_free((SSL_CTX*)ct->connect_dot_sslctx);
-	SSL_CTX_free((SSL_CTX*)ct->listen_doh_sslctx);
 #endif /* HAVE_SSL */
-#ifdef HAVE_NGTCP2
-	SSL_CTX_free((SSL_CTX*)ct->listen_quic_sslctx);
-#endif
 	free(ct->ssl_service_key);
 	free(ct->ssl_service_pem);
 	/* Delete the log identity here so that the global value is not
@@ -5211,7 +4899,6 @@ config_file_getmem(struct config_file* cfg)
 	m += getmem_str(cfg->tls_ciphers);
 	m += getmem_str(cfg->tls_ciphersuites);
 	m += getmem_str(cfg->tls_protocols);
-	m += getmem_str(cfg->http_endpoint);
 	m += (cfg->outgoing_avail_ports?65536*sizeof(int):0);
 	m += getmem_str(cfg->target_fetch_policy);
 	m += getmem_str(cfg->if_automatic_ports);
@@ -5223,10 +4910,6 @@ config_file_getmem(struct config_file* cfg)
 	m += getmem_config_auth(cfg->auths);
 	m += getmem_config_view(cfg->views);
 	m += getmem_config_strlist(cfg->donotqueryaddrs);
-#ifdef CLIENT_SUBNET
-	m += getmem_config_strlist(cfg->client_subnet);
-	m += getmem_config_strlist(cfg->client_subnet_zone);
-#endif
 	m += getmem_config_str2list(cfg->acls);
 	m += getmem_config_str2list(cfg->tcp_connection_limits);
 	m += getmem_config_strlist(cfg->caps_whitelist);
@@ -5280,25 +4963,9 @@ config_file_getmem(struct config_file* cfg)
 	m += getmem_config_str2list(cfg->ratelimit_for_domain);
 	m += getmem_config_str2list(cfg->ratelimit_below_domain);
 	m += getmem_config_str2list(cfg->edns_client_strings);
-	m += getmem_str(cfg->dnscrypt_provider);
-	m += getmem_config_strlist(cfg->dnscrypt_secret_key);
-	m += getmem_config_strlist(cfg->dnscrypt_provider_cert);
-	m += getmem_config_strlist(cfg->dnscrypt_provider_cert_rotated);
 #ifdef USE_IPSECMOD
 	m += getmem_config_strlist(cfg->ipsecmod_whitelist);
 	m += getmem_str(cfg->ipsecmod_hook);
-#endif
-#ifdef USE_CACHEDB
-	m += getmem_str(cfg->cachedb_backend);
-	m += getmem_str(cfg->cachedb_secret);
-#ifdef USE_REDIS
-	m += getmem_str(cfg->redis_server_host);
-	m += getmem_str(cfg->redis_replica_server_host);
-	m += getmem_str(cfg->redis_server_path);
-	m += getmem_str(cfg->redis_replica_server_path);
-	m += getmem_str(cfg->redis_server_password);
-	m += getmem_str(cfg->redis_replica_server_password);
-#endif
 #endif
 #ifdef USE_IPSET
 	m += getmem_str(cfg->ipset_name_v4);
@@ -5600,18 +5267,6 @@ ct_create_sslctxs(struct fast_reload_construct* ct,
 		pem += strlen(chroot);
 
 	ct->listen_dot_sslctx = daemon_setup_listen_dot_sslctx(daemon, newcfg);
-#ifdef HAVE_NGHTTP2_NGHTTP2_H
-	if(cfg_has_https(newcfg)) {
-		ct->listen_doh_sslctx = daemon_setup_listen_doh_sslctx(
-			daemon, newcfg);
-	}
-#endif
-#ifdef HAVE_NGTCP2
-	if(cfg_has_quic(newcfg)) {
-		ct->listen_quic_sslctx = daemon_setup_listen_quic_sslctx(
-			daemon, newcfg);
-	}
-#endif /* HAVE_NGTCP2 */
 	ct->connect_dot_sslctx = daemon_setup_connect_dot_sslctx(daemon,
 		newcfg);
 
@@ -5955,12 +5610,6 @@ sslctxs_swap(struct daemon* daemon, struct fast_reload_construct* ct)
 {
 	void_ptr_swap(&daemon->listen_dot_sslctx, &ct->listen_dot_sslctx);
 	void_ptr_swap(&daemon->connect_dot_sslctx, &ct->connect_dot_sslctx);
-#ifdef HAVE_NGHTTP2_NGHTTP2_H
-	void_ptr_swap(&daemon->listen_doh_sslctx, &ct->listen_doh_sslctx);
-#endif
-#ifdef HAVE_NGTCP2
-	void_ptr_swap(&daemon->listen_quic_sslctx, &ct->listen_quic_sslctx);
-#endif /* HAVE_NGTCP2 */
 	char_ptr_swap(&daemon->ssl_service_key, &ct->ssl_service_key);
 	char_ptr_swap(&daemon->ssl_service_pem, &ct->ssl_service_pem);
 	daemon->mtime_ssl_service_key = ct->mtime_ssl_service_key;
@@ -6032,13 +5681,6 @@ fr_atomic_copy_cfg(struct config_file* oldcfg, struct config_file* cfg,
 	COPY_VAR_ptr(tls_ciphersuites);
 	COPY_VAR_ptr(tls_protocols);
 	COPY_VAR_int(tls_use_sni);
-	COPY_VAR_int(https_port);
-	COPY_VAR_ptr(http_endpoint);
-	COPY_VAR_uint32_t(http_max_streams);
-	COPY_VAR_size_t(http_query_buffer_size);
-	COPY_VAR_size_t(http_response_buffer_size);
-	COPY_VAR_int(http_nodelay);
-	COPY_VAR_int(http_notls_downstream);
 	COPY_VAR_int(outgoing_num_ports);
 	COPY_VAR_size_t(outgoing_num_tcp);
 	COPY_VAR_size_t(incoming_num_tcp);
@@ -6080,18 +5722,6 @@ fr_atomic_copy_cfg(struct config_file* oldcfg, struct config_file* cfg,
 	COPY_VAR_ptr(auths);
 	COPY_VAR_ptr(views);
 	COPY_VAR_ptr(donotqueryaddrs);
-#ifdef CLIENT_SUBNET
-	COPY_VAR_ptr(client_subnet);
-	COPY_VAR_ptr(client_subnet_zone);
-	COPY_VAR_uint16_t(client_subnet_opcode);
-	COPY_VAR_int(client_subnet_always_forward);
-	COPY_VAR_uint8_t(max_client_subnet_ipv4);
-	COPY_VAR_uint8_t(max_client_subnet_ipv6);
-	COPY_VAR_uint8_t(min_client_subnet_ipv4);
-	COPY_VAR_uint8_t(min_client_subnet_ipv6);
-	COPY_VAR_uint32_t(max_ecs_tree_size_ipv4);
-	COPY_VAR_uint32_t(max_ecs_tree_size_ipv6);
-#endif
 	COPY_VAR_ptr(acls);
 	COPY_VAR_int(donotquery_localhost);
 	COPY_VAR_ptr(tcp_connection_limits);
@@ -6258,16 +5888,6 @@ fr_atomic_copy_cfg(struct config_file* oldcfg, struct config_file* cfg,
 	COPY_VAR_int(shm_key);
 	COPY_VAR_ptr(edns_client_strings);
 	COPY_VAR_uint16_t(edns_client_string_opcode);
-	COPY_VAR_int(dnscrypt);
-	COPY_VAR_int(dnscrypt_port);
-	COPY_VAR_ptr(dnscrypt_provider);
-	COPY_VAR_ptr(dnscrypt_secret_key);
-	COPY_VAR_ptr(dnscrypt_provider_cert);
-	COPY_VAR_ptr(dnscrypt_provider_cert_rotated);
-	COPY_VAR_size_t(dnscrypt_shared_secret_cache_size);
-	COPY_VAR_size_t(dnscrypt_shared_secret_cache_slabs);
-	COPY_VAR_size_t(dnscrypt_nonce_cache_size);
-	COPY_VAR_size_t(dnscrypt_nonce_cache_slabs);
 	COPY_VAR_int(pad_responses);
 	COPY_VAR_size_t(pad_responses_block_size);
 	COPY_VAR_int(pad_queries);
@@ -6279,31 +5899,6 @@ fr_atomic_copy_cfg(struct config_file* oldcfg, struct config_file* cfg,
 	COPY_VAR_int(ipsecmod_ignore_bogus);
 	COPY_VAR_int(ipsecmod_max_ttl);
 	COPY_VAR_int(ipsecmod_strict);
-#endif
-#ifdef USE_CACHEDB
-	COPY_VAR_ptr(cachedb_backend);
-	COPY_VAR_ptr(cachedb_secret);
-	COPY_VAR_int(cachedb_no_store);
-	COPY_VAR_int(cachedb_check_when_serve_expired);
-#ifdef USE_REDIS
-	COPY_VAR_ptr(redis_server_host);
-	COPY_VAR_ptr(redis_replica_server_host);
-	COPY_VAR_int(redis_server_port);
-	COPY_VAR_int(redis_replica_server_port);
-	COPY_VAR_ptr(redis_server_path);
-	COPY_VAR_ptr(redis_replica_server_path);
-	COPY_VAR_ptr(redis_server_password);
-	COPY_VAR_ptr(redis_replica_server_password);
-	COPY_VAR_int(redis_timeout);
-	COPY_VAR_int(redis_replica_timeout);
-	COPY_VAR_int(redis_command_timeout);
-	COPY_VAR_int(redis_replica_command_timeout);
-	COPY_VAR_int(redis_connect_timeout);
-	COPY_VAR_int(redis_replica_connect_timeout);
-	COPY_VAR_int(redis_expire_records);
-	COPY_VAR_int(redis_logical_db);
-	COPY_VAR_int(redis_replica_logical_db);
-#endif
 #endif
 	COPY_VAR_int(do_answer_cookie);
 	/* Not copied because the length and content could then not match.
@@ -6549,10 +6144,6 @@ fr_reload_config(struct fast_reload_thread* fr, struct config_file* newcfg,
 	auth_zones_swap(env->auth_zones, ct->auth_zones);
 	edns_strings_swap_tree(env->edns_strings, ct->edns_strings);
 	anchors_swap_tree(env->anchors, ct->anchors);
-#ifdef USE_CACHEDB
-	daemon->env->cachedb_enabled = cachedb_is_enabled(&daemon->mods,
-		daemon->env);
-#endif
 	if(fr->sslctxs_changed) {
 		sslctxs_swap(daemon, ct);
 	}
@@ -7758,30 +7349,11 @@ fr_worker_pickup_listen_dnsport(struct worker* worker)
 	if(worker->daemon->fast_reload_thread->sslctxs_changed) {
 		struct listen_list* ll;
 		void* dot_sslctx = daemon->listen_dot_sslctx;
-		void* doh_sslctx = daemon->listen_doh_sslctx;
-#ifdef HAVE_NGTCP2
-		void* quic_sslctx = daemon->listen_quic_sslctx;
-#endif  /* HAVE_NGTCP2 */
 		for(ll = front->cps; ll; ll = ll->next) {
 			struct comm_point* cp = ll->com;
-			if(cp->type == comm_tcp_accept &&
-				cp->tcp_handlers &&
-				cp->max_tcp_count > 0 &&
-				cp->tcp_handlers[0]->type == comm_http) {
-				if(cp->ssl)
-					cp->ssl = doh_sslctx;
-			} else if(cp->type == comm_tcp_accept) {
+			if(cp->type == comm_tcp_accept) {
 				if(cp->ssl)
 					cp->ssl = dot_sslctx;
-#ifdef HAVE_NGTCP2
-			} else if(cp->type == comm_doq) {
-				if(cp->ssl) {
-					cp->ssl = quic_sslctx;
-					if(cp->doq_socket)
-						cp->doq_socket->ctx =
-							(SSL_CTX*)quic_sslctx;
-				}
-#endif  /* HAVE_NGTCP2 */
 			}
 		}
 	}
@@ -7837,9 +7409,6 @@ fast_reload_worker_pickup_changes(struct worker* worker)
 	 * lookups should be cancelled. */
 	fr_worker_pickup_auth_changes(worker,
 		worker->daemon->fast_reload_thread->auth_zone_change_list);
-#ifdef USE_CACHEDB
-	worker->env.cachedb_enabled = worker->daemon->env->cachedb_enabled;
-#endif
 	fr_worker_pickup_listen_dnsport(worker);
 	fr_worker_pickup_outside_network(worker);
 }

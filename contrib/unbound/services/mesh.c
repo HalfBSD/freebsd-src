@@ -66,10 +66,6 @@
 #include "services/listen_dnsport.h"
 #include "util/timeval_func.h"
 
-#ifdef CLIENT_SUBNET
-#include "edns-subnet/subnetmod.h"
-#include "edns-subnet/edns-subnet.h"
-#endif
 #ifdef HAVE_SYS_TYPES_H
 #  include <sys/types.h>
 #endif
@@ -229,7 +225,6 @@ mesh_create(struct module_stack* stack, struct module_env* env)
 	mesh->stats_jostled = 0;
 	mesh->stats_dropped = 0;
 	mesh->ans_expired = 0;
-	mesh->ans_cachedb = 0;
 	mesh->num_queries_discard_timeout = 0;
 	mesh->num_queries_replyaddr_limit = 0;
 	mesh->num_queries_wait_limit = 0;
@@ -465,8 +460,7 @@ void mesh_new_client(struct mesh_area* mesh, struct query_info* qinfo,
 		if(!mesh_make_new_space(mesh, rep->c->buffer)) {
 			verbose(VERB_ALGO, "Too many queries. dropping "
 				"incoming query.");
-			if(rep->c->use_h2)
-				http2_stream_remove_mesh_state(rep->c->h2_stream);
+
 			comm_point_drop_reply(rep);
 			mesh->stats_dropped++;
 			return;
@@ -478,8 +472,7 @@ void mesh_new_client(struct mesh_area* mesh, struct query_info* qinfo,
 		if(mesh->num_reply_addrs > mesh->max_reply_states*16) {
 			verbose(VERB_ALGO, "Too many requests queued. "
 				"dropping incoming query.");
-			if(rep->c->use_h2)
-				http2_stream_remove_mesh_state(rep->c->h2_stream);
+
 			comm_point_drop_reply(rep);
 			mesh->num_queries_replyaddr_limit++;
 			return;
@@ -550,25 +543,12 @@ void mesh_new_client(struct mesh_area* mesh, struct query_info* qinfo,
 			goto servfail_mem;
 		}
 	}
-	if(rep->c->use_h2) {
-		http2_stream_add_meshstate(rep->c->h2_stream, mesh, s);
-	}
+
 	/* add serve expired timer if required and not already there */
 	if(timeout && !mesh_serve_expired_init(s, timeout)) {
 		log_err("mesh_new_client: out of memory initializing serve expired");
 		goto servfail_mem;
 	}
-#ifdef USE_CACHEDB
-	if(!timeout && mesh->env->cfg->serve_expired &&
-		!mesh->env->cfg->serve_expired_client_timeout &&
-		(mesh->env->cachedb_enabled &&
-		 mesh->env->cfg->cachedb_check_when_serve_expired)) {
-		if(!mesh_serve_expired_init(s, -1)) {
-			log_err("mesh_new_client: out of memory initializing serve expired");
-			goto servfail_mem;
-		}
-	}
-#endif
 	infra_wait_limit_inc(mesh->env->infra_cache, rep, *mesh->env->now,
 		mesh->env->cfg);
 	/* update statistics */
@@ -603,8 +583,7 @@ servfail_mem:
 			edns->opt_list_inplace_cb_out = NULL;
 	error_encode(r_buffer, LDNS_RCODE_SERVFAIL,
 		qinfo, qid, qflags, edns);
-	if(rep->c->use_h2)
-		http2_stream_remove_mesh_state(rep->c->h2_stream);
+
 	comm_point_send_reply(rep);
 	if(added)
 		mesh_state_delete(&s->s);
@@ -679,18 +658,6 @@ mesh_new_callback(struct mesh_area* mesh, struct query_info* qinfo,
 			mesh_state_delete(&s->s);
 		return 0;
 	}
-#ifdef USE_CACHEDB
-	if(!timeout && mesh->env->cfg->serve_expired &&
-		!mesh->env->cfg->serve_expired_client_timeout &&
-		(mesh->env->cachedb_enabled &&
-		 mesh->env->cfg->cachedb_check_when_serve_expired)) {
-		if(!mesh_serve_expired_init(s, -1)) {
-			if(added)
-				mesh_state_delete(&s->s);
-			return 0;
-		}
-	}
-#endif
 	/* update statistics */
 	if(was_detached) {
 		log_assert(mesh->num_detached_states > 0);
@@ -786,108 +753,12 @@ static void mesh_schedule_prefetch(struct mesh_area* mesh,
 	mesh_run(mesh, s, module_event_new, NULL);
 }
 
-#ifdef CLIENT_SUBNET
-/* Same logic as mesh_schedule_prefetch but tailored to the subnet module logic
- * like passing along the comm_reply info. This will be faked into an EDNS
- * option for processing by the subnet module if the client has not already
- * attached its own ECS data. */
-static void mesh_schedule_prefetch_subnet(struct mesh_area* mesh,
-	struct query_info* qinfo, uint16_t qflags, time_t leeway, int run,
-	int rpz_passthru, struct sockaddr_storage* addr, struct edns_option* edns_list)
-{
-	struct mesh_state* s = NULL;
-	struct edns_option* opt = NULL;
-#ifdef UNBOUND_DEBUG
-	struct rbnode_type* n;
-#endif
-	/* Explicitly set the BIT_RD regardless of the client's flags. This is
-	 * for a prefetch query (no client attached) but it needs to be treated
-	 * as a recursion query. */
-	uint16_t mesh_flags = BIT_RD|(qflags&BIT_CD);
-	if(!mesh_make_new_space(mesh, NULL)) {
-		verbose(VERB_ALGO, "Too many queries. dropped prefetch.");
-		mesh->stats_dropped ++;
-		return;
-	}
-
-	s = mesh_state_create(mesh->env, qinfo, NULL, mesh_flags, 0, 0);
-	if(!s) {
-		log_err("prefetch_subnet mesh_state_create: out of memory");
-		return;
-	}
-	mesh_state_make_unique(s);
-
-	opt = edns_opt_list_find(edns_list, mesh->env->cfg->client_subnet_opcode);
-	if(opt) {
-		/* Use the client's ECS data */
-		if(!edns_opt_list_append(&s->s.edns_opts_front_in, opt->opt_code,
-			opt->opt_len, opt->opt_data, s->s.region)) {
-			log_err("prefetch_subnet edns_opt_list_append: out of memory");
-			return;
-		}
-	} else {
-		/* Store the client's address. Later in the subnet module,
-		 * it is decided whether to include an ECS option or not.
-		 */
-		s->s.client_addr =  *addr;
-	}
-#ifdef UNBOUND_DEBUG
-	n =
-#else
-	(void)
-#endif
-	rbtree_insert(&mesh->all, &s->node);
-	log_assert(n != NULL);
-	/* set detached (it is now) */
-	mesh->num_detached_states++;
-	/* make it ignore the cache */
-	sock_list_insert(&s->s.blacklist, NULL, 0, s->s.region);
-	s->s.prefetch_leeway = leeway;
-
-	if(s->list_select == mesh_no_list) {
-		/* move to either the forever or the jostle_list */
-		if(mesh->num_forever_states < mesh->max_forever_states) {
-			mesh->num_forever_states ++;
-			mesh_list_insert(s, &mesh->forever_first,
-				&mesh->forever_last);
-			s->list_select = mesh_forever_list;
-		} else {
-			mesh_list_insert(s, &mesh->jostle_first,
-				&mesh->jostle_last);
-			s->list_select = mesh_jostle_list;
-		}
-	}
-	s->s.rpz_passthru = rpz_passthru;
-
-	if(!run) {
-#ifdef UNBOUND_DEBUG
-		n =
-#else
-		(void)
-#endif
-		rbtree_insert(&mesh->run, &s->run_node);
-		log_assert(n != NULL);
-		return;
-	}
-
-	mesh_run(mesh, s, module_event_new, NULL);
-}
-#endif /* CLIENT_SUBNET */
 
 void mesh_new_prefetch(struct mesh_area* mesh, struct query_info* qinfo,
-	uint16_t qflags, time_t leeway, int rpz_passthru,
-	struct sockaddr_storage* addr, struct edns_option* opt_list)
+	uint16_t qflags, time_t leeway, int rpz_passthru)
 {
-	(void)addr;
-	(void)opt_list;
-#ifdef CLIENT_SUBNET
-	if(addr)
-		mesh_schedule_prefetch_subnet(mesh, qinfo, qflags, leeway, 1,
-			rpz_passthru, addr, opt_list);
-	else
-#endif
-		mesh_schedule_prefetch(mesh, qinfo, qflags, leeway, 1,
-			rpz_passthru);
+	mesh_schedule_prefetch(mesh, qinfo, qflags, leeway, 1,
+		rpz_passthru);
 }
 
 void mesh_report_reply(struct mesh_area* mesh, struct outbound_entry* e,
@@ -1078,14 +949,7 @@ mesh_state_cleanup(struct mesh_state* mstate)
 	if(!mstate->replies_sent) {
 		struct mesh_reply* rep = mstate->reply_list;
 		struct mesh_cb* cb;
-		/* One http2 stream could bring down its comm_point along with
-		 * the other streams which could share the same query. Do all
-		 * the http2 stream bookkeeping upfront. */
-		for(; rep; rep=rep->next) {
-			if(rep->query_reply.c->use_h2)
-				http2_stream_remove_mesh_state(rep->h2_stream);
-		}
-		rep = mstate->reply_list;
+
 		/* in tcp_req_info, the mstates linked are removed, but
 		 * the reply_list is now NULL, so the remove-from-empty-list
 		 * takes no time and also it does not do the mesh accounting */
@@ -1478,13 +1342,7 @@ mesh_send_reply(struct mesh_state* m, int rcode, struct reply_info* rep,
 	else	secure = 0;
 	if(!rep && rcode == LDNS_RCODE_NOERROR)
 		rcode = LDNS_RCODE_SERVFAIL;
-	if(r->query_reply.c->use_h2) {
-		r->query_reply.c->h2_stream = r->h2_stream;
-		/* Mesh reply won't exist for long anymore. Make it impossible
-		 * for HTTP/2 stream to refer to mesh state, in case
-		 * connection gets cleanup before HTTP/2 stream close. */
-		r->h2_stream->mesh_state = NULL;
-	}
+
 	/* send the reply */
 	/* We don't reuse the encoded answer if:
 	 * - either the previous or current response has a local alias.  We could
@@ -1775,8 +1633,7 @@ void mesh_query_done(struct mesh_state* mstate)
 				infra_wait_limit_dec(mstate->s.env->infra_cache,
 					&r->query_reply, mstate->s.env->cfg);
 				mstate->reply_list = NULL;
-				if(r->query_reply.c->use_h2)
-					http2_stream_remove_mesh_state(r->h2_stream);
+
 				comm_point_drop_reply(&r->query_reply);
 				mstate->reply_list = reply_list;
 				log_assert(mstate->s.env->mesh->num_reply_addrs > 0);
@@ -1812,9 +1669,7 @@ void mesh_query_done(struct mesh_state* mstate)
 			infra_wait_limit_dec(mstate->s.env->infra_cache,
 				&r->query_reply, mstate->s.env->cfg);
 			mstate->reply_list = NULL;
-			if(r->query_reply.c->use_h2) {
-				http2_stream_remove_mesh_state(r->h2_stream);
-			}
+
 			comm_point_drop_reply(&r->query_reply);
 			mstate->reply_list = reply_list;
 			log_assert(mstate->s.env->mesh->num_reply_addrs > 0);
@@ -1831,8 +1686,7 @@ void mesh_query_done(struct mesh_state* mstate)
 				tcp_req_info_remove_mesh_state(r->query_reply.c->tcp_req_info, mstate);
 				r_buffer = NULL;
 			}
-			/* mesh_send_reply removed mesh state from
-			 * http2_stream. */
+
 			prev = r;
 			prev_buffer = r_buffer;
 		}
@@ -1849,12 +1703,6 @@ void mesh_query_done(struct mesh_state* mstate)
 		else
 			mstate->s.env->mesh->rpz_action[respip_action_to_rpz_action(
 				mstate->s.respip_action_info->action)] += i;
-	}
-	if(!mstate->s.is_drop && i > 0) {
-		if(mstate->s.env->cfg->stat_extended
-			&& mstate->s.is_cachedb_answer) {
-			mstate->s.env->mesh->ans_cachedb += i;
-		}
 	}
 
 	/* Mesh area accounting */
@@ -2006,9 +1854,6 @@ int mesh_state_add_reply(struct mesh_state* s, struct edns_data* edns,
 		s->s.qinfo.qname_len);
 	if(!r->qname)
 		return 0;
-	if(rep->c->use_h2)
-		r->h2_stream = rep->c->h2_stream;
-	else	r->h2_stream = NULL;
 
 	/* Data related to local alias stored in 'qinfo' (if any) is ephemeral
 	 * and can be different for different original queries (even if the
@@ -2152,20 +1997,9 @@ mesh_continue(struct mesh_area* mesh, struct mesh_state* mstate,
 	if(s == module_finished) {
 		if(mstate->s.curmod == 0) {
 			struct query_info* qinfo = NULL;
-			struct edns_option* opt_list = NULL;
-			struct sockaddr_storage addr;
 			uint16_t qflags;
 			int rpz_p = 0;
 
-#ifdef CLIENT_SUBNET
-			struct edns_option* ecs;
-			if(mstate->s.need_refetch && mstate->reply_list &&
-				modstack_find(&mesh->mods, "subnetcache") != -1 &&
-				mstate->s.env->unique_mesh) {
-				addr = mstate->reply_list->query_reply.client_addr;
-			} else
-#endif
-				memset(&addr, 0, sizeof(addr));
 
 			mesh_query_done(mstate);
 			mesh_walk_supers(mesh, mstate);
@@ -2176,26 +2010,13 @@ mesh_continue(struct mesh_area* mesh, struct mesh_state* mstate,
 			 * we need to make a copy of the query info here. */
 			if(mstate->s.need_refetch) {
 				mesh_copy_qinfo(mstate, &qinfo, &qflags);
-#ifdef CLIENT_SUBNET
-				/* Make also a copy of the ecs option if any */
-				if((ecs = edns_opt_list_find(
-					mstate->s.edns_opts_front_in,
-					mstate->s.env->cfg->client_subnet_opcode)) != NULL) {
-					(void)edns_opt_list_append(&opt_list,
-						ecs->opt_code, ecs->opt_len,
-						ecs->opt_data,
-						mstate->s.env->scratch);
-				}
-#endif
 				rpz_p = mstate->s.rpz_passthru;
 			}
 
 			if(qinfo) {
 				mesh_state_delete(&mstate->s);
 				mesh_new_prefetch(mesh, qinfo, qflags, 0,
-					rpz_p,
-					addr.ss_family!=AF_UNSPEC?&addr:NULL,
-					opt_list);
+					rpz_p);
 			} else {
 				mesh_state_delete(&mstate->s);
 			}
@@ -2308,7 +2129,6 @@ mesh_stats_clear(struct mesh_area* mesh)
 	mesh->ans_bogus = 0;
 	mesh->val_ops = 0;
 	mesh->ans_expired = 0;
-	mesh->ans_cachedb = 0;
 	memset(&mesh->ans_rcode[0], 0, sizeof(size_t)*UB_STATS_RCODE_NUM);
 	memset(&mesh->rpz_action[0], 0, sizeof(size_t)*UB_STATS_RPZ_ACTION_NUM);
 	mesh->ans_nodata = 0;
@@ -2383,10 +2203,8 @@ void mesh_state_remove_reply(struct mesh_area* mesh, struct mesh_state* m,
 			mesh->num_reply_addrs--;
 			infra_wait_limit_dec(mesh->env->infra_cache,
 				&n->query_reply, mesh->env->cfg);
-			/* We may be removing more than one http2 stream (they
-			 * share the same comm_point); make sure the streams
-			 * don't point back. */
-			if(n->h2_stream) n->h2_stream->mesh_state = NULL;
+
+
 
 			/* prev = prev; */
 			n = n->next;
@@ -2462,8 +2280,7 @@ mesh_serve_expired_callback(void* arg)
 	verbose(VERB_ALGO, "Serve expired: Trying to reply with expired data");
 	comm_timer_delete(qstate->serve_expired_data->timer);
 	qstate->serve_expired_data->timer = NULL;
-	/* If is_drop or no_cache_lookup (modules that handle their own cache e.g.,
-	 * subnetmod) ignore stale data from the main cache. */
+	/* If is_drop or no_cache_lookup, ignore stale data from the main cache. */
 	if(qstate->no_cache_lookup || qstate->is_drop) {
 		verbose(VERB_ALGO,
 			"Serve expired: Not allowed to look into cache for stale");
@@ -2552,8 +2369,7 @@ mesh_serve_expired_callback(void* arg)
 			infra_wait_limit_dec(mstate->s.env->infra_cache,
 				&r->query_reply, mstate->s.env->cfg);
 			mstate->reply_list = NULL;
-			if(r->query_reply.c->use_h2)
-				http2_stream_remove_mesh_state(r->h2_stream);
+
 			comm_point_drop_reply(&r->query_reply);
 			mstate->reply_list = reply_list;
 			mstate->s.env->mesh->num_queries_discard_timeout++;
@@ -2589,7 +2405,7 @@ mesh_serve_expired_callback(void* arg)
 			r, r_buffer, prev, prev_buffer);
 		if(r->query_reply.c->tcp_req_info)
 			tcp_req_info_remove_mesh_state(r->query_reply.c->tcp_req_info, mstate);
-		/* mesh_send_reply removed mesh state from http2_stream. */
+
 		infra_wait_limit_dec(mstate->s.env->infra_cache,
 			&r->query_reply, mstate->s.env->cfg);
 		prev = r;

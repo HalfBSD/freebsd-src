@@ -3,7 +3,7 @@ LDNSDIR= ${SRCTOP}/contrib/ldns
 UNBOUNDDIR= ${SRCTOP}/contrib/unbound
 
 # Hold my beer and watch this
-.PATH: ${UNBOUNDDIR} ${UNBOUNDDIR}/cachedb ${UNBOUNDDIR}/iterator ${UNBOUNDDIR}/sldns ${UNBOUNDDIR}/libunbound ${UNBOUNDDIR}/services ${UNBOUNDDIR}/services/cache ${UNBOUNDDIR}/util ${UNBOUNDDIR}/util/data ${UNBOUNDDIR}/respip ${UNBOUNDDIR}/util/storage ${UNBOUNDDIR}/validator
+.PATH: ${UNBOUNDDIR} ${UNBOUNDDIR}/iterator ${UNBOUNDDIR}/sldns ${UNBOUNDDIR}/libunbound ${UNBOUNDDIR}/services ${UNBOUNDDIR}/services/cache ${UNBOUNDDIR}/util ${UNBOUNDDIR}/util/data ${UNBOUNDDIR}/respip ${UNBOUNDDIR}/util/storage ${UNBOUNDDIR}/validator
 
 PACKAGE=	local-unbound
 

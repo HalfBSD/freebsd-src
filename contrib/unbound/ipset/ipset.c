@@ -466,11 +466,11 @@ void ipset_inform_super(struct module_qstate *ATTR_UNUSED(qstate),
 }
 
 void ipset_clear(struct module_qstate *qstate, int id) {
-	struct cachedb_qstate *iq;
+	struct ipset_qstate *iq;
 	if (!qstate) {
 		return;
 	}
-	iq = (struct cachedb_qstate *)qstate->minfo[id];
+	iq = (struct ipset_qstate *)qstate->minfo[id];
 	if (iq) {
 		/* free contents of iq */
 		/* TODO */

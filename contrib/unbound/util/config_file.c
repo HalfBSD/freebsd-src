@@ -68,9 +68,6 @@
 #ifdef HAVE_GLOB_H
 # include <glob.h>
 #endif
-#ifdef CLIENT_SUBNET
-#include "edns-subnet/edns-subnet.h"
-#endif
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
@@ -83,8 +80,6 @@ gid_t cfg_gid = (gid_t)-1;
 int autr_permit_small_holddown = 0;
 /** size (in bytes) of stream wait buffers max */
 size_t stream_wait_max = 4 * 1024 * 1024;
-size_t http2_query_buffer_max = 4 * 1024 * 1024;
-size_t http2_response_buffer_max = 4 * 1024 * 1024;
 
 /** global config during parsing */
 struct config_parser_state* cfg_parser = 0;
@@ -133,14 +128,6 @@ config_create(void)
 	cfg->tls_win_cert = 0;
 	cfg->tls_use_sni = 1;
 	if(!(cfg->tls_protocols = strdup("TLSv1.2 TLSv1.3"))) goto error_exit;
-	cfg->https_port = UNBOUND_DNS_OVER_HTTPS_PORT;
-	if(!(cfg->http_endpoint = strdup("/dns-query"))) goto error_exit;
-	cfg->http_max_streams = 100;
-	cfg->http_query_buffer_size = 4*1024*1024;
-	cfg->http_response_buffer_size = 4*1024*1024;
-	cfg->http_nodelay = 1;
-	cfg->quic_port = UNBOUND_DNS_OVER_QUIC_PORT;
-	cfg->quic_size = 8*1024*1024;
 	cfg->use_syslog = 1;
 	cfg->log_identity = NULL; /* changed later with argv[0] */
 	cfg->log_time_ascii = 0;
@@ -227,18 +214,6 @@ config_create(void)
 	cfg->stubs = NULL;
 	cfg->forwards = NULL;
 	cfg->auths = NULL;
-#ifdef CLIENT_SUBNET
-	cfg->client_subnet = NULL;
-	cfg->client_subnet_zone = NULL;
-	cfg->client_subnet_opcode = LDNS_EDNS_CLIENT_SUBNET;
-	cfg->client_subnet_always_forward = 0;
-	cfg->max_client_subnet_ipv4 = 24;
-	cfg->max_client_subnet_ipv6 = 56;
-	cfg->min_client_subnet_ipv4 = 0;
-	cfg->min_client_subnet_ipv6 = 0;
-	cfg->max_ecs_tree_size_ipv4 = 100;
-	cfg->max_ecs_tree_size_ipv6 = 100;
-#endif
 	cfg->views = NULL;
 	cfg->acls = NULL;
 	cfg->tcp_connection_limits = NULL;
@@ -357,16 +332,6 @@ config_create(void)
 	cfg->shm_key = 11777;
 	cfg->edns_client_strings = NULL;
 	cfg->edns_client_string_opcode = 65001;
-	cfg->dnscrypt = 0;
-	cfg->dnscrypt_port = 0;
-	cfg->dnscrypt_provider = NULL;
-	cfg->dnscrypt_provider_cert = NULL;
-	cfg->dnscrypt_provider_cert_rotated = NULL;
-	cfg->dnscrypt_secret_key = NULL;
-	cfg->dnscrypt_shared_secret_cache_size = 4*1024*1024;
-	cfg->dnscrypt_shared_secret_cache_slabs = 0;
-	cfg->dnscrypt_nonce_cache_size = 4*1024*1024;
-	cfg->dnscrypt_nonce_cache_slabs = 0;
 	cfg->pad_responses = 1;
 	cfg->pad_responses_block_size = 468; /* from RFC8467 */
 	cfg->pad_queries = 1;
@@ -384,31 +349,6 @@ config_create(void)
 	cfg->cookie_secret_len = 16;
 	init_cookie_secret(cfg->cookie_secret, cfg->cookie_secret_len);
 	cfg->cookie_secret_file = NULL;
-#ifdef USE_CACHEDB
-	if(!(cfg->cachedb_backend = strdup("testframe"))) goto error_exit;
-	if(!(cfg->cachedb_secret = strdup("default"))) goto error_exit;
-	cfg->cachedb_no_store = 0;
-	cfg->cachedb_check_when_serve_expired = 1;
-#ifdef USE_REDIS
-	if(!(cfg->redis_server_host = strdup("127.0.0.1"))) goto error_exit;
-	if(!(cfg->redis_replica_server_host = strdup(""))) goto error_exit;
-	cfg->redis_server_path = NULL;
-	cfg->redis_replica_server_path = NULL;
-	cfg->redis_server_password = NULL;
-	cfg->redis_replica_server_password = NULL;
-	cfg->redis_timeout = 100;
-	cfg->redis_replica_timeout = 100;
-	cfg->redis_command_timeout = 0;
-	cfg->redis_replica_command_timeout = 0;
-	cfg->redis_connect_timeout = 0;
-	cfg->redis_replica_connect_timeout = 0;
-	cfg->redis_server_port = 6379;
-	cfg->redis_replica_server_port = 6379;
-	cfg->redis_expire_records = 0;
-	cfg->redis_logical_db = 0;
-	cfg->redis_replica_logical_db = 0;
-#endif  /* USE_REDIS */
-#endif  /* USE_CACHEDB */
 #ifdef USE_IPSET
 	cfg->ipset_name_v4 = NULL;
 	cfg->ipset_name_v6 = NULL;
@@ -456,8 +396,6 @@ struct config_file* config_create_forlib(void)
 	/* Need to explicitly define the slabs from their 0 default value */
 	cfg->ip_ratelimit_slabs = 1;
 	cfg->ratelimit_slabs = 1;
-	cfg->dnscrypt_shared_secret_cache_slabs = 1;
-	cfg->dnscrypt_nonce_cache_slabs = 1;
 	return cfg;
 }
 
@@ -632,15 +570,6 @@ int config_set_option(struct config_file* cfg, const char* opt,
 		free(cfg->tls_protocols);
 		return (cfg->tls_protocols = strdup(val)) != NULL;
 	}
-	else S_NUMBER_NONZERO("https-port:", https_port)
-	else S_STR("http-endpoint:", http_endpoint)
-	else S_NUMBER_NONZERO("http-max-streams:", http_max_streams)
-	else S_MEMSIZE("http-query-buffer-size:", http_query_buffer_size)
-	else S_MEMSIZE("http-response-buffer-size:", http_response_buffer_size)
-	else S_YNO("http-nodelay:", http_nodelay)
-	else S_YNO("http-notls-downstream:", http_notls_downstream)
-	else S_NUMBER_NONZERO("quic-port:", quic_port)
-	else S_MEMSIZE("quic-size:", quic_size)
 	else S_YNO("interface-automatic:", if_automatic)
 	else S_STR("interface-automatic-ports:", if_automatic_ports)
 	else S_YNO("use-systemd:", use_systemd)
@@ -803,28 +732,6 @@ int config_set_option(struct config_file* cfg, const char* opt,
 	else S_STR("control-cert-file:", control_cert_file)
 	else S_STR("module-config:", module_conf)
 	else S_YNO("disable-dnssec-lame-check:", disable_dnssec_lame_check)
-#ifdef CLIENT_SUBNET
-	/* Can't set max subnet prefix here, since that value is used when
-	 * generating the address tree. */
-	/* No client-subnet-always-forward here, module registration depends on
-	 * this option. */
-#endif
-#ifdef USE_DNSCRYPT
-	else S_YNO("dnscrypt-enable:", dnscrypt)
-	else S_NUMBER_NONZERO("dnscrypt-port:", dnscrypt_port)
-	else S_STR("dnscrypt-provider:", dnscrypt_provider)
-	else S_STRLIST_UNIQ("dnscrypt-provider-cert:", dnscrypt_provider_cert)
-	else S_STRLIST("dnscrypt-provider-cert-rotated:", dnscrypt_provider_cert_rotated)
-	else S_STRLIST_UNIQ("dnscrypt-secret-key:", dnscrypt_secret_key)
-	else S_MEMSIZE("dnscrypt-shared-secret-cache-size:",
-		dnscrypt_shared_secret_cache_size)
-	else S_POW2("dnscrypt-shared-secret-cache-slabs:",
-		dnscrypt_shared_secret_cache_slabs)
-	else S_MEMSIZE("dnscrypt-nonce-cache-size:",
-		dnscrypt_nonce_cache_size)
-	else S_POW2("dnscrypt-nonce-cache-slabs:",
-		dnscrypt_nonce_cache_slabs)
-#endif
 	else if(strcmp(opt, "ip-ratelimit-cookie:") == 0) {
 	    IS_NUMBER_OR_ZERO; cfg->ip_ratelimit_cookie = atoi(val);
 	    infra_ip_ratelimit_cookie=cfg->ip_ratelimit_cookie;
@@ -866,10 +773,6 @@ int config_set_option(struct config_file* cfg, const char* opt,
 #endif
 	else S_YNO("answer-cookie:", do_answer_cookie)
 	else S_STR("cookie-secret-file:", cookie_secret_file)
-#ifdef USE_CACHEDB
-	else S_YNO("cachedb-no-store:", cachedb_no_store)
-	else S_YNO("cachedb-check-when-serve-expired:", cachedb_check_when_serve_expired)
-#endif /* USE_CACHEDB */
 	else if(strcmp(opt, "define-tag:") ==0) {
 		return config_add_tag(cfg, val);
 	/* val_sig_skew_min, max and val_max_restart are copied into val_env
@@ -900,10 +803,7 @@ int config_set_option(struct config_file* cfg, const char* opt,
 		 * name, forward-addr, forward-host,
 		 * ratelimit-for-domain, ratelimit-below-domain,
 		 * local-zone-tag, access-control-view, interface-*,
-		 * send-client-subnet, client-subnet-always-forward,
-		 * max-client-subnet-ipv4, max-client-subnet-ipv6,
-		 * min-client-subnet-ipv4, min-client-subnet-ipv6,
-		 * max-ecs-tree-size-ipv4, max-ecs-tree-size-ipv6, ipsecmod_hook,
+		 * ipsecmod_hook,
 		 * ipsecmod_whitelist. */
 		return 0;
 	}
@@ -1156,15 +1056,6 @@ config_get_option(struct config_file* cfg, const char* opt,
 	else O_STR(opt, "tls-ciphersuites", tls_ciphersuites)
 	else O_YNO(opt, "tls-use-sni", tls_use_sni)
 	else O_STR(opt, "tls-protocols", tls_protocols)
-	else O_DEC(opt, "https-port", https_port)
-	else O_STR(opt, "http-endpoint", http_endpoint)
-	else O_UNS(opt, "http-max-streams", http_max_streams)
-	else O_MEM(opt, "http-query-buffer-size", http_query_buffer_size)
-	else O_MEM(opt, "http-response-buffer-size", http_response_buffer_size)
-	else O_YNO(opt, "http-nodelay", http_nodelay)
-	else O_YNO(opt, "http-notls-downstream", http_notls_downstream)
-	else O_DEC(opt, "quic-port", quic_port)
-	else O_MEM(opt, "quic-size", quic_size)
 	else O_YNO(opt, "use-systemd", use_systemd)
 	else O_YNO(opt, "do-daemonize", do_daemonize)
 	else O_STR(opt, "chroot", chrootdir)
@@ -1261,34 +1152,6 @@ config_get_option(struct config_file* cfg, const char* opt,
 	else O_DEC(opt, "wait-limit-cookie", wait_limit_cookie)
 	else O_LS2(opt, "wait-limit-netblock", wait_limit_netblock)
 	else O_LS2(opt, "wait-limit-cookie-netblock", wait_limit_cookie_netblock)
-#ifdef CLIENT_SUBNET
-	else O_LST(opt, "send-client-subnet", client_subnet)
-	else O_LST(opt, "client-subnet-zone", client_subnet_zone)
-	else O_DEC(opt, "max-client-subnet-ipv4", max_client_subnet_ipv4)
-	else O_DEC(opt, "max-client-subnet-ipv6", max_client_subnet_ipv6)
-	else O_DEC(opt, "min-client-subnet-ipv4", min_client_subnet_ipv4)
-	else O_DEC(opt, "min-client-subnet-ipv6", min_client_subnet_ipv6)
-	else O_DEC(opt, "max-ecs-tree-size-ipv4", max_ecs_tree_size_ipv4)
-	else O_DEC(opt, "max-ecs-tree-size-ipv6", max_ecs_tree_size_ipv6)
-	else O_YNO(opt, "client-subnet-always-forward:",
-		client_subnet_always_forward)
-#endif
-#ifdef USE_DNSCRYPT
-	else O_YNO(opt, "dnscrypt-enable", dnscrypt)
-	else O_DEC(opt, "dnscrypt-port", dnscrypt_port)
-	else O_STR(opt, "dnscrypt-provider", dnscrypt_provider)
-	else O_LST(opt, "dnscrypt-provider-cert", dnscrypt_provider_cert)
-	else O_LST(opt, "dnscrypt-provider-cert-rotated", dnscrypt_provider_cert_rotated)
-	else O_LST(opt, "dnscrypt-secret-key", dnscrypt_secret_key)
-	else O_MEM(opt, "dnscrypt-shared-secret-cache-size",
-		dnscrypt_shared_secret_cache_size)
-	else O_DEC(opt, "dnscrypt-shared-secret-cache-slabs",
-		dnscrypt_shared_secret_cache_slabs)
-	else O_MEM(opt, "dnscrypt-nonce-cache-size",
-		dnscrypt_nonce_cache_size)
-	else O_DEC(opt, "dnscrypt-nonce-cache-slabs",
-		dnscrypt_nonce_cache_slabs)
-#endif
 	else O_YNO(opt, "unblock-lan-zones", unblock_lan_zones)
 	else O_YNO(opt, "insecure-lan-zones", insecure_lan_zones)
 	else O_DEC(opt, "max-udp-size", max_udp_size)
@@ -1345,31 +1208,6 @@ config_get_option(struct config_file* cfg, const char* opt,
 #endif
 	else O_YNO(opt, "answer-cookie", do_answer_cookie)
 	else O_STR(opt, "cookie-secret-file", cookie_secret_file)
-#ifdef USE_CACHEDB
-	else O_STR(opt, "backend", cachedb_backend)
-	else O_STR(opt, "secret-seed", cachedb_secret)
-	else O_YNO(opt, "cachedb-no-store", cachedb_no_store)
-	else O_YNO(opt, "cachedb-check-when-serve-expired", cachedb_check_when_serve_expired)
-#ifdef USE_REDIS
-	else O_STR(opt, "redis-server-host", redis_server_host)
-	else O_STR(opt, "redis-replica-server-host", redis_replica_server_host)
-	else O_DEC(opt, "redis-server-port", redis_server_port)
-	else O_DEC(opt, "redis-replica-server-port", redis_replica_server_port)
-	else O_STR(opt, "redis-server-path", redis_server_path)
-	else O_STR(opt, "redis-replica-server-path", redis_replica_server_path)
-	else O_STR(opt, "redis-server-password", redis_server_password)
-	else O_STR(opt, "redis-replica-server-password", redis_replica_server_password)
-	else O_DEC(opt, "redis-timeout", redis_timeout)
-	else O_DEC(opt, "redis-replica-timeout", redis_replica_timeout)
-	else O_DEC(opt, "redis-command-timeout", redis_command_timeout)
-	else O_DEC(opt, "redis-replica-command-timeout", redis_replica_command_timeout)
-	else O_DEC(opt, "redis-connect-timeout", redis_connect_timeout)
-	else O_DEC(opt, "redis-replica-connect-timeout", redis_replica_connect_timeout)
-	else O_YNO(opt, "redis-expire-records", redis_expire_records)
-	else O_DEC(opt, "redis-logical-db", redis_logical_db)
-	else O_DEC(opt, "redis-replica-logical-db", redis_replica_logical_db)
-#endif  /* USE_REDIS */
-#endif  /* USE_CACHEDB */
 #ifdef USE_IPSET
 	else O_STR(opt, "name-v4", ipset_name_v4)
 	else O_STR(opt, "name-v6", ipset_name_v6)
@@ -1430,10 +1268,6 @@ do {										\
 	SET_AUTO_SLAB(key_cache_slabs, "key-cache-slabs", pow_2_threads);
 	SET_AUTO_SLAB(ip_ratelimit_slabs, "ip-ratelimit-slabs", pow_2_threads);
 	SET_AUTO_SLAB(ratelimit_slabs, "ratelimit-slabs", pow_2_threads);
-	SET_AUTO_SLAB(dnscrypt_shared_secret_cache_slabs,
-		"dnscrypt-shared-secret-cache-slabs", pow_2_threads);
-	SET_AUTO_SLAB(dnscrypt_nonce_cache_slabs,
-		"dnscrypt-nonce-cache-slabs", pow_2_threads);
 }
 
 int
@@ -1515,7 +1349,6 @@ config_read(struct config_file* cfg, const char* filename, const char* chroot)
 	ub_c_parse();
 	fclose(in);
 
-	if(!cfg->dnscrypt) cfg->dnscrypt_port = 0;
 
 	if(cfg_parser->errors != 0) {
 		fprintf(stderr, "read %s failed: %d errors in configuration file\n",
@@ -1696,7 +1529,6 @@ config_delete(struct config_file* cfg)
 	free(cfg->tls_ciphers);
 	free(cfg->tls_ciphersuites);
 	free(cfg->tls_protocols);
-	free(cfg->http_endpoint);
 	if(cfg->log_identity) {
 		log_ident_revert_to_default();
 		free(cfg->log_identity);
@@ -1709,10 +1541,6 @@ config_delete(struct config_file* cfg)
 	config_delviews(cfg->views);
 	config_delstrlist(cfg->donotqueryaddrs);
 	config_delstrlist(cfg->root_hints);
-#ifdef CLIENT_SUBNET
-	config_delstrlist(cfg->client_subnet);
-	config_delstrlist(cfg->client_subnet_zone);
-#endif
 	free(cfg->identity);
 	free(cfg->version);
 	free(cfg->http_user_agent);
@@ -1768,18 +1596,6 @@ config_delete(struct config_file* cfg)
 	config_delstrlist(cfg->ipsecmod_whitelist);
 #endif
 	free(cfg->cookie_secret_file);
-#ifdef USE_CACHEDB
-	free(cfg->cachedb_backend);
-	free(cfg->cachedb_secret);
-#ifdef USE_REDIS
-	free(cfg->redis_server_host);
-	free(cfg->redis_replica_server_host);
-	free(cfg->redis_server_path);
-	free(cfg->redis_replica_server_path);
-	free(cfg->redis_server_password);
-	free(cfg->redis_replica_server_password);
-#endif  /* USE_REDIS */
-#endif  /* USE_CACHEDB */
 #ifdef USE_IPSET
 	free(cfg->ipset_name_v4);
 	free(cfg->ipset_name_v6);
@@ -2440,8 +2256,6 @@ config_apply(struct config_file* config)
 	log_set_time_iso(config->log_time_iso);
 	autr_permit_small_holddown = config->permit_small_holddown;
 	stream_wait_max = config->stream_wait_size;
-	http2_query_buffer_max = config->http_query_buffer_size;
-	http2_response_buffer_max = config->http_response_buffer_size;
 }
 
 void config_lookup_uid(struct config_file* cfg)
@@ -2817,43 +2631,11 @@ if_is_pp2(const char* ifname, int default_port,
 	return if_listens_on(ifname, default_port, 0, proxy_protocol_port);
 }
 
-int
-if_is_https(const char* ifname, int default_port, int https_port)
-{
-	return if_listens_on(ifname, default_port, https_port, NULL);
-}
-
-int
-if_is_dnscrypt(const char* ifname, int default_port, int dnscrypt_port)
-{
-#ifdef USE_DNSCRYPT
-	return if_listens_on(ifname, default_port, dnscrypt_port, NULL);
-#else
-	(void)ifname;
-	(void)default_port;
-	(void)dnscrypt_port;
-	return 0;
-#endif
-}
-
 size_t
 getmem_str(char* str)
 {
 	if(!str) return 0;
 	return strlen(str)+1;
-}
-
-int
-if_is_quic(const char* ifname, int default_port, int quic_port)
-{
-#ifdef HAVE_NGTCP2
-	return if_listens_on(ifname, default_port, quic_port, NULL);
-#else
-	(void)ifname;
-	(void)default_port;
-	(void)quic_port;
-	return 0;
-#endif
 }
 
 int
@@ -2877,37 +2659,6 @@ cfg_ports_list_contains(char* ports, int p)
 			return 1;
 	}
 	return 0;
-}
-
-int
-cfg_has_https(struct config_file* cfg)
-{
-	int i;
-	for(i = 0; i<cfg->num_ifs; i++) {
-		if(if_is_https(cfg->ifs[i], cfg->port, cfg->https_port))
-			return 1;
-	}
-	if(cfg_ports_list_contains(cfg->if_automatic_ports, cfg->https_port))
-		return 1;
-	return 0;
-}
-
-int
-cfg_has_quic(struct config_file* cfg)
-{
-#ifdef HAVE_NGTCP2
-	int i;
-	for(i = 0; i<cfg->num_ifs; i++) {
-		if(if_is_quic(cfg->ifs[i], cfg->port, cfg->quic_port))
-			return 1;
-	}
-	if(cfg_ports_list_contains(cfg->if_automatic_ports, cfg->quic_port))
-		return 1;
-	return 0;
-#else
-	(void)cfg;
-	return 0;
-#endif
 }
 
 int

@@ -138,14 +138,6 @@ Requests are mapped to views with
 \fI\%access\-control\-view\fP and
 \fI\%interface\-view\fP\&.
 .TP
-.B \fI\%dnscrypt:\fP
-Configuration for the optional DNSCrypt feature.
-.TP
-.B \fI\%cachedb:\fP
-Configuration for the optional \fBcachedb\fP module that can interface
-with second level caches, currently Redis or Redis\-complatible
-databases.
-.TP
 .B \fI\%rpz:\fP
 Configuration for Response Policy Zones that allows for DNS filtering.
 Requires the \fBrespip\fP module.
@@ -315,7 +307,7 @@ The port numbers are separated by spaces in the string.
 .sp
 This can be used to have interface automatic to deal with the interface,
 and listen on the normal port number, by including it in the list, and
-also HTTPS or DNS\-over\-TLS port numbers by putting them in the list as
+also DNS\-over\-TLS port numbers by putting them in the list as
 well.
 .sp
 Default: \(dq\(dq
@@ -1120,10 +1112,9 @@ If both are present in the config file the last is used.
 .INDENT 0.0
 .TP
 .B tls\-service\-key: \fI<file>\fP 
-If enabled, the server provides DNS\-over\-TLS or DNS\-over\-HTTPS service on
+If enabled, the server provides DNS\-over\-TLS service on
 the TCP ports marked implicitly or explicitly for these services with
-\fI\%tls\-port\fP or
-\fI\%https\-port\fP\&.
+\fI\%tls\-port\fP\&.
 The file must contain the private key for the TLS session, the public
 certificate is in the \fI\%tls\-service\-pem\fP
 file and it must also be specified if
@@ -1136,17 +1127,8 @@ are read in on reload, and fast_reload.
 The server checks the modification time of the file (and the filename)
 to see if the file has changed for reload.
 The ports enabled implicitly or explicitly via
-\fI\%tls\-port\fP and
-\fI\%https\-port\fP do not provide normal DNS TCP
+\fI\%tls\-port\fP do not provide normal DNS TCP
 service.
-.sp
-\fBNOTE:\fP
-.INDENT 7.0
-.INDENT 3.5
-Unbound needs to be compiled with libnghttp2 in order to provide
-DNS\-over\-HTTPS.
-.UNINDENT
-.UNINDENT
 .sp
 Default: \(dq\(dq (disabled)
 .UNINDENT
@@ -1343,69 +1325,18 @@ The block size with which to pad queries sent over TLS upstreams.
 Default: 128
 .UNINDENT
 .INDENT 0.0
-.TP
-.B https\-port: \fI<number>\fP 
-The port number on which to provide DNS\-over\-HTTPS service.
-Only interfaces configured with that port number as @number get the HTTPS
-service.
-.sp
-Default: 443
 .UNINDENT
 .INDENT 0.0
-.TP
-.B http\-endpoint: \fI<endpoint string>\fP 
-The HTTP endpoint to provide DNS\-over\-HTTPS service on.
-.sp
-Default: /dns\-query
 .UNINDENT
 .INDENT 0.0
-.TP
-.B http\-max\-streams: \fI<number of streams>\fP 
-Number used in the SETTINGS_MAX_CONCURRENT_STREAMS parameter in the HTTP/2
-SETTINGS frame for DNS\-over\-HTTPS connections.
-.sp
-Default: 100
 .UNINDENT
 .INDENT 0.0
-.TP
-.B http\-query\-buffer\-size: \fI<size in bytes>\fP 
-Maximum number of bytes used for all HTTP/2 query buffers combined.
-These buffers contain (partial) DNS queries waiting for request stream
-completion.
-An RST_STREAM frame will be send to streams exceeding this limit.
-A plain number is in bytes, append \(aqk\(aq, \(aqm\(aq or \(aqg\(aq for kilobytes, megabytes
-or gigabytes (1024*1024 bytes in a megabyte).
-.sp
-Default: 4m
 .UNINDENT
 .INDENT 0.0
-.TP
-.B http\-response\-buffer\-size: \fI<size in bytes>\fP 
-Maximum number of bytes used for all HTTP/2 response buffers combined.
-These buffers contain DNS responses waiting to be written back to the
-clients.
-An RST_STREAM frame will be send to streams exceeding this limit.
-A plain number is in bytes, append \(aqk\(aq, \(aqm\(aq or \(aqg\(aq for kilobytes, megabytes
-or gigabytes (1024*1024 bytes in a megabyte).
-.sp
-Default: 4m
 .UNINDENT
 .INDENT 0.0
-.TP
-.B http\-nodelay: \fI<yes or no>\fP 
-Set TCP_NODELAY socket option on sockets used to provide DNS\-over\-HTTPS
-service.
-Ignored if the option is not available.
-.sp
-Default: yes
 .UNINDENT
 .INDENT 0.0
-.TP
-.B http\-notls\-downstream: \fI<yes or no>\fP 
-Disable use of TLS for the downstream DNS\-over\-HTTP connections.
-Useful for local back end servers.
-.sp
-Default: no
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -1425,33 +1356,12 @@ ratelimiting.
 .sp
 PROXYv2 is supported for UDP and TCP/TLS listening interfaces.
 .sp
-There is no support for PROXYv2 on a DoH, DoQ or DNSCrypt listening interface.
 .sp
 Can list multiple, each on a new statement.
 .UNINDENT
 .INDENT 0.0
-.TP
-.B quic\-port: \fI<number>\fP 
-The port number on which to provide DNS\-over\-QUIC service.
-Only interfaces configured with that port number as @number get the QUIC
-service.
-The interface uses QUIC for the UDP traffic on that port number.
-If it is set to 0, the server does not init QUIC code, and QUIC is
-disabled.
-This is similar to if QUIC is not in use, but then explicitly.
-.sp
-Default: 853
 .UNINDENT
 .INDENT 0.0
-.TP
-.B quic\-size: \fI<size in bytes>\fP 
-Maximum number of bytes for all QUIC buffers and data combined.
-A plain number is in bytes, append \(aqk\(aq, \(aqm\(aq or \(aqg\(aq for kilobytes, megabytes
-or gigabytes (1024*1024 bytes in a megabyte).
-New connections receive connection refused when the limit is exceeded.
-New streams are reset when the limit is exceeded.
-.sp
-Default: 8m
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -2420,8 +2330,6 @@ queries.
 .sp
 Most modules that need to be listed here have to be listed at the beginning
 of the line.
-.sp
-The \fBsubnetcache\fP module has to be listed just before the iterator.
 .sp
 Default: \(dqvalidator iterator\(dq
 .UNINDENT
@@ -4691,280 +4599,6 @@ not have internet access.
 .sp
 Default: 64:ff9b::/96
 .UNINDENT
-.SH DNSCRYPT OPTIONS
-.sp
-These options are part of the \fBdnscrypt:\fP section.
-.sp
-The \fBdnscrypt:\fP section gives the settings of the dnscrypt channel.
-While those options are available, they are only meaningful if Unbound was
-compiled with \fB\-\-enable\-dnscrypt\fP\&.
-Currently certificate and secret/public keys cannot be generated by Unbound.
-You can use dnscrypt\-wrapper to generate those:
-\fI\%https://github.com/cofyc/dnscrypt\-wrapper/blob/master/README.md#usage\fP
-.INDENT 0.0
-.TP
-.B dnscrypt\-enable: \fI<yes or no>\fP 
-Whether or not the dnscrypt config should be enabled.
-You may define configuration but not activate it.
-.sp
-Default: no
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnscrypt\-port: \fI<port number>\fP 
-On which port should dnscrypt should be activated.
-.sp
-\fBNOTE:\fP
-.INDENT 7.0
-.INDENT 3.5
-There should be a matching interface option defined in the
-\fI\%server:\fP section for this port.
-.UNINDENT
-.UNINDENT
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnscrypt\-provider: \fI<provider name>\fP 
-The provider name to use to distribute certificates.
-This is of the form:
-.INDENT 7.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-2.dnscrypt\-cert.example.com.
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-\fBIMPORTANT:\fP
-.INDENT 7.0
-.INDENT 3.5
-The name \fIMUST\fP end with a dot.
-.UNINDENT
-.UNINDENT
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnscrypt\-secret\-key: \fI<path to secret key file>\fP 
-Path to the time limited secret key file.
-This option may be specified multiple times.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnscrypt\-provider\-cert: \fI<path to cert file>\fP 
-Path to the certificate related to the
-\fI\%dnscrypt\-secret\-key\fP\&.
-This option may be specified multiple times.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnscrypt\-provider\-cert\-rotated: \fI<path to cert file>\fP 
-Path to a certificate that we should be able to serve existing connection
-from but do not want to advertise over
-\fI\%dnscrypt\-provider\fP \(aqs TXT
-record certs distribution.
-.sp
-A typical use case is when rotating certificates, existing clients may
-still use the client magic from the old cert in their queries until they
-fetch and update the new cert.
-Likewise, it would allow one to prime the new cert/key without distributing
-the new cert yet, this can be useful when using a network of servers using
-anycast and on which the configuration may not get updated at the exact
-same time.
-.sp
-By priming the cert, the servers can handle both old and new certs traffic
-while distributing only one.
-.sp
-This option may be specified multiple times.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnscrypt\-shared\-secret\-cache\-size: \fI<memory size>\fP 
-Give the size of the data structure in which the shared secret keys are
-kept in.
-In bytes or use m(mega), k(kilo), g(giga).
-The shared secret cache is used when a same client is making multiple
-queries using the same public key.
-It saves a substantial amount of CPU.
-.sp
-Default: 4m
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnscrypt\-shared\-secret\-cache\-slabs: \fI<number>\fP 
-Number of slabs in the dnscrypt shared secrets cache.
-Slabs reduce lock contention by threads.
-Must be set to a power of 2.
-Setting (close) to the number of cpus is a fairly good setting.
-If left unconfigured, it will be configured automatically to be a power of
-2 close to the number of configured threads in multi\-threaded environments.
-.sp
-Default: (unconfigured)
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnscrypt\-nonce\-cache\-size: \fI<memory size>\fP 
-Give the size of the data structure in which the client nonces are kept in.
-In bytes or use m(mega), k(kilo), g(giga).
-The nonce cache is used to prevent dnscrypt message replaying.
-Client nonce should be unique for any pair of client pk/server sk.
-.sp
-Default: 4m
-.UNINDENT
-.INDENT 0.0
-.TP
-.B dnscrypt\-nonce\-cache\-slabs: \fI<number>\fP 
-Number of slabs in the dnscrypt nonce cache.
-Slabs reduce lock contention by threads.
-Must be set to a power of 2.
-Setting (close) to the number of cpus is a fairly good setting.
-If left unconfigured, it will be configured automatically to be a power of
-2 close to the number of configured threads in multi\-threaded environments.
-.sp
-Default: (unconfigured)
-.UNINDENT
-.SH EDNS CLIENT SUBNET MODULE OPTIONS
-.sp
-These options are part of the \fBserver:\fP section.
-.sp
-The ECS module must be configured in the
-\fI\%module\-config\fP directive, e.g.:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-module\-config: \(dqsubnetcache validator iterator\(dq
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-and be compiled into the daemon to be enabled.
-.sp
-If the destination address is allowed in the configuration Unbound will add the
-EDNS0 option to the query containing the relevant part of the client\(aqs address.
-When an answer contains the ECS option the response and the option are placed
-in a specialized cache.
-If the authority indicated no support, the response is stored in the regular
-cache.
-.sp
-Additionally, when a client includes the option in its queries, Unbound will
-forward the option when sending the query to addresses that are explicitly
-allowed in the configuration using
-\fI\%send\-client\-subnet\fP\&.
-The option will always be forwarded, regardless the allowed addresses, when
-\fI\%client\-subnet\-always\-forward: yes\fP
-is set.
-In this case the lookup in the regular cache is skipped.
-.sp
-The maximum size of the ECS cache is controlled by
-\fI\%msg\-cache\-size\fP in the configuration file.
-On top of that, for each query only 100 different subnets are allowed to be
-stored for each address family.
-Exceeding that number, older entries will be purged from cache.
-.sp
-Note that due to the nature of how EDNS Client Subnet works, by segregating the
-client IP space in order to try and have tailored responses for prefixes of
-unknown sizes, resolution and cache response performance are impacted as a
-result.
-Usage of the subnetcache module should only be enabled in installations that
-require such functionality where the resolver and the clients belong to
-different networks.
-An example of that is an open resolver installation.
-.sp
-This module does not interact with the
-\fI\%serve\-expired*\fP and
-\fI\%prefetch\fP options.
-.INDENT 0.0
-.TP
-.B send\-client\-subnet: \fI<IP address>\fP 
-Send client source address to this authority.
-Append /num to indicate a classless delegation netblock, for example like
-\fB10.2.3.4/24\fP or \fB2001::11/64\fP\&.
-Can be given multiple times.
-Authorities not listed will not receive edns\-subnet information, unless
-domain in query is specified in
-\fI\%client\-subnet\-zone\fP\&.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B client\-subnet\-zone: \fI<domain>\fP 
-Send client source address in queries for this domain and its subdomains.
-Can be given multiple times.
-Zones not listed will not receive edns\-subnet information, unless hosted by
-authority specified in
-\fI\%send\-client\-subnet\fP\&.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B client\-subnet\-always\-forward: \fI<yes or no>\fP 
-Specify whether the ECS address check (configured using
-\fI\%send\-client\-subnet\fP) is applied
-for all queries, even if the triggering query contains an ECS record, or
-only for queries for which the ECS record is generated using the querier
-address (and therefore did not contain ECS data in the client query).
-If enabled, the address check is skipped when the client query contains an
-ECS record.
-And the lookup in the regular cache is skipped.
-.sp
-Default: no
-.UNINDENT
-.INDENT 0.0
-.TP
-.B max\-client\-subnet\-ipv6: \fI<number>\fP 
-Specifies the maximum prefix length of the client source address we are
-willing to expose to third parties for IPv6.
-.sp
-Default: 56
-.UNINDENT
-.INDENT 0.0
-.TP
-.B max\-client\-subnet\-ipv4: \fI<number>\fP 
-Specifies the maximum prefix length of the client source address we are
-willing to expose to third parties for IPv4.
-.sp
-Default: 24
-.UNINDENT
-.INDENT 0.0
-.TP
-.B min\-client\-subnet\-ipv6: \fI<number>\fP 
-Specifies the minimum prefix length of the IPv6 source mask we are willing
-to accept in queries.
-Shorter source masks result in REFUSED answers.
-Source mask of 0 is always accepted.
-.sp
-Default: 0
-.UNINDENT
-.INDENT 0.0
-.TP
-.B min\-client\-subnet\-ipv4: \fI<number>\fP 
-Specifies the minimum prefix length of the IPv4 source mask we are willing
-to accept in queries.
-Shorter source masks result in REFUSED answers.
-Source mask of 0 is always accepted.
-Default: 0
-.UNINDENT
-.INDENT 0.0
-.TP
-.B max\-ecs\-tree\-size\-ipv4: \fI<number>\fP 
-Specifies the maximum number of subnets ECS answers kept in the ECS radix
-tree.
-This number applies for each qname/qclass/qtype tuple.
-.sp
-Default: 100
-.UNINDENT
-.INDENT 0.0
-.TP
-.B max\-ecs\-tree\-size\-ipv6: \fI<number>\fP 
-Specifies the maximum number of subnets ECS answers kept in the ECS radix
-tree.
-This number applies for each qname/qclass/qtype tuple.
-.sp
-Default: 100
-.UNINDENT
 .SH OPPORTUNISTIC IPSEC SUPPORT MODULE OPTIONS
 .sp
 These options are part of the \fBserver:\fP section.
@@ -5080,298 +4714,6 @@ If the option is not specified, all domains are treated as being allowed
 .TP
 .B ipsecmod\-whitelist: \fI<domain>\fP 
 Alternate syntax for \fI\%ipsecmod\-allow\fP\&.
-.UNINDENT
-.SH CACHE DB MODULE OPTIONS
-.sp
-These options are part of the \fBcachedb:\fP section.
-.sp
-The Cache DB module must be configured in the
-\fI\%module\-config\fP directive, e.g.:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-module\-config: \(dqvalidator cachedb iterator\(dq
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-and be compiled into the daemon with \fB\-\-enable\-cachedb\fP\&.
-.sp
-If this module is enabled and configured, the specified backend database works
-as a second level cache; when Unbound cannot find an answer to a query in its
-built\-in in\-memory cache, it consults the specified backend.
-If it finds a valid answer in the backend, Unbound uses it to respond to the
-query without performing iterative DNS resolution.
-If Unbound cannot even find an answer in the backend, it resolves the query as
-usual, and stores the answer in the backend.
-.sp
-This module interacts with the \fIserve\-expired\-*\fP options and will reply with
-expired data if Unbound is configured for that.
-.sp
-If Unbound was built with \fB\-\-with\-libhiredis\fP on a system that has installed
-the hiredis C client library of Redis, then the \fBredis\fP backend can be used.
-This backend communicates with the specified Redis server over a TCP connection
-to store and retrieve cache data.
-It can be used as a persistent and/or shared cache backend.
-.sp
-\fBNOTE:\fP
-.INDENT 0.0
-.INDENT 3.5
-Unbound never removes data stored in the Redis server, even if some data
-have expired in terms of DNS TTL or the Redis server has cached too much
-data; if necessary the Redis server must be configured to limit the cache
-size, preferably with some kind of least\-recently\-used eviction policy.
-.UNINDENT
-.UNINDENT
-.sp
-Additionally, the
-\fI\%redis\-expire\-records\fP option
-can be used in order to set the relative DNS TTL of the message as timeout to
-the Redis records; keep in mind that some additional memory is used per key and
-that the expire information is stored as absolute Unix timestamps in Redis
-(computer time must be stable).
-.sp
-This backend uses synchronous communication with the Redis server based on the
-assumption that the communication is stable and sufficiently fast.
-The thread waiting for a response from the Redis server cannot handle other DNS
-queries.
-Although the backend has the ability to reconnect to the server when the
-connection is closed unexpectedly and there is a configurable timeout in case
-the server is overly slow or hangs up, these cases are assumed to be very rare.
-If connection close or timeout happens too often, Unbound will be effectively
-unusable with this backend.
-It\(aqs the administrator\(aqs responsibility to make the assumption hold.
-.sp
-The \fBcachedb:\fP section gives custom settings of the cache DB module.
-.INDENT 0.0
-.TP
-.B backend: \fI<backend name>\fP 
-Specify the backend database name.
-The default database is the in\-memory backend named \fBtestframe\fP, which,
-as the name suggests, is not of any practical use.
-Depending on the build\-time configuration, \fBredis\fP backend may also be
-used as described above.
-.sp
-Default: testframe
-.UNINDENT
-.INDENT 0.0
-.TP
-.B secret\-seed: \fI\(dq<secret string>\(dq\fP 
-Specify a seed to calculate a hash value from query information.
-This value will be used as the key of the corresponding answer for the
-backend database and can be customized if the hash should not be
-predictable operationally.
-If the backend database is shared by multiple Unbound instances, all
-instances must use the same secret seed.
-.sp
-Default: \(dqdefault\(dq
-.UNINDENT
-.INDENT 0.0
-.TP
-.B cachedb\-no\-store: \fI<yes or no>\fP 
-If the backend should be read from, but not written to.
-This makes this instance not store dns messages in the backend.
-But if data is available it is retrieved.
-.sp
-Default: no
-.UNINDENT
-.INDENT 0.0
-.TP
-.B cachedb\-check\-when\-serve\-expired: \fI<yes or no>\fP 
-If enabled, the cachedb is checked before an expired response is returned.
-When
-\fI\%serve\-expired\fP
-is enabled, without
-\fI\%serve\-expired\-client\-timeout\fP
-, it then does not immediately respond with an expired response from cache,
-but instead first checks the cachedb for valid contents, and if so returns it.
-If the cachedb also has no valid contents, the serve expired response is sent.
-If also
-\fI\%serve\-expired\-client\-timeout\fP
-is enabled, the expired response is delayed until the timeout expires.
-Unless the lookup succeeds within the timeout.
-.sp
-Default: yes
-.UNINDENT
-.sp
-The following \fBcachedb:\fP options are specific to the \fBredis\fP backend.
-.INDENT 0.0
-.TP
-.B redis\-server\-host: \fI<server address or name>\fP 
-The IP (either v6 or v4) address or domain name of the Redis server.
-In general an IP address should be specified as otherwise Unbound will have
-to resolve the name of the server every time it establishes a connection to
-the server.
-.sp
-Default: 127.0.0.1
-.UNINDENT
-.INDENT 0.0
-.TP
-.B redis\-server\-port: \fI<port number>\fP 
-The TCP port number of the Redis server.
-.sp
-Default: 6379
-.UNINDENT
-.INDENT 0.0
-.TP
-.B redis\-server\-path: \fI<unix socket path>\fP 
-The unix socket path to connect to the Redis server.
-Unix sockets may have better throughput than the IP address option.
-.sp
-Default: \(dq\(dq (disabled)
-.UNINDENT
-.INDENT 0.0
-.TP
-.B redis\-server\-password: \fI\(dq<password>\(dq\fP 
-The Redis AUTH password to use for the Redis server.
-Only relevant if Redis is configured for client password authorisation.
-.sp
-Default: \(dq\(dq (disabled)
-.UNINDENT
-.INDENT 0.0
-.TP
-.B redis\-timeout: \fI<msec>\fP 
-The period until when Unbound waits for a response from the Redis server.
-If this timeout expires Unbound closes the connection, treats it as if the
-Redis server does not have the requested data, and will try to re\-establish
-a new connection later.
-.sp
-Default: 100
-.UNINDENT
-.INDENT 0.0
-.TP
-.B redis\-command\-timeout: \fI<msec>\fP 
-The timeout to use for Redis commands, in milliseconds.
-If \fB0\fP, it uses the
-\fI\%redis\-timeout\fP
-value.
-.sp
-Default: 0
-.UNINDENT
-.INDENT 0.0
-.TP
-.B redis\-connect\-timeout: \fI<msec>\fP 
-The timeout to use for Redis connection set up, in milliseconds.
-If \fB0\fP, it uses the
-\fI\%redis\-timeout\fP
-value.
-.sp
-Default: 0
-.UNINDENT
-.INDENT 0.0
-.TP
-.B redis\-expire\-records: \fI<yes or no>\fP 
-If Redis record expiration is enabled.
-If yes, Unbound sets timeout for Redis records so that Redis can evict keys
-that have expired automatically.
-If Unbound is configured with
-\fI\%serve\-expired\fP and
-\fI\%serve\-expired\-ttl: 0\fP, this option is
-internally reverted to \(dqno\(dq.
-.sp
-\fBNOTE:\fP
-.INDENT 7.0
-.INDENT 3.5
-Redis \(dqSET ... EX\(dq support is required for this option (Redis >= 2.6.12).
-.UNINDENT
-.UNINDENT
-.sp
-Default: no
-.UNINDENT
-.INDENT 0.0
-.TP
-.B redis\-logical\-db: \fI<logical database index>\fP 
-The logical database in Redis to use.
-These are databases in the same Redis instance sharing the same
-configuration and persisted in the same RDB/AOF file.
-If unsure about using this option, Redis documentation
-(\fI\%https://redis.io/commands/select/\fP) suggests not to use a single Redis
-instance for multiple unrelated applications.
-The default database in Redis is 0 while other logical databases need to be
-explicitly SELECT\(aqed upon connecting.
-.sp
-Default: 0
-.UNINDENT
-.INDENT 0.0
-.TP
-.B redis\-replica\-server\-host: \fI<server address or name>\fP 
-The IP (either v6 or v4) address or domain name of the Redis server.
-In general an IP address should be specified as otherwise Unbound will have
-to resolve the name of the server every time it establishes a connection to
-the server.
-.sp
-This server is treated as a read\-only replica server
-(\fI\%https://redis.io/docs/management/replication/#read\-only\-replica\fP).
-If specified, all Redis read commands will go to this replica server, while
-the write commands will go to the
-\fI\%redis\-server\-host\fP\&.
-.sp
-Default: \(dq\(dq (disabled).
-.UNINDENT
-.INDENT 0.0
-.TP
-.B redis\-replica\-server\-port: \fI<port number>\fP 
-The TCP port number of the Redis replica server.
-.sp
-Default: 6379
-.UNINDENT
-.INDENT 0.0
-.TP
-.B redis\-replica\-server\-path: \fI<unix socket path>\fP 
-The unix socket path to connect to the Redis replica server.
-Unix sockets may have better throughput than the IP address option.
-.sp
-Default: \(dq\(dq (disabled)
-.UNINDENT
-.INDENT 0.0
-.TP
-.B redis\-replica\-server\-password: \fI\(dq<password>\(dq\fP 
-The Redis AUTH password to use for the Redis server.
-Only relevant if Redis is configured for client password authorisation.
-.sp
-Default: \(dq\(dq (disabled)
-.UNINDENT
-.INDENT 0.0
-.TP
-.B redis\-replica\-timeout: \fI<msec>\fP 
-The period until when Unbound waits for a response from the Redis replica
-server.
-If this timeout expires Unbound closes the connection, treats it as if the
-Redis server does not have the requested data, and will try to re\-establish
-a new connection later.
-.sp
-Default: 100
-.UNINDENT
-.INDENT 0.0
-.TP
-.B redis\-replica\-command\-timeout: \fI<msec>\fP 
-The timeout to use for Redis replica commands, in milliseconds.
-If \fB0\fP, it uses the
-\fI\%redis\-replica\-timeout\fP
-value.
-.sp
-Default: 0
-.UNINDENT
-.INDENT 0.0
-.TP
-.B redis\-replica\-connect\-timeout: \fI<msec>\fP 
-The timeout to use for Redis replica connection set up, in milliseconds.
-If \fB0\fP, it uses the
-\fI\%redis\-replica\-timeout\fP
-value.
-.sp
-Default: 0
-.UNINDENT
-.INDENT 0.0
-.TP
-.B redis\-replica\-logical\-db: \fI<logical database index>\fP 
-Same as \fI\%redis\-logical\-db\fP but
-for the Redis replica server.
-.sp
-Default: 0
 .UNINDENT
 .SH RESPONSE POLICY ZONE OPTIONS
 .sp

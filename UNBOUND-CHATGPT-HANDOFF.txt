@@ -1,0 +1,235 @@
+HALFBSD UNBOUND HANDOFF
+Snapshot: 2026-10-11
+
+STATUS: FIRST REMOVAL PASS COMPLETE; FULL REDUCTION STILL PENDING
+
+Repository: /home/charlie/Development/freebsd-src
+Branch: halfbsd2
+Remote: origin = https://github.com/HalfBSD/freebsd-src.git
+Implemented, committed, and pushed:
+  3477854d7a5e0f74a91309e7d65efb516758f2c6
+  Remove independent Unbound modules and dnstap
+  https://github.com/HalfBSD/freebsd-src/commit/3477854d7a5e0f74a91309e7d65efb516758f2c6
+
+The tree was clean after that push. This handoff is a new, uncommitted file.
+It consolidates the session state; reading the repository is unnecessary to
+understand what has been completed, what was tested, and what remains.
+
+USER INTENT AND CONSTRAINTS
+
+Reduce bundled Unbound to one reliable workstation/home-network forwarding and
+caching resolver. Delete unwanted implementations, directives, documentation,
+dependencies, and build references. Do not add feature switches, profiles,
+compatibility shims, arbitrary processing-code loaders, or a second implementation.
+
+Keep IPv4 UDP/TCP both ways, multiple forwarders, positive/negative caching,
+prefetch, serve-expired, local-zone/local-data including ordinary record types
+and PTR, localhost/LAN access controls, DNSSEC validation and automatic anchors,
+outgoing DNS-over-TLS with certificate validation, logging/statistics/control,
+safe reloads, privilege dropping, and existing chroot support. Preserve shared
+TLS required by outgoing DNS and authenticated remote control. Preserve DNS
+protocol behavior including EDNS, CNAME chains, truncation and TCP fallback.
+Do not rewrite the iterator or introduce Capsicum during this task.
+
+The user narrowed the initial implementation step to an English plan on disk
+and easily removable components. The user subsequently explicitly authorized
+committing and pushing that completed pass; this has already happened. The latest
+request is to write this handoff, not to implement another removal or push it.
+
+COMPLETED REMOVALS
+
+1. DNS64 synthesis: deleted dns64/dns64.c and dns64.h, registration, directives,
+   configuration fields/lifetime/control references, allowlists and build rules.
+   Removed DNS64's special AAAA message-cache hashing by CD and redundant lookups.
+   Ordinary AAAA records and DNSSEC CD behavior remain. NAT64 transport is a
+   separate feature and remains, with default 64:ff9b::/96 independent of DNS64.
+
+2. Python query modules and PyUnbound machinery: implementation directories were
+   already absent from the import. Removed remaining loader registration,
+   configuration support, callback allowlists, build/install rules, Python/SWIG
+   dependency probes, and acx_python.m4/ax_pkg_swig.m4.
+
+3. Dynamic-library query modules: deleted dynlibmod implementation, header and
+   example, plus loader/configuration/callback/statistics/build/dependency support.
+
+4. Dnstap: deleted its implementation, headers, protobuf schema, frame-streams
+   transport and unbound-dnstap-socket source. Removed parser/configuration,
+   logging hooks, daemon/worker state, network parameters, callback allowlists,
+   fast-reload handling, build/dependency probes, and user documentation.
+
+Updated generated configure, lexer and parser files and HalfBSD library build
+references. The portable lexer build rule now uses -Pub_c_, matching HalfBSD.
+Removed obsolete downstream patches and Fedora packaging referencing deleted
+features. Updated configuration/control manuals and examples. Historical
+Changelog/CREDITS entries remain as provenance.
+
+Removed dependency support: Python development libraries, SWIG, the dynamic-module
+dlopen probe, libfstrm, protobuf-c and protoc-c. These optional dependencies were
+already absent from the baseline executable. OpenSSL, pthread and anchor XML
+support remain required. Redis/hiredis support has NOT yet been removed.
+
+MEASUREMENTS
+
+Metric                                      Before       After
+All files under contrib/unbound                 372         348
+C/header/lexer/parser files                     247         234
+Lines in those source files                 194386      184242
+Handwritten source lines                    177120      168478
+Daemon executable bytes                    6241272     6151984
+Stripped daemon bytes                       1370896     1354416
+HalfBSD installed Unbound programs                4           4
+
+Actual deletion: 24 files, including 13 C/header source files. Handwritten source
+decreased by 8,642 lines; total source by 10,144. Counts include comments and blank
+lines; handwritten excludes configparser.c/.h and configlexer.c. Generated
+Autoconf/lexer/parser changes account for much of the diff churn.
+
+Binary measurements are matched PORTABLE LINUX builds, not installed HalfBSD
+binaries: GCC 15.2, -g -O2, upstream LTO, internal event implementation, OpenSSL
+3.5.5. Stripped size decreased 16,480 bytes, about 1.2 percent. ELF NEEDED entries
+remain libssl.so.3, libcrypto.so.3, libc.so.6. Linux supplies pthread through libc;
+HalfBSD LIBADD remains ssl crypto pthread. Anchor also needs XML support.
+
+VALIDATION ACTUALLY COMPLETED
+
+Baseline, first removal group and final dnstap group compiled all four retained
+utilities and linked the portable private library. Programs: unbound,
+unbound-control, unbound-checkconf and unbound-anchor. Existing warnings include
+const qualification and generated-lexer macro redefinitions. git diff --check
+passed before commit. No upstream regression directories exist in this import.
+
+Added offline regression:
+  usr.sbin/unbound/tests/forwarding.py
+  usr.sbin/unbound/tests/dnssec-fixture.json
+
+The final suite passed all of these against controlled loopback upstreams:
+  - Local A, CNAME, PTR; incoming UDP/TCP.
+  - Forwarded positive responses and CNAME chains.
+  - Positive and negative cache hits verified with upstream request counters.
+  - UDP truncation followed by outgoing TCP fallback.
+  - Ordinary AAAA responses and CD/non-CD cache reuse.
+  - Valid DNSSEC signatures with AD; corrupt signatures yield SERVFAIL;
+    CD requests receive the otherwise rejected answer.
+  - Prefetch issues a fresh upstream request.
+  - Serve-expired answers during upstream failure.
+  - Multiple forwarders with one unavailable, runtime forward_add changes.
+  - Statistics, filesystem-protected Unix-socket control, reload, upstream change.
+  - fast_reload after dnstap hook removal.
+  - Outgoing TLS validates a private test CA and rejects hostname mismatch.
+  - Removed directives/module names are rejected by unbound-checkconf.
+
+Limits: no live public DNS verification; no forced exhaustive forwarder-selection
+order; no production privilege-drop/chroot test; no remote-control TLS test;
+no automatic trust-anchor-update or bootstrap runtime test; no full LAN ACL test.
+Fixture resolver runs as the invoking user with username/chroot options disabled.
+Test DNSSEC/TLS credentials are solely fixtures, valid until 2036. Runtime tests
+need permission to create loopback sockets in a restricted Codex sandbox.
+
+buildworld/buildkernel were NOT run. Portable Linux success does not establish
+HalfBSD integration success; a suitable HalfBSD build environment remains needed.
+
+TOOLS AND REPRODUCTION
+
+Initially no compiler, make, flex, bison or Autoconf was visible. Packages were
+downloaded and extracted under /tmp/unbound-tools, never installed by the agent.
+The user has since installed the non-SSL tools system-wide. cc, make, flex, bison
+and autoconf were confirmed visible before commit. Do not download them again
+without first checking whether the installed copies satisfy the next build.
+
+Downloaded packages:
+  gcc gcc-15 gcc-15-x86-64-linux-gnu cpp-15-x86-64-linux-gnu libgcc-15-dev
+  binutils binutils-x86-64-linux-gnu make flex bison m4 autoconf automake libtool
+  libssl-dev libexpat1-dev libevent-dev libssl3t64 openssl-provider-legacy
+
+The user excluded the SSL packages from their system installation. The temporary
+OpenSSL headers/libraries may still be necessary; check their existence first.
+Temporary artifacts are disposable and are NOT required repository contents:
+  /tmp/unbound-before  pristine-source baseline build
+  /tmp/unbound-after   first removal group build
+  /tmp/unbound-final   final removal group build
+  /tmp/unbound-before-build.log
+  /tmp/unbound-after-build.log
+  /tmp/unbound-final-build.log
+  /tmp/unbound-final-regression.log
+  /tmp/unbound-metrics.json
+
+Run the persisted suite with a directory containing the built programs:
+  python3 usr.sbin/unbound/tests/forwarding.py /path/to/binaries
+
+For the existing temporary build, if its OpenSSL runtime still exists:
+  LD_LIBRARY_PATH=/tmp/unbound-tools/usr/lib/x86_64-linux-gnu \
+    python3 usr.sbin/unbound/tests/forwarding.py /tmp/unbound-final
+
+Portable builds used ./configure --with-libevent=no, with --with-ssl and
+--with-libexpat pointing at /tmp/unbound-tools/usr, CPPFLAGS including its include
+and include/x86_64-linux-gnu directories, and LDFLAGS pointing at its
+lib/x86_64-linux-gnu. They built the four explicit utility targets with make -j4.
+Do future builds outside the source tree or in a copy to keep generated artifacts
+out of the working tree. Do not mistake portable Makefile.in for HalfBSD's build.
+
+REMAINING FEATURES AND NEXT STEPS
+
+Still present: HTTPS server, QUIC, DNSCrypt, incoming TLS, cachedb/Redis,
+EDNS Client Subnet/subnetcache, RPZ/response-IP, client views, authority zones,
+zone-transfer/update machinery, stub zones, and general recursive resolution.
+The whole objective is therefore NOT complete.
+
+Reasonable next independent candidates are cachedb/Redis and subnetcache. Trace
+configuration, callbacks, statistics, runtime control and reload first. Remove
+each completely, regenerate outputs, compile and rerun retained-protocol tests.
+Generic module callback plumbing remains shared with Client Subnet, including
+reply-path helpers with no remaining Python/dynlib registrations; revisit it when
+removing subnetcache rather than declaring all callback infrastructure gone.
+
+Encrypted server removals need caller-level separation from outgoing TLS and
+remote-control authentication. Policy/authority/view removals cross worker,
+response, cache and reload paths and need dedicated review. Iterator recursive-only
+paths have NOT yet been mapped for safe deletion. Keep forwarding selection,
+retry/timeout, response scrubbing, DNSSEC subqueries and cache integration intact.
+
+Mandatory catch-all forward-zone and no-recursion enforcement are NOT implemented.
+They must eventually cover startup, reload and runtime forwarding changes, reject
+missing upstreams and forward-first fallback, and return failure rather than
+contacting root/authoritative servers when upstreams fail. Do not wholesale-delete
+the iterator or claim that this first pass has made Unbound forwarding-only.
+
+LIBRARY AND CONFIGURATION FINDINGS
+
+libunbound is required by all four retained HalfBSD programs. unbound-anchor uses
+its resolver API for DNSSEC bootstrap. Whole-tree Makefile search found no other
+HalfBSD consumers, but this does not authorize deleting the library wholesale.
+Portable unbound-host source/build support remains; HalfBSD does not install it.
+Auxiliary API cleanup needs another consumer review.
+
+Configuration migration has NOT been implemented. Target layout:
+  /etc/unbound/unbound.conf     static configuration
+  /etc/unbound/forward.conf     DHCP-derived upstreams
+  /var/unbound/root.key         persistent mutable DNSSEC state
+  /var/run                     runtime sockets and PID files
+
+Existing setup still generates configuration under /var/unbound, including
+control.conf and lan-zones.conf. Relevant integration paths are
+usr.sbin/unbound/setup/local-unbound-setup.sh, contrib/openresolv/unbound.in and
+libexec/rc/rc.d/local_unbound. Migration needs coordinated setup/resolvconf/rc,
+installation, permissions and chroot handling, with existing-installation tests.
+Do not break existing deployments merely to implement the target directory tree.
+
+CAPSICUM INVENTORY, BEHAVIOR UNCHANGED
+
+Runtime operations that will matter later: configuration rereads/include globbing
+on reload; log reopen; CA/key/certificate reads when recreating TLS contexts;
+control sockets/socketpairs and worker notification channels; PID-file lifecycle;
+outgoing UDP/TCP/TLS socket creation for normal traffic, retries and anchor probes.
+
+validator/autotrust.c reads managed anchor state, creates/writes/flushes temporary
+files and renames them over root.key. These require directory/write capabilities.
+unbound-anchor can fetch and replace bootstrap state using DNS and HTTPS.
+Remaining authority-zone machinery adds runtime file/network operations until
+removed. No sandbox behavior was introduced. Future capability-mode design must
+account for reloads, mutable anchor state and ongoing socket creation.
+
+OTHER PERSISTED DOCUMENTS
+
+UNBOUND-REDUCTION-PLAN.md: English plan and first-pass status.
+UNBOUND-REDUCTION-RESULTS.txt: detailed report, all deleted paths and major edits.
+Both are included in the pushed implementation commit.

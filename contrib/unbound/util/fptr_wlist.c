@@ -79,14 +79,8 @@
 #endif
 #include "respip/respip.h"
 
-#ifdef USE_CACHEDB
-#include "cachedb/cachedb.h"
-#endif
 #ifdef USE_IPSECMOD
 #include "ipsecmod/ipsecmod.h"
-#endif
-#ifdef CLIENT_SUBNET
-#include "edns-subnet/subnetmod.h"
 #endif
 #ifdef USE_IPSET
 #include "ipset/ipset.h"
@@ -125,9 +119,6 @@ fptr_whitelist_comm_timer(void (*fptr)(void*))
 	else if(fptr == &worker_stat_timer_cb) return 1;
 	else if(fptr == &worker_probe_timer_cb) return 1;
 	else if(fptr == &validate_suspend_timer_cb) return 1;
-#ifdef HAVE_NGTCP2
-	else if(fptr == &doq_timer_cb) return 1;
-#endif
 #ifdef UB_ON_WINDOWS
 	else if(fptr == &wsvc_cron_cb) return 1;
 #endif
@@ -174,14 +165,7 @@ fptr_whitelist_event(void (*fptr)(int, short, void *))
 	else if(fptr == &tube_handle_signal) return 1;
 	else if(fptr == &comm_base_handle_slow_accept) return 1;
 	else if(fptr == &comm_point_http_handle_callback) return 1;
-#ifdef HAVE_NGTCP2
-	else if(fptr == &comm_point_doq_callback) return 1;
-#endif
 	else if(fptr == &fast_reload_service_cb) return 1;
-#ifdef HAVE_NGTCP2
-	else if(fptr == &doq_client_event_cb) return 1;
-	else if(fptr == &doq_client_timer_cb) return 1;
-#endif
 #ifdef UB_ON_WINDOWS
 	else if(fptr == &worker_win_stop_cb) return 1;
 #endif
@@ -240,12 +224,6 @@ fptr_whitelist_rbtree_cmp(int (*fptr) (const void *, const void *))
 	else if(fptr == &auth_zone_cmp) return 1;
 	else if(fptr == &auth_data_cmp) return 1;
 	else if(fptr == &auth_xfer_cmp) return 1;
-#ifdef HAVE_NGTCP2
-	else if(fptr == &doq_conn_cmp) return 1;
-	else if(fptr == &doq_conid_cmp) return 1;
-	else if(fptr == &doq_timer_cmp) return 1;
-	else if(fptr == &doq_stream_cmp) return 1;
-#endif
 	return 0;
 }
 
@@ -259,13 +237,6 @@ fptr_whitelist_hash_sizefunc(lruhash_sizefunc_type fptr)
 	else if(fptr == &rate_sizefunc) return 1;
 	else if(fptr == &ip_rate_sizefunc) return 1;
 	else if(fptr == &test_slabhash_sizefunc) return 1;
-#ifdef CLIENT_SUBNET
-	else if(fptr == &msg_cache_sizefunc) return 1;
-#endif
-#ifdef USE_DNSCRYPT
-	else if(fptr == &dnsc_shared_secrets_sizefunc) return 1;
-	else if(fptr == &dnsc_nonces_sizefunc) return 1;
-#endif
 	return 0;
 }
 
@@ -279,10 +250,6 @@ fptr_whitelist_hash_compfunc(lruhash_compfunc_type fptr)
 	else if(fptr == &rate_compfunc) return 1;
 	else if(fptr == &ip_rate_compfunc) return 1;
 	else if(fptr == &test_slabhash_compfunc) return 1;
-#ifdef USE_DNSCRYPT
-	else if(fptr == &dnsc_shared_secrets_compfunc) return 1;
-	else if(fptr == &dnsc_nonces_compfunc) return 1;
-#endif
 	return 0;
 }
 
@@ -296,10 +263,6 @@ fptr_whitelist_hash_delkeyfunc(lruhash_delkeyfunc_type fptr)
 	else if(fptr == &rate_delkeyfunc) return 1;
 	else if(fptr == &ip_rate_delkeyfunc) return 1;
 	else if(fptr == &test_slabhash_delkey) return 1;
-#ifdef USE_DNSCRYPT
-	else if(fptr == &dnsc_shared_secrets_delkeyfunc) return 1;
-	else if(fptr == &dnsc_nonces_delkeyfunc) return 1;
-#endif
 	return 0;
 }
 
@@ -312,13 +275,6 @@ fptr_whitelist_hash_deldatafunc(lruhash_deldatafunc_type fptr)
 	else if(fptr == &key_entry_deldatafunc) return 1;
 	else if(fptr == &rate_deldatafunc) return 1;
 	else if(fptr == &test_slabhash_deldata) return 1;
-#ifdef CLIENT_SUBNET
-	else if(fptr == &subnet_data_delete) return 1;
-#endif
-#ifdef USE_DNSCRYPT
-	else if(fptr == &dnsc_shared_secrets_deldatafunc) return 1;
-	else if(fptr == &dnsc_nonces_deldatafunc) return 1;
-#endif
 	return 0;
 }
 
@@ -327,9 +283,6 @@ fptr_whitelist_hash_markdelfunc(lruhash_markdelfunc_type fptr)
 {
 	if(fptr == NULL) return 1;
 	else if(fptr == &rrset_markdel) return 1;
-#ifdef CLIENT_SUBNET
-	else if(fptr == &subnet_markdel) return 1;
-#endif
 	return 0;
 }
 
@@ -397,14 +350,8 @@ fptr_whitelist_mod_init(int (*fptr)(struct module_env* env, int id))
 	if(fptr == &iter_init) return 1;
 	else if(fptr == &val_init) return 1;
 	else if(fptr == &respip_init) return 1;
-#ifdef USE_CACHEDB
-	else if(fptr == &cachedb_init) return 1;
-#endif
 #ifdef USE_IPSECMOD
 	else if(fptr == &ipsecmod_init) return 1;
-#endif
-#ifdef CLIENT_SUBNET
-	else if(fptr == &subnetmod_init) return 1;
 #endif
 #ifdef USE_IPSET
 	else if(fptr == &ipset_init) return 1;
@@ -418,14 +365,8 @@ fptr_whitelist_mod_deinit(void (*fptr)(struct module_env* env, int id))
 	if(fptr == &iter_deinit) return 1;
 	else if(fptr == &val_deinit) return 1;
 	else if(fptr == &respip_deinit) return 1;
-#ifdef USE_CACHEDB
-	else if(fptr == &cachedb_deinit) return 1;
-#endif
 #ifdef USE_IPSECMOD
 	else if(fptr == &ipsecmod_deinit) return 1;
-#endif
-#ifdef CLIENT_SUBNET
-	else if(fptr == &subnetmod_deinit) return 1;
 #endif
 #ifdef USE_IPSET
 	else if(fptr == &ipset_deinit) return 1;
@@ -462,14 +403,8 @@ fptr_whitelist_mod_operate(void (*fptr)(struct module_qstate* qstate,
 	if(fptr == &iter_operate) return 1;
 	else if(fptr == &val_operate) return 1;
 	else if(fptr == &respip_operate) return 1;
-#ifdef USE_CACHEDB
-	else if(fptr == &cachedb_operate) return 1;
-#endif
 #ifdef USE_IPSECMOD
 	else if(fptr == &ipsecmod_operate) return 1;
-#endif
-#ifdef CLIENT_SUBNET
-	else if(fptr == &subnetmod_operate) return 1;
 #endif
 #ifdef USE_IPSET
 	else if(fptr == &ipset_operate) return 1;
@@ -484,14 +419,8 @@ fptr_whitelist_mod_inform_super(void (*fptr)(
 	if(fptr == &iter_inform_super) return 1;
 	else if(fptr == &val_inform_super) return 1;
 	else if(fptr == &respip_inform_super) return 1;
-#ifdef USE_CACHEDB
-	else if(fptr == &cachedb_inform_super) return 1;
-#endif
 #ifdef USE_IPSECMOD
 	else if(fptr == &ipsecmod_inform_super) return 1;
-#endif
-#ifdef CLIENT_SUBNET
-	else if(fptr == &subnetmod_inform_super) return 1;
 #endif
 #ifdef USE_IPSET
 	else if(fptr == &ipset_inform_super) return 1;
@@ -506,14 +435,8 @@ fptr_whitelist_mod_clear(void (*fptr)(struct module_qstate* qstate,
 	if(fptr == &iter_clear) return 1;
 	else if(fptr == &val_clear) return 1;
 	else if(fptr == &respip_clear) return 1;
-#ifdef USE_CACHEDB
-	else if(fptr == &cachedb_clear) return 1;
-#endif
 #ifdef USE_IPSECMOD
 	else if(fptr == &ipsecmod_clear) return 1;
-#endif
-#ifdef CLIENT_SUBNET
-	else if(fptr == &subnetmod_clear) return 1;
 #endif
 #ifdef USE_IPSET
 	else if(fptr == &ipset_clear) return 1;
@@ -527,14 +450,8 @@ fptr_whitelist_mod_get_mem(size_t (*fptr)(struct module_env* env, int id))
 	if(fptr == &iter_get_mem) return 1;
 	else if(fptr == &val_get_mem) return 1;
 	else if(fptr == &respip_get_mem) return 1;
-#ifdef USE_CACHEDB
-	else if(fptr == &cachedb_get_mem) return 1;
-#endif
 #ifdef USE_IPSECMOD
 	else if(fptr == &ipsecmod_get_mem) return 1;
-#endif
-#ifdef CLIENT_SUBNET
-	else if(fptr == &subnetmod_get_mem) return 1;
 #endif
 #ifdef USE_IPSET
 	else if(fptr == &ipset_get_mem) return 1;
@@ -586,10 +503,6 @@ int fptr_whitelist_inplace_cb_reply_generic(inplace_cb_reply_func_type* fptr,
 
 int fptr_whitelist_inplace_cb_query(inplace_cb_query_func_type* fptr)
 {
-#ifdef CLIENT_SUBNET
-	if(fptr == &ecs_whitelist_check)
-		return 1;
-#endif
 	(void)fptr;
 	return 0;
 }
@@ -597,24 +510,14 @@ int fptr_whitelist_inplace_cb_query(inplace_cb_query_func_type* fptr)
 int fptr_whitelist_inplace_cb_edns_back_parsed(
 	inplace_cb_edns_back_parsed_func_type* fptr)
 {
-#ifdef CLIENT_SUBNET
-	if(fptr == &ecs_edns_back_parsed)
-		return 1;
-#else
 	(void)fptr;
-#endif
 	return 0;
 }
 
 int fptr_whitelist_inplace_cb_query_response(
 	inplace_cb_query_response_func_type* fptr)
 {
-#ifdef CLIENT_SUBNET
-	if(fptr == &ecs_query_response)
-		return 1;
-#else
 	(void)fptr;
-#endif
 	return 0;
 }
 

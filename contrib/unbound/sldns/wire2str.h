@@ -1024,16 +1024,6 @@ int sldns_wire2str_edns_dhu_print(char** str, size_t* str_len,
 int sldns_wire2str_edns_n3u_print(char** str, size_t* str_len,
 	uint8_t* option_data, size_t option_len);
 
-/**
- * Print EDNS SUBNET option data to string. User buffers, moves string pointers.
- * @param str: string buffer.
- * @param str_len: length of string buffer.
- * @param option_data: buffer with EDNS option code data.
- * @param option_len: length of the data for this option.
- * @return number of characters (except null) needed to print.
- */
-int sldns_wire2str_edns_subnet_print(char** str, size_t* str_len,
-	uint8_t* option_data, size_t option_len);
 
 /**
  * Print EDNS EDE option data to string. User buffers, moves string pointers.

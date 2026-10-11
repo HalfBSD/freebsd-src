@@ -499,14 +499,13 @@ void listen_sslctx_setup_2(void* ctxt);
  * @param set_ticket_keys_cb: if the callback for configured ticket keys needs
  *	to be set.
  * @param is_dot: if the TLS connection is for DoT to set the appropriate ALPN.
- * @param is_doh: if the TLS connection is for DoH to set the appropriate ALPN.
  * @param tls_protocols: configure string with allowed TLS protocols to use.
  * return SSL_CTX* or NULL on failure (logged).
  */
 void* listen_sslctx_create(const char* key, const char* pem,
 	const char* verifypem, const char* tls_ciphers,
 	const char* tls_ciphersuites, int set_ticket_keys_cb,
-	int is_dot, int is_doh, const char* tls_protocols);
+	int is_dot, const char* tls_protocols);
 
 /**
  * create SSL connect context

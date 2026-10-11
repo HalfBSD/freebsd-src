@@ -63,9 +63,6 @@
 #include "services/authzone.h"
 #include "validator/val_kcache.h"
 #include "validator/val_neg.h"
-#ifdef CLIENT_SUBNET
-#include "edns-subnet/subnetmod.h"
-#endif
 #ifdef HAVE_SSL
 #include <openssl/ssl.h>
 #endif
@@ -134,32 +131,6 @@ void server_stats_log(struct ub_server_stats* stats, struct worker* worker,
 }
 
 
-#ifdef CLIENT_SUBNET
-/** Set the EDNS Subnet stats. */
-static void
-set_subnet_stats(struct worker* worker, struct ub_server_stats* svr,
-	int reset)
-{
-	int m = modstack_find(&worker->env.mesh->mods, "subnetcache");
-	struct subnet_env* sne;
-	if(m == -1)
-		return;
-	sne = (struct subnet_env*)worker->env.modinfo[m];
-	if(reset && !worker->env.cfg->stat_cumulative) {
-		lock_rw_wrlock(&sne->biglock);
-	} else {
-		lock_rw_rdlock(&sne->biglock);
-	}
-	svr->num_query_subnet = (long long)(sne->num_msg_nocache + sne->num_msg_cache);
-	svr->num_query_subnet_cache = (long long)sne->num_msg_cache;
-	if(reset && !worker->env.cfg->stat_cumulative) {
-		sne->num_msg_cache = 0;
-		sne->num_msg_nocache = 0;
-	}
-	lock_rw_unlock(&sne->biglock);
-}
-#endif /* CLIENT_SUBNET */
-
 /** Set the neg cache stats. */
 static void
 set_neg_cache_stats(struct worker* worker, struct ub_server_stats* svr,
@@ -220,38 +191,6 @@ get_queries_ratelimit(struct worker* worker, int reset)
 	return r;
 }
 
-#ifdef USE_DNSCRYPT
-/** get the number of shared secret cache miss */
-static size_t
-get_dnscrypt_cache_miss(struct worker* worker, int reset)
-{
-	size_t r;
-	struct dnsc_env* de = worker->daemon->dnscenv;
-	if(!de) return 0;
-
-	lock_basic_lock(&de->shared_secrets_cache_lock);
-	r = de->num_query_dnscrypt_secret_missed_cache;
-	if(reset && !worker->env.cfg->stat_cumulative)
-		de->num_query_dnscrypt_secret_missed_cache = 0;
-	lock_basic_unlock(&de->shared_secrets_cache_lock);
-	return r;
-}
-
-/** get the number of replayed queries */
-static size_t
-get_dnscrypt_replay(struct worker* worker, int reset)
-{
-	size_t r;
-	struct dnsc_env* de = worker->daemon->dnscenv;
-
-	lock_basic_lock(&de->nonces_cache_lock);
-	r = de->num_query_dnscrypt_replay;
-	if(reset && !worker->env.cfg->stat_cumulative)
-		de->num_query_dnscrypt_replay = 0;
-	lock_basic_unlock(&de->nonces_cache_lock);
-	return r;
-}
-#endif /* USE_DNSCRYPT */
 
 void
 server_stats_compile(struct worker* worker, struct ub_stats_info* s, int reset)
@@ -311,60 +250,15 @@ server_stats_compile(struct worker* worker, struct ub_stats_info* s, int reset)
 	if(worker->env.key_cache)
 		s->svr.key_cache_count = (long long)count_slabhash_entries(worker->env.key_cache->slab);
 	else	s->svr.key_cache_count = 0;
-
-#ifdef USE_DNSCRYPT
-	if(worker->daemon->dnscenv) {
-		s->svr.num_query_dnscrypt_secret_missed_cache =
-			(long long)get_dnscrypt_cache_miss(worker, reset);
-		s->svr.shared_secret_cache_count = (long long)count_slabhash_entries(
-			worker->daemon->dnscenv->shared_secrets_cache);
-		s->svr.nonce_cache_count = (long long)count_slabhash_entries(
-			worker->daemon->dnscenv->nonces_cache);
-		s->svr.num_query_dnscrypt_replay =
-			(long long)get_dnscrypt_replay(worker, reset);
-	} else {
-		s->svr.num_query_dnscrypt_secret_missed_cache = 0;
-		s->svr.shared_secret_cache_count = 0;
-		s->svr.nonce_cache_count = 0;
-		s->svr.num_query_dnscrypt_replay = 0;
-	}
-#else
-	s->svr.num_query_dnscrypt_secret_missed_cache = 0;
-	s->svr.shared_secret_cache_count = 0;
-	s->svr.nonce_cache_count = 0;
-	s->svr.num_query_dnscrypt_replay = 0;
-#endif /* USE_DNSCRYPT */
 	if(worker->env.auth_zones) {
 		s->svr.num_query_authzone_up += (long long)worker->env.mesh->num_query_authzone_up;
 		s->svr.num_query_authzone_down += (long long)worker->env.mesh->num_query_authzone_down;
 	}
 	s->svr.mem_stream_wait =
 		(long long)tcp_req_info_get_stream_buffer_size();
-	s->svr.mem_http2_query_buffer =
-		(long long)http2_get_query_buffer_size();
-	s->svr.mem_http2_response_buffer =
-		(long long)http2_get_response_buffer_size();
-#ifdef HAVE_NGTCP2
-	s->svr.mem_quic = (long long)doq_table_quic_size_get(
-		worker->daemon->doq_table);
-#else
-	s->svr.mem_quic = 0;
-#endif /* HAVE_NGTCP2 */
 
 	/* Set neg cache usage numbers */
 	set_neg_cache_stats(worker, &s->svr, reset);
-#ifdef CLIENT_SUBNET
-	/* EDNS Subnet usage numbers */
-	set_subnet_stats(worker, &s->svr, reset);
-#else
-	s->svr.num_query_subnet = 0;
-	s->svr.num_query_subnet_cache = 0;
-#endif
-#ifdef USE_CACHEDB
-	s->svr.num_query_cachedb = (long long)worker->env.mesh->ans_cachedb;
-#else
-	s->svr.num_query_cachedb = 0;
-#endif
 
 	/* get tcp accept usage */
 	s->svr.tcp_accept_usage = 0;
@@ -464,14 +358,6 @@ void server_stats_add(struct ub_stats_info* total, struct ub_stats_info* a)
 		total->svr.max_query_time_us = a->svr.max_query_time_us;
 	total->svr.sum_query_list_size += a->svr.sum_query_list_size;
 	total->svr.ans_expired += a->svr.ans_expired;
-#ifdef USE_DNSCRYPT
-	total->svr.num_query_dnscrypt_crypted += a->svr.num_query_dnscrypt_crypted;
-	total->svr.num_query_dnscrypt_cert += a->svr.num_query_dnscrypt_cert;
-	total->svr.num_query_dnscrypt_cleartext +=
-		a->svr.num_query_dnscrypt_cleartext;
-	total->svr.num_query_dnscrypt_crypted_malformed +=
-		a->svr.num_query_dnscrypt_crypted_malformed;
-#endif /* USE_DNSCRYPT */
 	/* the max size reached is upped to higher of both */
 	if(a->svr.max_query_list_size > total->svr.max_query_list_size)
 		total->svr.max_query_list_size = a->svr.max_query_list_size;
@@ -485,8 +371,6 @@ void server_stats_add(struct ub_stats_info* total, struct ub_stats_info* a)
 		total->svr.qudp_outgoing += a->svr.qudp_outgoing;
 		total->svr.qtls += a->svr.qtls;
 		total->svr.qtls_resume += a->svr.qtls_resume;
-		total->svr.qhttps += a->svr.qhttps;
-		total->svr.qquic += a->svr.qquic;
 		total->svr.qipv6 += a->svr.qipv6;
 		total->svr.qbit_QR += a->svr.qbit_QR;
 		total->svr.qbit_AA += a->svr.qbit_AA;
@@ -505,9 +389,6 @@ void server_stats_add(struct ub_stats_info* total, struct ub_stats_info* a)
 		total->svr.unwanted_replies += a->svr.unwanted_replies;
 		total->svr.unwanted_queries += a->svr.unwanted_queries;
 		total->svr.tcp_accept_usage += a->svr.tcp_accept_usage;
-#ifdef USE_CACHEDB
-		total->svr.num_query_cachedb += a->svr.num_query_cachedb;
-#endif
 		for(i=0; i<UB_STATS_QTYPE_NUM; i++)
 			total->svr.qtype[i] += a->svr.qtype[i];
 		for(i=0; i<UB_STATS_QCLASS_NUM; i++)
@@ -548,20 +429,14 @@ void server_stats_insquery(struct ub_server_stats* stats, struct comm_point* c,
 	else	stats->qclass_big++;
 	stats->qopcode[ LDNS_OPCODE_WIRE(sldns_buffer_begin(c->buffer)) ]++;
 	if(c->type != comm_udp) {
-		if(c->type != comm_doq)
-			stats->qtcp++;
+		stats->qtcp++;
 		if(c->ssl != NULL) {
 			stats->qtls++;
 #ifdef HAVE_SSL
 			if(SSL_session_reused(c->ssl))
 				stats->qtls_resume++;
 #endif
-			if(c->type == comm_http)
-				stats->qhttps++;
-#ifdef HAVE_NGTCP2
-			else if(c->type == comm_doq)
-				stats->qquic++;
-#endif
+
 		}
 	}
 	if(repinfo && addr_is_ip6(&repinfo->remote_addr, repinfo->remote_addrlen))

@@ -58,6 +58,7 @@ class Upstream:
         self.fixture = fixture
         self.address = socket.inet_aton(address)
         self.count = collections.Counter()
+        self.edns_options = collections.Counter()
         self.drop = False
         owner = self
 
@@ -103,6 +104,19 @@ class Upstream:
         name, end = read_name(packet, 12)
         rtype, _ = struct.unpack('!HH', packet[end:end + 4])
         question = packet[12:end + 4]
+        offset = end + 4
+        # Outgoing requests have only a question and optional additional records.
+        for _ in range(struct.unpack('!H', packet[10:12])[0]):
+            _, offset = read_name(packet, offset)
+            kind, _, _, size = struct.unpack('!HHIH', packet[offset:offset + 10])
+            offset += 10
+            if kind == 41:
+                data = packet[offset:offset + size]
+                while data:
+                    code, length = struct.unpack('!HH', data[:4])
+                    self.edns_options[code] += 1
+                    data = data[4 + length:]
+            offset += size
         self.count[(name, rtype, tcp)] += 1
         if self.drop:
             return None
@@ -139,11 +153,11 @@ class Upstream:
             server.server_close()
 
 
-def query(port, name, rtype=1, tcp=False, cd=False):
+def query(port, name, rtype=1, tcp=False, cd=False, options=b''):
     flags = 0x100 | (0x10 if cd else 0)
     packet = struct.pack('!HHHHHH', 1234, flags, 1, 0, 0, 1)
     packet += wire_name(name) + struct.pack('!HH', rtype, 1)
-    packet += b'\0' + struct.pack('!HHIH', 41, 1232, 0x8000, 0)
+    packet += b'\0' + struct.pack('!HHIH', 41, 1232, 0x8000, len(options)) + options
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM if tcp else socket.SOCK_DGRAM) as sock:
         sock.settimeout(10)
         sock.connect(('127.0.0.1', port))
@@ -254,6 +268,61 @@ forward-zone:
             assert any(t == 5 for t, _ in query(port, 'alias.forward.test.')[1])
             print('PASS forwarding, CNAME chain, positive and negative cache hits')
 
+            for command, argument, name in (
+                    ('flush_type', 'answer.forward.test. A', 'answer.forward.test.'),
+                    ('flush', 'answer.forward.test.', 'answer.forward.test.'),
+                    ('flush_zone', 'forward.test.', 'answer.forward.test.'),
+                    ('flush_negative', '', 'negative.forward.test.')):
+                query(port, name)
+                count = sum(upstream.count.values())
+                control(command, *argument.split())
+                query(port, name)
+                assert sum(upstream.count.values()) > count, command
+            for command in ('flush_bogus', 'flush_negative'):
+                result = subprocess.run([str(bindir / 'unbound-control'), '-c', str(config),
+                                         command, '+c'], capture_output=True)
+                assert result.returncode != 0, command
+            stats = control('stats_noreset')
+            assert not any(word in stats for word in ('cachedb', 'subnet', 'dnscrypt',
+                                                      'mem.http.', 'num.query.https',
+                                                      'num.query.quic', 'mem.quic'))
+            print('PASS in-memory cache flush commands and statistics')
+            # Unsupported ECS is ignored, never propagated, and does not split cache.
+            for tcp in (False, True):
+                ecs = struct.pack('!HHHBB', 8, 7, 1, 24, 0) + b'\xc0\x00\x02'
+                count = sum(upstream.count.values())
+                assert query(port, 'answer.forward.test.', tcp=tcp, options=ecs)[0] & 15 == 0
+                assert sum(upstream.count.values()) == count
+            assert 'subnet' not in control('stats_noreset')
+            assert query(port, 'ecs.forward.test.', options=ecs)[0] & 15 == 0
+            assert upstream.edns_options[8] == 0
+            # Bad ECS contents have no interpretation when ECS is unsupported.
+            assert query(port, 'ecs-malformed.forward.test.',
+                         options=struct.pack('!HH', 8, 1) + b'x')[0] & 15 == 0
+            print('PASS unsupported ECS with ordinary EDNS and shared cache over UDP/TCP')
+
+            # Multiple requests can coexist on one incoming TCP connection.
+            packets = []
+            for identity, name in enumerate(('host.home.test.', 'pipeline.forward.test.',
+                                              'alias.home.test.'), 2000):
+                packet = struct.pack('!HHHHHH', identity, 0x100, 1, 0, 0, 1)
+                packet += wire_name(name) + struct.pack('!HH', 1, 1)
+                packet += b'\0' + struct.pack('!HHIH', 41, 1232, 0x8000, 0)
+                packets.append(struct.pack('!H', len(packet)) + packet)
+            with socket.create_connection(('127.0.0.1', port), timeout=10) as sock:
+                sock.sendall(b''.join(packets))
+                identities = set()
+                for _ in packets:
+                    reply = recv_exact(sock, struct.unpack('!H', recv_exact(sock, 2))[0])
+                    identity, flags = struct.unpack('!HH', reply[:4])
+                    assert flags & 15 == 0 and flags & 0x8000
+                    identities.add(identity)
+                assert identities == {2000, 2001, 2002}
+                sock.sendall(packets[0])
+                reply = recv_exact(sock, struct.unpack('!H', recv_exact(sock, 2))[0])
+                assert struct.unpack('!H', reply[:2])[0] == 2000
+            print('PASS pipelined TCP requests and connection reuse')
+
             assert query(port, 'fallback.forward.test.')[0] & 15 == 0
             assert upstream.count[('fallback.forward.test.', 1, False)]
             assert upstream.count[('fallback.forward.test.', 1, True)]
@@ -266,8 +335,11 @@ forward-zone:
 
             flags, _ = query(port, 'good.signed.test.')
             assert flags & 0x20 and flags & 15 == 0, hex(flags)
+            assert query(port, 'good.signed.test.', tcp=True)[0] & 0x20
             assert query(port, 'bad.signed.test.')[0] & 15 == 2
             assert query(port, 'bad.signed.test.', cd=True)[0] & 15 == 0
+            control('flush_bogus')
+            assert query(port, 'bad.signed.test.')[0] & 15 == 2
             print('PASS DNSSEC valid signature, corrupt signature rejection, CD handling')
 
             query(port, 'prefetch.forward.test.')
@@ -352,7 +424,68 @@ forward-zone:
                 process.wait(timeout=10)
             print('PASS outgoing TLS certificate validation and hostname mismatch rejection')
 
-            for text in ('server:\n dns64-prefix: 64:ff9b::/96\n',
+            # Remote control retains mutual TLS authentication independently of DoH.
+            with socket.socket() as reserve:
+                reserve.bind(('127.0.0.1', 0))
+                control_port = reserve.getsockname()[1]
+            for name in ('server_cert', 'server_key', 'client_cert', 'client_key'):
+                (root / f'control_{name}.pem').write_text(fixture[f'control_{name}'])
+            write_config(upstream.port)
+            text = config.read_text().replace(
+                f'    control-interface: "{root}/control.sock"\n    control-use-cert: no',
+                f'    control-interface: 127.0.0.1\n    control-port: {control_port}\n'
+                '    control-use-cert: yes\n'
+                f'    server-cert-file: "{root}/control_server_cert.pem"\n'
+                f'    server-key-file: "{root}/control_server_key.pem"\n'
+                f'    control-cert-file: "{root}/control_client_cert.pem"\n'
+                f'    control-key-file: "{root}/control_client_key.pem"')
+            config.write_text(text)
+            subprocess.run([str(bindir / 'unbound-checkconf'), str(config)], check=True)
+            process = subprocess.Popen([str(bindir / 'unbound'), '-d', '-c', str(config)])
+            for _ in range(100):
+                try:
+                    query(port, 'host.home.test.')
+                    break
+                except OSError:
+                    time.sleep(.05)
+            assert 'is running' in control('status')
+            assert 'ok' in control('reload')
+            for _ in range(100):
+                try:
+                    assert 'is running' in control('status')
+                    break
+                except subprocess.CalledProcessError:
+                    time.sleep(.05)
+            else:
+                raise AssertionError('TLS control did not recover after reload')
+            control('fast_reload', '+v')
+            assert 'is running' in control('status')
+            context = ssl.create_default_context(cafile=str(root / 'control_server_cert.pem'))
+            context.check_hostname = False
+            try:
+                with socket.create_connection(('127.0.0.1', control_port), timeout=5) as plain:
+                    with context.wrap_socket(plain, server_hostname='control.test') as sock:
+                        sock.sendall(b'UBCT1 status\n')
+                        reply = sock.recv(4096)
+                        assert b'is running' not in reply
+            except (ssl.SSLError, ConnectionResetError):
+                pass
+            assert 'is running' in control('status')
+            process.terminate()
+            process.wait(timeout=10)
+            print('PASS remote-control mutual TLS, reload/fast_reload, and missing certificate rejection')
+
+            for text in ('server:\n quic-port: 853\n',
+                         'server:\n quic-size: 8m\n',
+                         'server:\n https-port: 443\n',
+                         'server:\n http-endpoint: /dns-query\n',
+                         'dnscrypt:\n dnscrypt-enable: yes\n',
+                         'server:\n send-client-subnet: 192.0.2.0/24\n',
+                         'server:\n module-config: "subnetcache validator iterator"\n',
+                         'cachedb:\n backend: redis\n',
+                         'server:\n cachedb-no-store: yes\n',
+                         'server:\n module-config: "validator cachedb iterator"\n',
+                         'server:\n dns64-prefix: 64:ff9b::/96\n',
                          'python:\n python-script: example.py\n',
                          'dynlib:\n dynlib-file: example.so\n',
                          'dnstap:\n dnstap-enable: yes\n',

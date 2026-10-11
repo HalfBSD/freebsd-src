@@ -4,7 +4,6 @@ AC_PREREQ([2.56])
 sinclude(acx_nlnetlabs.m4)
 sinclude(ax_build_date_epoch.m4)
 sinclude(ax_pthread.m4)
-sinclude(dnscrypt/dnscrypt.m4)
 
 # must be numbers. ac_defun because of later processing
 m4_define([VERSION_MAJOR],[1])
@@ -1028,19 +1027,6 @@ case "$enable_sha2" in
 	;;
 esac
 
-AC_ARG_ENABLE(subnet, AS_HELP_STRING([--enable-subnet],[Enable client subnet]))
-case "$enable_subnet" in
-	yes)
-	AC_DEFINE([CLIENT_SUBNET], [1], [Define this to enable client subnet option.])
-	SUBNET_OBJ="edns-subnet.lo subnetmod.lo addrtree.lo subnet-whitelist.lo"
-	AC_SUBST(SUBNET_OBJ)
-	SUBNET_HEADER='$(srcdir)/edns-subnet/subnetmod.h $(srcdir)/edns-subnet/edns-subnet.h $(srcdir)/edns-subnet/subnet-whitelist.h $(srcdir)/edns-subnet/addrtree.h'
-	AC_SUBST(SUBNET_HEADER)
-	;;
-	no|*)
-	;;
-esac
-
 # check whether gost also works
 AC_DEFUN([AC_CHECK_GOST_WORKS],
 [AC_REQUIRE([AC_PROG_CC])
@@ -1452,140 +1438,6 @@ AC_CHECK_DECLS([XML_StopParser], [], [], [AC_INCLUDES_DEFAULT
 #include <expat.h>
 ])
 
-# hiredis (redis C client for cachedb)
-AC_ARG_WITH(libhiredis, AS_HELP_STRING([--with-libhiredis=path],[specify explicit path for libhiredis.]),
-    [ ],[ withval="no" ])
-found_libhiredis="no"
-if test x_$withval = x_yes -o x_$withval != x_no; then
-   AC_MSG_CHECKING(for libhiredis)
-   if test x_$withval = x_ -o x_$withval = x_yes; then
-            withval="/usr/local /opt/local /usr/lib /usr/pkg /usr/sfw /usr"
-   fi
-   for dir in $withval ; do
-            if test -f "$dir/include/hiredis/hiredis.h"; then
-		found_libhiredis="yes"
-		dnl assume /usr is in default path.
-		if test "$dir" != "/usr"; then
-                    CPPFLAGS="$CPPFLAGS -I$dir/include"
-		    LDFLAGS="$LDFLAGS -L$dir/lib"
-		fi
-		AC_MSG_RESULT(found in $dir)
-		AC_DEFINE([USE_REDIS], [1], [Define this to use hiredis client.])
-		LIBS="$LIBS -lhiredis"
-                break;
-            fi
-    done
-    if test x_$found_libhiredis != x_yes; then
-	AC_MSG_ERROR([Could not find libhiredis, hiredis.h])
-    fi
-    AC_CHECK_HEADERS([hiredis/hiredis.h],,, [AC_INCLUDES_DEFAULT])
-    AC_CHECK_DECLS([redisConnect], [], [], [AC_INCLUDES_DEFAULT
-    #include <hiredis/hiredis.h>
-    ])
-fi
-
-# nghttp2
-AC_ARG_WITH(libnghttp2, AS_HELP_STRING([--with-libnghttp2=path],[specify explicit path for libnghttp2.]),
-    [ ],[ withval="no" ])
-found_libnghttp2="no"
-if test x_$withval = x_yes -o x_$withval != x_no; then
-   AC_MSG_CHECKING(for libnghttp2)
-   if test x_$withval = x_ -o x_$withval = x_yes; then
-            withval="/usr/local /opt/local /usr/lib /usr/pkg /usr/sfw /usr"
-   fi
-   for dir in $withval ; do
-            if test -f "$dir/include/nghttp2/nghttp2.h"; then
-		found_libnghttp2="yes"
-		dnl assume /usr is in default path.
-		if test "$dir" != "/usr"; then
-                    CPPFLAGS="$CPPFLAGS -I$dir/include"
-		    LDFLAGS="$LDFLAGS -L$dir/lib"
-		fi
-		AC_MSG_RESULT(found in $dir)
-		AC_DEFINE([HAVE_NGHTTP2], [1], [Define this to use nghttp2 client.])
-		LIBS="$LIBS -lnghttp2"
-                break;
-            fi
-    done
-    if test x_$found_libnghttp2 != x_yes; then
-	AC_MSG_ERROR([Could not find libnghttp2, nghttp2.h])
-    fi
-    AC_CHECK_HEADERS([nghttp2/nghttp2.h],,, [AC_INCLUDES_DEFAULT])
-    AC_CHECK_DECLS([nghttp2_session_server_new], [], [], [AC_INCLUDES_DEFAULT
-    #include <nghttp2/nghttp2.h>
-    ])
-fi
-
-# ngtcp2
-AC_ARG_WITH(libngtcp2, AS_HELP_STRING([--with-libngtcp2=path],[specify explicit path for libngtcp2, for QUIC.]),
-    [ ],[ withval="no" ])
-found_libngtcp2="no"
-if test x_$withval = x_yes -o x_$withval != x_no; then
-   AC_MSG_CHECKING(for libngtcp2)
-   if test x_$withval = x_ -o x_$withval = x_yes; then
-            withval="/usr/local /opt/local /usr/lib /usr/pkg /usr/sfw /usr"
-   fi
-   for dir in $withval ; do
-            if test -f "$dir/include/ngtcp2/ngtcp2.h"; then
-		found_libngtcp2="yes"
-		dnl assume /usr is in default path.
-		if test "$dir" != "/usr"; then
-                    CPPFLAGS="$CPPFLAGS -I$dir/include"
-		    LDFLAGS="$LDFLAGS -L$dir/lib"
-		fi
-		AC_MSG_RESULT(found in $dir)
-		AC_DEFINE([HAVE_NGTCP2], [1], [Define this to use ngtcp2.])
-		LIBS="$LIBS -lngtcp2"
-                break;
-            fi
-    done
-    if test x_$found_libngtcp2 != x_yes; then
-	AC_MSG_ERROR([Could not find libngtcp2, ngtcp2.h])
-    fi
-    AC_CHECK_HEADERS([ngtcp2/ngtcp2.h ngtcp2/ngtcp2_crypto_ossl.h ngtcp2/ngtcp2_crypto_openssl.h ngtcp2/ngtcp2_crypto_quictls.h],,, [AC_INCLUDES_DEFAULT])
-    AC_CHECK_DECLS([ngtcp2_conn_server_new], [], [], [AC_INCLUDES_DEFAULT
-    #include <ngtcp2/ngtcp2.h>
-    ])
-    AC_CHECK_DECLS([ngtcp2_crypto_encrypt_cb], [], [], [AC_INCLUDES_DEFAULT
-    #include <ngtcp2/ngtcp2_crypto.h>
-    ])
-    AC_CHECK_LIB([ngtcp2_crypto_ossl], [ngtcp2_crypto_encrypt_cb], [
-	LIBS="$LIBS -lngtcp2_crypto_ossl"
-	AC_DEFINE(USE_NGTCP2_CRYPTO_OSSL, 1, [Define this to use ngtcp2_crypto_ossl.])
-    ], [
-        AC_CHECK_LIB([ngtcp2_crypto_openssl], [ngtcp2_crypto_encrypt_cb], [ LIBS="$LIBS -lngtcp2_crypto_openssl" ], [
-            AC_CHECK_LIB([ngtcp2_crypto_quictls], [ngtcp2_crypto_encrypt_cb], [ LIBS="$LIBS -lngtcp2_crypto_quictls" ])
-	])
-    ])
-    AC_CHECK_FUNCS([ngtcp2_crypto_encrypt_cb ngtcp2_ccerr_default ngtcp2_conn_in_closing_period ngtcp2_conn_in_draining_period ngtcp2_conn_get_max_local_streams_uni ngtcp2_crypto_quictls_from_ossl_encryption_level ngtcp2_crypto_quictls_configure_server_context ngtcp2_crypto_quictls_configure_client_context ngtcp2_crypto_quictls_init ngtcp2_conn_get_num_scid ngtcp2_conn_tls_early_data_rejected ngtcp2_conn_encode_0rtt_transport_params])
-
-    # these check_funcs need -lssl
-    BAKLIBS="$LIBS"
-    LIBS="-lssl $LIBS"
-    AC_CHECK_FUNCS([SSL_is_quic], [], [AC_MSG_ERROR([No QUIC support detected in OpenSSL. Need OpenSSL version with QUIC support to enable DNS over QUIC with libngtcp2.])])
-    LIBS="$BAKLIBS"
-
-    AC_CHECK_TYPES([struct ngtcp2_version_cid, ngtcp2_encryption_level],,,[AC_INCLUDES_DEFAULT
-    #include <ngtcp2/ngtcp2.h>
-    ])
-    AC_CHECK_MEMBERS([struct ngtcp2_pkt_hd.tokenlen, struct ngtcp2_settings.tokenlen, struct ngtcp2_settings.max_tx_udp_payload_size, struct ngtcp2_transport_params.original_dcid_present],,,[AC_INCLUDES_DEFAULT
-    #include <ngtcp2/ngtcp2.h>
-    ])
-
-    AC_MSG_CHECKING([whether ngtcp2_conn_shutdown_stream has 4 arguments])
-    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([AC_INCLUDES_DEFAULT
-#include <ngtcp2/ngtcp2.h>
-    ],[
-	(void)ngtcp2_conn_shutdown_stream(NULL, 0, 0, 0);
-    ])],[
-	AC_MSG_RESULT(yes)
-	AC_DEFINE(HAVE_NGTCP2_CONN_SHUTDOWN_STREAM4, 1, [Define if ngtcp2_conn_shutdown_stream has 4 arguments.])
-    ],[
-	AC_MSG_RESULT(no)
-    ])
-
-fi
-
 # set static linking for uninstalled libraries if requested
 AC_SUBST(staticexe)
 staticexe=""
@@ -1937,34 +1789,6 @@ if test x_$enable_lock_checks = x_yes; then
 	echo checklock_thrcreate >> clubsyms.def
 	echo checklock_thrjoin >> clubsyms.def
 fi
-
-# check for dnscrypt if requested
-dnsc_DNSCRYPT([
-        AC_DEFINE([USE_DNSCRYPT], [1], [Define to 1 to enable dnscrypt support])
-        AC_SUBST([ENABLE_DNSCRYPT], [1])
-
-        AC_SUBST([DNSCRYPT_SRC], ["dnscrypt/dnscrypt.c"])
-        AC_SUBST([DNSCRYPT_OBJ], ["dnscrypt.lo"])
-    ],
-    [
-        AC_SUBST([ENABLE_DNSCRYPT], [0])
-    ]
-)
-
-# check for cachedb if requested
-AC_ARG_ENABLE(cachedb, AS_HELP_STRING([--enable-cachedb],[enable cachedb module that can use external cache storage]))
-# turn on cachedb when hiredis support is enabled.
-if test "$found_libhiredis" = "yes"; then enable_cachedb="yes"; fi
-case "$enable_cachedb" in
-    yes)
-    	AC_DEFINE([USE_CACHEDB], [1], [Define to 1 to use cachedb support])
-	AC_SUBST([CACHEDB_SRC], ["cachedb/cachedb.c cachedb/redis.c"])
-	AC_SUBST([CACHEDB_OBJ], ["cachedb.lo redis.lo"])
-    	;;
-    no|*)
-    	# nothing
-    	;;
-esac
 
 # check for ipsecmod if requested
 AC_ARG_ENABLE(ipsecmod, AS_HELP_STRING([--enable-ipsecmod],[Enable ipsecmod module that facilitates opportunistic IPsec]))
@@ -2373,10 +2197,6 @@ char *unbound_stat_strdup_log(const char *s, const char* file, int line,
 #define UNBOUND_DNS_PORT 53
 /** default port for DNS over TLS traffic. */
 #define UNBOUND_DNS_OVER_TLS_PORT 853
-/** default port for DNS over HTTPS traffic. */
-#define UNBOUND_DNS_OVER_HTTPS_PORT 443
-/** default port for DNS over QUIC traffic. */
-#define UNBOUND_DNS_OVER_QUIC_PORT 853
 /** default port for unbound control traffic, registered port with IANA,
     ub-dns-control  8953/tcp    unbound dns nameserver control */
 #define UNBOUND_CONTROL_PORT 8953
@@ -2391,6 +2211,6 @@ AC_SUBST(version, [VERSION_MAJOR.VERSION_MINOR.VERSION_MICRO])
 AX_BUILD_DATE_EPOCH(date, [[%b %e, %Y]])
 AC_SUBST(date)
 
-AC_CONFIG_FILES([Makefile doc/example.conf doc/libunbound.3 doc/unbound.8 doc/unbound-anchor.8 doc/unbound-checkconf.8 doc/unbound.conf.5 doc/unbound-control.8 doc/unbound-host.1 smallapp/unbound-control-setup.sh dnscrypt/dnscrypt_config.h contrib/libunbound.pc contrib/unbound.socket contrib/unbound.service contrib/unbound_portable.service])
+AC_CONFIG_FILES([Makefile doc/example.conf doc/libunbound.3 doc/unbound.8 doc/unbound-anchor.8 doc/unbound-checkconf.8 doc/unbound.conf.5 doc/unbound-control.8 doc/unbound-host.1 smallapp/unbound-control-setup.sh contrib/libunbound.pc contrib/unbound.socket contrib/unbound.service contrib/unbound_portable.service])
 AC_CONFIG_HEADERS([config.h])
 AC_OUTPUT

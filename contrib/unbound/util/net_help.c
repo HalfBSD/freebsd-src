@@ -72,9 +72,6 @@
 #ifdef USE_WINSOCK
 #include <wincrypt.h>
 #endif
-#ifdef HAVE_NGHTTP2_NGHTTP2_H
-#include <nghttp2/nghttp2.h>
-#endif
 
 /** max length of an IP address (the address portion) that we allow */
 #define MAX_ADDR_STRLEN 128 /* characters */
@@ -1192,20 +1189,6 @@ dot_alpn_select_cb(SSL* ATTR_UNUSED(ssl), const unsigned char** out,
 }
 #endif
 
-#if defined(HAVE_SSL) && defined(HAVE_NGHTTP2) && defined(HAVE_SSL_CTX_SET_ALPN_SELECT_CB)
-static int doh_alpn_select_cb(SSL* ATTR_UNUSED(ssl), const unsigned char** out,
-	unsigned char* outlen, const unsigned char* in, unsigned int inlen,
-	void* ATTR_UNUSED(arg))
-{
-	int rv = nghttp2_select_next_protocol((unsigned char **)out, outlen, in,
-		inlen);
-	if(rv == -1) {
-		return SSL_TLSEXT_ERR_NOACK;
-	}
-	/* either http/1.1 or h2 selected */
-	return SSL_TLSEXT_ERR_OK;
-}
-#endif
 
 #ifdef HAVE_SSL
 /* setup the callback for ticket keys */
@@ -1356,7 +1339,7 @@ listen_sslctx_setup_2(void* ctxt)
 void* listen_sslctx_create(const char* key, const char* pem,
 	const char* verifypem, const char* tls_ciphers,
 	const char* tls_ciphersuites, int set_ticket_keys_cb,
-	int is_dot, int is_doh, const char* tls_protocols)
+	int is_dot, const char* tls_protocols)
 {
 #ifdef HAVE_SSL
 	SSL_CTX* ctx = SSL_CTX_new(SSLv23_server_method());
@@ -1440,17 +1423,13 @@ void* listen_sslctx_create(const char* key, const char* pem,
 #if defined(HAVE_SSL_CTX_SET_ALPN_SELECT_CB)
 	if(is_dot) {
 		SSL_CTX_set_alpn_select_cb(ctx, dot_alpn_select_cb, NULL);
-	} else if(is_doh) {
-#if defined(HAVE_NGHTTP2)
-		SSL_CTX_set_alpn_select_cb(ctx, doh_alpn_select_cb, NULL);
-#endif
 	}
 #endif /* HAVE_SSL_CTX_SET_ALPN_SELECT_CB */
 	return ctx;
 #else
 	(void)key; (void)pem; (void)verifypem;
 	(void)tls_ciphers; (void)tls_ciphersuites;
-	(void)set_ticket_keys_cb; (void)is_dot; (void)is_doh;
+	(void)set_ticket_keys_cb; (void)is_dot;
 	(void)tls_protocols;
 	return NULL;
 #endif /* HAVE_SSL */

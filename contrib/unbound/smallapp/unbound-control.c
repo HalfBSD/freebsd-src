@@ -146,15 +146,14 @@ usage(void)
 	printf("  cache_lookup [+t] <names>	print rrsets and msgs at or under the names\n");
 	printf("		+t		allow tld and root names.\n");
 	printf("  lookup <name>			print nameservers for name\n");
-	printf("  flush [+c] <name>			flushes common types for name from cache\n");
+	printf("  flush <name>			flushes common types for name from cache\n");
 	printf("  				types:  A, AAAA, MX, PTR, NS,\n");
 	printf("					SOA, CNAME, DNAME, SRV, NAPTR\n");
-	printf("  flush_type [+c] <name> <type>	flush name, type from cache\n");
-	printf("		+c		remove from cachedb too\n");
-	printf("  flush_zone [+c] <name>	flush everything at or under name\n");
+	printf("  flush_type <name> <type>	flush name, type from cache\n");
+	printf("  flush_zone <name>	flush everything at or under name\n");
 	printf("  				from rr and dnssec caches\n");
-	printf("  flush_bogus [+c]		flush all bogus data\n");
-	printf("  flush_negative [+c]		flush all negative data\n");
+	printf("  flush_bogus		flush all bogus data\n");
+	printf("  flush_negative		flush all negative data\n");
 	printf("  flush_stats 			flush statistics, make zero\n");
 	printf("  flush_requestlist 		drop queries that are worked on\n");
 	printf("  dump_requestlist		show what is worked on by first thread\n");
@@ -247,13 +246,6 @@ static void pr_stats(const char* nm, struct ub_stats_info* s)
 	PR_UL_NM("query.queue_time_us.max", s->svr.max_query_time_us);
 	PR_UL_NM("num.expired", s->svr.ans_expired);
 	PR_UL_NM("num.recursivereplies", s->mesh_replies_sent);
-#ifdef USE_DNSCRYPT
-	PR_UL_NM("num.dnscrypt.crypted", s->svr.num_query_dnscrypt_crypted);
-	PR_UL_NM("num.dnscrypt.cert", s->svr.num_query_dnscrypt_cert);
-	PR_UL_NM("num.dnscrypt.cleartext", s->svr.num_query_dnscrypt_cleartext);
-	PR_UL_NM("num.dnscrypt.malformed",
-		s->svr.num_query_dnscrypt_crypted_malformed);
-#endif /* USE_DNSCRYPT */
 	PR_UL_NM("num.dns_error_reports", s->svr.num_dns_error_reports);
 	printf("%s.requestlist.avg"SQ"%g\n", nm,
 		(s->svr.num_queries_missed_cache+s->svr.num_queries_prefetch)?
@@ -294,24 +286,10 @@ static void print_mem(struct ub_shm_stat_info* shm_stat,
 	PR_LL("mem.mod.iterator", shm_stat->mem.iter);
 	PR_LL("mem.mod.validator", shm_stat->mem.val);
 	PR_LL("mem.mod.respip", shm_stat->mem.respip);
-#ifdef CLIENT_SUBNET
-	PR_LL("mem.mod.subnet", shm_stat->mem.subnet);
-#endif
 #ifdef USE_IPSECMOD
 	PR_LL("mem.mod.ipsecmod", shm_stat->mem.ipsecmod);
 #endif
-#ifdef USE_DNSCRYPT
-	PR_LL("mem.cache.dnscrypt_shared_secret",
-		shm_stat->mem.dnscrypt_shared_secret);
-	PR_LL("mem.cache.dnscrypt_nonce",
-		shm_stat->mem.dnscrypt_nonce);
-#endif
 	PR_LL("mem.streamwait", s->svr.mem_stream_wait);
-	PR_LL("mem.http.query_buffer", s->svr.mem_http2_query_buffer);
-	PR_LL("mem.http.response_buffer", s->svr.mem_http2_response_buffer);
-#ifdef HAVE_NGTCP2
-	PR_LL("mem.quic", s->svr.mem_quic);
-#endif
 }
 
 /** print histogram */
@@ -377,10 +355,6 @@ static void print_extended(struct ub_stats_info* s, int inhibit_zero)
 	PR_UL("num.query.tls", s->svr.qtls);
 	PR_UL("num.query.tls_resume", s->svr.qtls_resume);
 	PR_UL("num.query.ipv6", s->svr.qipv6);
-	PR_UL("num.query.https", s->svr.qhttps);
-#ifdef HAVE_NGTCP2
-	PR_UL("num.query.quic", s->svr.qquic);
-#endif
 
 	/* flags */
 	PR_UL("num.query.flags.QR", s->svr.qbit_QR);
@@ -433,24 +407,8 @@ static void print_extended(struct ub_stats_info* s, int inhibit_zero)
 			continue;
 		PR_UL_SUB("num.rpz.action", rpz_action_to_string(i), s->svr.rpz_action[i]);
 	}
-#ifdef USE_DNSCRYPT
-	PR_UL("dnscrypt_shared_secret.cache.count",
-			 s->svr.shared_secret_cache_count);
-	PR_UL("num.query.dnscrypt.shared_secret.cachemiss",
-			 s->svr.num_query_dnscrypt_secret_missed_cache);
-	PR_UL("dnscrypt_nonce.cache.count", s->svr.nonce_cache_count);
-	PR_UL("num.query.dnscrypt.replay",
-			 s->svr.num_query_dnscrypt_replay);
-#endif /* USE_DNSCRYPT */
 	PR_UL("num.query.authzone.up", s->svr.num_query_authzone_up);
 	PR_UL("num.query.authzone.down", s->svr.num_query_authzone_down);
-#ifdef CLIENT_SUBNET
-	PR_UL("num.query.subnet", s->svr.num_query_subnet);
-	PR_UL("num.query.subnet_cache", s->svr.num_query_subnet_cache);
-#endif
-#ifdef USE_CACHEDB
-	PR_UL("num.query.cachedb", s->svr.num_query_cachedb);
-#endif
 }
 
 /** print statistics out of memory structures */

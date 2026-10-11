@@ -97,3 +97,27 @@ including DNSSEC, prefetch, serve-expired, reload, fast reload, and outgoing TLS
 certificate verification. Measurements and remaining work are recorded in
 UNBOUND-REDUCTION-RESULTS.txt. Full HalfBSD builds and configuration migration
 remain pending.
+
+## Second pass status (2026-10-11)
+
+The second pass removes Redis/cachedb, EDNS Client Subnet/subnetcache, DNSCrypt,
+DNS-over-HTTPS server handling, and DNS-over-QUIC in that order. Each stage
+compiled unbound, unbound-control, unbound-checkconf, and unbound-anchor and
+passed the forwarding regression suite before the next subsystem was removed.
+Implementations, configuration fields and directives, parser/lexer rules,
+registration and event callbacks, dependency probes, generated files, build
+rules, statistics, and user documentation were deleted or regenerated.
+
+The iterator was not modified. Shared UDP/TCP transport, caches, DNSSEC, local
+records, outgoing TLS, remote-control certificate authentication, privilege
+handling, and chroot remain. HTTP/1.1 clients used for downloads also remain.
+The regression now covers cache administration, ignored ECS, upstream ECS
+non-propagation, pipelined TCP, DNSSEC over TCP, and mutual-TLS control with
+reload and fast_reload. Exact measurements, stage results, limitations, deleted
+files, and future work are appended to UNBOUND-REDUCTION-RESULTS.txt.
+
+The next separate passes must address incoming DNS-over-TLS, RPZ/response-IP,
+views, authority zones and transfers, stub zones, and forwarding-only
+configuration enforcement. Configuration path migration and full HalfBSD
+builds still require their own validation. This pass adds no build switches,
+compatibility support, Capsicum implementation, commit, or push.

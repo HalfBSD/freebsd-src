@@ -190,3 +190,260 @@ outside_network.c/.h; util/netevent.c/.h and ub_event.c; libunbound/libworker.c
 and unbound.h; services/cache/dns.c/.h and util/data/msgreply.c; iterator NAT64
 configuration; configuration/control manuals, examples, README and metrics.awk.
 The complete per-file diff is available with git diff --stat.
+
+
+Second reduction pass — 2026-10-11
+
+Scope and repository state
+
+This section supersedes the pending status of these five subsystems in the
+historical first-pass report above. Baseline implementation commit:
+3477854d7a5e0f74a91309e7d65efb516758f2c6
+("Remove independent Unbound modules and dnstap"). Changes remain uncommitted;
+no push was performed. The existing untracked UNBOUND-CHATGPT-HANDOFF.txt was
+preserved. No changes were made to contrib/unbound/iterator/, configuration
+paths, resolvconf, local-unbound-setup, or service definitions.
+
+Completed removals
+
+1. Redis/cachedb: deleted the module and Redis backend, querycachedb helper,
+   hiredis probes/link flags, configuration fields and grammar, cache backend
+   flags, stats, registration/callbacks, and cache-administration +c option.
+   flush, flush_type, flush_zone, flush_bogus, and flush_negative continue to
+   operate on the ordinary in-memory caches. Extra arguments to flush_bogus
+   and flush_negative are rejected. A copied cachedb type reference in the
+   remaining ipset module now names its own ipset_qstate; an obsolete commented
+   cachedb call in ipsecmod was deleted.
+2. ECS/subnetcache: deleted the module, address tree, whitelist, ECS encoding
+   and parsing, prefetch/cache hooks, statistics, directives, and the separate
+   ECS wire-to-text formatter. Removed unused client-address and EDNS-list
+   plumbing from ordinary prefetch. Unsupported ECS options are ignored using
+   the standard EDNS handling; they are not forwarded and do not divide the
+   normal cache. The IANA option-number/name registry entry for option 8 is
+   retained as protocol identification, not ECS processing.
+3. DNSCrypt: deleted protocol, certificate and generated configuration sources,
+   libsodium probes, listener types, daemon state, decrypt/encrypt hooks, cache
+   accounting, stats, directives, and documentation. Ordinary UDP/TCP listeners
+   have direct paths rather than DNSCrypt-selection branches.
+4. DoH server: deleted nghttp2 probes, HTTP/2 requests/sessions/streams, DoH
+   listeners and ALPN context, mesh stream bookkeeping, HTTP/2 buffer accounting,
+   reload plumbing, directives, and documentation. Outgoing HTTP/1.1 and HTTPS
+   clients remain for unbound-anchor and the still-retained authority machinery.
+5. DoQ: deleted ngtcp2 and crypto-adapter probes, QUIC sockets/connections/streams,
+   timers, connection tables, SSL context, listener types, configuration,
+   statistics, callbacks, and documentation. QUIC was implemented in shared
+   netevent/listen_dnsport files; those implementations were physically removed.
+
+Removed obsolete unitecs, unitdoq, dohclient, and doqclient build references.
+Their test source files were already absent from this imported source tree;
+no retained DNS protocol tests were deleted. Historical upstream Changelog and
+CREDITS provenance remains. The warmup domain list's dnscrypt.org entry is an
+ordinary domain name, not support for the removed protocol. User-facing manuals
+and examples no longer advertise the removed features.
+
+No new feature switches, compatibility shims, alternate implementations, or
+replacement DNS algorithms were introduced. Shared TLS code was kept and only
+DoH/DoQ-specific contexts and callbacks removed. Incoming DNS-over-TLS is still
+present because its removal is outside this requested second-pass scope.
+
+Dependencies and utility/library retention
+
+Removed dependency support: libhiredis, libsodium, libnghttp2, libngtcp2,
+ngtcp2_crypto_ossl, ngtcp2_crypto_openssl, and ngtcp2_crypto_quictls. ECS used no
+external library. These optional features were disabled in the baseline build;
+none of those libraries was in the baseline daemon's dynamic NEEDED list.
+This is source and dependency-support removal, not disappearance of previously
+linked daemon libraries. The daemon still needs libssl.so.3, libcrypto.so.3,
+and libc.so.6 in this portable Linux build; pthread is merged into glibc here.
+HalfBSD retains its existing OpenSSL/pthread and anchor XML build dependencies.
+
+All four installed utilities remain. libunbound remains required, including by
+unbound-anchor; the portable build produced it as well. Anchor's direct NEEDED
+list is libunbound.so.8, libssl.so.3, libcrypto.so.3, libc.so.6, unchanged.
+Its link command includes -lexpat; this environment links XML support without
+adding a separate libexpat NEEDED entry. No unrelated library or utility removed. Deploy the daemon and retained
+utilities together: removed statistics also change the private stats/shared-
+memory structure layout and exported statistics names, without compatibility
+fields for removed features.
+
+Measurements (fresh same-host baseline and final builds)
+
+                                       Before       After       Reduction
+Files under contrib/unbound               348         329              19
+C/header/lexer/parser files                234         218              16
+Lines in these source files            184242      167364           16878
+Lines excluding three generated files  168478      153448           15030
+Unbound binary, bytes                 6151976     6031048          120928
+Stripped Unbound binary, bytes         1354416     1325744           28672
+Installed HalfBSD Unbound utilities          4           4               0
+
+Source suffixes counted: .c, .h, .y, .lex. The three generated files excluded
+from the additional line measurement are configlexer.c, configparser.c, and
+configparser.h. This explicitly defined count matches the earlier first-pass definition
+and excludes build-generated config.h and other artifacts outside the source
+tree. The fresh baseline daemon differs by 8 bytes
+from the historical first-pass build; the comparisons above use this pass's
+baseline, compiler and build settings. Source deletion is separate from binary
+shrinkage: formerly disabled feature code did not all exist in the baseline
+executable. Generated lexer/parser changes account for some diff churn.
+
+Other real ELF utility sizes, before -> after (unstripped):
+  unbound-control:    1539896 -> 1466384 bytes
+  unbound-checkconf:  4464616 -> 4377352 bytes
+  unbound-anchor:      363992 ->  363984 bytes
+The portable anchor executable is .libs/unbound-anchor; the top-level file is
+a libtool wrapper. No portable make-install was performed, and the installed
+utility count describes HalfBSD's unchanged installation rules.
+
+Incremental validation
+
+Stage            Files  Source lines  Stripped daemon  Four builds  Runtime
+Baseline           348        184242          1354416  PASS         not rerun
+cachedb removed    343        180932          1346224  PASS         PASS
+ECS removed        335        177107          1346224  PASS         PASS
+DNSCrypt removed   329        174758          1338032  PASS         PASS
+DoH removed        329        172621          1333936  PASS         PASS
+DoQ removed        329        167426          1325744  PASS         PASS
+Final cleanup      329        167364          1325744  PASS         PASS
+
+Intermediate counts describe the source snapshot built at that stage. Final
+cleanup removed orphan arguments/loops, remaining feature test build rules,
+and formatting debris. Compile failures encountered during incremental edits
+were corrected before each stage was accepted. The first new missing-client-
+certificate test correctly received a TCP reset; the assertion was adjusted to
+accept that rejection as well as an SSL error, and the complete suite reran.
+No unresolved compilation or regression failure remains.
+
+Build environment and repeatable commands
+
+Linux portable builds used system cc, GNU make, flex, bison, and autoconf; internal
+mini-event, default -g -O2 -flto, and the existing development files under
+/tmp/unbound-tools/usr. No tools or packages were downloaded or installed during
+this pass. Preinstalled Python cryptography was used once to create test-only
+control certificates; the persisted regression itself uses only the standard
+library. Test keys/certificates are fixtures, valid 2020-2036, not operational
+credentials. System openssl was available for inspecting certificate properties.
+
+In a clean copy of contrib/unbound outside the source tree:
+  CC=cc
+  CPPFLAGS="-I/tmp/unbound-tools/usr/include -I/tmp/unbound-tools/usr/include/x86_64-linux-gnu"
+  LDFLAGS="-L/tmp/unbound-tools/usr/lib/x86_64-linux-gnu"
+  LD_LIBRARY_PATH="/tmp/unbound-tools/usr/lib/x86_64-linux-gnu"
+  (export the four variables above)
+  ./configure --with-libevent=no --with-ssl=/tmp/unbound-tools/usr --with-libexpat=/tmp/unbound-tools/usr
+  make -j4 unbound unbound-control unbound-checkconf unbound-anchor
+From the repository root:
+  env LD_LIBRARY_PATH=/tmp/unbound-tools/usr/lib/x86_64-linux-gnu python3 usr.sbin/unbound/tests/forwarding.py /tmp/unbound-pass2-final
+
+Generated files were regenerated using autoconf, bison -y -d, and flex -Pub_c_,
+with the existing config.h/configyyrename.h includes on the generated lexer.
+Pre-existing const-discard and generated flex macro-redefinition warnings remain.
+No new unresolved warning category was observed in the ordinary builds.
+
+Runtime coverage (final suite, 16 PASS groups)
+
+- Local A/CNAME/PTR over IPv4 UDP and TCP.
+- Controlled upstream forwarding, CNAME chains, positive and negative caching.
+- Cache flush/type/zone/negative/bogus administration and removed +c rejection.
+- Removed subsystem statistics are absent.
+- Valid and uninterpreted ECS data with normal EDNS and shared cache; no ECS
+  sent to the upstream.
+- Multiple pipelined TCP requests and subsequent reuse of the same connection.
+- Upstream truncation and outgoing TCP fallback.
+- Ordinary AAAA and shared CD/non-CD cache entries.
+- Valid DNSSEC AD over UDP/TCP; corrupt signatures produce SERVFAIL; CD handling.
+- Cache prefetch and serve-expired during an upstream outage.
+- Forwarding failover with one unreachable upstream; runtime forward changes.
+- Statistics, Unix control, configuration/local-data reload, and fast_reload.
+- Outgoing TLS with trusted certificate/name and hostname-mismatch rejection.
+- Remote-control mutual TLS, missing-client-certificate rejection, reload and
+  fast_reload with authentication still usable.
+- Removed configuration directives and module names are rejected by checkconf.
+
+These are actual process/socket tests, not inferred from compilation. The suite
+uses controlled loopback upstreams and does not depend on public DNS servers.
+External internet DNS and live root trust-anchor bootstrap/rollover were not
+performed. Trust-anchor initialization/maintenance, privilege dropping, chroot,
+and LAN ACL mechanisms were preserved by source review, but this loopback suite
+runs with empty username/chroot and does not certify those deployments.
+The imported tree lacks upstream testcode/testdata implementations; the retained
+HalfBSD forwarding suite supplies executable runtime coverage. Full HalfBSD
+buildworld/buildkernel and native BSD installation tests were not performed:
+the available host is Linux with GNU make, without a supported HalfBSD build
+environment configured. Portable compilation is not a native buildworld result.
+
+Build logs and measurements remain locally at
+/tmp/unbound-pass2-{baseline,cachedb,subnet,dnscrypt,doh,doq,final}-build.log
+and /tmp/unbound-pass2-<stage>/metrics.json. Runtime logs are
+/tmp/unbound-pass2-{cachedb,subnet,dnscrypt,doh,doq,final}-tests.log.
+These /tmp artifacts are not required to understand this report.
+
+Remaining work and shared internals
+
+The iterator was deliberately untouched, including recursive machinery shared
+with forwarding. This pass does not yet enforce a catch-all forward-zone or
+prevent recursive fallback; that is a separate prerequisite for the eventual
+forwarding-only product. Default/current configuration must still explicitly
+configure root forwarding without forward-first fallback. Views, RPZ,
+response-IP policy, authority zones/transfers, stub zones, incoming DoT, NAT64
+transport, IPsec/ipset modules, and other previously deferred components remain.
+Do not mistake the five completed subsystem deletions for the full reduction.
+Existing configuration/service migration remains deferred to preserve deployed
+installations. Runtime HTTP/HTTPS download clients remain required by anchor
+and currently by authority-zone support. Standards EDNS, cache, validator,
+outgoing TLS and control code remain rather than being rewritten.
+
+Future Capsicum assessment (no behavior changed)
+
+Reloads reread configuration/includes and may recreate TLS contexts, loading CA
+bundles and configured service/control keys and certificates. Runtime logging
+can reopen files. PID/socket/worker-channel operations and outgoing UDP/TCP/TLS
+socket creation still occur across startup, queries, retries, upstream changes,
+and DNSSEC probes. RFC5011 state updates create, write, flush, and atomically
+rename a temporary file over root.key, requiring file and directory authority.
+Anchor bootstrap uses DNS/HTTPS and mutable anchor state. Retained authority
+zones/transfers add more network and file activity. Removing Redis, DNSCrypt,
+DoH, and DoQ eliminates their backend/certificate/socket/timer requirements,
+but a future capability-mode design must still provide reload/log/anchor access
+and controlled creation of outgoing connections, potentially through brokers.
+Privilege dropping, chroot, certificate checks and access controls are retained.
+
+Deleted files in this pass
+
+contrib/unbound/cachedb/cachedb.c
+contrib/unbound/cachedb/cachedb.h
+contrib/unbound/cachedb/redis.c
+contrib/unbound/cachedb/redis.h
+contrib/unbound/contrib/unbound-querycachedb.py
+contrib/unbound/dnscrypt/cert.h
+contrib/unbound/dnscrypt/dnscrypt.c
+contrib/unbound/dnscrypt/dnscrypt.h
+contrib/unbound/dnscrypt/dnscrypt.m4
+contrib/unbound/dnscrypt/dnscrypt_config.h
+contrib/unbound/dnscrypt/dnscrypt_config.h.in
+contrib/unbound/edns-subnet/addrtree.c
+contrib/unbound/edns-subnet/addrtree.h
+contrib/unbound/edns-subnet/edns-subnet.c
+contrib/unbound/edns-subnet/edns-subnet.h
+contrib/unbound/edns-subnet/subnet-whitelist.c
+contrib/unbound/edns-subnet/subnet-whitelist.h
+contrib/unbound/edns-subnet/subnetmod.c
+contrib/unbound/edns-subnet/subnetmod.h
+
+Major modified files in this pass
+
+contrib/unbound/Makefile.in, configure.ac, configure, config.h.in;
+lib/libunbound/Makefile and config.h;
+util/config_file.c/.h, configlexer.lex/.c, configparser.y/.c/.h;
+services/modstack.c, mesh.c/.h, listen_dnsport.c/.h, outside_network.c;
+util/module.c/.h, fptr_wlist.c, netevent.c/.h, ub_event.c, net_help.c/.h;
+daemon/daemon.c/.h, remote.c, worker.c, stats.c; util/shm_side/shm_main.c;
+libunbound/unbound.h and libworker.c; smallapp/unbound-checkconf.c,
+unbound-control.c and worker_cb.c; sldns/wire2str.c/.h and rrdef.h;
+IPsec/IPset orphan references; winrc TLS callers;
+configuration/control manuals in roff and RST, example configurations and README;
+usr.sbin/unbound/tests/forwarding.py and dnssec-fixture.json;
+UNBOUND-REDUCTION-PLAN.md and this report.
+
+All five requested subsystems are physically removed; no iterator modification,
+commit, push, installed-directory migration, or Capsicum implementation occurred.

@@ -539,10 +539,6 @@ ipsecmod_operate(struct module_qstate* qstate, enum module_ev event, int id,
 		return;
 	}
 	if(iq && outbound) {
-		/* cachedb does not need to process responses at this time
-		 * ignore it.
-		cachedb_process_response(qstate, iq, ie, id, outbound, event);
-		*/
 		return;
 	}
 	if(event == module_event_error) {

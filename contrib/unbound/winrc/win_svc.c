@@ -369,29 +369,9 @@ service_init(int r, struct daemon** d, struct config_file** c)
 			cfg->tls_ciphers, cfg->tls_ciphersuites,
 			(cfg->tls_session_ticket_keys.first &&
 			cfg->tls_session_ticket_keys.first->str[0] != 0),
-			1, 0, cfg->tls_protocols))) {
+			1, cfg->tls_protocols))) {
 			fatal_exit("could not set up listen SSL_CTX");
 		}
-#ifdef HAVE_NGHTTP2_NGHTTP2_H
-		if(cfg_has_https(cfg)) {
-			if(!(daemon->listen_doh_sslctx = listen_sslctx_create(
-				cfg->ssl_service_key, cfg->ssl_service_pem, NULL,
-				cfg->tls_ciphers, cfg->tls_ciphersuites,
-				(cfg->tls_session_ticket_keys.first &&
-				cfg->tls_session_ticket_keys.first->str[0] != 0),
-				0, 1, cfg->tls_protocols))) {
-				fatal_exit("could not set up listen doh SSL_CTX");
-			}
-		}
-#endif
-#ifdef HAVE_NGTCP2
-		if(cfg_has_quic(cfg)) {
-			if(!(daemon->listen_quic_sslctx = quic_sslctx_create(
-				cfg->ssl_service_key, cfg->ssl_service_pem, NULL))) {
-				fatal_exit("could not set up quic SSL_CTX");
-			}
-		}
-#endif /* HAVE_NGTCP2 */
 	}
 	if(!(daemon->connect_dot_sslctx = connect_sslctx_create(NULL, NULL,
 		cfg->tls_cert_bundle, cfg->tls_win_cert)))
@@ -443,7 +423,7 @@ service_main(DWORD ATTR_UNUSED(argc), LPTSTR* ATTR_UNUSED(argv))
 		reportev("Could not RegisterServiceCtrlHandler");
 		return;
 	}
-	
+
 	service_status.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
 	service_status.dwServiceSpecificExitCode = 0;
 

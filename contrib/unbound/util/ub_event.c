@@ -102,14 +102,7 @@ UB_EV_BITS_CB(comm_point_raw_handle_callback)
 UB_EV_BITS_CB(tube_handle_signal)
 UB_EV_BITS_CB(comm_base_handle_slow_accept)
 UB_EV_BITS_CB(comm_point_http_handle_callback)
-#ifdef HAVE_NGTCP2
-UB_EV_BITS_CB(comm_point_doq_callback)
-#endif
 UB_EV_BITS_CB(fast_reload_service_cb)
-#ifdef HAVE_NGTCP2
-UB_EV_BITS_CB(doq_client_event_cb)
-UB_EV_BITS_CB(doq_client_timer_cb)
-#endif
 #ifdef UB_ON_WINDOWS
 UB_EV_BITS_CB(worker_win_stop_cb)
 #endif
@@ -138,18 +131,8 @@ static void (*NATIVE_BITS_CB(void (*cb)(int, short, void*)))(int, short, void*)
 		return my_tube_handle_signal;
 	else if(cb == comm_base_handle_slow_accept)
 		return my_comm_base_handle_slow_accept;
-#ifdef HAVE_NGTCP2
-	else if(cb == comm_point_doq_callback)
-		return my_comm_point_doq_callback;
-#endif
 	else if(cb == fast_reload_service_cb)
 		return my_fast_reload_service_cb;
-#ifdef HAVE_NGTCP2
-	else if(cb == doq_client_event_cb)
-		return my_doq_client_event_cb;
-	else if(cb == doq_client_timer_cb)
-		return my_doq_client_timer_cb;
-#endif
 #ifdef UB_ON_WINDOWS
 	else if(cb == worker_win_stop_cb)
 		return my_worker_win_stop_cb;

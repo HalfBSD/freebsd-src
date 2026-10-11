@@ -85,7 +85,7 @@ int shm_main_init(struct daemon* daemon)
 #ifdef HAVE_SHMGET
 	struct ub_shm_stat_info *shm_stat;
 	size_t shm_size;
-	
+
 	/* sanitize */
 	if(!daemon)
 		return 0;
@@ -252,27 +252,10 @@ shm_general_info(struct worker* worker)
 
 	shm_stat->mem.msg = (long long)slabhash_get_mem(worker->env.msg_cache);
 	shm_stat->mem.rrset = (long long)slabhash_get_mem(&worker->env.rrset_cache->table);
-	shm_stat->mem.dnscrypt_shared_secret = 0;
-#ifdef USE_DNSCRYPT
-	if(worker->daemon->dnscenv) {
-		shm_stat->mem.dnscrypt_shared_secret = (long long)slabhash_get_mem(
-			worker->daemon->dnscenv->shared_secrets_cache);
-		shm_stat->mem.dnscrypt_nonce = (long long)slabhash_get_mem(
-			worker->daemon->dnscenv->nonces_cache);
-	}
-#endif
 	shm_stat->mem.val = (long long)mod_get_mem(&worker->env, "validator");
 	shm_stat->mem.iter = (long long)mod_get_mem(&worker->env, "iterator");
 	shm_stat->mem.respip = (long long)mod_get_mem(&worker->env, "respip");
 
-	/* subnet mem value is available in shm, also when not enabled,
-	 * to make the struct easier to memmap by other applications,
-	 * independent of the configuration of unbound */
-	shm_stat->mem.subnet = 0;
-#ifdef CLIENT_SUBNET
-	shm_stat->mem.subnet = (long long)mod_get_mem(&worker->env,
-		"subnetcache");
-#endif
 	/* ipsecmod mem value is available in shm, also when not enabled,
 	 * to make the struct easier to memmap by other applications,
 	 * independent of the configuration of unbound */

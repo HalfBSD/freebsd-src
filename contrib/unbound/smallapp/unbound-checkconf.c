@@ -73,9 +73,6 @@
 #ifdef HAVE_GLOB_H
 #include <glob.h>
 #endif
-#ifdef CLIENT_SUBNET
-#include "edns-subnet/subnet-whitelist.h"
-#endif
 
 /** Give checkconf usage, and exit (1). */
 static void
@@ -410,22 +407,6 @@ interfacechecks(struct config_file* cfg)
 			fatal_exit("could not resolve interface names, for %s",
 				cfg->ifs[i]);
 		}
-		/* check for port combinations that are not supported */
-		if(if_is_pp2(resif[i][0], cfg->port, cfg->proxy_protocol_port)) {
-			if(if_is_dnscrypt(resif[i][0], cfg->port,
-				cfg->dnscrypt_port)) {
-				fatal_exit("PROXYv2 and DNSCrypt combination not "
-					"supported!");
-			} else if(if_is_https(resif[i][0], cfg->port,
-				cfg->https_port)) {
-				fatal_exit("PROXYv2 and DoH combination not "
-					"supported!");
-			} else if(if_is_quic(resif[i][0], cfg->port,
-				cfg->quic_port)) {
-				fatal_exit("PROXYv2 and DoQ combination not "
-					"supported!");
-			}
-		}
 		/* search for duplicates in the returned addresses */
 		for(j=0; j<num_resif[i]; j++) {
 			if(!extstrtoaddr(resif[i][j], &a, &alen, cfg->port)) {
@@ -671,19 +652,6 @@ check_chroot_filelist_wild(const char* desc, struct config_strlist* list,
 	}
 }
 
-#ifdef CLIENT_SUBNET
-/** check ECS configuration */
-static void
-ecs_conf_checks(struct config_file* cfg)
-{
-	struct ecs_whitelist* whitelist = NULL;
-	if(!(whitelist = ecs_whitelist_create()))
-		fatal_exit("Could not create ednssubnet whitelist: out of memory");
-        if(!ecs_whitelist_apply_cfg(whitelist, cfg))
-		fatal_exit("Could not setup ednssubnet whitelist");
-	ecs_whitelist_delete(whitelist);
-}
-#endif /* CLIENT_SUBNET */
 
 /** check that the modules exist, are compiled in */
 static void
@@ -830,22 +798,6 @@ morechecks(struct config_file* cfg)
 		&& strcmp(cfg->module_conf, "validator iterator") != 0
 		&& strcmp(cfg->module_conf, "respip iterator") != 0
 		&& strcmp(cfg->module_conf, "respip validator iterator") != 0
-#ifdef USE_CACHEDB
-		&& strcmp(cfg->module_conf, "validator cachedb iterator") != 0
-		&& strcmp(cfg->module_conf, "respip validator cachedb iterator") != 0
-		&& strcmp(cfg->module_conf, "cachedb iterator") != 0
-		&& strcmp(cfg->module_conf, "respip cachedb iterator") != 0
-#endif
-#if defined(CLIENT_SUBNET) && defined(USE_CACHEDB)
-		&& strcmp(cfg->module_conf, "respip subnetcache validator cachedb iterator") != 0
-		&& strcmp(cfg->module_conf, "subnetcache validator cachedb iterator") != 0
-#endif
-#ifdef CLIENT_SUBNET
-		&& strcmp(cfg->module_conf, "subnetcache iterator") != 0
-		&& strcmp(cfg->module_conf, "respip subnetcache iterator") != 0
-		&& strcmp(cfg->module_conf, "subnetcache validator iterator") != 0
-		&& strcmp(cfg->module_conf, "respip subnetcache validator iterator") != 0
-#endif
 #ifdef USE_IPSECMOD
 		&& strcmp(cfg->module_conf, "ipsecmod iterator") != 0
 		&& strcmp(cfg->module_conf, "ipsecmod respip iterator") != 0
@@ -891,9 +843,6 @@ morechecks(struct config_file* cfg)
 	donotquerylocalhostcheck(cfg);
 	localzonechecks(cfg);
 	view_and_respipchecks(cfg);
-#ifdef CLIENT_SUBNET
-	ecs_conf_checks(cfg);
-#endif
 }
 
 /** check forwards */

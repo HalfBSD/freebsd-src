@@ -135,13 +135,6 @@ The recognized section clauses are:
         :ref:`access-control-view<unbound.conf.access-control-view>` and
         :ref:`interface-view<unbound.conf.interface-view>`.
 
-    :ref:`dnscrypt:<unbound.conf.dnscrypt>`
-        Configuration for the optional DNSCrypt feature.
-
-    :ref:`cachedb:<unbound.conf.cachedb>`
-        Configuration for the optional ``cachedb`` module that can interface
-        with second level caches, currently Redis or Redis-complatible
-        databases.
 
     :ref:`rpz:<unbound.conf.rpz>`
         Configuration for Response Policy Zones that allows for DNS filtering.
@@ -307,7 +300,7 @@ These options are part of the ``server:`` section.
 
     This can be used to have interface automatic to deal with the interface,
     and listen on the normal port number, by including it in the list, and
-    also HTTPS or DNS-over-TLS port numbers by putting them in the list as
+    also DNS-over-TLS port numbers by putting them in the list as
     well.
 
     Default: ""
@@ -1029,10 +1022,9 @@ These options are part of the ``server:`` section.
 
 
 @@UAHL@unbound.conf@tls-service-key@@: *<file>*
-    If enabled, the server provides DNS-over-TLS or DNS-over-HTTPS service on
+    If enabled, the server provides DNS-over-TLS service on
     the TCP ports marked implicitly or explicitly for these services with
-    :ref:`tls-port<unbound.conf.tls-port>` or
-    :ref:`https-port<unbound.conf.https-port>`.
+    :ref:`tls-port<unbound.conf.tls-port>`.
     The file must contain the private key for the TLS session, the public
     certificate is in the :ref:`tls-service-pem<unbound.conf.tls-service-pem>`
     file and it must also be specified if
@@ -1045,13 +1037,9 @@ These options are part of the ``server:`` section.
     The server checks the modification time of the file (and the filename)
     to see if the file has changed for reload.
     The ports enabled implicitly or explicitly via
-    :ref:`tls-port<unbound.conf.tls-port>` and
-    :ref:`https-port<unbound.conf.https-port>` do not provide normal DNS TCP
+    :ref:`tls-port<unbound.conf.tls-port>` do not provide normal DNS TCP
     service.
 
-    .. note::
-        Unbound needs to be compiled with libnghttp2 in order to provide
-        DNS-over-HTTPS.
 
     Default: "" (disabled)
 
@@ -1213,64 +1201,6 @@ These options are part of the ``server:`` section.
     Default: 128
 
 
-@@UAHL@unbound.conf@https-port@@: *<number>*
-    The port number on which to provide DNS-over-HTTPS service.
-    Only interfaces configured with that port number as @number get the HTTPS
-    service.
-
-    Default: 443
-
-
-@@UAHL@unbound.conf@http-endpoint@@: *<endpoint string>*
-    The HTTP endpoint to provide DNS-over-HTTPS service on.
-
-    Default: /dns-query
-
-
-@@UAHL@unbound.conf@http-max-streams@@: *<number of streams>*
-    Number used in the SETTINGS_MAX_CONCURRENT_STREAMS parameter in the HTTP/2
-    SETTINGS frame for DNS-over-HTTPS connections.
-
-    Default: 100
-
-
-@@UAHL@unbound.conf@http-query-buffer-size@@: *<size in bytes>*
-    Maximum number of bytes used for all HTTP/2 query buffers combined.
-    These buffers contain (partial) DNS queries waiting for request stream
-    completion.
-    An RST_STREAM frame will be send to streams exceeding this limit.
-    A plain number is in bytes, append 'k', 'm' or 'g' for kilobytes, megabytes
-    or gigabytes (1024*1024 bytes in a megabyte).
-
-    Default: 4m
-
-
-@@UAHL@unbound.conf@http-response-buffer-size@@: *<size in bytes>*
-    Maximum number of bytes used for all HTTP/2 response buffers combined.
-    These buffers contain DNS responses waiting to be written back to the
-    clients.
-    An RST_STREAM frame will be send to streams exceeding this limit.
-    A plain number is in bytes, append 'k', 'm' or 'g' for kilobytes, megabytes
-    or gigabytes (1024*1024 bytes in a megabyte).
-
-    Default: 4m
-
-
-@@UAHL@unbound.conf@http-nodelay@@: *<yes or no>*
-    Set TCP_NODELAY socket option on sockets used to provide DNS-over-HTTPS
-    service.
-    Ignored if the option is not available.
-
-    Default: yes
-
-
-@@UAHL@unbound.conf@http-notls-downstream@@: *<yes or no>*
-    Disable use of TLS for the downstream DNS-over-HTTP connections.
-    Useful for local back end servers.
-
-    Default: no
-
-
 @@UAHL@unbound.conf@proxy-protocol-port@@: *<portnr>*
     List port numbers as
     :ref:`proxy-protocol-port<unbound.conf.proxy-protocol-port>`, and when
@@ -1287,31 +1217,7 @@ These options are part of the ``server:`` section.
 
     PROXYv2 is supported for UDP and TCP/TLS listening interfaces.
 
-    There is no support for PROXYv2 on a DoH, DoQ or DNSCrypt listening interface.
-
     Can list multiple, each on a new statement.
-
-
-@@UAHL@unbound.conf@quic-port@@: *<number>*
-    The port number on which to provide DNS-over-QUIC service.
-    Only interfaces configured with that port number as @number get the QUIC
-    service.
-    The interface uses QUIC for the UDP traffic on that port number.
-    If it is set to 0, the server does not init QUIC code, and QUIC is
-    disabled.
-    This is similar to if QUIC is not in use, but then explicitly.
-
-    Default: 853
-
-
-@@UAHL@unbound.conf@quic-size@@: *<size in bytes>*
-    Maximum number of bytes for all QUIC buffers and data combined.
-    A plain number is in bytes, append 'k', 'm' or 'g' for kilobytes, megabytes
-    or gigabytes (1024*1024 bytes in a megabyte).
-    New connections receive connection refused when the limit is exceeded.
-    New streams are reset when the limit is exceeded.
-
-    Default: 8m
 
 
 @@UAHL@unbound.conf@use-systemd@@: *<yes or no>*
@@ -2146,8 +2052,6 @@ These options are part of the ``server:`` section.
 
     Most modules that need to be listed here have to be listed at the beginning
     of the line.
-
-    The ``subnetcache`` module has to be listed just before the iterator.
 
     Default: "validator iterator"
 
@@ -4105,246 +4009,6 @@ servers.
 
     Default: 64:ff9b::/96
 
-.. _unbound.conf.dnscrypt:
-
-DNSCrypt Options
-----------------
-
-These options are part of the ``dnscrypt:`` section.
-
-The ``dnscrypt:`` section gives the settings of the dnscrypt channel.
-While those options are available, they are only meaningful if Unbound was
-compiled with ``--enable-dnscrypt``.
-Currently certificate and secret/public keys cannot be generated by Unbound.
-You can use dnscrypt-wrapper to generate those:
-https://github.com/cofyc/dnscrypt-wrapper/blob/master/README.md#usage
-
-
-@@UAHL@unbound.conf.dnscrypt@dnscrypt-enable@@: *<yes or no>*
-    Whether or not the dnscrypt config should be enabled.
-    You may define configuration but not activate it.
-
-    Default: no
-
-
-@@UAHL@unbound.conf.dnscrypt@dnscrypt-port@@: *<port number>*
-    On which port should dnscrypt should be activated.
-
-    .. note::
-        There should be a matching interface option defined in the
-        :ref:`server:<unbound.conf.server>` section for this port.
-
-
-@@UAHL@unbound.conf.dnscrypt@dnscrypt-provider@@: *<provider name>*
-    The provider name to use to distribute certificates.
-    This is of the form:
-
-    .. code-block:: text
-
-        2.dnscrypt-cert.example.com.
-
-    .. important:: The name *MUST* end with a dot.
-
-
-@@UAHL@unbound.conf.dnscrypt@dnscrypt-secret-key@@: *<path to secret key file>*
-    Path to the time limited secret key file.
-    This option may be specified multiple times.
-
-
-@@UAHL@unbound.conf.dnscrypt@dnscrypt-provider-cert@@: *<path to cert file>*
-    Path to the certificate related to the
-    :ref:`dnscrypt-secret-key<unbound.conf.dnscrypt.dnscrypt-secret-key>`.
-    This option may be specified multiple times.
-
-
-@@UAHL@unbound.conf.dnscrypt@dnscrypt-provider-cert-rotated@@: *<path to cert file>*
-    Path to a certificate that we should be able to serve existing connection
-    from but do not want to advertise over
-    :ref:`dnscrypt-provider<unbound.conf.dnscrypt.dnscrypt-provider>` 's TXT
-    record certs distribution.
-
-    A typical use case is when rotating certificates, existing clients may
-    still use the client magic from the old cert in their queries until they
-    fetch and update the new cert.
-    Likewise, it would allow one to prime the new cert/key without distributing
-    the new cert yet, this can be useful when using a network of servers using
-    anycast and on which the configuration may not get updated at the exact
-    same time.
-
-    By priming the cert, the servers can handle both old and new certs traffic
-    while distributing only one.
-
-    This option may be specified multiple times.
-
-
-@@UAHL@unbound.conf.dnscrypt@dnscrypt-shared-secret-cache-size@@: *<memory size>*
-    Give the size of the data structure in which the shared secret keys are
-    kept in.
-    In bytes or use m(mega), k(kilo), g(giga).
-    The shared secret cache is used when a same client is making multiple
-    queries using the same public key.
-    It saves a substantial amount of CPU.
-
-    Default: 4m
-
-
-@@UAHL@unbound.conf.dnscrypt@dnscrypt-shared-secret-cache-slabs@@: *<number>*
-    Number of slabs in the dnscrypt shared secrets cache.
-    Slabs reduce lock contention by threads.
-    Must be set to a power of 2.
-    Setting (close) to the number of cpus is a fairly good setting.
-    If left unconfigured, it will be configured automatically to be a power of
-    2 close to the number of configured threads in multi-threaded environments.
-
-    Default: (unconfigured)
-
-
-@@UAHL@unbound.conf.dnscrypt@dnscrypt-nonce-cache-size@@: *<memory size>*
-    Give the size of the data structure in which the client nonces are kept in.
-    In bytes or use m(mega), k(kilo), g(giga).
-    The nonce cache is used to prevent dnscrypt message replaying.
-    Client nonce should be unique for any pair of client pk/server sk.
-
-    Default: 4m
-
-
-@@UAHL@unbound.conf.dnscrypt@dnscrypt-nonce-cache-slabs@@: *<number>*
-    Number of slabs in the dnscrypt nonce cache.
-    Slabs reduce lock contention by threads.
-    Must be set to a power of 2.
-    Setting (close) to the number of cpus is a fairly good setting.
-    If left unconfigured, it will be configured automatically to be a power of
-    2 close to the number of configured threads in multi-threaded environments.
-
-    Default: (unconfigured)
-
-EDNS Client Subnet Module Options
----------------------------------
-
-These options are part of the ``server:`` section.
-
-The ECS module must be configured in the
-:ref:`module-config<unbound.conf.module-config>` directive, e.g.:
-
-.. code-block:: text
-
-    module-config: "subnetcache validator iterator"
-
-and be compiled into the daemon to be enabled.
-
-If the destination address is allowed in the configuration Unbound will add the
-EDNS0 option to the query containing the relevant part of the client's address.
-When an answer contains the ECS option the response and the option are placed
-in a specialized cache.
-If the authority indicated no support, the response is stored in the regular
-cache.
-
-Additionally, when a client includes the option in its queries, Unbound will
-forward the option when sending the query to addresses that are explicitly
-allowed in the configuration using
-:ref:`send-client-subnet<unbound.conf.ecs.send-client-subnet>`.
-The option will always be forwarded, regardless the allowed addresses, when
-:ref:`client-subnet-always-forward: yes<unbound.conf.ecs.client-subnet-always-forward>`
-is set.
-In this case the lookup in the regular cache is skipped.
-
-The maximum size of the ECS cache is controlled by
-:ref:`msg-cache-size<unbound.conf.msg-cache-size>` in the configuration file.
-On top of that, for each query only 100 different subnets are allowed to be
-stored for each address family.
-Exceeding that number, older entries will be purged from cache.
-
-Note that due to the nature of how EDNS Client Subnet works, by segregating the
-client IP space in order to try and have tailored responses for prefixes of
-unknown sizes, resolution and cache response performance are impacted as a
-result.
-Usage of the subnetcache module should only be enabled in installations that
-require such functionality where the resolver and the clients belong to
-different networks.
-An example of that is an open resolver installation.
-
-This module does not interact with the
-:ref:`serve-expired\*<unbound.conf.serve-expired>` and
-:ref:`prefetch<unbound.conf.prefetch>` options.
-
-
-@@UAHL@unbound.conf.ecs@send-client-subnet@@: *<IP address>*
-    Send client source address to this authority.
-    Append /num to indicate a classless delegation netblock, for example like
-    ``10.2.3.4/24`` or ``2001::11/64``.
-    Can be given multiple times.
-    Authorities not listed will not receive edns-subnet information, unless
-    domain in query is specified in
-    :ref:`client-subnet-zone<unbound.conf.ecs.client-subnet-zone>`.
-
-
-@@UAHL@unbound.conf.ecs@client-subnet-zone@@: *<domain>*
-    Send client source address in queries for this domain and its subdomains.
-    Can be given multiple times.
-    Zones not listed will not receive edns-subnet information, unless hosted by
-    authority specified in
-    :ref:`send-client-subnet<unbound.conf.ecs.send-client-subnet>`.
-
-
-@@UAHL@unbound.conf.ecs@client-subnet-always-forward@@: *<yes or no>*
-    Specify whether the ECS address check (configured using
-    :ref:`send-client-subnet<unbound.conf.ecs.send-client-subnet>`) is applied
-    for all queries, even if the triggering query contains an ECS record, or
-    only for queries for which the ECS record is generated using the querier
-    address (and therefore did not contain ECS data in the client query).
-    If enabled, the address check is skipped when the client query contains an
-    ECS record.
-    And the lookup in the regular cache is skipped.
-
-    Default: no
-
-
-@@UAHL@unbound.conf.ecs@max-client-subnet-ipv6@@: *<number>*
-    Specifies the maximum prefix length of the client source address we are
-    willing to expose to third parties for IPv6.
-
-    Default: 56
-
-
-@@UAHL@unbound.conf.ecs@max-client-subnet-ipv4@@: *<number>*
-    Specifies the maximum prefix length of the client source address we are
-    willing to expose to third parties for IPv4.
-
-    Default: 24
-
-
-@@UAHL@unbound.conf.ecs@min-client-subnet-ipv6@@: *<number>*
-    Specifies the minimum prefix length of the IPv6 source mask we are willing
-    to accept in queries.
-    Shorter source masks result in REFUSED answers.
-    Source mask of 0 is always accepted.
-
-    Default: 0
-
-
-@@UAHL@unbound.conf.ecs@min-client-subnet-ipv4@@: *<number>*
-    Specifies the minimum prefix length of the IPv4 source mask we are willing
-    to accept in queries.
-    Shorter source masks result in REFUSED answers.
-    Source mask of 0 is always accepted.
-    Default: 0
-
-
-@@UAHL@unbound.conf.ecs@max-ecs-tree-size-ipv4@@: *<number>*
-    Specifies the maximum number of subnets ECS answers kept in the ECS radix
-    tree.
-    This number applies for each qname/qclass/qtype tuple.
-
-    Default: 100
-
-
-@@UAHL@unbound.conf.ecs@max-ecs-tree-size-ipv6@@: *<number>*
-    Specifies the maximum number of subnets ECS answers kept in the ECS radix
-    tree.
-    This number applies for each qname/qclass/qtype tuple.
-
-    Default: 100
-
 Opportunistic IPsec Support Module Options
 ------------------------------------------
 
@@ -4447,268 +4111,6 @@ answer given from cache is still relevant for opportunistic IPsec.
 
 @@UAHL@unbound.conf@ipsecmod-whitelist@@: *<domain>*
     Alternate syntax for :ref:`ipsecmod-allow<unbound.conf.ipsecmod-allow>`.
-
-.. _unbound.conf.cachedb:
-
-Cache DB Module Options
------------------------
-
-These options are part of the ``cachedb:`` section.
-
-The Cache DB module must be configured in the
-:ref:`module-config<unbound.conf.module-config>` directive, e.g.:
-
-.. code-block:: text
-
-    module-config: "validator cachedb iterator"
-
-and be compiled into the daemon with ``--enable-cachedb``.
-
-If this module is enabled and configured, the specified backend database works
-as a second level cache; when Unbound cannot find an answer to a query in its
-built-in in-memory cache, it consults the specified backend.
-If it finds a valid answer in the backend, Unbound uses it to respond to the
-query without performing iterative DNS resolution.
-If Unbound cannot even find an answer in the backend, it resolves the query as
-usual, and stores the answer in the backend.
-
-This module interacts with the *serve-expired-\** options and will reply with
-expired data if Unbound is configured for that.
-
-If Unbound was built with ``--with-libhiredis`` on a system that has installed
-the hiredis C client library of Redis, then the ``redis`` backend can be used.
-This backend communicates with the specified Redis server over a TCP connection
-to store and retrieve cache data.
-It can be used as a persistent and/or shared cache backend.
-
-.. note::
-    Unbound never removes data stored in the Redis server, even if some data
-    have expired in terms of DNS TTL or the Redis server has cached too much
-    data; if necessary the Redis server must be configured to limit the cache
-    size, preferably with some kind of least-recently-used eviction policy.
-
-Additionally, the
-:ref:`redis-expire-records<unbound.conf.cachedb.redis-expire-records>` option
-can be used in order to set the relative DNS TTL of the message as timeout to
-the Redis records; keep in mind that some additional memory is used per key and
-that the expire information is stored as absolute Unix timestamps in Redis
-(computer time must be stable).
-
-This backend uses synchronous communication with the Redis server based on the
-assumption that the communication is stable and sufficiently fast.
-The thread waiting for a response from the Redis server cannot handle other DNS
-queries.
-Although the backend has the ability to reconnect to the server when the
-connection is closed unexpectedly and there is a configurable timeout in case
-the server is overly slow or hangs up, these cases are assumed to be very rare.
-If connection close or timeout happens too often, Unbound will be effectively
-unusable with this backend.
-It's the administrator's responsibility to make the assumption hold.
-
-The ``cachedb:`` section gives custom settings of the cache DB module.
-
-
-@@UAHL@unbound.conf.cachedb@backend@@: *<backend name>*
-    Specify the backend database name.
-    The default database is the in-memory backend named ``testframe``, which,
-    as the name suggests, is not of any practical use.
-    Depending on the build-time configuration, ``redis`` backend may also be
-    used as described above.
-
-    Default: testframe
-
-
-@@UAHL@unbound.conf.cachedb@secret-seed@@: *"<secret string>"*
-    Specify a seed to calculate a hash value from query information.
-    This value will be used as the key of the corresponding answer for the
-    backend database and can be customized if the hash should not be
-    predictable operationally.
-    If the backend database is shared by multiple Unbound instances, all
-    instances must use the same secret seed.
-
-    Default: "default"
-
-
-@@UAHL@unbound.conf.cachedb@cachedb-no-store@@: *<yes or no>*
-    If the backend should be read from, but not written to.
-    This makes this instance not store dns messages in the backend.
-    But if data is available it is retrieved.
-
-    Default: no
-
-
-@@UAHL@unbound.conf.cachedb@cachedb-check-when-serve-expired@@: *<yes or no>*
-    If enabled, the cachedb is checked before an expired response is returned.
-    When
-    :ref:`serve-expired<unbound.conf.serve-expired>`
-    is enabled, without
-    :ref:`serve-expired-client-timeout<unbound.conf.serve-expired-client-timeout>`
-    , it then does not immediately respond with an expired response from cache,
-    but instead first checks the cachedb for valid contents, and if so returns it.
-    If the cachedb also has no valid contents, the serve expired response is sent.
-    If also
-    :ref:`serve-expired-client-timeout<unbound.conf.serve-expired-client-timeout>`
-    is enabled, the expired response is delayed until the timeout expires.
-    Unless the lookup succeeds within the timeout.
-
-    Default: yes
-
-The following ``cachedb:`` options are specific to the ``redis`` backend.
-
-
-@@UAHL@unbound.conf.cachedb@redis-server-host@@: *<server address or name>*
-    The IP (either v6 or v4) address or domain name of the Redis server.
-    In general an IP address should be specified as otherwise Unbound will have
-    to resolve the name of the server every time it establishes a connection to
-    the server.
-
-    Default: 127.0.0.1
-
-
-@@UAHL@unbound.conf.cachedb@redis-server-port@@: *<port number>*
-    The TCP port number of the Redis server.
-
-    Default: 6379
-
-
-@@UAHL@unbound.conf.cachedb@redis-server-path@@: *<unix socket path>*
-    The unix socket path to connect to the Redis server.
-    Unix sockets may have better throughput than the IP address option.
-
-    Default: "" (disabled)
-
-
-@@UAHL@unbound.conf.cachedb@redis-server-password@@: *"<password>"*
-    The Redis AUTH password to use for the Redis server.
-    Only relevant if Redis is configured for client password authorisation.
-
-    Default: "" (disabled)
-
-
-@@UAHL@unbound.conf.cachedb@redis-timeout@@: *<msec>*
-    The period until when Unbound waits for a response from the Redis server.
-    If this timeout expires Unbound closes the connection, treats it as if the
-    Redis server does not have the requested data, and will try to re-establish
-    a new connection later.
-
-    Default: 100
-
-
-@@UAHL@unbound.conf.cachedb@redis-command-timeout@@: *<msec>*
-    The timeout to use for Redis commands, in milliseconds.
-    If ``0``, it uses the
-    :ref:`redis-timeout<unbound.conf.cachedb.redis-timeout>`
-    value.
-
-    Default: 0
-
-
-@@UAHL@unbound.conf.cachedb@redis-connect-timeout@@: *<msec>*
-    The timeout to use for Redis connection set up, in milliseconds.
-    If ``0``, it uses the
-    :ref:`redis-timeout<unbound.conf.cachedb.redis-timeout>`
-    value.
-
-    Default: 0
-
-
-@@UAHL@unbound.conf.cachedb@redis-expire-records@@: *<yes or no>*
-    If Redis record expiration is enabled.
-    If yes, Unbound sets timeout for Redis records so that Redis can evict keys
-    that have expired automatically.
-    If Unbound is configured with
-    :ref:`serve-expired<unbound.conf.serve-expired>` and
-    :ref:`serve-expired-ttl: 0<unbound.conf.serve-expired-ttl>`, this option is
-    internally reverted to "no".
-
-    .. note::
-        Redis "SET ... EX" support is required for this option (Redis >= 2.6.12).
-
-    Default: no
-
-
-@@UAHL@unbound.conf.cachedb@redis-logical-db@@: *<logical database index>*
-    The logical database in Redis to use.
-    These are databases in the same Redis instance sharing the same
-    configuration and persisted in the same RDB/AOF file.
-    If unsure about using this option, Redis documentation
-    (https://redis.io/commands/select/) suggests not to use a single Redis
-    instance for multiple unrelated applications.
-    The default database in Redis is 0 while other logical databases need to be
-    explicitly SELECT'ed upon connecting.
-
-    Default: 0
-
-
-@@UAHL@unbound.conf.cachedb@redis-replica-server-host@@: *<server address or name>*
-    The IP (either v6 or v4) address or domain name of the Redis server.
-    In general an IP address should be specified as otherwise Unbound will have
-    to resolve the name of the server every time it establishes a connection to
-    the server.
-
-    This server is treated as a read-only replica server
-    (https://redis.io/docs/management/replication/#read-only-replica).
-    If specified, all Redis read commands will go to this replica server, while
-    the write commands will go to the
-    :ref:`redis-server-host<unbound.conf.cachedb.redis-server-host>`.
-
-    Default: "" (disabled).
-
-
-@@UAHL@unbound.conf.cachedb@redis-replica-server-port@@: *<port number>*
-    The TCP port number of the Redis replica server.
-
-    Default: 6379
-
-
-@@UAHL@unbound.conf.cachedb@redis-replica-server-path@@: *<unix socket path>*
-    The unix socket path to connect to the Redis replica server.
-    Unix sockets may have better throughput than the IP address option.
-
-    Default: "" (disabled)
-
-
-@@UAHL@unbound.conf.cachedb@redis-replica-server-password@@: *"<password>"*
-    The Redis AUTH password to use for the Redis server.
-    Only relevant if Redis is configured for client password authorisation.
-
-    Default: "" (disabled)
-
-
-@@UAHL@unbound.conf.cachedb@redis-replica-timeout@@: *<msec>*
-    The period until when Unbound waits for a response from the Redis replica
-    server.
-    If this timeout expires Unbound closes the connection, treats it as if the
-    Redis server does not have the requested data, and will try to re-establish
-    a new connection later.
-
-    Default: 100
-
-
-@@UAHL@unbound.conf.cachedb@redis-replica-command-timeout@@: *<msec>*
-    The timeout to use for Redis replica commands, in milliseconds.
-    If ``0``, it uses the
-    :ref:`redis-replica-timeout<unbound.conf.cachedb.redis-replica-timeout>`
-    value.
-
-    Default: 0
-
-
-@@UAHL@unbound.conf.cachedb@redis-replica-connect-timeout@@: *<msec>*
-    The timeout to use for Redis replica connection set up, in milliseconds.
-    If ``0``, it uses the
-    :ref:`redis-replica-timeout<unbound.conf.cachedb.redis-replica-timeout>`
-    value.
-
-    Default: 0
-
-
-@@UAHL@unbound.conf.cachedb@redis-replica-logical-db@@: *<logical database index>*
-    Same as :ref:`redis-logical-db<unbound.conf.cachedb.redis-logical-db>` but
-    for the Redis replica server.
-
-    Default: 0
-
 
 .. _unbound.conf.rpz:
 

@@ -338,7 +338,7 @@ rdata_copy(sldns_buffer* pkt, struct packed_rrset_data* data, uint8_t* to,
 	/* copy remaining rdata */
 	if(pkt_len >  0)
 		memmove(to, sldns_buffer_current(pkt), pkt_len);
-	
+
 	return 1;
 }
 
@@ -555,7 +555,7 @@ int reply_info_parse(sldns_buffer* pkt, struct alloc_cache* alloc,
 	/* use scratch pad region-allocator during parsing. */
 	struct msg_parse* msg;
 	int ret;
-	
+
 	qinf->qname = NULL;
 	qinf->local_alias = NULL;
 	*rep = NULL;
@@ -563,7 +563,7 @@ int reply_info_parse(sldns_buffer* pkt, struct alloc_cache* alloc,
 		return LDNS_RCODE_SERVFAIL;
 	}
 	memset(msg, 0, sizeof(*msg));
-	
+
 	sldns_buffer_set_position(pkt, 0);
 	if((ret = parse_packet(pkt, msg, region)) != 0) {
 		return ret;
@@ -1028,7 +1028,7 @@ log_reply_info(enum verbosity_value v, struct query_info *qinf,
 		comm = "udp";
 		if(tp == comm_tcp) comm = (ssl?"dot":"tcp");
 		else if(tp == comm_tcp_accept) comm = (ssl?"dot":"tcp");
-		else if(tp == comm_http) comm = "doh";
+		else if(tp == comm_http) comm = "http";
 		else if(tp == comm_local) comm = "unix";
 		else if(tp == comm_raw) comm = "raw";
 		snprintf(dest_buf, sizeof(dest_buf), " on %s %s %d",

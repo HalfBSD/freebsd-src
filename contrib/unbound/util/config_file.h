@@ -151,25 +151,6 @@ struct config_file {
 	/** TLS protocols */
 	char* tls_protocols;
 
-	/** port on which to provide DNS over HTTPS service */
-	int https_port;
-	/** endpoint for HTTP service */
-	char* http_endpoint;
-	/** MAX_CONCURRENT_STREAMS HTTP/2 setting */
-	uint32_t http_max_streams;
-	/** maximum size of all HTTP2 query buffers combined. */
-	size_t http_query_buffer_size;
-	/** maximum size of all HTTP2 response buffers combined. */
-	size_t http_response_buffer_size;
-	/** set TCP_NODELAY option for http sockets */
-	int http_nodelay;
-	/** Disable TLS for http sockets downstream */
-	int http_notls_downstream;
-
-	/** port on which to provide DNS over QUIC service */
-	int quic_port;
-	/** size of the quic data, max bytes */
-	size_t quic_size;
 
 	/** outgoing port range number of ports (per thread) */
 	int outgoing_num_ports;
@@ -264,26 +245,6 @@ struct config_file {
 	struct config_view* views;
 	/** list of donotquery addresses, linked list */
 	struct config_strlist* donotqueryaddrs;
-#ifdef CLIENT_SUBNET
-	/** list of servers we send edns-client-subnet option to and
-	 * accept option from, linked list */
-	struct config_strlist* client_subnet;
-	/** list of zones we send edns-client-subnet option for */
-	struct config_strlist* client_subnet_zone;
-	/** opcode assigned by IANA for edns0-client-subnet option */
-	uint16_t client_subnet_opcode;
-	/** Do not check whitelist if incoming query contains an ECS record */
-	int client_subnet_always_forward;
-	/** Subnet length we are willing to give up privacy for */
-	uint8_t max_client_subnet_ipv4;
-	uint8_t max_client_subnet_ipv6;
-	/** Minimum subnet length we are willing to answer */
-	uint8_t min_client_subnet_ipv4;
-	uint8_t min_client_subnet_ipv6;
-	/** Max number of nodes in the ECS radix tree */
-	uint32_t max_ecs_tree_size_ipv4;
-	uint32_t max_ecs_tree_size_ipv6;
-#endif
 	/** list of access control entries, linked list */
 	struct config_str2list* acls;
 	/** use default localhost donotqueryaddr entries */
@@ -624,30 +585,6 @@ struct config_file {
 	/** EDNS opcode to use for EDNS client strings */
 	uint16_t edns_client_string_opcode;
 
-	/** DNSCrypt */
-	/** true to enable dnscrypt */
-	int dnscrypt;
-	/** port on which to provide dnscrypt service */
-	int dnscrypt_port;
-	/** provider name 2.dnscrypt-cert.example.com */
-	char* dnscrypt_provider;
-	/** dnscrypt secret keys 1.key */
-	struct config_strlist* dnscrypt_secret_key;
-	/** dnscrypt provider certs 1.cert */
-	struct config_strlist* dnscrypt_provider_cert;
-	/** dnscrypt provider certs 1.cert which have been rotated and should not be
-	* advertised through DNS's providername TXT record but are required to be
-	* able to handle existing traffic using the old cert. */
-	struct config_strlist* dnscrypt_provider_cert_rotated;
-	/** memory size in bytes for dnscrypt shared secrets cache */
-	size_t dnscrypt_shared_secret_cache_size;
-	/** number of slabs for dnscrypt shared secrets cache */
-	size_t dnscrypt_shared_secret_cache_slabs;
-	/** memory size in bytes for dnscrypt nonces cache */
-	size_t dnscrypt_nonce_cache_size;
-	/** number of slabs for dnscrypt nonces cache */
-	size_t dnscrypt_nonce_cache_slabs;
-
 	/** EDNS padding according to RFC7830 and RFC8467 */
 	/** true to enable padding of responses (default: on) */
 	int pad_responses;
@@ -674,45 +611,6 @@ struct config_file {
 	int ipsecmod_strict;
 #endif
 
-	/* cachedb module */
-#ifdef USE_CACHEDB
-	/** backend DB name */
-	char* cachedb_backend;
-	/** secret seed for hash key calculation */
-	char* cachedb_secret;
-	/** cachedb that does not store, but only reads from database, if on */
-	int cachedb_no_store;
-	/** cachedb check before serving serve-expired response */
-	int cachedb_check_when_serve_expired;
-#ifdef USE_REDIS
-	/** redis server's IP address or host name */
-	char* redis_server_host;
-	char* redis_replica_server_host;
-	/** redis server's TCP port */
-	int redis_server_port;
-	int redis_replica_server_port;
-	/** redis server's unix path. Or "", NULL if unused */
-	char* redis_server_path;
-	char* redis_replica_server_path;
-	/** redis server's AUTH password. Or "", NULL if unused */
-	char* redis_server_password;
-	char* redis_replica_server_password;
-	/** timeout (in ms) for communication with the redis server */
-	int redis_timeout;
-	int redis_replica_timeout;
-	/** timeout (in ms) for redis commands */
-	int redis_command_timeout;
-	int redis_replica_command_timeout;
-	/** timeout (in ms) for redis connection set up */
-	int redis_connect_timeout;
-	int redis_replica_connect_timeout;
-	/** set timeout on redis records based on DNS response ttl */
-	int redis_expire_records;
-	/** set the redis logical database upon connection */
-	int redis_logical_db;
-	int redis_replica_logical_db;
-#endif
-#endif
 	/** Downstream DNS Cookies */
 	/** do answer with server cookie when request contained cookie option */
 	int do_answer_cookie;
@@ -755,10 +653,6 @@ extern gid_t cfg_gid;
 extern int autr_permit_small_holddown;
 /** size (in bytes) of stream wait buffers max */
 extern size_t stream_wait_max;
-/** size (in bytes) of all total HTTP2 query buffers max */
-extern size_t http2_query_buffer_max;
-/** size (in bytes) of all total HTTP2 response buffers max */
-extern size_t http2_response_buffer_max;
 
 /**
  * Stub config options
@@ -1387,9 +1281,6 @@ extern int fake_dsa, fake_sha1;
 int if_listens_on(const char* ifname, int default_port, int port,
 	struct config_strlist* additional_ports);
 
-/** see if interface will listen on https;
- *  its port number == the https port number */
-int if_is_https(const char* ifname, int default_port, int https_port);
 
 /** see if interface will listen on ssl;
  *  its port number == the ssl port number or any of the additional ports */
@@ -1401,27 +1292,6 @@ int if_is_ssl(const char* ifname, int default_port, int ssl_port,
 int if_is_pp2(const char* ifname, int default_port,
 	struct config_strlist* proxy_protocol_port);
 
-/** see if interface will listen on DNSCRYPT;
- *  its port number == the dnscrypt port number */
-int if_is_dnscrypt(const char* ifname, int default_port, int dnscrypt_port);
-
-/** see if interface will listen on quic;
- *  its port number == the quic port number */
-int if_is_quic(const char* ifname, int default_port, int quic_port);
-
-/**
- * Return true if the config contains settings that enable https.
- * @param cfg: config information.
- * @return true if https ports are used for server.
- */
-int cfg_has_https(struct config_file* cfg);
-
-/**
- * Return true if the config contains settings that enable quic.
- * @param cfg: config information.
- * @return true if quic ports are used for server.
- */
-int cfg_has_quic(struct config_file* cfg);
 
 #ifdef USE_LINUX_IP_LOCAL_PORT_RANGE
 #define LINUX_IP_LOCAL_PORT_RANGE_PATH "/proc/sys/net/ipv4/ip_local_port_range"

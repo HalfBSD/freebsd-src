@@ -117,9 +117,6 @@ extern struct config_parser_state* cfg_parser;
 %token VAR_SSL_SERVICE_PEM VAR_SSL_PORT VAR_FORWARD_FIRST
 %token VAR_STUB_SSL_UPSTREAM VAR_FORWARD_SSL_UPSTREAM VAR_TLS_CERT_BUNDLE
 %token VAR_STUB_TCP_UPSTREAM VAR_FORWARD_TCP_UPSTREAM
-%token VAR_HTTPS_PORT VAR_HTTP_ENDPOINT VAR_HTTP_MAX_STREAMS
-%token VAR_HTTP_QUERY_BUFFER_SIZE VAR_HTTP_RESPONSE_BUFFER_SIZE
-%token VAR_HTTP_NODELAY VAR_HTTP_NOTLS_DOWNSTREAM
 %token VAR_STUB_FIRST VAR_MINIMAL_RESPONSES VAR_RRSET_ROUNDROBIN
 %token VAR_MAX_UDP_SIZE VAR_DELAY_CLOSE VAR_UDP_CONNECT
 %token VAR_UNBLOCK_LAN_ZONES VAR_INSECURE_LAN_ZONES
@@ -135,11 +132,6 @@ extern struct config_parser_state* cfg_parser;
 %token VAR_RATELIMIT_FOR_DOMAIN VAR_RATELIMIT_BELOW_DOMAIN
 %token VAR_IP_RATELIMIT_FACTOR VAR_RATELIMIT_FACTOR
 %token VAR_IP_RATELIMIT_BACKOFF VAR_RATELIMIT_BACKOFF
-%token VAR_SEND_CLIENT_SUBNET VAR_CLIENT_SUBNET_ZONE
-%token VAR_CLIENT_SUBNET_ALWAYS_FORWARD VAR_CLIENT_SUBNET_OPCODE
-%token VAR_MAX_CLIENT_SUBNET_IPV4 VAR_MAX_CLIENT_SUBNET_IPV6
-%token VAR_MIN_CLIENT_SUBNET_IPV4 VAR_MIN_CLIENT_SUBNET_IPV6
-%token VAR_MAX_ECS_TREE_SIZE_IPV4 VAR_MAX_ECS_TREE_SIZE_IPV6
 %token VAR_CAPS_WHITELIST VAR_CACHE_MAX_NEGATIVE_TTL VAR_PERMIT_SMALL_HOLDDOWN
 %token VAR_CACHE_MIN_NEGATIVE_TTL
 %token VAR_QNAME_MINIMISATION VAR_QNAME_MINIMISATION_STRICT VAR_IP_FREEBIND
@@ -154,27 +146,10 @@ extern struct config_parser_state* cfg_parser;
 %token VAR_HIDE_HTTP_USER_AGENT VAR_HTTP_USER_AGENT
 %token VAR_TRUST_ANCHOR_SIGNALING VAR_AGGRESSIVE_NSEC VAR_USE_SYSTEMD
 %token VAR_SHM_ENABLE VAR_SHM_KEY VAR_ROOT_KEY_SENTINEL
-%token VAR_DNSCRYPT VAR_DNSCRYPT_ENABLE VAR_DNSCRYPT_PORT VAR_DNSCRYPT_PROVIDER
-%token VAR_DNSCRYPT_SECRET_KEY VAR_DNSCRYPT_PROVIDER_CERT
-%token VAR_DNSCRYPT_PROVIDER_CERT_ROTATED
-%token VAR_DNSCRYPT_SHARED_SECRET_CACHE_SIZE
-%token VAR_DNSCRYPT_SHARED_SECRET_CACHE_SLABS
-%token VAR_DNSCRYPT_NONCE_CACHE_SIZE
-%token VAR_DNSCRYPT_NONCE_CACHE_SLABS
 %token VAR_PAD_RESPONSES VAR_PAD_RESPONSES_BLOCK_SIZE
 %token VAR_PAD_QUERIES VAR_PAD_QUERIES_BLOCK_SIZE
 %token VAR_IPSECMOD_ENABLED VAR_IPSECMOD_HOOK VAR_IPSECMOD_IGNORE_BOGUS
 %token VAR_IPSECMOD_MAX_TTL VAR_IPSECMOD_WHITELIST VAR_IPSECMOD_STRICT
-%token VAR_CACHEDB VAR_CACHEDB_BACKEND VAR_CACHEDB_SECRETSEED
-%token VAR_CACHEDB_REDISHOST VAR_CACHEDB_REDISREPLICAHOST
-%token VAR_CACHEDB_REDISPORT VAR_CACHEDB_REDISREPLICAPORT
-%token VAR_CACHEDB_REDISTIMEOUT VAR_CACHEDB_REDISREPLICATIMEOUT
-%token VAR_CACHEDB_REDISEXPIRERECORDS
-%token VAR_CACHEDB_REDISPATH VAR_CACHEDB_REDISREPLICAPATH
-%token VAR_CACHEDB_REDISPASSWORD VAR_CACHEDB_REDISREPLICAPASSWORD
-%token VAR_CACHEDB_REDISLOGICALDB VAR_CACHEDB_REDISREPLICALOGICALDB
-%token VAR_CACHEDB_REDISCOMMANDTIMEOUT VAR_CACHEDB_REDISREPLICACOMMANDTIMEOUT
-%token VAR_CACHEDB_REDISCONNECTTIMEOUT VAR_CACHEDB_REDISREPLICACONNECTTIMEOUT
 %token VAR_UDP_UPSTREAM_WITHOUT_DOWNSTREAM VAR_FOR_UPSTREAM
 %token VAR_AUTH_ZONE VAR_ZONEFILE VAR_MASTER VAR_URL VAR_FOR_DOWNSTREAM
 %token VAR_FALLBACK_ENABLED VAR_TLS_ADDITIONAL_PORT VAR_LOW_RTT VAR_LOW_RTT_PERMIL
@@ -197,10 +172,9 @@ extern struct config_parser_state* cfg_parser;
 %token VAR_DNS_ERROR_REPORTING
 %token VAR_INTERFACE_ACTION VAR_INTERFACE_VIEW VAR_INTERFACE_TAG
 %token VAR_INTERFACE_TAG_ACTION VAR_INTERFACE_TAG_DATA
-%token VAR_QUIC_PORT VAR_QUIC_SIZE
 %token VAR_PROXY_PROTOCOL_PORT VAR_STATISTICS_INHIBIT_ZERO
-%token VAR_HARDEN_UNKNOWN_ADDITIONAL VAR_DISABLE_EDNS_DO VAR_CACHEDB_NO_STORE
-%token VAR_LOG_DESTADDR VAR_CACHEDB_CHECK_WHEN_SERVE_EXPIRED
+%token VAR_HARDEN_UNKNOWN_ADDITIONAL VAR_DISABLE_EDNS_DO
+%token VAR_LOG_DESTADDR
 %token VAR_COOKIE_SECRET_FILE VAR_ITER_SCRUB_NS VAR_ITER_SCRUB_CNAME
 %token VAR_ITER_SCRUB_RRSIG
 %token VAR_MAX_GLOBAL_QUOTA VAR_HARDEN_UNVERIFIED_GLUE VAR_LOG_TIME_ISO
@@ -211,7 +185,6 @@ toplevelvars: /* empty */ | toplevelvars toplevelvar ;
 toplevelvar: serverstart contents_server | stub_clause |
 	forward_clause |
 	rcstart contents_rc | view_clause |
-	dnscstart contents_dnsc | cachedbstart contents_cachedb |
 	ipsetstart contents_ipset | authstart contents_auth |
 	rpzstart contents_rpz |
 	force_toplevel
@@ -278,9 +251,6 @@ content_server: server_num_threads | server_verbosity | server_port |
 	server_log_queries | server_log_replies | server_tcp_upstream | server_ssl_upstream |
 	server_log_local_actions | server_log_thread_id |
 	server_ssl_service_key | server_ssl_service_pem | server_ssl_port |
-	server_https_port | server_http_endpoint | server_http_max_streams |
-	server_http_query_buffer_size | server_http_response_buffer_size |
-	server_http_nodelay | server_http_notls_downstream |
 	server_minimal_responses | server_rrset_roundrobin | server_max_udp_size |
 	server_so_reuseport | server_delay_close | server_udp_connect |
 	server_unblock_lan_zones | server_insecure_lan_zones |
@@ -295,11 +265,6 @@ content_server: server_num_threads | server_verbosity | server_port |
 	server_ip_ratelimit_factor | server_ratelimit_backoff |
 	server_ip_ratelimit_backoff | server_outbound_msg_retry |
 	server_max_sent_count | server_max_query_restarts |
-	server_send_client_subnet | server_client_subnet_zone |
-	server_client_subnet_always_forward | server_client_subnet_opcode |
-	server_max_client_subnet_ipv4 | server_max_client_subnet_ipv6 |
-	server_min_client_subnet_ipv4 | server_min_client_subnet_ipv6 |
-	server_max_ecs_tree_size_ipv4 | server_max_ecs_tree_size_ipv6 |
 	server_caps_whitelist | server_cache_max_negative_ttl |
 	server_cache_min_negative_ttl |
 	server_permit_small_holddown | server_qname_minimisation |
@@ -338,7 +303,6 @@ content_server: server_num_threads | server_verbosity | server_port |
 	server_edns_client_string_opcode | server_nsid |
 	server_zonemd_permissive_mode | server_max_reuse_tcp_queries |
 	server_tcp_reuse_timeout | server_tcp_auth_query_timeout |
-	server_quic_port | server_quic_size |
 	server_interface_automatic_ports | server_ede |
 	server_dns_error_reporting |
 	server_proxy_protocol_port | server_statistics_inhibit_zero |
@@ -635,156 +599,6 @@ server_port: VAR_PORT STRING_ARG
 		if(atoi($2) == 0)
 			yyerror("port number expected");
 		else cfg_parser->cfg->port = atoi($2);
-		free($2);
-	}
-	;
-server_send_client_subnet: VAR_SEND_CLIENT_SUBNET STRING_ARG
-	{
-	#ifdef CLIENT_SUBNET
-		OUTYY(("P(server_send_client_subnet:%s)\n", $2));
-		if(!cfg_strlist_insert(&cfg_parser->cfg->client_subnet, $2))
-			fatal_exit("out of memory adding client-subnet");
-	#else
-		OUTYY(("P(Compiled without edns subnet option, ignoring)\n"));
-		free($2);
-	#endif
-	}
-	;
-server_client_subnet_zone: VAR_CLIENT_SUBNET_ZONE STRING_ARG
-	{
-	#ifdef CLIENT_SUBNET
-		OUTYY(("P(server_client_subnet_zone:%s)\n", $2));
-		if(!cfg_strlist_insert(&cfg_parser->cfg->client_subnet_zone,
-			$2))
-			fatal_exit("out of memory adding client-subnet-zone");
-	#else
-		OUTYY(("P(Compiled without edns subnet option, ignoring)\n"));
-		free($2);
-	#endif
-	}
-	;
-server_client_subnet_always_forward:
-	VAR_CLIENT_SUBNET_ALWAYS_FORWARD STRING_ARG
-	{
-	#ifdef CLIENT_SUBNET
-		OUTYY(("P(server_client_subnet_always_forward:%s)\n", $2));
-		if(strcmp($2, "yes") != 0 && strcmp($2, "no") != 0)
-			yyerror("expected yes or no.");
-		else
-			cfg_parser->cfg->client_subnet_always_forward =
-				(strcmp($2, "yes")==0);
-	#else
-		OUTYY(("P(Compiled without edns subnet option, ignoring)\n"));
-	#endif
-		free($2);
-	}
-	;
-server_client_subnet_opcode: VAR_CLIENT_SUBNET_OPCODE STRING_ARG
-	{
-	#ifdef CLIENT_SUBNET
-		OUTYY(("P(client_subnet_opcode:%s)\n", $2));
-		OUTYY(("P(Deprecated option, ignoring)\n"));
-	#else
-		OUTYY(("P(Compiled without edns subnet option, ignoring)\n"));
-	#endif
-		free($2);
-	}
-	;
-server_max_client_subnet_ipv4: VAR_MAX_CLIENT_SUBNET_IPV4 STRING_ARG
-	{
-	#ifdef CLIENT_SUBNET
-		OUTYY(("P(max_client_subnet_ipv4:%s)\n", $2));
-		if(atoi($2) == 0 && strcmp($2, "0") != 0)
-			yyerror("IPv4 subnet length expected");
-		else if (atoi($2) > 32)
-			cfg_parser->cfg->max_client_subnet_ipv4 = 32;
-		else if (atoi($2) < 0)
-			cfg_parser->cfg->max_client_subnet_ipv4 = 0;
-		else cfg_parser->cfg->max_client_subnet_ipv4 = (uint8_t)atoi($2);
-	#else
-		OUTYY(("P(Compiled without edns subnet option, ignoring)\n"));
-	#endif
-		free($2);
-	}
-	;
-server_max_client_subnet_ipv6: VAR_MAX_CLIENT_SUBNET_IPV6 STRING_ARG
-	{
-	#ifdef CLIENT_SUBNET
-		OUTYY(("P(max_client_subnet_ipv6:%s)\n", $2));
-		if(atoi($2) == 0 && strcmp($2, "0") != 0)
-			yyerror("Ipv6 subnet length expected");
-		else if (atoi($2) > 128)
-			cfg_parser->cfg->max_client_subnet_ipv6 = 128;
-		else if (atoi($2) < 0)
-			cfg_parser->cfg->max_client_subnet_ipv6 = 0;
-		else cfg_parser->cfg->max_client_subnet_ipv6 = (uint8_t)atoi($2);
-	#else
-		OUTYY(("P(Compiled without edns subnet option, ignoring)\n"));
-	#endif
-		free($2);
-	}
-	;
-server_min_client_subnet_ipv4: VAR_MIN_CLIENT_SUBNET_IPV4 STRING_ARG
-	{
-	#ifdef CLIENT_SUBNET
-		OUTYY(("P(min_client_subnet_ipv4:%s)\n", $2));
-		if(atoi($2) == 0 && strcmp($2, "0") != 0)
-			yyerror("IPv4 subnet length expected");
-		else if (atoi($2) > 32)
-			cfg_parser->cfg->min_client_subnet_ipv4 = 32;
-		else if (atoi($2) < 0)
-			cfg_parser->cfg->min_client_subnet_ipv4 = 0;
-		else cfg_parser->cfg->min_client_subnet_ipv4 = (uint8_t)atoi($2);
-	#else
-		OUTYY(("P(Compiled without edns subnet option, ignoring)\n"));
-	#endif
-		free($2);
-	}
-	;
-server_min_client_subnet_ipv6: VAR_MIN_CLIENT_SUBNET_IPV6 STRING_ARG
-	{
-	#ifdef CLIENT_SUBNET
-		OUTYY(("P(min_client_subnet_ipv6:%s)\n", $2));
-		if(atoi($2) == 0 && strcmp($2, "0") != 0)
-			yyerror("Ipv6 subnet length expected");
-		else if (atoi($2) > 128)
-			cfg_parser->cfg->min_client_subnet_ipv6 = 128;
-		else if (atoi($2) < 0)
-			cfg_parser->cfg->min_client_subnet_ipv6 = 0;
-		else cfg_parser->cfg->min_client_subnet_ipv6 = (uint8_t)atoi($2);
-	#else
-		OUTYY(("P(Compiled without edns subnet option, ignoring)\n"));
-	#endif
-		free($2);
-	}
-	;
-server_max_ecs_tree_size_ipv4: VAR_MAX_ECS_TREE_SIZE_IPV4 STRING_ARG
-	{
-	#ifdef CLIENT_SUBNET
-		OUTYY(("P(max_ecs_tree_size_ipv4:%s)\n", $2));
-		if(atoi($2) == 0 && strcmp($2, "0") != 0)
-			yyerror("IPv4 ECS tree size expected");
-		else if (atoi($2) < 0)
-			cfg_parser->cfg->max_ecs_tree_size_ipv4 = 0;
-		else cfg_parser->cfg->max_ecs_tree_size_ipv4 = (uint32_t)atoi($2);
-	#else
-		OUTYY(("P(Compiled without edns subnet option, ignoring)\n"));
-	#endif
-		free($2);
-	}
-	;
-server_max_ecs_tree_size_ipv6: VAR_MAX_ECS_TREE_SIZE_IPV6 STRING_ARG
-	{
-	#ifdef CLIENT_SUBNET
-		OUTYY(("P(max_ecs_tree_size_ipv6:%s)\n", $2));
-		if(atoi($2) == 0 && strcmp($2, "0") != 0)
-			yyerror("IPv6 ECS tree size expected");
-		else if (atoi($2) < 0)
-			cfg_parser->cfg->max_ecs_tree_size_ipv6 = 0;
-		else cfg_parser->cfg->max_ecs_tree_size_ipv6 = (uint32_t)atoi($2);
-	#else
-		OUTYY(("P(Compiled without edns subnet option, ignoring)\n"));
-	#endif
 		free($2);
 	}
 	;
@@ -1153,95 +967,6 @@ server_tls_protocols: VAR_TLS_PROTOCOLS STRING_ARG
 		cfg_parser->cfg->tls_protocols = $2;
 	}
 	;
-server_https_port: VAR_HTTPS_PORT STRING_ARG
-	{
-		OUTYY(("P(server_https_port:%s)\n", $2));
-		if(atoi($2) == 0)
-			yyerror("port number expected");
-		else cfg_parser->cfg->https_port = atoi($2);
-		free($2);
-	};
-server_http_endpoint: VAR_HTTP_ENDPOINT STRING_ARG
-	{
-		OUTYY(("P(server_http_endpoint:%s)\n", $2));
-		free(cfg_parser->cfg->http_endpoint);
-		if($2 && $2[0] != '/') {
-			cfg_parser->cfg->http_endpoint = malloc(strlen($2)+2);
-			if(cfg_parser->cfg->http_endpoint) {
-				cfg_parser->cfg->http_endpoint[0] = '/';
-				memmove(cfg_parser->cfg->http_endpoint+1, $2,
-					strlen($2)+1);
-			} else {
-				yyerror("out of memory");
-			}
-			free($2);
-		} else {
-			cfg_parser->cfg->http_endpoint = $2;
-		}
-	};
-server_http_max_streams: VAR_HTTP_MAX_STREAMS STRING_ARG
-	{
-		OUTYY(("P(server_http_max_streams:%s)\n", $2));
-		if(atoi($2) == 0 && strcmp($2, "0") != 0)
-			yyerror("number expected");
-		else cfg_parser->cfg->http_max_streams = atoi($2);
-		free($2);
-	};
-server_http_query_buffer_size: VAR_HTTP_QUERY_BUFFER_SIZE STRING_ARG
-	{
-		OUTYY(("P(server_http_query_buffer_size:%s)\n", $2));
-		if(!cfg_parse_memsize($2,
-			&cfg_parser->cfg->http_query_buffer_size))
-			yyerror("memory size expected");
-		free($2);
-	};
-server_http_response_buffer_size: VAR_HTTP_RESPONSE_BUFFER_SIZE STRING_ARG
-	{
-		OUTYY(("P(server_http_response_buffer_size:%s)\n", $2));
-		if(!cfg_parse_memsize($2,
-			&cfg_parser->cfg->http_response_buffer_size))
-			yyerror("memory size expected");
-		free($2);
-	};
-server_http_nodelay: VAR_HTTP_NODELAY STRING_ARG
-	{
-		OUTYY(("P(server_http_nodelay:%s)\n", $2));
-		if(strcmp($2, "yes") != 0 && strcmp($2, "no") != 0)
-			yyerror("expected yes or no.");
-		else cfg_parser->cfg->http_nodelay = (strcmp($2, "yes")==0);
-		free($2);
-	};
-server_http_notls_downstream: VAR_HTTP_NOTLS_DOWNSTREAM STRING_ARG
-	{
-		OUTYY(("P(server_http_notls_downstream:%s)\n", $2));
-		if(strcmp($2, "yes") != 0 && strcmp($2, "no") != 0)
-			yyerror("expected yes or no.");
-		else cfg_parser->cfg->http_notls_downstream = (strcmp($2, "yes")==0);
-		free($2);
-	};
-server_quic_port: VAR_QUIC_PORT STRING_ARG
-	{
-		OUTYY(("P(server_quic_port:%s)\n", $2));
-		if(atoi($2) == 0 && strcmp($2,"0")!=0)
-			yyerror("port number expected");
-		else {
-			cfg_parser->cfg->quic_port = atoi($2);
-#ifndef HAVE_NGTCP2
-			if (cfg_parser->cfg->quic_port != 0)
-				log_warn("%s:%d: Unbound is not compiled with "
-					"ngtcp2. This is required to use DNS "
-					"over QUIC.", cfg_parser->filename, cfg_parser->line);
-#endif
-		}
-		free($2);
-	};
-server_quic_size: VAR_QUIC_SIZE STRING_ARG
-	{
-		OUTYY(("P(server_quic_size:%s)\n", $2));
-		if(!cfg_parse_memsize($2, &cfg_parser->cfg->quic_size))
-			yyerror("memory size expected");
-		free($2);
-	};
 server_use_systemd: VAR_USE_SYSTEMD STRING_ARG
 	{
 		OUTYY(("P(server_use_systemd:%s)\n", $2));
@@ -3524,408 +3249,6 @@ server_response_ip_data: VAR_RESPONSE_IP_DATA STRING_ARG STRING_ARG
 		if(!cfg_str2list_insert(&cfg_parser->cfg->respip_data,
 			$2, $3))
 			fatal_exit("out of memory adding response-ip-data");
-	}
-	;
-dnscstart: VAR_DNSCRYPT
-	{
-		OUTYY(("\nP(dnscrypt:)\n"));
-		cfg_parser->started_toplevel = 1;
-	}
-	;
-contents_dnsc: contents_dnsc content_dnsc
-	| ;
-content_dnsc:
-	dnsc_dnscrypt_enable | dnsc_dnscrypt_port | dnsc_dnscrypt_provider |
-	dnsc_dnscrypt_secret_key | dnsc_dnscrypt_provider_cert |
-	dnsc_dnscrypt_provider_cert_rotated |
-	dnsc_dnscrypt_shared_secret_cache_size |
-	dnsc_dnscrypt_shared_secret_cache_slabs |
-	dnsc_dnscrypt_nonce_cache_size |
-	dnsc_dnscrypt_nonce_cache_slabs
-	;
-dnsc_dnscrypt_enable: VAR_DNSCRYPT_ENABLE STRING_ARG
-	{
-		OUTYY(("P(dnsc_dnscrypt_enable:%s)\n", $2));
-		if(strcmp($2, "yes") != 0 && strcmp($2, "no") != 0)
-			yyerror("expected yes or no.");
-		else cfg_parser->cfg->dnscrypt = (strcmp($2, "yes")==0);
-		free($2);
-	}
-	;
-dnsc_dnscrypt_port: VAR_DNSCRYPT_PORT STRING_ARG
-	{
-		OUTYY(("P(dnsc_dnscrypt_port:%s)\n", $2));
-		if(atoi($2) == 0)
-			yyerror("port number expected");
-		else cfg_parser->cfg->dnscrypt_port = atoi($2);
-		free($2);
-	}
-	;
-dnsc_dnscrypt_provider: VAR_DNSCRYPT_PROVIDER STRING_ARG
-	{
-		OUTYY(("P(dnsc_dnscrypt_provider:%s)\n", $2));
-		free(cfg_parser->cfg->dnscrypt_provider);
-		cfg_parser->cfg->dnscrypt_provider = $2;
-	}
-	;
-dnsc_dnscrypt_provider_cert: VAR_DNSCRYPT_PROVIDER_CERT STRING_ARG
-	{
-		OUTYY(("P(dnsc_dnscrypt_provider_cert:%s)\n", $2));
-		if(cfg_strlist_find(cfg_parser->cfg->dnscrypt_provider_cert, $2))
-			log_warn("dnscrypt-provider-cert %s is a duplicate", $2);
-		if(!cfg_strlist_insert(&cfg_parser->cfg->dnscrypt_provider_cert, $2))
-			fatal_exit("out of memory adding dnscrypt-provider-cert");
-	}
-	;
-dnsc_dnscrypt_provider_cert_rotated: VAR_DNSCRYPT_PROVIDER_CERT_ROTATED STRING_ARG
-	{
-		OUTYY(("P(dnsc_dnscrypt_provider_cert_rotated:%s)\n", $2));
-		if(!cfg_strlist_insert(&cfg_parser->cfg->dnscrypt_provider_cert_rotated, $2))
-			fatal_exit("out of memory adding dnscrypt-provider-cert-rotated");
-	}
-	;
-dnsc_dnscrypt_secret_key: VAR_DNSCRYPT_SECRET_KEY STRING_ARG
-	{
-		OUTYY(("P(dnsc_dnscrypt_secret_key:%s)\n", $2));
-		if(cfg_strlist_find(cfg_parser->cfg->dnscrypt_secret_key, $2))
-			log_warn("dnscrypt-secret-key: %s is a duplicate", $2);
-		if(!cfg_strlist_insert(&cfg_parser->cfg->dnscrypt_secret_key, $2))
-			fatal_exit("out of memory adding dnscrypt-secret-key");
-	}
-	;
-dnsc_dnscrypt_shared_secret_cache_size: VAR_DNSCRYPT_SHARED_SECRET_CACHE_SIZE STRING_ARG
-  {
-	OUTYY(("P(dnscrypt_shared_secret_cache_size:%s)\n", $2));
-	if(!cfg_parse_memsize($2, &cfg_parser->cfg->dnscrypt_shared_secret_cache_size))
-		yyerror("memory size expected");
-	free($2);
-  }
-  ;
-dnsc_dnscrypt_shared_secret_cache_slabs: VAR_DNSCRYPT_SHARED_SECRET_CACHE_SLABS STRING_ARG
-  {
-	OUTYY(("P(dnscrypt_shared_secret_cache_slabs:%s)\n", $2));
-	if(atoi($2) == 0) {
-		yyerror("number expected");
-	} else {
-		cfg_parser->cfg->dnscrypt_shared_secret_cache_slabs = atoi($2);
-		if(!is_pow2(cfg_parser->cfg->dnscrypt_shared_secret_cache_slabs))
-			yyerror("must be a power of 2");
-	}
-	free($2);
-  }
-  ;
-dnsc_dnscrypt_nonce_cache_size: VAR_DNSCRYPT_NONCE_CACHE_SIZE STRING_ARG
-  {
-	OUTYY(("P(dnscrypt_nonce_cache_size:%s)\n", $2));
-	if(!cfg_parse_memsize($2, &cfg_parser->cfg->dnscrypt_nonce_cache_size))
-		yyerror("memory size expected");
-	free($2);
-  }
-  ;
-dnsc_dnscrypt_nonce_cache_slabs: VAR_DNSCRYPT_NONCE_CACHE_SLABS STRING_ARG
-  {
-	OUTYY(("P(dnscrypt_nonce_cache_slabs:%s)\n", $2));
-	if(atoi($2) == 0) {
-		yyerror("number expected");
-	} else {
-		cfg_parser->cfg->dnscrypt_nonce_cache_slabs = atoi($2);
-		if(!is_pow2(cfg_parser->cfg->dnscrypt_nonce_cache_slabs))
-			yyerror("must be a power of 2");
-	}
-	free($2);
-  }
-  ;
-cachedbstart: VAR_CACHEDB
-	{
-		OUTYY(("\nP(cachedb:)\n"));
-		cfg_parser->started_toplevel = 1;
-	}
-	;
-contents_cachedb: contents_cachedb content_cachedb
-	| ;
-content_cachedb: cachedb_backend_name | cachedb_secret_seed |
-	redis_server_host | redis_replica_server_host |
-	redis_server_port | redis_replica_server_port |
-	redis_timeout | redis_replica_timeout |
-	redis_command_timeout | redis_replica_command_timeout |
-	redis_connect_timeout | redis_replica_connect_timeout |
-	redis_server_path | redis_replica_server_path |
-	redis_server_password | redis_replica_server_password |
-	redis_logical_db | redis_replica_logical_db |
-	cachedb_no_store | redis_expire_records |
-	cachedb_check_when_serve_expired
-	;
-cachedb_backend_name: VAR_CACHEDB_BACKEND STRING_ARG
-	{
-	#ifdef USE_CACHEDB
-		OUTYY(("P(backend:%s)\n", $2));
-		free(cfg_parser->cfg->cachedb_backend);
-		cfg_parser->cfg->cachedb_backend = $2;
-	#else
-		OUTYY(("P(Compiled without cachedb, ignoring)\n"));
-		free($2);
-	#endif
-	}
-	;
-cachedb_secret_seed: VAR_CACHEDB_SECRETSEED STRING_ARG
-	{
-	#ifdef USE_CACHEDB
-		OUTYY(("P(secret-seed:%s)\n", $2));
-		free(cfg_parser->cfg->cachedb_secret);
-		cfg_parser->cfg->cachedb_secret = $2;
-	#else
-		OUTYY(("P(Compiled without cachedb, ignoring)\n"));
-		free($2);
-	#endif
-	}
-	;
-cachedb_no_store: VAR_CACHEDB_NO_STORE STRING_ARG
-	{
-	#ifdef USE_CACHEDB
-		OUTYY(("P(cachedb_no_store:%s)\n", $2));
-		if(strcmp($2, "yes") != 0 && strcmp($2, "no") != 0)
-			yyerror("expected yes or no.");
-		else cfg_parser->cfg->cachedb_no_store = (strcmp($2, "yes")==0);
-	#else
-		OUTYY(("P(Compiled without cachedb, ignoring)\n"));
-	#endif
-		free($2);
-	}
-	;
-cachedb_check_when_serve_expired: VAR_CACHEDB_CHECK_WHEN_SERVE_EXPIRED STRING_ARG
-	{
-	#ifdef USE_CACHEDB
-		OUTYY(("P(cachedb_check_when_serve_expired:%s)\n", $2));
-		if(strcmp($2, "yes") != 0 && strcmp($2, "no") != 0)
-			yyerror("expected yes or no.");
-		else cfg_parser->cfg->cachedb_check_when_serve_expired = (strcmp($2, "yes")==0);
-	#else
-		OUTYY(("P(Compiled without cachedb, ignoring)\n"));
-	#endif
-		free($2);
-	}
-	;
-redis_server_host: VAR_CACHEDB_REDISHOST STRING_ARG
-	{
-	#if defined(USE_CACHEDB) && defined(USE_REDIS)
-		OUTYY(("P(redis_server_host:%s)\n", $2));
-		free(cfg_parser->cfg->redis_server_host);
-		cfg_parser->cfg->redis_server_host = $2;
-	#else
-		OUTYY(("P(Compiled without cachedb or redis, ignoring)\n"));
-		free($2);
-	#endif
-	}
-	;
-redis_replica_server_host: VAR_CACHEDB_REDISREPLICAHOST STRING_ARG
-	{
-	#if defined(USE_CACHEDB) && defined(USE_REDIS)
-		OUTYY(("P(redis_replica_server_host:%s)\n", $2));
-		free(cfg_parser->cfg->redis_replica_server_host);
-		cfg_parser->cfg->redis_replica_server_host = $2;
-	#else
-		OUTYY(("P(Compiled without cachedb or redis, ignoring)\n"));
-		free($2);
-	#endif
-	}
-	;
-redis_server_port: VAR_CACHEDB_REDISPORT STRING_ARG
-	{
-	#if defined(USE_CACHEDB) && defined(USE_REDIS)
-		int port;
-		OUTYY(("P(redis_server_port:%s)\n", $2));
-		port = atoi($2);
-		if(port == 0 || port < 0 || port > 65535)
-			yyerror("valid redis server port number expected");
-		else cfg_parser->cfg->redis_server_port = port;
-	#else
-		OUTYY(("P(Compiled without cachedb or redis, ignoring)\n"));
-	#endif
-		free($2);
-	}
-	;
-redis_replica_server_port: VAR_CACHEDB_REDISREPLICAPORT STRING_ARG
-	{
-	#if defined(USE_CACHEDB) && defined(USE_REDIS)
-		int port;
-		OUTYY(("P(redis_replica_server_port:%s)\n", $2));
-		port = atoi($2);
-		if(port == 0 || port < 0 || port > 65535)
-			yyerror("valid redis server port number expected");
-		else cfg_parser->cfg->redis_replica_server_port = port;
-	#else
-		OUTYY(("P(Compiled without cachedb or redis, ignoring)\n"));
-	#endif
-		free($2);
-	}
-	;
-redis_server_path: VAR_CACHEDB_REDISPATH STRING_ARG
-	{
-	#if defined(USE_CACHEDB) && defined(USE_REDIS)
-		OUTYY(("P(redis_server_path:%s)\n", $2));
-		free(cfg_parser->cfg->redis_server_path);
-		cfg_parser->cfg->redis_server_path = $2;
-	#else
-		OUTYY(("P(Compiled without cachedb or redis, ignoring)\n"));
-		free($2);
-	#endif
-	}
-	;
-redis_replica_server_path: VAR_CACHEDB_REDISREPLICAPATH STRING_ARG
-	{
-	#if defined(USE_CACHEDB) && defined(USE_REDIS)
-		OUTYY(("P(redis_replica_server_path:%s)\n", $2));
-		free(cfg_parser->cfg->redis_replica_server_path);
-		cfg_parser->cfg->redis_replica_server_path = $2;
-	#else
-		OUTYY(("P(Compiled without cachedb or redis, ignoring)\n"));
-		free($2);
-	#endif
-	}
-	;
-redis_server_password: VAR_CACHEDB_REDISPASSWORD STRING_ARG
-	{
-	#if defined(USE_CACHEDB) && defined(USE_REDIS)
-		OUTYY(("P(redis_server_password:%s)\n", $2));
-		free(cfg_parser->cfg->redis_server_password);
-		cfg_parser->cfg->redis_server_password = $2;
-	#else
-		OUTYY(("P(Compiled without cachedb or redis, ignoring)\n"));
-		free($2);
-	#endif
-	}
-	;
-redis_replica_server_password: VAR_CACHEDB_REDISREPLICAPASSWORD STRING_ARG
-	{
-	#if defined(USE_CACHEDB) && defined(USE_REDIS)
-		OUTYY(("P(redis_replica_server_password:%s)\n", $2));
-		free(cfg_parser->cfg->redis_replica_server_password);
-		cfg_parser->cfg->redis_replica_server_password = $2;
-	#else
-		OUTYY(("P(Compiled without cachedb or redis, ignoring)\n"));
-		free($2);
-	#endif
-	}
-	;
-redis_timeout: VAR_CACHEDB_REDISTIMEOUT STRING_ARG
-	{
-	#if defined(USE_CACHEDB) && defined(USE_REDIS)
-		OUTYY(("P(redis_timeout:%s)\n", $2));
-		if(atoi($2) == 0)
-			yyerror("redis timeout value expected");
-		else cfg_parser->cfg->redis_timeout = atoi($2);
-	#else
-		OUTYY(("P(Compiled without cachedb or redis, ignoring)\n"));
-	#endif
-		free($2);
-	}
-	;
-redis_replica_timeout: VAR_CACHEDB_REDISREPLICATIMEOUT STRING_ARG
-	{
-	#if defined(USE_CACHEDB) && defined(USE_REDIS)
-		OUTYY(("P(redis_replica_timeout:%s)\n", $2));
-		if(atoi($2) == 0)
-			yyerror("redis timeout value expected");
-		else cfg_parser->cfg->redis_replica_timeout = atoi($2);
-	#else
-		OUTYY(("P(Compiled without cachedb or redis, ignoring)\n"));
-	#endif
-		free($2);
-	}
-	;
-redis_command_timeout: VAR_CACHEDB_REDISCOMMANDTIMEOUT STRING_ARG
-	{
-	#if defined(USE_CACHEDB) && defined(USE_REDIS)
-		OUTYY(("P(redis_command_timeout:%s)\n", $2));
-		if(atoi($2) == 0 && strcmp($2, "0") != 0)
-			yyerror("redis command timeout value expected");
-		else cfg_parser->cfg->redis_command_timeout = atoi($2);
-	#else
-		OUTYY(("P(Compiled without cachedb or redis, ignoring)\n"));
-	#endif
-		free($2);
-	}
-	;
-redis_replica_command_timeout: VAR_CACHEDB_REDISREPLICACOMMANDTIMEOUT STRING_ARG
-	{
-	#if defined(USE_CACHEDB) && defined(USE_REDIS)
-		OUTYY(("P(redis_replica_command_timeout:%s)\n", $2));
-		if(atoi($2) == 0 && strcmp($2, "0") != 0)
-			yyerror("redis command timeout value expected");
-		else cfg_parser->cfg->redis_replica_command_timeout = atoi($2);
-	#else
-		OUTYY(("P(Compiled without cachedb or redis, ignoring)\n"));
-	#endif
-		free($2);
-	}
-	;
-redis_connect_timeout: VAR_CACHEDB_REDISCONNECTTIMEOUT STRING_ARG
-	{
-	#if defined(USE_CACHEDB) && defined(USE_REDIS)
-		OUTYY(("P(redis_connect_timeout:%s)\n", $2));
-		if(atoi($2) == 0 && strcmp($2, "0") != 0)
-			yyerror("redis connect timeout value expected");
-		else cfg_parser->cfg->redis_connect_timeout = atoi($2);
-	#else
-		OUTYY(("P(Compiled without cachedb or redis, ignoring)\n"));
-	#endif
-		free($2);
-	}
-	;
-redis_replica_connect_timeout: VAR_CACHEDB_REDISREPLICACONNECTTIMEOUT STRING_ARG
-	{
-	#if defined(USE_CACHEDB) && defined(USE_REDIS)
-		OUTYY(("P(redis_replica_connect_timeout:%s)\n", $2));
-		if(atoi($2) == 0 && strcmp($2, "0") != 0)
-			yyerror("redis connect timeout value expected");
-		else cfg_parser->cfg->redis_replica_connect_timeout = atoi($2);
-	#else
-		OUTYY(("P(Compiled without cachedb or redis, ignoring)\n"));
-	#endif
-		free($2);
-	}
-	;
-redis_expire_records: VAR_CACHEDB_REDISEXPIRERECORDS STRING_ARG
-	{
-	#if defined(USE_CACHEDB) && defined(USE_REDIS)
-		OUTYY(("P(redis_expire_records:%s)\n", $2));
-		if(strcmp($2, "yes") != 0 && strcmp($2, "no") != 0)
-			yyerror("expected yes or no.");
-		else cfg_parser->cfg->redis_expire_records = (strcmp($2, "yes")==0);
-	#else
-		OUTYY(("P(Compiled without cachedb or redis, ignoring)\n"));
-	#endif
-		free($2);
-	}
-	;
-redis_logical_db: VAR_CACHEDB_REDISLOGICALDB STRING_ARG
-	{
-	#if defined(USE_CACHEDB) && defined(USE_REDIS)
-		int db;
-		OUTYY(("P(redis_logical_db:%s)\n", $2));
-		db = atoi($2);
-		if((db == 0 && strcmp($2, "0") != 0) || db < 0)
-			yyerror("valid redis logical database index expected");
-		else cfg_parser->cfg->redis_logical_db = db;
-	#else
-		OUTYY(("P(Compiled without cachedb or redis, ignoring)\n"));
-	#endif
-		free($2);
-	}
-	;
-redis_replica_logical_db: VAR_CACHEDB_REDISREPLICALOGICALDB STRING_ARG
-	{
-	#if defined(USE_CACHEDB) && defined(USE_REDIS)
-		int db;
-		OUTYY(("P(redis_replica_logical_db:%s)\n", $2));
-		db = atoi($2);
-		if((db == 0 && strcmp($2, "0") != 0) || db < 0)
-			yyerror("valid redis logical database index expected");
-		else cfg_parser->cfg->redis_replica_logical_db = db;
-	#else
-		OUTYY(("P(Compiled without cachedb or redis, ignoring)\n"));
-	#endif
-		free($2);
 	}
 	;
 server_tcp_connection_limit: VAR_TCP_CONNECTION_LIMIT STRING_ARG STRING_ARG

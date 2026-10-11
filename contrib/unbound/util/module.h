@@ -552,10 +552,6 @@ struct module_env {
 
 	/** module stack */
 	struct module_stack* modstack;
-#ifdef USE_CACHEDB
-	/** the cachedb enabled value, copied and stored here. */
-	int cachedb_enabled;
-#endif
 	/* Make every mesh state unique, do not aggregate mesh states. */
 	int unique_mesh;
 };
@@ -638,12 +634,6 @@ struct module_qstate {
 	/** if this is a validation recursion query that does not get
 	 * validation itself */
 	int is_valrec;
-#ifdef CLIENT_SUBNET
-	/** the client network address is needed for the client-subnet option
-	 *  when prefetching, but we can't use reply_list in mesh_info, because
-	 *  we don't want to send a reply for the internal query. */
-        struct sockaddr_storage client_addr;
-#endif
 
 	/** comm_reply contains server replies */
 	struct comm_reply* reply;
@@ -696,8 +686,6 @@ struct module_qstate {
 	 * those servers. By comparing expiry time with qstarttime for type NS.
 	 */
 	time_t qstarttime;
-	/** whether a message from cachedb will be used for the reply */
-	int is_cachedb_answer;
 	/** if the response as error is from error_response_cache, and is
 	 * suitable for caching (briefly) the error response. Set by the
 	 * iterator when no_cache_store is enabled, and there is an error. */

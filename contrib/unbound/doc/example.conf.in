@@ -660,8 +660,6 @@ server:
 	# module configuration of the server. A string with identifiers
 	# separated by spaces. Syntax: "[validator] iterator"
 	# most modules have to be listed at the beginning of the line,
-	# except cachedb(just before iterator), and python (at the beginning,
-	# or, just before the iterator).
 	# module-config: "validator iterator"
 
 	# File with trusted keys, kept up-to-date using RFC5011 probes,
@@ -949,14 +947,12 @@ server:
 	# response-ip-tag: 192.0.2.0/24 "tag1 tag2"
 
 	# service clients over TLS (on the TCP sockets) with plain DNS inside
-	# the TLS stream, and over HTTPS using HTTP/2 as specified in RFC8484.
+	# the TLS stream, as specified in RFC7858.
 	# Give the certificate to use and private key.
 	# default is "" (disabled).  requires restart to take effect.
 	# tls-service-key: "path/to/privatekeyfile.key"
 	# tls-service-pem: "path/to/publiccertfile.pem"
 	# tls-port: 853
-	# https-port: 443
-	# quic-port: 853
 
 	# Also serve tls on these port numbers (eg. 443, ...), by listing
 	# tls-additional-port: portno for each of the port numbers.
@@ -1005,28 +1001,6 @@ server:
 
 	# Padded queries will be padded to the closest multiple of this size.
 	# pad-queries-block-size: 128
-
-	# HTTP endpoint to provide DNS-over-HTTPS service on.
-	# http-endpoint: "/dns-query"
-
-	# HTTP/2 SETTINGS_MAX_CONCURRENT_STREAMS value to use.
-	# http-max-streams: 100
-
-	# Maximum number of bytes used for all HTTP/2 query buffers.
-	# http-query-buffer-size: 4m
-
-	# Maximum number of bytes used for all HTTP/2 response buffers.
-	# http-response-buffer-size: 4m
-
-	# Set TCP_NODELAY socket option on sockets used for DNS-over-HTTPS
-	# service.
-	# http-nodelay: yes
-
-	# Disable TLS for DNS-over-HTTP downstream service.
-	# http-notls-downstream: no
-
-	# Maximum number of bytes used for QUIC buffers.
-	# quic-size: 8m
 
 	# The interfaces that use these listed port numbers will support and
 	# expect PROXYv2. For UDP and TCP/TLS interfaces.
@@ -1281,81 +1255,6 @@ remote-control:
 # view:
 #	name: "anotherview"
 #	local-zone: "example.com" refuse
-
-# DNSCrypt
-# To enable, use --enable-dnscrypt to configure before compiling.
-# Caveats:
-# 1. the keys/certs cannot be produced by Unbound. You can use dnscrypt-wrapper
-#   for this: https://github.com/cofyc/dnscrypt-wrapper/blob/master/README.md#usage
-# 2. dnscrypt channel attaches to an interface. you MUST set interfaces to
-#   listen on `dnscrypt-port` with the follo0wing snippet:
-# server:
-#     interface: 0.0.0.0@443
-#     interface: ::0@443
-#
-# Finally, `dnscrypt` config has its own section.
-# dnscrypt:
-#     dnscrypt-enable: yes
-#     dnscrypt-port: 443
-#     dnscrypt-provider: 2.dnscrypt-cert.example.com.
-#     dnscrypt-secret-key: /path/unbound-conf/keys1/1.key
-#     dnscrypt-secret-key: /path/unbound-conf/keys2/1.key
-#     dnscrypt-provider-cert: /path/unbound-conf/keys1/1.cert
-#     dnscrypt-provider-cert: /path/unbound-conf/keys2/1.cert
-
-# CacheDB
-# External backend DB as auxiliary cache.
-# To enable, use --enable-cachedb to configure before compiling.
-# Specify the backend name
-# (default is "testframe", which has no use other than for debugging and
-# testing) and backend-specific options.  The 'cachedb' module must be
-# included in module-config, just before the iterator module.
-# cachedb:
-#     backend: "testframe"
-#     # secret seed string to calculate hashed keys
-#     secret-seed: "default"
-#     # if the backend should be read from, but not written to.
-#     cachedb-no-store: no
-#     # if the cachedb should be checked before a serve-expired response is
-#     # given, when serve-expired is enabled.
-#     cachedb-check-when-serve-expired: yes
-#
-#     # For "redis" backend:
-#     # (to enable, use --with-libhiredis to configure before compiling)
-#     # redis server's IP address or host name
-#     redis-server-host: 127.0.0.1
-#     # redis server's TCP port
-#     redis-server-port: 6379
-#     # if the server uses a unix socket, set its path, or "" when not used.
-#     redis-server-path: "/var/lib/redis/redis-server.sock"
-#     # if the server uses an AUTH password, specify here, or "" when not used.
-#     redis-server-password: ""
-#     # timeout (in ms) for communication with the redis server
-#     redis-timeout: 100
-#     # timeout (in ms) for commands, if 0, uses redis-timeout.
-#     redis-command-timeout: 0
-#     # timeout (in ms) for connection set up, if 0, uses redis-timeout.
-#     redis-connect-timeout: 0
-#     # set timeout on redis records based on DNS response TTL
-#     redis-expire-records: no
-#     # redis logical database to use, 0 is the default database.
-#     redis-logical-db: 0
-#     # redis replica server's IP address or host name
-#     redis-replica-server-host: 127.0.0.1
-#     # redis replica server's TCP port
-#     redis-replica-server-port: 6379
-#     # if the replica server uses a unix socket, set its path, or "" when not used.
-#     redis-replica-server-path: "/var/lib/redis/redis-server.sock"
-#     # if the replica server uses an AUTH password, specify here, or "" when not used.
-#     redis-replica-server-password: ""
-#     # timeout (in ms) for communication with the redis replica server
-#     redis-replica-timeout: 100
-#     # timeout (in ms) for redis replica commands, if 0, uses redis-replica-timeout.
-#     redis-replica-command-timeout: 0
-#     # timeout (in ms) for redis replica connection set up, if 0, uses redis-replica-timeout.
-#     redis-replica-connect-timeout: 0
-#     # redis logical database to use for the replica server, 0 is the default database.
-#     redis-replica-logical-db: 0
 
 # IPSet
 # Add specify domain into set via ipset.

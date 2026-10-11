@@ -101,9 +101,6 @@
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif
-#ifdef USE_CACHEDB
-#include "cachedb/cachedb.h"
-#endif
 
 /** How many quit requests happened. */
 static int sig_record_quit = 0;
@@ -202,7 +199,7 @@ signal_handling_playback(struct worker* wrk)
 #ifdef HAVE_SSL
 /* setup a listening ssl context, fatal_exit() on any failure */
 static void
-setup_listen_sslctx(void** ctx, int is_dot, int is_doh,
+setup_listen_sslctx(void** ctx, int is_dot,
 	struct config_file* cfg, char* chroot)
 {
 	char* key = cfg->ssl_service_key;
@@ -215,7 +212,7 @@ setup_listen_sslctx(void** ctx, int is_dot, int is_doh,
 		cfg->tls_ciphers, cfg->tls_ciphersuites,
 		(cfg->tls_session_ticket_keys.first &&
 		cfg->tls_session_ticket_keys.first->str[0] != 0),
-		is_dot, is_doh, cfg->tls_protocols))) {
+		is_dot, cfg->tls_protocols))) {
 		fatal_exit("could not set up listen SSL_CTX");
 	}
 }
@@ -226,44 +223,11 @@ void* daemon_setup_listen_dot_sslctx(struct daemon* daemon,
 	struct config_file* cfg)
 {
 	void* ctx;
-	(void)setup_listen_sslctx(&ctx, 1, 0, cfg, daemon->chroot);
+	(void)setup_listen_sslctx(&ctx, 1, cfg, daemon->chroot);
 	return ctx;
 }
 #endif /* HAVE_SSL */
 
-#ifdef HAVE_SSL
-#ifdef HAVE_NGHTTP2_NGHTTP2_H
-void* daemon_setup_listen_doh_sslctx(struct daemon* daemon,
-	struct config_file* cfg)
-{
-	void* ctx;
-	(void)setup_listen_sslctx(&ctx, 0, 1, cfg, daemon->chroot);
-	return ctx;
-}
-#endif /* HAVE_NGHTTP2_NGHTTP2_H */
-#endif /* HAVE_SSL */
-
-#ifdef HAVE_SSL
-#ifdef HAVE_NGTCP2
-void* daemon_setup_listen_quic_sslctx(struct daemon* daemon,
-	struct config_file* cfg)
-{
-	void* ctx;
-	char* chroot = daemon->chroot;
-	char* key = cfg->ssl_service_key;
-	char* pem = cfg->ssl_service_pem;
-	if(chroot && strncmp(key, chroot, strlen(chroot)) == 0)
-		key += strlen(chroot);
-	if(chroot && pem && strncmp(pem, chroot, strlen(chroot)) == 0)
-		pem += strlen(chroot);
-
-	if(!(ctx = quic_sslctx_create(key, pem, NULL))) {
-		fatal_exit("could not set up quic SSL_CTX");
-	}
-	return ctx;
-}
-#endif /* HAVE_NGTCP2 */
-#endif /* HAVE_SSL */
 
 #ifdef HAVE_SSL
 void* daemon_setup_connect_dot_sslctx(struct daemon* daemon,
@@ -307,18 +271,6 @@ daemon_setup_sslctxs(struct daemon* daemon, struct config_file* cfg)
 		}
 		daemon->listen_dot_sslctx = daemon_setup_listen_dot_sslctx(
 			daemon, cfg);
-#ifdef HAVE_NGHTTP2_NGHTTP2_H
-		if(cfg_has_https(cfg)) {
-			daemon->listen_doh_sslctx =
-				daemon_setup_listen_doh_sslctx(daemon, cfg);
-		}
-#endif
-#ifdef HAVE_NGTCP2
-		if(cfg_has_quic(cfg)) {
-			daemon->listen_quic_sslctx =
-				daemon_setup_listen_quic_sslctx(daemon, cfg);
-		}
-#endif /* HAVE_NGTCP2 */
 
 		/* Store the file name and mtime to detect changes later. */
 		daemon->ssl_service_key = strdup(cfg->ssl_service_key);
@@ -362,8 +314,6 @@ daemon_delete_sslctxs(struct daemon* daemon)
 	listen_sslctx_delete_ticket_keys();
 	SSL_CTX_free((SSL_CTX*)daemon->listen_dot_sslctx);
 	daemon->listen_dot_sslctx = NULL;
-	SSL_CTX_free((SSL_CTX*)daemon->listen_doh_sslctx);
-	daemon->listen_doh_sslctx = NULL;
 	SSL_CTX_free((SSL_CTX*)daemon->connect_dot_sslctx);
 	daemon->connect_dot_sslctx = NULL;
 	free(daemon->ssl_service_key);
@@ -372,10 +322,6 @@ daemon_delete_sslctxs(struct daemon* daemon)
 	daemon->ssl_service_pem = NULL;
 #else
 	(void)daemon;
-#endif
-#ifdef HAVE_NGTCP2
-	SSL_CTX_free((SSL_CTX*)daemon->listen_quic_sslctx);
-	daemon->listen_quic_sslctx = NULL;
 #endif
 }
 
@@ -814,14 +760,7 @@ daemon_create_workers(struct daemon* daemon)
 	numport = daemon_get_shufport(daemon, shufport);
 	verbose(VERB_ALGO, "total of %d outgoing ports available", numport);
 
-#ifdef HAVE_NGTCP2
-	if (cfg_has_quic(daemon->cfg)) {
-		daemon->doq_table = doq_table_create(daemon->cfg, daemon->rand);
-		if(!daemon->doq_table)
-			fatal_exit("could not create doq_table: out of memory");
-	}
-#endif
-	
+
 	daemon->num = (daemon->cfg->num_threads?daemon->cfg->num_threads:1);
 	if(daemon->reuseport && (int)daemon->num < (int)daemon->num_ports) {
 		log_warn("cannot reduce num-threads to %d because so-reuseport "
@@ -1006,17 +945,6 @@ daemon_fork(struct daemon* daemon)
 		fatal_exit("Could not setup interface control list");
 	if(!tcl_list_apply_cfg(daemon->tcl, daemon->cfg))
 		fatal_exit("Could not setup TCP connection limits");
-	if(daemon->cfg->dnscrypt) {
-#ifdef USE_DNSCRYPT
-		daemon->dnscenv = dnsc_create();
-		if (!daemon->dnscenv)
-			fatal_exit("dnsc_create failed");
-		dnsc_apply_cfg(daemon->dnscenv, daemon->cfg);
-#else
-		fatal_exit("dnscrypt enabled in config but unbound was not built with "
-				   "dnscrypt support");
-#endif
-	}
 	if(daemon->cfg->cookie_secret_file &&
 		daemon->cfg->cookie_secret_file[0]) {
 		if(!(daemon->cookie_secrets = cookie_secrets_create()))
@@ -1060,10 +988,6 @@ daemon_fork(struct daemon* daemon)
 	if(!edns_strings_apply_cfg(daemon->env->edns_strings, daemon->cfg))
 		fatal_exit("Could not set up EDNS strings");
 
-#ifdef USE_CACHEDB
-	daemon->env->cachedb_enabled = cachedb_is_enabled(&daemon->mods,
-		daemon->env);
-#endif
 	/* response-ip-xxx options don't work as expected without the respip
 	 * module.  To avoid run-time operational surprise we reject such
 	 * configuration. */
@@ -1097,7 +1021,7 @@ daemon_fork(struct daemon* daemon)
 	if(!worker_init(daemon->workers[0], daemon->cfg, daemon->ports[0], 1))
 		fatal_exit("Could not initialize main thread");
 #endif
-	
+
 	/* Now create the threads and init the workers.
 	 * By the way, this is thread #0 (the main thread).
 	 */
@@ -1195,16 +1119,6 @@ daemon_cleanup(struct daemon* daemon)
 	if(!daemon->reuse_cache || daemon->need_to_exit)
 		daemon_clear_allocs(daemon);
 	daemon->num = 0;
-#ifdef USE_DNSCRYPT
-	dnsc_delete(daemon->dnscenv);
-	daemon->dnscenv = NULL;
-#endif
-#ifdef HAVE_NGTCP2
-	if (daemon->doq_table) {
-		doq_table_delete(daemon->doq_table);
-		daemon->doq_table = NULL;
-	}
-#endif
 	daemon->cfg = NULL;
 }
 

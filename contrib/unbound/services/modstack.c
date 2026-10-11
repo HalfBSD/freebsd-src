@@ -47,14 +47,8 @@
 #include "validator/validator.h"
 #include "respip/respip.h"
 
-#ifdef USE_CACHEDB
-#include "cachedb/cachedb.h"
-#endif
 #ifdef USE_IPSECMOD
 #include "ipsecmod/ipsecmod.h"
-#endif
-#ifdef CLIENT_SUBNET
-#include "edns-subnet/subnetmod.h"
 #endif
 #ifdef USE_IPSET
 #include "ipset/ipset.h"
@@ -145,14 +139,8 @@ module_list_avail(void)
 {
 	/* these are the modules available */
 	static const char* names[] = {
-#ifdef USE_CACHEDB
-		"cachedb",
-#endif
 #ifdef USE_IPSECMOD
 		"ipsecmod",
-#endif
-#ifdef CLIENT_SUBNET
-		"subnetcache",
 #endif
 #ifdef USE_IPSET
 		"ipset",
@@ -172,14 +160,8 @@ static fbgetfunctype*
 module_funcs_avail(void)
 {
         static struct module_func_block* (*fb[])(void) = {
-#ifdef USE_CACHEDB
-		&cachedb_get_funcblock,
-#endif
 #ifdef USE_IPSECMOD
 		&ipsecmod_get_funcblock,
-#endif
-#ifdef CLIENT_SUBNET
-		&subnetmod_get_funcblock,
 #endif
 #ifdef USE_IPSET
 		&ipset_get_funcblock,

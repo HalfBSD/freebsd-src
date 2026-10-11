@@ -119,8 +119,6 @@ struct mesh_area {
 	size_t stats_dropped;
 	/** stats, number of expired replies sent */
 	size_t ans_expired;
-	/** stats, number of cached replies from cachedb */
-	size_t ans_cachedb;
 	/** number of replies sent */
 	size_t replies_sent;
 	/** sum of waiting times for the replies */
@@ -253,8 +251,6 @@ struct mesh_reply {
 	uint8_t* qname;
 	/** same as that in query_info. */
 	struct local_rrset* local_alias;
-	/** send query to this http2 stream, if set */
-	struct http2_stream* h2_stream;
 };
 
 /** 
@@ -358,13 +354,9 @@ int mesh_new_callback(struct mesh_area* mesh, struct query_info* qinfo,
  * @param leeway: TTL leeway what to expire earlier for this update.
  * @param rpz_passthru: if true, the rpz passthru was previously found and
  * 	further rpz processing is stopped.
- * @param addr: sockaddr_storage for the client; to be used with subnet.
- * @param opt_list: edns opt_list from the client; to be used when subnet is
- *	enabled.
  */
 void mesh_new_prefetch(struct mesh_area* mesh, struct query_info* qinfo,
-	uint16_t qflags, time_t leeway, int rpz_passthru,
-	struct sockaddr_storage* addr, struct edns_option* opt_list);
+	uint16_t qflags, time_t leeway, int rpz_passthru);
 
 /**
  * Handle new event from the wire. A serviced query has returned.

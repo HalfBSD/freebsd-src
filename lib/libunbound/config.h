@@ -13,8 +13,6 @@
 /* Directory to chroot to */
 #define CHROOT_DIR "/var/unbound"
 
-/* Define this to enable client subnet option. */
-/* #undef CLIENT_SUBNET */
 
 /* Do sha512 definitions in config.h */
 /* #undef COMPAT_SHA512 */
@@ -127,17 +125,6 @@
    don't. */
 #define HAVE_DECL_INET_PTON 1
 
-/* Define to 1 if you have the declaration of `nghttp2_session_server_new',
-   and to 0 if you don't. */
-/* #undef HAVE_DECL_NGHTTP2_SESSION_SERVER_NEW */
-
-/* Define to 1 if you have the declaration of `ngtcp2_conn_server_new', and to
-   0 if you don't. */
-/* #undef HAVE_DECL_NGTCP2_CONN_SERVER_NEW */
-
-/* Define to 1 if you have the declaration of `ngtcp2_crypto_encrypt_cb', and
-   to 0 if you don't. */
-/* #undef HAVE_DECL_NGTCP2_CRYPTO_ENCRYPT_CB */
 
 /* Define to 1 if you have the declaration of `NID_ED25519', and to 0 if you
    don't. */
@@ -159,9 +146,6 @@
    don't. */
 #define HAVE_DECL_REALLOCARRAY 1
 
-/* Define to 1 if you have the declaration of `redisConnect', and to 0 if you
-   don't. */
-/* #undef HAVE_DECL_REDISCONNECT */
 
 /* Define to 1 if you have the declaration of `sk_SSL_COMP_pop_free', and to 0
    if you don't. */
@@ -333,8 +317,6 @@
 /* Define to 1 if you have the <grp.h> header file. */
 #define HAVE_GRP_H 1
 
-/* Define to 1 if you have the <hiredis/hiredis.h> header file. */
-/* #undef HAVE_HIREDIS_HIREDIS_H */
 
 /* Define to 1 if you have the `HMAC_Init_ex' function. */
 #define HAVE_HMAC_INIT_EX 1
@@ -432,76 +414,6 @@
 /* Define to 1 if you have the <net/pfvar.h> header file. */
 /* #undef HAVE_NET_PFVAR_H */
 
-/* Define this to use nghttp2 client. */
-/* #undef HAVE_NGHTTP2 */
-
-/* Define to 1 if you have the <nghttp2/nghttp2.h> header file. */
-/* #undef HAVE_NGHTTP2_NGHTTP2_H */
-
-/* Define this to use ngtcp2. */
-/* #undef HAVE_NGTCP2 */
-
-/* Define to 1 if you have the `ngtcp2_ccerr_default' function. */
-/* #undef HAVE_NGTCP2_CCERR_DEFAULT */
-
-/* Define to 1 if you have the `ngtcp2_conn_encode_0rtt_transport_params'
-   function. */
-/* #undef HAVE_NGTCP2_CONN_ENCODE_0RTT_TRANSPORT_PARAMS */
-
-/* Define to 1 if you have the `ngtcp2_conn_get_max_local_streams_uni'
-   function. */
-/* #undef HAVE_NGTCP2_CONN_GET_MAX_LOCAL_STREAMS_UNI */
-
-/* Define to 1 if you have the `ngtcp2_conn_get_num_scid' function. */
-/* #undef HAVE_NGTCP2_CONN_GET_NUM_SCID */
-
-/* Define to 1 if you have the `ngtcp2_conn_in_closing_period' function. */
-/* #undef HAVE_NGTCP2_CONN_IN_CLOSING_PERIOD */
-
-/* Define to 1 if you have the `ngtcp2_conn_in_draining_period' function. */
-/* #undef HAVE_NGTCP2_CONN_IN_DRAINING_PERIOD */
-
-/* Define if ngtcp2_conn_shutdown_stream has 4 arguments. */
-/* #undef HAVE_NGTCP2_CONN_SHUTDOWN_STREAM4 */
-
-/* Define to 1 if you have the `ngtcp2_conn_tls_early_data_rejected' function.
-   */
-/* #undef HAVE_NGTCP2_CONN_TLS_EARLY_DATA_REJECTED */
-
-/* Define to 1 if you have the `ngtcp2_crypto_encrypt_cb' function. */
-/* #undef HAVE_NGTCP2_CRYPTO_ENCRYPT_CB */
-
-/* Define to 1 if you have the
-   `ngtcp2_crypto_quictls_configure_client_context' function. */
-/* #undef HAVE_NGTCP2_CRYPTO_QUICTLS_CONFIGURE_CLIENT_CONTEXT */
-
-/* Define to 1 if you have the
-   `ngtcp2_crypto_quictls_configure_server_context' function. */
-/* #undef HAVE_NGTCP2_CRYPTO_QUICTLS_CONFIGURE_SERVER_CONTEXT */
-
-/* Define to 1 if you have the
-   `ngtcp2_crypto_quictls_from_ossl_encryption_level' function. */
-/* #undef HAVE_NGTCP2_CRYPTO_QUICTLS_FROM_OSSL_ENCRYPTION_LEVEL */
-
-/* Define to 1 if you have the `ngtcp2_crypto_quictls_init' function. */
-/* #undef HAVE_NGTCP2_CRYPTO_QUICTLS_INIT */
-
-/* Define to 1 if the system has the type `ngtcp2_encryption_level'. */
-/* #undef HAVE_NGTCP2_ENCRYPTION_LEVEL */
-
-/* Define to 1 if you have the <ngtcp2/ngtcp2_crypto_openssl.h> header file.
-   */
-/* #undef HAVE_NGTCP2_NGTCP2_CRYPTO_OPENSSL_H */
-
-/* Define to 1 if you have the <ngtcp2/ngtcp2_crypto_ossl.h> header file. */
-/* #undef HAVE_NGTCP2_NGTCP2_CRYPTO_OSSL_H */
-
-/* Define to 1 if you have the <ngtcp2/ngtcp2_crypto_quictls.h> header file.
-   */
-/* #undef HAVE_NGTCP2_NGTCP2_CRYPTO_QUICTLS_H */
-
-/* Define to 1 if you have the <ngtcp2/ngtcp2.h> header file. */
-/* #undef HAVE_NGTCP2_NGTCP2_H */
 
 /* Use libnss for crypto */
 /* #undef HAVE_NSS */
@@ -679,8 +591,6 @@
 /* Define to 1 if you have the `SSL_get1_peer_certificate' function. */
 #define HAVE_SSL_GET1_PEER_CERTIFICATE 1
 
-/* Define to 1 if you have the `SSL_is_quic' function. */
-/* #undef HAVE_SSL_IS_QUIC */
 
 /* Define to 1 if you have the `SSL_set1_host' function. */
 #define HAVE_SSL_SET1_HOST 1
@@ -727,22 +637,6 @@
 /* Define to 1 if `ipi_spec_dst' is a member of `struct in_pktinfo'. */
 /* #undef HAVE_STRUCT_IN_PKTINFO_IPI_SPEC_DST */
 
-/* Define to 1 if `tokenlen' is a member of `struct ngtcp2_pkt_hd'. */
-/* #undef HAVE_STRUCT_NGTCP2_PKT_HD_TOKENLEN */
-
-/* Define to 1 if `max_tx_udp_payload_size' is a member of `struct
-   ngtcp2_settings'. */
-/* #undef HAVE_STRUCT_NGTCP2_SETTINGS_MAX_TX_UDP_PAYLOAD_SIZE */
-
-/* Define to 1 if `tokenlen' is a member of `struct ngtcp2_settings'. */
-/* #undef HAVE_STRUCT_NGTCP2_SETTINGS_TOKENLEN */
-
-/* Define to 1 if `original_dcid_present' is a member of `struct
-   ngtcp2_transport_params'. */
-/* #undef HAVE_STRUCT_NGTCP2_TRANSPORT_PARAMS_ORIGINAL_DCID_PRESENT */
-
-/* Define to 1 if the system has the type `struct ngtcp2_version_cid'. */
-/* #undef HAVE_STRUCT_NGTCP2_VERSION_CID */
 
 /* Define to 1 if `sun_len' is a member of `struct sockaddr_un'. */
 #define HAVE_STRUCT_SOCKADDR_UN_SUN_LEN 1
@@ -964,8 +858,6 @@
 /* define if (v)snprintf does not return length needed, (but length used) */
 /* #undef SNPRINTF_RET_BROKEN */
 
-/* Define to 1 if libsodium supports sodium_set_misuse_handler */
-/* #undef SODIUM_MISUSE_HANDLER */
 
 /* Define to 1 if all of the C90 standard headers exist (not just the ones
    required in a freestanding environment). This macro is provided for
@@ -995,15 +887,6 @@
 
 /* define this to enable debug checks. */
 /* #undef UNBOUND_DEBUG */
-
-/* Define to 1 to use cachedb support */
-/* #undef USE_CACHEDB */
-
-/* Define to 1 to enable dnscrypt support */
-/* #undef USE_DNSCRYPT */
-
-/* Define to 1 to enable dnscrypt with xchacha20 support */
-/* #undef USE_DNSCRYPT_XCHACHA20 */
 
 
 /* Define this to enable DSA support. */
@@ -1047,14 +930,10 @@
 /* Define this to enable client TCP Fast Open. */
 /* #undef USE_MSG_FASTOPEN */
 
-/* Define this to use ngtcp2_crypto_ossl. */
-/* #undef USE_NGTCP2_CRYPTO_OSSL */
 
 /* Define this to enable client TCP Fast Open. */
 /* #undef USE_OSX_MSG_FASTOPEN */
 
-/* Define this to use hiredis client. */
-/* #undef USE_REDIS */
 
 /* Define this to enable SHA1 support. */
 #define USE_SHA1 1
@@ -1158,8 +1037,6 @@
 
 /* the version of the windows API enabled */
 #define WINVER 0x0502
-
-
 
 
 /* Define to 1 if `lex' declares `yytext' as a `char *' by default, not a
@@ -1291,8 +1168,6 @@
 #endif
 
 
-
-
 #ifndef _OPENBSD_SOURCE
 #define _OPENBSD_SOURCE 1
 #endif
@@ -1370,7 +1245,6 @@
 #ifndef AF_LOCAL
 #define AF_LOCAL AF_UNIX
 #endif
-
 
 
 #ifdef HAVE_ATTR_FORMAT
@@ -1509,7 +1383,6 @@ int memcmp(const void *x, const void *y, size_t n);
 #endif
 
 
-
 #ifndef HAVE_CTIME_R
 #define ctime_r unbound_ctime_r
 char *ctime_r(const time_t *timep, char *buf);
@@ -1596,7 +1469,6 @@ unsigned char *SHA512(void* data, unsigned int data_len, unsigned char *digest);
 #endif /* COMPAT_SHA512 */
 
 
-
 #if defined(HAVE_EVENT_H) && !defined(HAVE_EVENT_BASE_ONCE) && !(defined(HAVE_EV_LOOP) || defined(HAVE_EV_DEFAULT_LOOP)) && (defined(HAVE_PTHREAD) || defined(HAVE_SOLARIS_THREADS))
    /* using version of libevent that is not threadsafe. */
 #  define LIBEVENT_SIGNAL_PROBLEM 1
@@ -1649,10 +1521,6 @@ char *unbound_stat_strdup_log(const char *s, const char* file, int line,
 #define UNBOUND_DNS_PORT 53
 /** default port for DNS over TLS traffic. */
 #define UNBOUND_DNS_OVER_TLS_PORT 853
-/** default port for DNS over HTTPS traffic. */
-#define UNBOUND_DNS_OVER_HTTPS_PORT 443
-/** default port for DNS over QUIC traffic. */
-#define UNBOUND_DNS_OVER_QUIC_PORT 853
 /** default port for unbound control traffic, registered port with IANA,
     ub-dns-control  8953/tcp    unbound dns nameserver control */
 #define UNBOUND_CONTROL_PORT 8953

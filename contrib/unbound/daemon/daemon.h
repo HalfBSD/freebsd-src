@@ -58,16 +58,10 @@ struct ub_randstate;
 struct daemon_remote;
 struct respip_set;
 struct shm_main_info;
-struct doq_table;
 struct cookie_secrets;
 struct fast_reload_thread;
 struct fast_reload_printq;
 
-
-#include "dnscrypt/dnscrypt_config.h"
-#ifdef USE_DNSCRYPT
-struct dnsc_env;
-#endif
 
 /**
  * Structure holding worker list.
@@ -99,10 +93,6 @@ struct daemon {
 	void* listen_dot_sslctx;
 	/** ssl context for connecting to dnstcp over ssl */
 	void* connect_dot_sslctx;
-	/** ssl context for listening to DoH */
-	void* listen_doh_sslctx;
-	/** ssl context for listening to quic */
-	void* listen_quic_sslctx;
 	/** the file name that the ssl context is made with, private key. */
 	char* ssl_service_key;
 	/** the file name that the ssl context is made with, certificate. */
@@ -159,12 +149,6 @@ struct daemon {
 	int use_response_ip;
 	/** some RPZ policies are configured */
 	int use_rpz;
-#ifdef USE_DNSCRYPT
-	/** the dnscrypt environment */
-	struct dnsc_env* dnscenv;
-#endif
-	/** the doq connection table */
-	struct doq_table* doq_table;
 	/** reuse existing cache on reload if other conditions allow it. */
 	int reuse_cache;
 	/** the EDNS cookie secrets from the cookie-secret-file */
@@ -250,13 +234,6 @@ int ssl_cert_changed(struct daemon* daemon, struct config_file* cfg);
 void* daemon_setup_listen_dot_sslctx(struct daemon* daemon,
 	struct config_file* cfg);
 
-/** Setup the listening DoH SSL_CTX, returns the ssl ctx. */
-void* daemon_setup_listen_doh_sslctx(struct daemon* daemon,
-	struct config_file* cfg);
-
-/** Setup the listening Quic SSL_CTX, returns the ssl ctx */
-void* daemon_setup_listen_quic_sslctx(struct daemon* daemon,
-	struct config_file* cfg);
 
 /** Setup the connect DoT SSL_CTX, returns the ssl ctx */
 void* daemon_setup_connect_dot_sslctx(struct daemon* daemon,

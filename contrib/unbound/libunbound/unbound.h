@@ -667,11 +667,8 @@ struct ub_shm_stat_info {
 		long long rrset;
 		long long val;
 		long long iter;
-		long long subnet;
 		long long ipsecmod;
 		long long respip;
-		long long dnscrypt_shared_secret;
-		long long dnscrypt_nonce;
 	} mem;
 };
 
@@ -737,8 +734,6 @@ struct ub_server_stats {
 	long long qudp_outgoing;
 	/** number of queries over (DNS over) TLS */
 	long long qtls;
-	/** number of queries over (DNS over) HTTPS */
-	long long qhttps;
 	/** number of queries over IPv6 */
 	long long qipv6;
 	/** number of queries with QR bit */
@@ -803,22 +798,6 @@ struct ub_server_stats {
 	/** maximum number of collisions in the rrset cache */
 	long long rrset_cache_max_collisions;
 
-	/** number of queries that used dnscrypt */
-	long long num_query_dnscrypt_crypted;
-	/** number of queries that queried dnscrypt certificates */
-	long long num_query_dnscrypt_cert;
-	/** number of queries in clear text and not asking for the certificates */
-	long long num_query_dnscrypt_cleartext;
-	/** number of malformed encrypted queries */
-	long long num_query_dnscrypt_crypted_malformed;
-	/** number of queries which did not have a shared secret in cache */
-	long long num_query_dnscrypt_secret_missed_cache;
-	/** number of dnscrypt shared secret cache entries */
-	long long shared_secret_cache_count;
-	/** number of queries which are replays */
-	long long num_query_dnscrypt_replay;
-	/** number of dnscrypt nonces cache entries */
-	long long nonce_cache_count;
 	/** number of queries for unbound's auth_zones, upstream query */
 	long long num_query_authzone_up;
 	/** number of queries for unbound's auth_zones, downstream answers */
@@ -829,27 +808,12 @@ struct ub_server_stats {
 	/** number of times neg cache records were used to generate NXDOMAIN
 	 * responses. */
 	long long num_neg_cache_nxdomain;
-	/** number of queries answered from edns-subnet specific data */
-	long long num_query_subnet;
-	/** number of queries answered from edns-subnet specific data, and
-	 * the answer was from the edns-subnet cache. */
-	long long num_query_subnet_cache;
-	/** number of queries served from cachedb */
-	long long num_query_cachedb;
 	/** number of bytes in the stream wait buffers */
 	long long mem_stream_wait;
-	/** number of bytes in the HTTP2 query buffers */
-	long long mem_http2_query_buffer;
-	/** number of bytes in the HTTP2 response buffers */
-	long long mem_http2_response_buffer;
 	/** number of TLS connection resume */
 	long long qtls_resume;
 	/** RPZ action stats */
 	long long rpz_action[UB_STATS_RPZ_ACTION_NUM];
-	/** number of bytes in QUIC buffers */
-	long long mem_quic;
-	/** number of queries over (DNS over) QUIC */
-	long long qquic;
 	/** number of queries removed due to discard-timeout */
 	long long num_queries_discard_timeout;
 	/** number of queries removed due to replyaddr limit */

@@ -1366,8 +1366,8 @@ ports_create_if(const char* ifname, int do_auto, int do_udp, int do_tcp,
 		if(!ub_sock)
 			return 0;
 
-			port_type = listen_type_tcp;
-			add = NULL;
+		port_type = listen_type_tcp;
+		add = NULL;
 
 		if((s = make_sock_port(SOCK_STREAM, ifname, port, hints, 1,
 			&noip6, 0, 0, reuseport, transparent, tcp_mss, nodelay,

@@ -1428,9 +1428,9 @@ comm_point_tcp_accept_callback(int fd, short event, void* arg)
 	else	c_hdl->tcp_do_toggle_rw = 1;
 
 
-		c_hdl->ev->ev = ub_event_new(c_hdl->ev->base->eb->base, -1,
-			UB_EV_PERSIST | UB_EV_READ | UB_EV_TIMEOUT,
-			comm_point_tcp_handle_callback, c_hdl);
+	c_hdl->ev->ev = ub_event_new(c_hdl->ev->base->eb->base, -1,
+		UB_EV_PERSIST | UB_EV_READ | UB_EV_TIMEOUT,
+		comm_point_tcp_handle_callback, c_hdl);
 
 	if(!c_hdl->ev->ev) {
 		log_warn("could not ub_event_new, dropped tcp");

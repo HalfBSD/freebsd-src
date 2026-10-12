@@ -1608,7 +1608,7 @@ Optional Packages:
                           run-dir/root.key). This file is read and written.
   --with-rootcert-file=filename
                           set default pathname to root update certificate file
-                          (default run-dir/icannbundle.pem). This file need
+                          (default /etc/unbound/icannbundle.pem). This file need
                           not exist if you are content with the builtin.
   --with-username=user    set default user that unbound changes to (default
                           user is unbound)
@@ -4577,7 +4577,7 @@ UNBOUND_SYSCONF_DIR=`eval echo "${sysconfdir}"`
 UNBOUND_LOCALSTATE_DIR=`eval echo "${localstatedir}"`
 
 if test $on_mingw = "no"; then
-  ub_conf_file=`eval echo "${sysconfdir}/unbound/unbound.conf"`
+  ub_conf_file="/etc/unbound/unbound.conf"
 else
   ub_conf_file="C:\\Program Files\\Unbound\\service.conf"
 fi
@@ -4627,7 +4627,7 @@ then :
   withval=$with_run_dir; UNBOUND_RUN_DIR="$withval"
 else case e in #(
   e) if test $on_mingw = no; then
-    UNBOUND_RUN_DIR=`dirname "$ub_conf_file"`
+    UNBOUND_RUN_DIR="/var/unbound"
 else
     UNBOUND_RUN_DIR=""
 fi
@@ -4649,7 +4649,7 @@ then :
   withval=$with_chroot_dir; UNBOUND_CHROOT_DIR="$withval"
 else case e in #(
   e) if test $on_mingw = no; then
-    UNBOUND_CHROOT_DIR="$UNBOUND_RUN_DIR"
+    UNBOUND_CHROOT_DIR=""
 else
     UNBOUND_CHROOT_DIR=""
 fi
@@ -4686,7 +4686,7 @@ then :
   withval=$with_pidfile; UNBOUND_PIDFILE="$withval"
 else case e in #(
   e) if test $on_mingw = no; then
-    UNBOUND_PIDFILE="$UNBOUND_RUN_DIR/unbound.pid"
+    UNBOUND_PIDFILE="/var/run/local_unbound.pid"
 else
     UNBOUND_PIDFILE=""
 fi
@@ -4730,7 +4730,7 @@ then :
   withval=$with_rootcert_file; UNBOUND_ROOTCERT_FILE="$withval"
 else case e in #(
   e) if test $on_mingw = no; then
-    UNBOUND_ROOTCERT_FILE="$UNBOUND_RUN_DIR/icannbundle.pem"
+    UNBOUND_ROOTCERT_FILE="/etc/unbound/icannbundle.pem"
 else
     UNBOUND_ROOTCERT_FILE="C:\\Program Files\\Unbound\\icannbundle.pem"
 fi

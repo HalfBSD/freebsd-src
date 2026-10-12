@@ -1,0 +1,199 @@
+# HalfBSD Unbound — Future TODO List
+**Updated: October 11, 2026**
+
+This is our roadmap for Unbound **after Codex completes the configuration consolidation**.
+
+Our objective remains: **a small, reliable DNS forwarding and caching server with minimal administrative complexity.**
+
+HalfBSD is designed for your personal workstation first, with optional home-network DNS service.
+
+## Phase 1 — Native Testing and Stabilization
+**Priority: Critical**
+
+Before removing more functionality, verify that everything works on Anvil.
+
+- [ ] Complete native `buildworld` and `buildkernel`.
+- [ ] Install updated HalfBSD on Anvil.
+- [ ] Verify Unbound starts automatically during boot.
+- [ ] Verify Unbound listens on all IPv4 interfaces, UDP/TCP port 53.
+- [ ] Verify localhost DNS resolution.
+- [ ] Verify DNS requests from another LAN computer.
+- [ ] Verify Cloudflare → Google → OpenDNS failover.
+- [ ] Verify automatic recovery to Cloudflare.
+- [ ] Verify DNSSEC validation.
+- [ ] Verify positive and negative caching.
+- [ ] Verify local hostname resolution (`anvil.lan`, `zippy.lan`, etc.).
+- [ ] Verify reverse DNS (PTR records).
+- [ ] Verify TCP connection limits and accounting.
+- [ ] Verify ordinary and fast configuration reloads.
+- [ ] Verify Unbound continues serving local DNS when internet connectivity is unavailable.
+- [ ] Verify IPFW is initialized before Unbound becomes reachable.
+- [ ] Verify DNS functionality survives repeated reboots.
+
+**Completion criterion:** Anvil operates reliably as both its own DNS client and a DNS server for other LAN devices.
+
+---
+
+## Phase 2 — Finish Removing Unnecessary DNS Features
+**Priority: High**
+
+These components were identified in Codex's earlier handoffs as remaining in the source tree.
+
+| Feature | Proposed action | Reason |
+|---|---|---|
+| Authority zones | Remove | We only need manually defined local records |
+| DNS zone transfers (AXFR/IXFR) | Remove | No authoritative DNS synchronization |
+| DNS NOTIFY/update handling | Remove | Local records are manually managed |
+| Stub zones | Remove | We're using forwarding only |
+| IPsec module | Remove | No DNS/IPsec integration needed |
+| IPset module | Remove | IPFW handles network filtering |
+| EDNS client-string metadata | Remove | No need to label upstream queries by client network |
+| NAT64 transport support | Review/remove | No IPv6-only NAT64 requirement |
+| Recursive-only iterator logic | Carefully reduce | Forwarding-only resolver |
+
+**Important:** Preserve DNSSEC, ordinary EDNS, CNAME processing, forwarding retries, TCP fallback, cache integrity, and any shared resolver code required by those functions.
+
+I would remove the independent features first and leave recursive-only iterator pruning for last.
+
+---
+
+## Phase 3 — Investigate Capsicum
+**Priority: Medium**
+
+Now that Unbound has fewer features, revisit process sandboxing.
+
+- [ ] Inventory all filesystem operations performed after initialization.
+- [ ] Inventory outbound UDP/TCP/TLS socket creation.
+- [ ] Investigate configuration reload behavior under capability mode.
+- [ ] Investigate DNSSEC `root.key` updates using restricted directory capabilities.
+- [ ] Determine whether preopened capabilities are sufficient.
+- [ ] Investigate whether a network broker would be necessary.
+- [ ] Prototype `cap_enter()` on a separate development branch.
+- [ ] Verify normal forwarding, provider failover, and recovery continue working.
+- [ ] Verify DNSSEC trust-anchor updates.
+- [ ] Compare complexity against existing chroot protection.
+
+**Design requirement:** Capsicum should simplify or strengthen the implementation without introducing disproportionate complexity.
+
+If reliable capability confinement requires an elaborate privileged broker and extensive Unbound rewrites, retaining chroot may be the better choice.
+
+---
+
+## Phase 4 — Further Configuration Simplification
+**Priority: Medium**
+
+After the ongoing consolidation work, review what's left.
+
+- [ ] Audit all remaining configuration directives.
+- [ ] Remove directives associated with unsupported features.
+- [ ] Remove obsolete setup and migration code once no longer needed.
+- [ ] Evaluate eliminating `local-unbound-setup` entirely.
+- [ ] Consider whether DNSSEC trust-anchor initialization can be handled directly by service startup.
+- [ ] Confirm `unbound.conf` is never overwritten during upgrades.
+- [ ] Make locally configured DNS records easy to edit.
+- [ ] Preserve explicit local DNS overrides without requiring additional configuration files.
+- [ ] Ensure DNS forwarding works with zero administrator configuration.
+- [ ] Review whether the existing remote-control interface can be simplified.
+
+**Target layout:**
+
+```text
+/etc/unbound/unbound.conf
+/var/unbound/root.key
+```
+
+And runtime state under `/var/run`.
+
+No `forward.conf`, `control.conf`, `lan-zones.conf`, or automatically included `conf.d`.
+
+---
+
+## Phase 5 — Performance and Resource Optimization
+**Priority: Low**
+
+Only pursue these after we have a stable native installation.
+
+- [ ] Measure Unbound memory use during normal workstation operation.
+- [ ] Measure DNS cache hit rates.
+- [ ] Measure typical cached and uncached query latency.
+- [ ] Evaluate current cache sizes.
+- [ ] Review worker-thread configuration.
+- [ ] Investigate unnecessary allocations in retained code.
+- [ ] Measure provider recovery behavior during real outages.
+- [ ] Measure executable size and dependencies after final reductions.
+- [ ] Consider removing unnecessary logging and statistics infrastructure.
+
+I wouldn't spend much time optimizing performance unless measurements indicate a problem. For a handful of home computers, Unbound should have ample capacity.
+
+---
+
+## Phase 6 — Documentation and Maintenance
+**Priority: High, after stabilization**
+
+This is particularly important given your desire to avoid rediscovering configuration procedures every couple of years.
+
+- [ ] Document HalfBSD's DNS architecture.
+- [ ] Document the compiled Cloudflare → Google → OpenDNS hierarchy.
+- [ ] Document adding and removing local DNS records.
+- [ ] Document how IPFW controls access to port 53.
+- [ ] Document how to inspect resolver statistics.
+- [ ] Document how to flush the DNS cache.
+- [ ] Document how to restart and reload Unbound.
+- [ ] Create a troubleshooting guide for DNS failures.
+- [ ] Add native DNS integration tests to the HalfBSD test suite.
+- [ ] Establish a process for importing upstream Unbound security fixes.
+
+I'd aim for documentation short enough that you can return to HalfBSD in two years and immediately remember how everything works.
+
+---
+
+## Recommended Implementation Order
+
+| Order | Task | Priority |
+|---|---|---|
+| 1 | Complete configuration consolidation | In progress |
+| 2 | Native build, installation and testing on Anvil | Critical |
+| 3 | Remove authority zones and transfers | High |
+| 4 | Remove stub zones | High |
+| 5 | Remove IPsec, ipset and EDNS client-string | Medium |
+| 6 | Review NAT64 and recursive-only code | Medium |
+| 7 | Prototype Capsicum | Medium |
+| 8 | Simplify remaining setup and administration | Medium |
+| 9 | Performance optimization | Low |
+| 10 | Finalize documentation and regression tests | High |
+
+### One additional item: Verify the ISP DNS problem
+
+I'd preserve a diagnostic note explaining the original issue that led us here.
+
+Your ISP-provided DNS server caused resolution problems with Unbound, while Cloudflare worked correctly.
+
+We never conclusively determined whether the problem was DNSSEC, broken upstream behavior, or something else.
+
+We don't need to solve it to make HalfBSD work, but documenting the symptoms could help identify future upstream resolver problems.
+
+---
+
+### Where I'd draw the line
+
+There are three things I would **not** remove:
+
+**1. DNSSEC validation.** It provides useful protection against forged DNS responses.
+
+**2. TCP DNS support.** It's essential for correct DNS operation, even when most queries use UDP.
+
+**3. Local DNS records.** They're central to your intended home-network functionality.
+
+Everything else is potentially negotiable.
+
+### My recommendation
+
+After Codex finishes consolidating configuration, **install and test the current HalfBSD build on Anvil before attempting further source reduction**.
+
+Then work through the remaining authority-zone, stub-zone, and optional-module removals.
+
+I'd leave Capsicum until the resolver's functional scope has stabilized.
+
+The goal is not necessarily to remove every line of Unbound code that isn't used every day.
+
+**The goal is that two years from now, you can look at HalfBSD's DNS implementation and understand exactly what it does, where it's configured, and how to troubleshoot it—without another afternoon reading FreeBSD manuals.** 😁

@@ -102,7 +102,7 @@ to it.
 .TP
 .B \-c <file>
 The root update certificate file, that is read in.
-Default is \fB/var/unbound/icannbundle.pem\fP\&.
+Default is \fB/etc/unbound/icannbundle.pem\fP\&.
 If the file does not exist, or is empty, a builtin certificate is used.
 .UNINDENT
 .INDENT 0.0
@@ -284,7 +284,7 @@ The root anchor file, updated with 5011 tracking, and read and written
 to.
 The file is created if it does not exist.
 .TP
-.B /var/unbound/icannbundle.pem
+.B /etc/unbound/icannbundle.pem
 The trusted self\-signed certificate that is used to verify the
 downloaded DNSSEC root trust anchor.
 You can update it by fetching it from

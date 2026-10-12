@@ -36,12 +36,8 @@ echo "destination: ${D}"
 #
 user=""
 unbound_conf=""
-lanzones_conf=""
-control_conf=""
 control_socket=""
 workdir=""
-confdir=""
-chrootdir=""
 anchor=""
 pidfile=""
 resolv_conf=""
@@ -63,10 +59,7 @@ bkext=$(date "+%Y%m%d.%H%M%S")
 set_defaults() {
 	: ${user:=unbound}
 	: ${workdir:=/var/unbound}
-	: ${confdir:=${workdir}/conf.d}
-	: ${unbound_conf:=${workdir}/unbound.conf}
-	: ${lanzones_conf:=${workdir}/lan-zones.conf}
-	: ${control_conf:=${workdir}/control.conf}
+	: ${unbound_conf:=/etc/unbound/unbound.conf}
 	: ${control_socket:=/var/run/local_unbound.ctl}
 	: ${anchor:=${workdir}/root.key}
 	: ${pidfile:=/var/run/local_unbound.pid}
@@ -75,24 +68,6 @@ set_defaults() {
 	: ${service:=local_unbound}
 	: ${start_unbound:=yes}
 	: ${use_tls:=no}
-}
-
-#
-# Verify that the configuration files are inside the working
-# directory, and if so, set the chroot directory accordingly.
-#
-set_chrootdir() {
-	chrootdir="${workdir}"
-	for file in "${unbound_conf}" \
-	    "${lanzones_conf}" "${control_conf}" "${anchor}" ; do
-		if [ "${file#${workdir%/}/}" = "${file}" ] ; then
-			echo "warning: ${file} is outside ${workdir}" >&2
-			chrootdir=""
-		fi
-	done
-	if [ -z "${chrootdir}" ] ; then
-		echo "warning: disabling chroot" >&2
-	fi
 }
 
 #
@@ -153,54 +128,134 @@ gen_resolvconf_conf() {
 	echo 'libc="NO"'
 }
 
-#
-# Generate lan-zones.conf
-#
-gen_lanzones_conf() {
-	do_not_edit
-	echo "server:"
-	echo "        # Unblock reverse lookups for LAN addresses"
-	echo "        unblock-lan-zones: yes"
-	echo "        insecure-lan-zones: yes"
-}
-
-#
-# Generate control.conf
-#
-gen_control_conf() {
-	do_not_edit
-	echo "remote-control:"
-	echo "        control-enable: yes"
-	echo "        control-interface: ${control_socket}"
-	echo "        control-use-cert: no"
-}
-
-#
-# Generate unbound.conf
-#
+# Generate the single administrator-maintained configuration on first setup.
 gen_unbound_conf() {
-	do_not_edit
+	echo "# HalfBSD Unbound configuration. Administrator changes are preserved."
 	echo "server:"
 	echo "        username: ${user}"
 	echo "        directory: ${workdir}"
-	echo "        chroot: ${chrootdir}"
+	echo '        chroot: ""'
 	echo "        pidfile: ${pidfile}"
 	echo "        auto-trust-anchor-file: ${anchor}"
+	echo "        unblock-lan-zones: yes"
+	echo "        insecure-lan-zones: yes"
 	if [ "${use_tls}" = "yes" ] ; then
 		echo "        tls-upstream: yes"
 		echo "        tls-cert-bundle: /etc/ssl/cert.pem"
 	fi
 	echo "        so-sndbuf: 0"
-	echo ""
-	if [ -f "${D}${lanzones_conf}" ] ; then
-		echo "include: ${lanzones_conf}"
-	fi
-	if [ -f "${D}${control_conf}" ] ; then
-		echo "include: ${control_conf}"
-	fi
-	if [ -d "${D}${confdir}" ] ; then
-		echo "include: ${confdir}/*.conf"
-	fi
+	echo "remote-control:"
+	echo "        control-enable: yes"
+	echo "        control-interface: ${control_socket}"
+	# The Unix socket is authenticated by owner/mode, not TLS certificates.
+	echo "        control-use-cert: no"
+}
+
+# Inline only the previous managed fragments. Unknown includes remain manual.
+# File contents are preserved in their original position, including quoted RRs.
+migrate_config() {
+	local fragments
+	fragments=$(for file in "${D}${workdir}/conf.d/"*.conf ; do
+		[ -f "${file}" ] && printf '%s\n' "${file#${D}}"
+	done)
+	DESTDIR="${D}" LEGACY_WORKDIR="${workdir}" FRAGMENTS="${fragments}" \
+	    OLD_LAYOUT="${old_layout}" RETIRED="${retired}" awk '
+	function advance(line, i, ch, escaped) {
+	    escaped = 0
+	    for (i = 1; i <= length(line); i++) {
+	        ch = substr(line, i, 1)
+	        if (escaped) { escaped = 0; continue }
+	        if (ch == "\\") { escaped = 1; continue }
+	        if (quote != "") {
+	            if (ch == quote) quote = ""
+	        } else {
+	            if (ch == "#") break
+	            if (ch == "\"" || ch == sprintf("%c", 39)) quote = ch
+	        }
+	    }
+	}
+	function value(line, v, q) {
+	    sub(/^[^:]*:[[:space:]]*/, "", line)
+	    q = substr(line, 1, 1)
+	    if (q == "\"" || q == sprintf("%c", 39)) {
+	        v = substr(line, 2); sub(q ".*$", "", v); return v
+	    }
+	    sub(/[[:space:]#].*$/, "", line); return line
+	}
+	function fail(message) {
+	    print "Configuration migration: " message > "/dev/stderr"
+	    exit 1
+	}
+	function emit(file, depth, line, path, status, i, forwardline) {
+	    if (depth > 32 || active[file]) fail("include cycle or excessive nesting: " file)
+	    active[file] = 1
+	    while ((status = (getline line < file)) > 0) {
+	        if (quote == "" && line ~ /^[[:space:]]*include:/) {
+	            path = value(line)
+	            if (path == work "/forward.conf") {
+	                while ((getline forwardline < (dest path)) > 0)
+	                    if (forwardline ~ /^[[:space:]]*forward-(tls|ssl)-upstream:[[:space:]]*yes/)
+	                        tls = 1
+	                close(dest path)
+	                print path > retired
+	                continue
+	            }
+	            if (path == work "/control.conf" || path == work "/lan-zones.conf" ||
+	                path == work "/conf.d/*.conf" ||
+	                (index(path, work "/conf.d/") == 1 && path !~ /(^|\/)\.\.(\/|$)/)) {
+	                if (path == work "/conf.d/*.conf") {
+	                    for (i = 1; i <= fragments; i++) {
+	                        emit(dest fragment[i], depth + 1)
+	                        print fragment[i] > retired
+	                    }
+	                } else {
+	                    emit(dest path, depth + 1)
+	                    print path > retired
+	                }
+	                continue
+	            }
+	            custom_include = 1
+	        }
+	        if (quote == "" && line ~ /^[[:space:]]*chroot:/) {
+	            path = value(line); sub(/\/$/, "", path)
+	            if (path == work) { old_jail = 1; line = "    chroot: \"\"" }
+	            else if (path != "") fail("explicit custom chroot requires administrator review: " path)
+	            else old_jail = 0
+	        }
+	        if (quote == "" && line ~ /^[[:space:]]*pidfile:/ && value(line) == work "/unbound.pid")
+	            line = "    pidfile: /var/run/local_unbound.pid"
+	        output[++lines] = line
+	        advance(line)
+	    }
+	    if (status < 0) fail("cannot read included configuration: " file)
+	    close(file)
+	    active[file] = 0
+	}
+	BEGIN {
+	    dest = ENVIRON["DESTDIR"]; work = ENVIRON["LEGACY_WORKDIR"]
+	    retired = ENVIRON["RETIRED"]
+	    fragments = split(ENVIRON["FRAGMENTS"], fragment, "\n")
+	    if (ENVIRON["FRAGMENTS"] == "") fragments = 0
+	    old_jail = ENVIRON["OLD_LAYOUT"] == "yes"
+	    emit(ARGV[1], 0)
+	    if (old_jail && custom_include) fail("custom includes under the former chroot require administrator review")
+	    quote = ""
+	    for (n = 1; n <= lines; n++) {
+	        line = output[n]
+	        # Preserve the physical filenames formerly resolved inside the jail.
+	        # TLS CA bundles and PID/control sockets were opened outside it.
+	        if (old_jail && quote == "" && line ~ /^[[:space:]]*((server|control)-(key|cert)-file|auto-trust-anchor-file|trust-anchor-file|trusted-keys-file|root-hints|cookie-secret-file|directory|logfile):/) {
+	            path = value(line)
+	            if (path ~ /^\// && path != work && index(path, work "/") != 1) {
+	                line = substr(line, 1, index(line, ":")) " \"" work path "\""
+	            }
+	        }
+	        print line
+	        advance(line)
+	    }
+	    if (tls) print "\nserver:\n    tls-upstream: yes"
+	    exit
+	}' "$1"
 }
 
 # Remove obsolete client policy from the managed configuration during upgrade.
@@ -233,9 +288,9 @@ strip_client_policy() {
 backup() {
 	local file="$1"
 	if [ -f "${D}${file}" ] ; then
-		local bkfile="${bkdir}/${file##*/}.${bkext}"
+		local bkfile=$(mktemp "${D}${bkdir}/${file##*/}.${bkext}.XXXXXX")
 		echo "Original ${file} saved as ${bkfile}"
-		mv "${D}${file}" "${D}${bkfile}"
+		mv "${D}${file}" "${bkfile}"
 	fi
 }
 
@@ -244,7 +299,7 @@ backup() {
 #
 tmp() {
 	local file="$1"
-	mktemp -u "${D}${file}.XXXXX"
+	mktemp "${D}${file}.XXXXX"
 }
 
 #
@@ -275,14 +330,13 @@ usage() {
 	echo "options:"
 	echo "    -n          do not start unbound"
 	echo "    -a path     full path to trust anchor file"
-	echo "    -C path     full path to additional configuration directory"
 	echo "    -c path     full path to unbound configuration file"
 	echo "    -O path     full path to remote control socket"
-	echo "    -o path     full path to remote control configuration"
 	echo "    -p path     full path to pid file"
 	echo "    -R path     full path to resolvconf.conf"
 	echo "    -r path     full path to resolv.conf"
 	echo "    -s service  name of unbound service"
+	echo "    -t          use authenticated TLS for upstream forwarding"
 	echo "    -u user     user to run unbound as"
 	echo "    -w path     full path to working directory"
 	exit 1
@@ -297,13 +351,10 @@ main() {
 	#
 	# Parse and validate command-line options
 	#
-	while getopts "a:C:c:nO:o:p:R:r:s:tu:w:" option ; do
+	while getopts "a:c:nO:p:R:r:s:tu:w:" option ; do
 		case $option in
 		a)
 			anchor="$OPTARG"
-			;;
-		C)
-			confdir="$OPTARG"
 			;;
 		c)
 			unbound_conf="$OPTARG"
@@ -314,9 +365,6 @@ main() {
 		O)
 			control_socket="$OPTARG"
 			;;
-		o)
-			control_conf="$OPTARG"
-			;;	
 		p)
 			pidfile="$OPTARG"
 			;;
@@ -349,59 +397,52 @@ main() {
 	#
 	[ "$#" -eq 0 ] || usage
 
-	#
-	# Generate lan-zones.conf.
-	#
-	local tmp_lanzones_conf=$(tmp "${lanzones_conf}")
-	gen_lanzones_conf | unexpand >"${tmp_lanzones_conf}"
-	replace "${lanzones_conf}" "${tmp_lanzones_conf}"
-
-	#
-	# Generate control.conf.
-	#
-	local tmp_control_conf=$(tmp "${control_conf}")
-	gen_control_conf | unexpand >"${tmp_control_conf}"
-	replace "${control_conf}" "${tmp_control_conf}"
-
-	#
-	# Generate unbound.conf.
-	#
-	local tmp_unbound_conf=$(tmp "${unbound_conf}")
-	if [ -f "${D}${unbound_conf}" ] ; then
-		local legacy_tls=$(awk '
-		    /^[[:space:]]*include:/ {
-		        path = $2; gsub(/"/, "", path)
-		        if (path !~ /\/forward\.conf$/) next
-		        path = ENVIRON["DESTDIR"] path
-		        while ((getline line < path) > 0)
-		            if (line ~ /^[[:space:]]*forward-(tls|ssl)-upstream:[[:space:]]*yes/)
-		                tls = "yes"
-		        close(path)
-		    }
-		    END { print tls }
-		' "${D}${unbound_conf}")
-		# One-time migration: retain user settings, remove the legacy include.
-		# The obsolete file itself is left for the administrator to archive.
-		strip_client_policy "${D}${unbound_conf}" |
-		    sed '/^[[:space:]]*include:[[:space:]]*"*[^[:space:]]*\/forward\.conf"*[[:space:]]*\(#.*\)\{0,1\}$/d' \
-		    >"${tmp_unbound_conf}"
-		if [ "${legacy_tls}" = "yes" ] || [ "${use_tls}" = "yes" ] ; then
-			# Keep the former catch-all zone's authenticated TLS transport.
-			if ! sed -n '/^[[:space:]]*\(tls\|ssl\)-upstream:[[:space:]]*yes/p' \
-			    "${tmp_unbound_conf}" | grep -q . ; then
+	# Configuration belongs to root; mutable state belongs to unbound.
+	mkdir -p "${D}${unbound_conf%/*}" "${D}${workdir}" "${D}${bkdir}"
+	if [ -z "${D}" ]; then
+		chown "${user}" "${workdir}" || return 1
+	fi
+	local old_conf="${workdir}/unbound.conf"
+	local source_conf="${unbound_conf}"
+	local old_layout=no
+	if [ "${old_conf}" != "${unbound_conf}" ] && [ -f "${D}${old_conf}" ]; then
+		if [ -f "${D}${unbound_conf}" ]; then
+			echo "Both ${unbound_conf} and ${old_conf} exist; reconcile them before setup." >&2
+			return 1
+		fi
+		source_conf="${old_conf}"
+		old_layout=yes
+	fi
+	local tmp_unbound_conf expanded retired
+	tmp_unbound_conf=$(tmp "${unbound_conf}") || return 1
+	expanded=$(tmp "${unbound_conf}") || { rm -f "${tmp_unbound_conf}"; return 1; }
+	retired=$(tmp "${unbound_conf}") || { rm -f "${tmp_unbound_conf}" "${expanded}"; return 1; }
+	trap 'rm -f "${tmp_unbound_conf}" "${expanded}" "${retired}"' EXIT
+	trap 'exit 1' HUP INT TERM
+	if [ -f "${D}${source_conf}" ]; then
+		migrate_config "${D}${source_conf}" >"${expanded}" || return 1
+		strip_client_policy "${expanded}" >"${tmp_unbound_conf}" || return 1
+		if [ "${use_tls}" = "yes" ]; then
+			if ! sed -n '/^[[:space:]]*\(tls\|ssl\)-upstream:[[:space:]]*yes/p' "${tmp_unbound_conf}" | grep -q . ; then
 				printf '\nserver:\n    tls-upstream: yes\n' >>"${tmp_unbound_conf}"
 			fi
-			if [ "${use_tls}" = "yes" ] &&
-			    ! sed -n '/^[[:space:]]*\(tls\|ssl\)-cert-bundle:/p' \
-			    "${tmp_unbound_conf}" | grep -q . ; then
+			if ! sed -n '/^[[:space:]]*\(tls\|ssl\)-cert-bundle:/p' "${tmp_unbound_conf}" | grep -q . ; then
 				printf '\nserver:\n    tls-cert-bundle: /etc/ssl/cert.pem\n' >>"${tmp_unbound_conf}"
 			fi
 		fi
 	else
-		set_chrootdir
-		gen_unbound_conf | unexpand >"${tmp_unbound_conf}"
+		gen_unbound_conf >"${tmp_unbound_conf}"
 	fi
-	replace "${unbound_conf}" "${tmp_unbound_conf}"
+	chmod 644 "${tmp_unbound_conf}"
+	replace "${unbound_conf}" "${tmp_unbound_conf}" || return 1
+	# Retire successfully inlined files, never blindly delete conf.d contents.
+	while IFS= read -r file; do
+		backup "${file}" || return 1
+	done <"${retired}"
+	if [ "${source_conf}" != "${unbound_conf}" ]; then
+		backup "${source_conf}" || return 1
+	fi
+	rmdir "${D}${workdir}/conf.d" 2>/dev/null || :
 
 	#
 	# Start unbound, unless requested not to.  Stop immediately if

@@ -11,17 +11,17 @@
 #define ATTR_WEAK __attribute__((weak))
 
 /* Directory to chroot to */
-#define CHROOT_DIR "/var/unbound"
+#define CHROOT_DIR ""
 
 
 /* Do sha512 definitions in config.h */
 /* #undef COMPAT_SHA512 */
 
 /* Command line arguments used with configure */
-#define CONFCMDLINE "--prefix= --exec-prefix=/usr --with-conf-file=/var/unbound/unbound.conf --with-run-dir=/var/unbound --with-username=unbound"
+#define CONFCMDLINE "--prefix= --exec-prefix=/usr --with-conf-file=/etc/unbound/unbound.conf --with-run-dir=/var/unbound --with-chroot-dir= --with-pidfile=/var/run/local_unbound.pid --with-username=unbound"
 
 /* Pathname to the Unbound configuration file */
-#define CONFIGFILE "/var/unbound/unbound.conf"
+#define CONFIGFILE "/etc/unbound/unbound.conf"
 
 /* Define this if on macOSX10.4-darwin8 and setreuid and setregid do not work
    */
@@ -796,7 +796,7 @@
 #define PACKAGE_VERSION "1.25.1"
 
 /* default pidfile location */
-#define PIDFILE "/var/unbound/unbound.pid"
+#define PIDFILE "/var/run/local_unbound.pid"
 
 /* Define to necessary symbol if this constant uses a non-standard name on
    your system. */
@@ -813,7 +813,7 @@
 #define ROOT_ANCHOR_FILE "/var/unbound/root.key"
 
 /* default rootcert location */
-#define ROOT_CERT_FILE "/var/unbound/icannbundle.pem"
+#define ROOT_CERT_FILE "/etc/unbound/icannbundle.pem"
 
 /* version number for resource files */
 #define RSRC_PACKAGE_VERSION 1,25,1,0

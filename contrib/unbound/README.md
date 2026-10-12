@@ -43,3 +43,21 @@ for the latest version.
 
 An example configuration file, with minimal documentation, is located in
 [doc/example.conf](https://github.com/NLnetLabs/unbound/blob/master/doc/example.conf.in).
+
+HalfBSD configuration layout
+----------------------------
+
+HalfBSD uses one administrator-maintained `/etc/unbound/unbound.conf` for local
+records, LAN-zone settings, remote control, caching and optional upstream TLS.
+DNSSEC trust-anchor state is maintained in `/var/unbound/root.key`; the PID and
+control socket are under `/var/run`. The resolver drops privileges to `unbound`
+but does not chroot by default, so configuration reloads, system CA files and
+mutable anchor state remain reachable without copies or mounts.
+
+`local-unbound-setup` creates a fresh configuration once. During upgrade it moves
+the former main configuration, inlines its generated control/LAN fragments and
+included `conf.d` records, and archives originals under `/var/backups`. It keeps
+administrator records and control authentication settings. Conflicting old/new
+main configurations and custom chroots require administrator review. Repeat
+setup preserves existing configuration. There is no generated forwarder file;
+upstream DNS defaults remain the compiled provider hierarchy.

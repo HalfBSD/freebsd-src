@@ -79,6 +79,10 @@ $ kill \(gacat @UNBOUND_PIDFILE@\(ga
 .UNINDENT
 .UNINDENT
 .sp
+HalfBSD setup preserves administrator changes on repeated runs. LAN-zone and
+remote-control settings belong in the main configuration; no generated fragment
+includes are required. Maintain local-zone, local-data and local-data-ptr there.
+.sp
 The source distribution contains an extensive \fBexample.conf\fP file with
 all the options.
 .INDENT 0.0
@@ -90,6 +94,7 @@ all the options.
 server:
     directory: \(dq@UNBOUND_RUN_DIR@\(dq
     username: unbound
+    auto-trust-anchor-file: /var/unbound/root.key
     # make sure unbound can access entropy from inside the chroot.
     # e.g. on linux the use these commands (on BSD, devfs(8) is used):
     #      mount \-\-bind \-n /dev/urandom @UNBOUND_RUN_DIR@/dev/urandom
@@ -1297,7 +1302,10 @@ from inside the chroot.
 If given, a \fIchroot(2)\fP is done to the given directory.
 If you give \fB\(dq\(dq\fP no \fIchroot(2)\fP is performed.
 .sp
-Default: @UNBOUND_CHROOT_DIR@
+Default: \fB\(dq\(dq\fP (no chroot). HalfBSD keeps configuration in
+\fB/etc/unbound\fP and mutable trust-anchor state in \fB/var/unbound\fP.
+Explicit chroots must provide the files needed for reload and maintenance;
+HalfBSD does not create configuration copies or mounts.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -4172,8 +4180,8 @@ server:
 .B @UNBOUND_RUN_DIR@
 default Unbound working directory.
 .TP
-.B @UNBOUND_CHROOT_DIR@
-default \fIchroot(2)\fP location.
+.B /var/unbound/root.key
+Mutable DNSSEC trust-anchor state maintained by the unbound user.
 .TP
 .B @ub_conf_file@
 Unbound configuration file.

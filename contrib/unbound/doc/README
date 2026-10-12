@@ -44,23 +44,23 @@ This software is under BSD license, see LICENSE for details.
 	memory usage in detail.
   * --with-conf-file=filename
   	Set default location of config file, 
-	the default is /usr/local/etc/unbound/unbound.conf.
+	the default is /etc/unbound/unbound.conf.
   * --with-pidfile=filename
   	Set default location of pidfile,
-	the default is /usr/local/etc/unbound/unbound.pid.
+	the default is /var/run/local_unbound.pid.
   * --with-run-dir=path
   	Set default working directory,
-	the default is /usr/local/etc/unbound.
+	the default is /var/unbound.
   * --with-chroot-dir=path
   	Set default chroot directory,
-	the default is /usr/local/etc/unbound.
+	the default is no chroot.
   * --with-rootkey-file=path
   	Set the default root.key path.  This file is read and written.
-	the default is /usr/local/etc/unbound/root.key
+	the default is /var/unbound/root.key
   * --with-rootcert-file=path
   	Set the default root update certificate path.  A builtin certificate
 	is used if this file is empty or does not exist.
-	the default is /usr/local/etc/unbound/icannbundle.pem
+	the default is /etc/unbound/icannbundle.pem
   * --with-username=user
   	Set default user name to change to,
 	the default is the "unbound" user.

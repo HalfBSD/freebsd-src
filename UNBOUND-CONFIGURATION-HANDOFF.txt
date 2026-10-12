@@ -1,0 +1,166 @@
+HalfBSD Unbound configuration consolidation
+Status: Implemented and tested on Linux; included in the user-authorized configuration consolidation commit. Commit and push authorized on 2026-10-11.
+
+Chroot decision (recorded before implementation)
+
+A /var/unbound chroot cannot read /etc/unbound/unbound.conf on reload or reach
+system TLS CA paths and runtime control sockets without copying configuration,
+mounting directories, or maintaining a second filesystem layout. Chrooting to /
+provides no useful containment. The simplest maintainable target layout therefore
+uses no chroot by default, while retaining Unbound's existing optional chroot
+implementation. Privilege dropping, DNSSEC, upstream certificate validation,
+remote-control authentication and IPFW remain intact. The loss is filesystem
+containment of a compromised unbound process. Static configuration will instead
+be root-owned under /etc; only mutable anchor state belongs to the unbound user.
+
+Migration will replace the former generated /var/unbound chroot setting with an
+explicit empty chroot. A different explicit administrator chroot will not be
+silently discarded: automatic relocation will fail with a specific explanation.
+No bind mounts, duplicate live configuration, synchronization services or
+compatibility options will be introduced.
+
+Plan
+
+Consolidate generated LAN-zone and control settings in the root-owned main
+configuration. Migrate the old main file and its obsolete generated includes,
+retaining ordinary local records, custom remote-control security, anchor state
+and custom includes. Inline former conf.d configuration if present; retire only
+successfully migrated files with backups. Refuse ambiguous/conflicting migration
+rather than overwrite an existing /etc configuration. Repeated setup must leave
+administrator configuration unchanged. Keep control sockets/PID under /var/run.
+Update defaults, mtree, rc/setup, configure outputs and current documentation;
+run configuration migration, runtime/reload/DNSSEC and existing DNS regressions.
+
+Implemented layout
+
+/etc/unbound/unbound.conf is the default for all four utilities, the rc script,
+setup, portable configure output and native FreeBSD-generated config.h. The
+state/working directory remains /var/unbound; root.key retains its path and
+existing contents. PID and Unix control socket defaults are
+/var/run/local_unbound.pid and /var/run/local_unbound.ctl. Mtree creates the
+root-owned configuration directory and no longer creates /var/unbound/conf.d.
+The optional anchor-update certificate file defaults to /etc/unbound; no file
+is generated, and the existing builtin certificate fallback remains available.
+
+Fresh setup puts required LAN-zone and remote-control settings directly in the
+main configuration. Unix control retains filesystem ownership/mode authentication;
+explicit TLS remote-control authentication is preserved during migration. The
+former -o and -C setup options and their management variables/functions are
+removed and rejected. Ordinary manual includes remain available in configurations
+that do not depend on the former jail; setup does not create a conf.d directory.
+
+Migration and administrator data
+
+When the new main file is absent, setup moves configuration from the former
+working-directory main file. It inlines referenced control.conf, lan-zones.conf,
+and conf.d/*.conf fragments in original order, preserving local-zone, local-data,
+local-data-ptr and other manual settings. It removes obsolete forwarding-file
+includes without adopting old DHCP upstream addresses; former upstream TLS is
+retained. Consumed fragments, old main files and referenced obsolete forwarding
+files are archived to uniquely named files under /var/backups after the new main
+file is installed. An emptied conf.d directory is removed; nonempty directories
+with unconsumed administrator files are not deleted.
+
+Repeated setup retains main-file contents and does not touch anchor state.
+Custom configuration/state paths remain supported by existing setup options and
+rc.conf overrides. Conflicting old/new main files, missing included fragments,
+include cycles, custom chroots and unreviewed custom includes under a former
+chroot fail without replacing the main file or retiring its fragments.
+
+The old generated chroot is replaced with an explicit empty setting. Paths that
+formerly named files inside that jail are rebased to their physical host paths,
+including auto-trust-anchor files and TLS control keys/certificates. Working
+directory semantics are preserved; no key/configuration copies or mounts are
+introduced. TLS CA bundles and runtime PID/control sockets already opened outside
+the jail keep their host paths. Optional custom chroot support remains in core
+Unbound, but setup requires administrator review instead of inventing an alternate
+layout or weakening a different explicit jail.
+
+Static main configuration is created by the privileged setup process with no
+group/other write permission. Live setup gives the mutable state directory to the
+configured unbound user. Privilege dropping and control-socket ownership/modes
+remain the existing Unbound mechanisms. The deliberate loss of default chroot
+filesystem containment is the tradeoff documented above before code changes.
+
+Validation
+
+Portable Linux GCC -O2/LTO build: all four utilities compile/link successfully.
+Build/configure: /tmp/unbound-layout-build,
+/tmp/unbound-layout-{configure,build}.log. Existing compiler warnings remain.
+
+Final regression results:
+- forwarding.py: 25 PASS groups, including local records, caching, DNSSEC,
+  outgoing TLS validation, TLS-authenticated control, and ordinary/fast reload.
+- providers.py: 9 PASS groups; priority/failover/recovery and secure TLS unchanged.
+- tcp-limits.py: 15 PASS groups, including IPv6 and reload accounting.
+- setup.py with BUILD argument: 14 PASS groups (old setup/service tests, the
+  installworld obsolete-script mismatch tests, migration and new runtime tests).
+
+The new layout.py migration suite verifies successful main/control/LAN/conf.d
+consolidation, A/PTR/CNAME/TXT preservation, unique original backups, unchanged
+mutable anchor state, repeated setup, TLS-control security settings, former
+jail-relative physical paths, and non-destructive failure cases.
+
+Its real loopback runtime test loads the migrated single-file configuration,
+answers local and forwarded DNS over UDP/TCP, verifies cache hits, accepts signed
+fixture answers and rejects bogus ones, and observes a successful automatic
+DNSKEY probe plus an atomic trust-anchor state-file update. It uses a test-only
+signed zone stored in the fixture root.key, not the public root zone. Repeated
+setup preserves that active configuration and updated anchor state. Both reload
+methods pick up distinct local-record changes; Unix control works and its socket
+has no world-access permission. The existing forwarding suite separately verifies
+mutual-TLS control and rejection of clients lacking certificates.
+
+sh -n: configure, native configure helper, rc service and setup: PASS.
+git diff --check: PASS. No new build switches or external dependencies introduced.
+No tools/packages downloaded or installed.
+
+Reproduction from the repository root:
+  PYTHONDONTWRITEBYTECODE=1 python3 usr.sbin/unbound/tests/setup.py "$BUILD"
+  PYTHONDONTWRITEBYTECODE=1 python3 usr.sbin/unbound/tests/forwarding.py "$BUILD"
+  PYTHONDONTWRITEBYTECODE=1 python3 usr.sbin/unbound/tests/providers.py "$BUILD"
+  PYTHONDONTWRITEBYTECODE=1 python3 usr.sbin/unbound/tests/tcp-limits.py "$BUILD"
+Standalone migration/runtime suite:
+  PYTHONDONTWRITEBYTECODE=1 python3 usr.sbin/unbound/tests/layout.py "$BUILD"
+Without BUILD, setup/layout perform filesystem migration tests without DNS sockets.
+Logs: /tmp/unbound-layout-{setup-runtime,forwarding,providers,tcp,runtime}.log.
+
+Limits and next native verification
+
+No native HalfBSD buildworld/buildkernel/installworld was performed. Runtime DNS
+uses isolated Linux loopback fixtures and a no-UID-change fixture configuration;
+production privilege dropping was preserved by source review, not newly tested
+on an installed HalfBSD host. Installed rc/mtree ownership, IPFW boot policy,
+real root trust-anchor initialization/rollover, deployed UID/chroot settings and
+native reload/upgrade behavior still require Anvil verification. Existing
+installworld tests mock rc dispatch, firewall status and root-key bootstrap.
+The migration helper does not suppress ordinary validation/startup errors.
+
+No IPFW, SSH, provider selection, iterator, DNS algorithm, or Capsicum changes.
+The default filesystem layout and chroot policy are the security-relevant changes.
+Uninstalled upstream foreign-platform package samples are not HalfBSD installation
+paths and were left unchanged; current HalfBSD build/install/docs references
+were updated. Existing explicit custom paths/includes are administrator-owned
+choices; setup does not silently destroy them to enforce a directory layout.
+
+Files modified
+
+contrib/unbound/configure.ac and generated configure
+contrib/unbound/freebsd-configure.sh
+lib/libunbound/config.h
+libexec/rc/rc.d/local_unbound
+usr.sbin/unbound/setup/local-unbound-setup.sh
+etc/mtree/BSD.root.dist and BSD.var.dist
+contrib/unbound/smallapp/unbound-control-setup.sh (certificate directory default)
+contrib/unbound/README.md and doc/README
+contrib/unbound/doc/example.conf and generated manuals for unbound,
+  unbound-anchor, unbound-checkconf, unbound-control and unbound.conf
+contrib/unbound/doc/unbound.conf.rst and unbound.conf.5.in
+usr.sbin/unbound/tests/setup.py and installworld.py
+usr.sbin/unbound/tests/layout.py (new)
+UNBOUND-CONFIGURATION-HANDOFF.txt (this report)
+
+No source files were deleted; the obsolete generation functions, CLI options,
+rc arguments and mtree directory entry were removed. Remaining legacy filenames
+in migration code/tests are needed to import existing installations, not to keep
+generating or managing the old layout. Commit and push were subsequently authorized.

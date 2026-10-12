@@ -122,6 +122,7 @@ exec /bin/sh "$DESTDIR/etc/rc.d/local_unbound" "$2"
         lines = trace.read_text().splitlines()
         assert lines[0].startswith('setup -n ') and ' -f ' not in lines[0]
         assert lines[1:] == (['configtest', 'restart'] if running else [])
+        config = root / 'etc/unbound/unbound.conf'
         assert config.read_text().startswith(records)
         assert 'tls-upstream: yes' in config.read_text()
         assert 'tls-cert-bundle: /etc/ssl/cert.pem' in config.read_text()
@@ -153,7 +154,7 @@ exec /bin/sh "$DESTDIR/etc/rc.d/local_unbound" "$2"
     print('PASS setup/config-validation failures propagate without restarting the daemon')
 
     # rc.conf path overrides must reach the new setup utility unchanged.
-    site = root / 'var/unbound/site.conf'
+    site = root / 'etc/unbound/site.conf'
     site_anchor = root / 'var/unbound/site.key'
     site_records = records.replace('/var/unbound/root.key', '/var/unbound/site.key')
     site.write_text(site_records)
@@ -161,14 +162,13 @@ exec /bin/sh "$DESTDIR/etc/rc.d/local_unbound" "$2"
     trace.write_text('')
     subprocess.run(['/bin/sh', '-c', hook],
                    env=dict(environment, rc_pid='1234',
-                            local_unbound_config='/var/unbound/site.conf',
-                            local_unbound_controlconf='/var/unbound/admin.conf',
+                            local_unbound_config='/etc/unbound/site.conf',
                             local_unbound_anchor='/var/unbound/site.key'),
                    check=True, timeout=10, capture_output=True)
     assert site.read_text().startswith(site_records)
     assert site_anchor.read_bytes() == original_anchor
-    assert ' -c /var/unbound/site.conf ' in trace.read_text()
-    assert ' -o /var/unbound/admin.conf ' in trace.read_text()
+    assert ' -c /etc/unbound/site.conf ' in trace.read_text()
+    assert ' -o ' not in trace.read_text()
     assert ' -a /var/unbound/site.key ' in trace.read_text()
     assert installed_rc.read_text() == legacy
-    print('PASS rc.conf configuration/control/anchor path overrides reach the new utility')
+    print('PASS rc.conf configuration/anchor path overrides reach the new utility')

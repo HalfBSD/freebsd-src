@@ -77,6 +77,8 @@
         ..
         rc.d            tags=package=rc
         ..
+        unbound         tags=package=local-unbound
+        ..
         security        tags=package=audit
         ..
         ssh             tags=package=ssh

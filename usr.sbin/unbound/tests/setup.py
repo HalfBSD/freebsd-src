@@ -17,10 +17,15 @@ with tempfile.TemporaryDirectory(prefix='unbound-setup-') as directory:
     resolver.write_text('search home.test\nnameserver 192.0.2.53\n')
     environment = dict(os.environ, DESTDIR=str(root))
     subprocess.run(['sh', str(script), '-n'], env=environment, check=True)
-    config = root / 'var/unbound/unbound.conf'
+    config = root / 'etc/unbound/unbound.conf'
     assert 'forward.conf' not in config.read_text()
     assert not (root / 'var/unbound/forward.conf').exists()
-    assert 'control.conf' in config.read_text()
+    assert 'control.conf' not in config.read_text()
+    assert 'control-enable: yes' in config.read_text()
+    assert 'unblock-lan-zones: yes' in config.read_text()
+    assert 'chroot: ""' in config.read_text()
+    assert not (root / 'var/unbound/control.conf').exists()
+    assert not (root / 'var/unbound/lan-zones.conf').exists()
     assert 'search home.test' in resolver.read_text()
     assert '\nnameserver 127.0.0.1\n' in resolver.read_text()
     assert '\nnameserver 192.0.2.53\n' not in resolver.read_text()
@@ -53,7 +58,9 @@ with tempfile.TemporaryDirectory(prefix='unbound-setup-') as directory:
     assert 'define-tag:' not in result and 'access-control-tag-data:' not in result
     assert '\nold' not in result
     assert 'tls-upstream: yes' in result
-    assert legacy.exists()  # Archive, never replace administrator's file.
+    assert not legacy.exists()
+    assert any('forward-addr: 192.0.2.53' in path.read_text()
+               for path in (root / 'var/backups').glob('forward.conf.*'))
     subprocess.run(['sh', str(script), '-n'], env=environment, check=True)
     assert config.read_text() == result
     print('PASS upgrade removes client policy, preserves quoted local records/TLS, and is idempotent')
@@ -71,8 +78,7 @@ with tempfile.TemporaryDirectory(prefix='unbound-setup-') as directory:
     harness = root / 'rc-test.sh'
     harness.write_text(f'''command={shlex.quote(str(root / 'fake-unbound'))}
 local_unbound_workdir=/var/unbound
-local_unbound_config=/var/unbound/unbound.conf
-local_unbound_controlconf=/var/unbound/control.conf
+local_unbound_config=/etc/unbound/unbound.conf
 local_unbound_anchor=/var/unbound/root.key
 checkyesno() {{ return 1; }}
 local_unbound_configtest() {{ echo configtest >> "$TRACE"; return "${{CHECK_STATUS:-0}}"; }}
@@ -91,3 +97,6 @@ run_rc_command() {{ echo "$1" >> "$TRACE"; }}
 
 # Keep the installworld upgrade case in the usual setup regression entry point.
 subprocess.run([sys.executable, str(script.parents[1] / 'tests/installworld.py')], check=True)
+
+# Consolidated layout migration is part of the standard setup suite.
+subprocess.run([sys.executable, str(script.parents[1] / 'tests/layout.py'), *sys.argv[1:]], check=True)

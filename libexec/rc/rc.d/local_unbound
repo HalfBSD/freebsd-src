@@ -26,9 +26,8 @@ pidfile="/var/run/${name}.pid"
 load_rc_config $name
 
 : ${local_unbound_workdir:=/var/unbound}
-: ${local_unbound_config:=${local_unbound_workdir}/unbound.conf}
+: ${local_unbound_config:=/etc/unbound/unbound.conf}
 : ${local_unbound_flags:="-c ${local_unbound_config}"}
-: ${local_unbound_controlconf:=${local_unbound_workdir}/control.conf}
 : ${local_unbound_anchor:=${local_unbound_workdir}/root.key}
 : ${local_unbound_tls:=}
 : ${local_unbound_pidfile:=${pidfile}}
@@ -73,7 +72,6 @@ local_unbound_setup()
 	    -u unbound \
 	    -w ${local_unbound_workdir} \
 	    -c ${local_unbound_config} \
-	    -o ${local_unbound_controlconf} \
 	    -a ${local_unbound_anchor} \
 	    ${tls_flag} || return 1
 	# A running daemon must use the newly installed forwarding defaults.

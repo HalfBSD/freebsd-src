@@ -184,7 +184,7 @@ AC_SUBST(UNBOUND_SYSCONF_DIR)
 UNBOUND_LOCALSTATE_DIR=`eval echo "${localstatedir}"`
 AC_SUBST(UNBOUND_LOCALSTATE_DIR)
 if test $on_mingw = "no"; then
-  ub_conf_file=`eval echo "${sysconfdir}/unbound/unbound.conf"`
+  ub_conf_file="/etc/unbound/unbound.conf"
 else
   ub_conf_file="C:\\Program Files\\Unbound\\service.conf"
 fi
@@ -199,10 +199,10 @@ AC_SUBST(ub_conf_dir)
 
 # Determine run, chroot directory and pidfile locations
 AC_ARG_WITH(run-dir,
-    AS_HELP_STRING([--with-run-dir=path],[set default directory to chdir to (by default dir part of cfg file)]),
+    AS_HELP_STRING([--with-run-dir=path],[set default directory to chdir to (default /var/unbound)]),
     UNBOUND_RUN_DIR="$withval",
 if test $on_mingw = no; then
-    UNBOUND_RUN_DIR=`dirname "$ub_conf_file"`
+    UNBOUND_RUN_DIR="/var/unbound"
 else
     UNBOUND_RUN_DIR=""
 fi
@@ -212,10 +212,10 @@ ACX_ESCAPE_BACKSLASH($UNBOUND_RUN_DIR, hdr_run)
 AC_DEFINE_UNQUOTED(RUN_DIR, ["$hdr_run"], [Directory to chdir to])
 
 AC_ARG_WITH(chroot-dir,
-    AS_HELP_STRING([--with-chroot-dir=path],[set default directory to chroot to (by default same as run-dir)]),
+    AS_HELP_STRING([--with-chroot-dir=path],[set default directory to chroot to (default no chroot)]),
     UNBOUND_CHROOT_DIR="$withval",
 if test $on_mingw = no; then
-    UNBOUND_CHROOT_DIR="$UNBOUND_RUN_DIR"
+    UNBOUND_CHROOT_DIR=""
 else
     UNBOUND_CHROOT_DIR=""
 fi
@@ -232,10 +232,10 @@ AC_SUBST(UNBOUND_SHARE_DIR)
 AC_DEFINE_UNQUOTED(SHARE_DIR, ["$UNBOUND_SHARE_DIR"], [Shared data])
 
 AC_ARG_WITH(pidfile,
-    AS_HELP_STRING([--with-pidfile=filename],[set default pathname to unbound pidfile (default run-dir/unbound.pid)]),
+    AS_HELP_STRING([--with-pidfile=filename],[set default pathname to unbound pidfile (default /var/run/local_unbound.pid)]),
     UNBOUND_PIDFILE="$withval",
 if test $on_mingw = no; then
-    UNBOUND_PIDFILE="$UNBOUND_RUN_DIR/unbound.pid"
+    UNBOUND_PIDFILE="/var/run/local_unbound.pid"
 else
     UNBOUND_PIDFILE=""
 fi
@@ -258,10 +258,10 @@ ACX_ESCAPE_BACKSLASH($UNBOUND_ROOTKEY_FILE, hdr_rkey)
 AC_DEFINE_UNQUOTED(ROOT_ANCHOR_FILE, ["$hdr_rkey"], [default rootkey location])
 
 AC_ARG_WITH(rootcert-file,
-    AS_HELP_STRING([--with-rootcert-file=filename],[set default pathname to root update certificate file (default run-dir/icannbundle.pem).  This file need not exist if you are content with the builtin.]),
+    AS_HELP_STRING([--with-rootcert-file=filename],[set default pathname to root update certificate file (default /etc/unbound/icannbundle.pem).  This file need not exist if you are content with the builtin.]),
     UNBOUND_ROOTCERT_FILE="$withval",
 if test $on_mingw = no; then
-    UNBOUND_ROOTCERT_FILE="$UNBOUND_RUN_DIR/icannbundle.pem"
+    UNBOUND_ROOTCERT_FILE="/etc/unbound/icannbundle.pem"
 else
     UNBOUND_ROOTCERT_FILE="C:\\Program Files\\Unbound\\icannbundle.pem"
 fi

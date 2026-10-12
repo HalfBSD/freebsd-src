@@ -81,6 +81,11 @@ Stop the server with:
 
     $ kill `cat @UNBOUND_PIDFILE@`
 
+HalfBSD setup creates this configuration once and preserves administrator
+changes on subsequent runs. LAN-zone settings and remote-control settings belong
+in the main file; no generated control, LAN-zone, or conf.d includes are required.
+Local-zone, local-data and local-data-ptr records may be maintained manually.
+
 The source distribution contains an extensive :file:`example.conf` file with
 all the options.
 
@@ -90,6 +95,7 @@ all the options.
     server:
         directory: "@UNBOUND_RUN_DIR@"
         username: unbound
+        auto-trust-anchor-file: /var/unbound/root.key
         # make sure unbound can access entropy from inside the chroot.
         # e.g. on linux the use these commands (on BSD, devfs(8) is used):
         #      mount --bind -n /dev/urandom @UNBOUND_RUN_DIR@/dev/urandom
@@ -1131,7 +1137,10 @@ These options are part of the ``server:`` section.
     If given, a *chroot(2)* is done to the given directory.
     If you give ``""`` no *chroot(2)* is performed.
 
-    Default: @UNBOUND_CHROOT_DIR@
+    Default: ``""`` (no chroot). HalfBSD keeps configuration under
+    :file:`/etc/unbound` and mutable trust-anchor state under :file:`/var/unbound`.
+    An explicit chroot requires all files needed for reload and maintenance to
+    be reachable inside it; HalfBSD does not create configuration copies or mounts.
 
 
 @@UAHL@unbound.conf@username@@: *<name>*
@@ -3600,8 +3609,8 @@ Files
 @UNBOUND_RUN_DIR@
     default Unbound working directory.
 
-@UNBOUND_CHROOT_DIR@
-    default *chroot(2)* location.
+/var/unbound/root.key
+    mutable DNSSEC trust-anchor state, maintained by the unbound user.
 
 @ub_conf_file@
     Unbound configuration file.

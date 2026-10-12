@@ -36,7 +36,9 @@ export LDFLAGS="-L$ldnsobj"
 cd $unbound
 ./configure \
 	--prefix= --exec-prefix=/usr \
-	--with-conf-file=/var/unbound/unbound.conf \
+	--with-conf-file=/etc/unbound/unbound.conf \
 	--with-run-dir=/var/unbound \
+	--with-chroot-dir= \
+	--with-pidfile=/var/run/local_unbound.pid \
 	--with-username=unbound
 mv config.h ../../lib/libunbound

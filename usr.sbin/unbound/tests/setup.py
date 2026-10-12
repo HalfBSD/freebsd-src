@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import subprocess
 import shlex
+import sys
 import tempfile
 
 
@@ -87,3 +88,6 @@ run_rc_command() {{ echo "$1" >> "$TRACE"; }}
         assert trace.read_text().splitlines() == expected
         assert (result.returncode == 0) == (helper_status == '0' and check_status == '0')
     print('PASS service setup validates before replacing a running daemon; failures do not restart')
+
+# Keep the installworld upgrade case in the usual setup regression entry point.
+subprocess.run([sys.executable, str(script.parents[1] / 'tests/installworld.py')], check=True)

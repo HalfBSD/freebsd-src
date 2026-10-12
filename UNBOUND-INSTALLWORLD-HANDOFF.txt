@@ -1,0 +1,79 @@
+HalfBSD Unbound installworld setup dependency fix
+Date: 2026-10-11
+Status: Implemented and tested on Linux; included in the user-authorized installworld fix commit. Commit and push authorized on 2026-10-11.
+
+Cause
+
+libexec/rc/rc.d/Makefile lists local_unbound in a CONFGROUP under /etc/rc.d.
+share/mk/bsd.confs.mk installs that group through installconfig. Normal
+installworld's reinstall path invokes install, while distribution invokes
+installconfig separately. Rc scripts remain configuration files managed by
+etcupdate/installconfig; installing new program binaries does not guarantee
+that /etc/rc.d/local_unbound has been updated.
+
+Thus the old post-install command, /usr/sbin/service local_unbound setup,
+could dispatch through an old /etc/rc.d/local_unbound that still supplies -f
+to the newly installed local-unbound-setup, whose parser rejects that option.
+
+Fix
+
+Makefile.inc1 now invokes:
+  /bin/sh ${.CURDIR:Q}/libexec/rc/rc.d/local_unbound setup
+
+The post-install hook runs the matching source rc script against the newly
+installed utilities. It still loads the system's rc.subr/rc.conf, retains custom
+configuration/control/anchor paths and outgoing TLS preferences, and uses the
+existing idempotent setup, config validation and running-daemon restart behavior.
+Restart dispatch remains within the loaded source rc functions. Installed rc
+files are not overwritten or bypassed for ordinary boot/service operation;
+etcupdate still merges them normally.
+
+Existing hook guards are unchanged: live, privileged installworld only, with
+Unbound enabled and no cross-build host. Staged/unprivileged installation does
+not run live initialization. No obsolete option or generated forwarding
+configuration was restored. Resolver/provider source and trust-anchor mechanisms
+are unchanged. The existing source service's firewall-readiness checks remain.
+
+Regression coverage
+
+New usr.sbin/unbound/tests/installworld.py runs the real current setup utility
+and adapted source rc script in an isolated filesystem. It creates an old
+installed rc script passing -f and proves that the former service dispatch fails.
+It then executes the actual updated make recipe with a quoted source-root path
+containing a space, leaving the stale installed rc script untouched.
+
+Five new PASS groups verify:
+- The exact obsolete -f / current utility mismatch is reproduced.
+- The new hook succeeds, preserves local A/PTR/zone configuration, outgoing TLS,
+  existing mutable anchor state, and remains idempotent without forward.conf.
+- Missing-anchor startup still invokes the existing anchor bootstrap path.
+- Setup and validation failures propagate without restarting the daemon.
+- rc.conf custom configuration/control/anchor paths reach the new utility.
+
+The test is invoked by the existing setup.py entry point. Combined result:
+  PYTHONDONTWRITEBYTECODE=1 python3 usr.sbin/unbound/tests/setup.py
+  8 PASS groups, exit zero.
+Standalone installworld.py: 5 PASS groups, exit zero.
+sh -n on the retained source service and setup utility: PASS.
+git diff --check: PASS.
+
+Verification limits
+
+Tests ran on Linux with real setup/migration file operations. rc.subr dispatch,
+process/service actions, privilege switching, firewall status, configuration
+checker and trust-anchor bootstrap were mocked. The anchor fixture is test-only,
+not a real trust anchor. No real DNS daemon was stopped/restarted, no native
+installworld/buildworld was run, and no live DNSSEC bootstrap was performed.
+Make guard expressions were inspected; bmake is unavailable on this host.
+
+On Anvil, rerun installworld with the stale installed local_unbound script,
+verify post-install initialization succeeds, and then complete etcupdate as
+usual. Normal configuration-validation, service-start and firewall-readiness
+requirements still apply; this fix does not suppress their failures.
+No tools or packages were downloaded or installed.
+
+Files changed
+  Makefile.inc1
+  usr.sbin/unbound/tests/setup.py
+  usr.sbin/unbound/tests/installworld.py (new)
+  UNBOUND-INSTALLWORLD-HANDOFF.txt (this report)

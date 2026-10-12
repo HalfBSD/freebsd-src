@@ -1324,16 +1324,7 @@ int comm_point_perform_accept(struct comm_point* c,
 			*addrlen);
 		return -1;
 	}
-	if(c->tcp_conn_limit && c->type == comm_tcp_accept) {
-		c->tcl_addr = tcl_addr_lookup(c->tcp_conn_limit, addr, *addrlen);
-		if(!tcl_new_connection(c->tcl_addr)) {
-			if(verbosity >= 3)
-				log_err_addr("accept rejected",
-				"connection limit exceeded", addr, *addrlen);
-			sock_close(new_fd);
-			return -1;
-		}
-	}
+
 #ifndef HAVE_ACCEPT4
 	fd_set_nonblock(new_fd);
 #endif
@@ -1397,6 +1388,8 @@ comm_point_tcp_win_bio_cb(struct comm_point* c, void* thessl)
 #endif
 
 
+static void reclaim_tcp_handler(struct comm_point* c);
+
 void
 comm_point_tcp_accept_callback(int fd, short event, void* arg)
 {
@@ -1443,6 +1436,24 @@ comm_point_tcp_accept_callback(int fd, short event, void* arg)
 	if(new_fd == -1) {
 		return;
 	}
+	/* The accepted handler owns the count, never the listening socket.
+	 * Store the entry only after acquiring quota so rejected accepts cannot
+	 * release another connection's count during cleanup. */
+	log_assert(c_hdl->tcl_addr == NULL);
+	if(c->tcp_conn_limit) {
+		struct tcl_addr* tcl = tcl_addr_lookup(c->tcp_conn_limit,
+			&c_hdl->repinfo.remote_addr, c_hdl->repinfo.remote_addrlen);
+		if(!tcl_new_connection(tcl)) {
+			if(verbosity >= 3)
+				log_err_addr("accept rejected",
+					"connection limit exceeded",
+					&c_hdl->repinfo.remote_addr,
+					c_hdl->repinfo.remote_addrlen);
+			sock_close(new_fd);
+			return;
+		}
+		c_hdl->tcl_addr = tcl;
+	}
 	/* Copy remote_address to client_address.
 	 * Simplest way/time for streams to do that. */
 	c_hdl->repinfo.client_addrlen = c_hdl->repinfo.remote_addrlen;
@@ -1464,6 +1475,8 @@ comm_point_tcp_accept_callback(int fd, short event, void* arg)
 		comm_point_stop_listening(c);
 	}
 	setup_tcp_handler(c_hdl, new_fd, c->cur_tcp_count, c->max_tcp_count);
+	if(!c_hdl->event_added)
+		reclaim_tcp_handler(c_hdl);
 }
 
 /** Make tcp handler free for next assignment */
@@ -3972,6 +3985,7 @@ comm_point_close(struct comm_point* c)
 		}
 	}
 	tcl_close_connection(c->tcl_addr);
+	c->tcl_addr = NULL;
 	if(c->tcp_req_info)
 		tcp_req_info_clear(c->tcp_req_info);
 

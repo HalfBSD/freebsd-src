@@ -402,13 +402,23 @@ forward-zone:
                     response = b''
                 assert not response, response
                 assert query(port, 'host.home.test.', source='127.0.0.5')[0] & 15 == 0
-            # The existing limiter does not release this quota on close in
-            # either baseline or reduced builds; that separate bug is reported.
+            # FIN handling is asynchronous. Each closed connection must release
+            # quota before another query from the same client can succeed.
+            for _ in range(3):
+                deadline = time.monotonic() + 3
+                while True:
+                    try:
+                        assert query(port, 'host.home.test.', tcp=True, source='127.0.0.5')[0] & 15 == 0
+                        break
+                    except (OSError, EOFError):
+                        if time.monotonic() >= deadline:
+                            raise
+                        time.sleep(.03)
             write_config(upstream.port)
             assert 'ok' in control('reload')
             time.sleep(.3)
             assert query(port, 'host.home.test.', tcp=True, source='127.0.0.5')[0] & 15 == 0
-            print('PASS retained TCP connection cap, ordinary UDP, and removing the cap by reload')
+            print('PASS TCP connection cap, quota release on close, ordinary UDP, and cap removal by reload')
 
             for tcp in (False, True):
                 assert (1, socket.inet_aton('192.0.2.44')) in query(

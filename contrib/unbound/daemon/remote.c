@@ -4786,9 +4786,13 @@ fr_construct_from_config(struct fast_reload_thread* fr,
 		fr_construct_clear(ct);
 		return 0;
 	}
-	if(fr->worker->daemon->tcl->tree.count != 0)
-		fr->worker->daemon->fast_reload_tcl_has_changes = 1;
-	else	fr->worker->daemon->fast_reload_tcl_has_changes = 0;
+	/* Active handlers must be rebound and counted before accepts resume.
+	 * A nopause swap would race with their old/new accounting references. */
+	fr->worker->daemon->fast_reload_tcl_has_changes =
+		(fr->worker->daemon->tcl->tree.count != 0 ||
+		ct->tcl->tree.count != 0);
+	if(fr->worker->daemon->fast_reload_tcl_has_changes)
+		fr->fr_nopause = 0;
 	if(fr_poll_for_quit(fr))
 		return 1;
 
@@ -5596,6 +5600,8 @@ fr_poll_for_ack(struct fast_reload_thread* fr)
 	}
 }
 
+static void tcl_recount_open(struct listen_dnsport* front);
+
 /** fast reload thread, reload ipc communication to stop and start threads. */
 static int
 fr_reload_ipc(struct fast_reload_thread* fr, struct config_file* newcfg,
@@ -5608,6 +5614,13 @@ fr_reload_ipc(struct fast_reload_thread* fr, struct config_file* newcfg,
 	}
 	if(!fr_reload_config(fr, newcfg, ct)) {
 		result = 0;
+	} else if(fr->worker->daemon->fast_reload_tcl_has_changes) {
+		struct daemon* daemon = fr->worker->daemon;
+		int i;
+		/* Recount every worker before any worker can accept again. */
+		log_assert(!fr->fr_nopause);
+		for(i=0; i<daemon->num; i++)
+			tcl_recount_open(daemon->workers[i]->front);
 	}
 	if(!fr->fr_nopause) {
 		fr_send_notification(fr, fast_reload_notification_reload_start);
@@ -6401,35 +6414,33 @@ fr_worker_pickup_mesh(struct worker* worker)
 #endif
 }
 
-/**
- * Remove the old tcl_addr entries from the open connections.
- * They are only incremented when an accept is performed on a tcp comm point.
+/** Rebind active connections to the new quota tree while workers are paused.
+ * Existing connections remain open even if a new limit is below their count.
+ * The retired tree owns the old counters until reload cleanup frees it.
  * @param front: listening comm ports of the worker.
  */
 static void
-tcl_remove_old(struct listen_dnsport* front)
+tcl_recount_open(struct listen_dnsport* front)
 {
 	struct listen_list* l;
-	l = front->cps;
-	while(l) {
-		if(l->com->type == comm_tcp_accept) {
-			int i;
-			for(i=0; i<l->com->max_tcp_count; i++) {
-				if(l->com->tcp_handlers[i]->tcl_addr) {
-					/* Because the increment of the
-					 * connection limit was in the old
-					 * tcl list, the new list does not
-					 * need a decrement. With NULL it is
-					 * not decremented when the connection
-					 * is done, and also there is no
-					 * reference to the old connection
-					 * limit structure. */
-					l->com->tcp_handlers[i]->tcl_addr =
-						NULL;
-				}
+	for(l = front->cps; l; l = l->next) {
+		int i;
+		if(l->com->type != comm_tcp_accept)
+			continue;
+		for(i=0; i<l->com->max_tcp_count; i++) {
+			struct comm_point* c = l->com->tcp_handlers[i];
+			tcl_close_connection(c->tcl_addr);
+			c->tcl_addr = NULL;
+			if(c->fd == -1 || !l->com->tcp_conn_limit)
+				continue;
+			c->tcl_addr = tcl_addr_lookup(l->com->tcp_conn_limit,
+				&c->repinfo.remote_addr, c->repinfo.remote_addrlen);
+			if(c->tcl_addr) {
+				lock_quick_lock(&c->tcl_addr->lock);
+				c->tcl_addr->count++;
+				lock_quick_unlock(&c->tcl_addr->lock);
 			}
 		}
-		l = l->next;
 	}
 }
 
@@ -6729,11 +6740,6 @@ fast_reload_worker_pickup_changes(struct worker* worker)
 	 * swapped in trees, and the worker has been running with the
 	 * older information for some time. */
 	fr_worker_pickup_mesh(worker);
-
-	/* If the tcp connection limit has changed, the open connections
-	 * need to remove their reference for the old tcp limits counters. */
-	if(worker->daemon->fast_reload_tcl_has_changes)
-		tcl_remove_old(worker->front);
 
 	/* If there are zonemd lookups, but the zone was deleted, the
 	 * lookups should be cancelled. */

@@ -332,3 +332,10 @@ IPFW-FOLLOWUP-HANDOFF.txt for restrictive defaults, early initialization,
 persistent deny guard, DNS/SSH startup gates, explicit LAN settings, tests and
 native acceptance limits. The original audit above describes the fourth-pass
 commit baseline; native packet-filter verification remains outstanding.
+
+TCP ACCOUNTING FOLLOW-UP (2026-10-11)
+The baseline-confirmed TCP quota leak is fixed in the user-authorized TCP accounting commit,
+including balanced error cleanup and active-connection accounting across fast
+reload. See UNBOUND-TCP-ACCOUNTING-HANDOFF.txt for ownership analysis, changes,
+regressions, sanitizer results, and native verification limits. The earlier
+known-issue section describes the fourth-pass baseline, not this fixed state.

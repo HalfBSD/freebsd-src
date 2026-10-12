@@ -1,0 +1,151 @@
+HalfBSD Unbound TCP connection accounting fix
+Date: 2026-10-11
+Branch: halfbsd2
+Baseline: 738a9c5be4ce
+Status: Implemented and tested on Linux; included in the user-authorized TCP accounting fix commit. Commit and push authorized on 2026-10-11.
+
+CONFIRMED ROOT CAUSE
+
+comm_point_perform_accept incremented a matching tcl_addr counter and stored
+its pointer on the listening comm_point. The accepted child kept NULL, so
+comm_point_close(child) could not release its quota. A rejected accept also
+left a non-owned entry on the listener, risking an incorrect decrement during
+listener destruction. This is the pre-existing fourth-pass finding, reproduced
+before modifying production code: the first TCP DNS query from 127.0.0.5 worked,
+but another query after close failed with ConnectionResetError for the entire
+bounded cleanup wait. Evidence: /tmp/unbound-tcp-limits-before.log.
+
+OWNERSHIP AND FIX
+
+Quota lookup/acquisition now occurs in the TCP accept callback after accept
+succeeds, and stores the entry on the accepted handler only after acquiring
+quota. The listener owns no connection count. A rejected accept closes the new
+socket without storing a quota pointer. Event allocation precedes accept and
+therefore acquires no quota on failure.
+
+comm_point_close releases the count and immediately clears the pointer. Repeated
+close/delete/reclamation is safe and does not decrement another connection's
+count. If registering the accepted handler's event fails, the existing reclaim
+path closes it, releases quota, and returns it to the handler pool immediately.
+
+Read EOF/errors, write errors, peer resets, timeout, dropped replies, and listener
+or worker destruction already converge on reclamation/comm_point_close. Those
+paths now have the correct quota entry. No alternative cleanup framework was
+added. tcl_new_connection/tcl_close_connection already provide locked accounting;
+tcp_conn_limit.c needed no changes.
+
+The pointer borrows memory from the tcl_list region; the child owns one count,
+not the entry allocation. Ordinary reload/shutdown destroys worker listeners
+and children before resetting/freeing that region. Fast reload retains the old
+region in its construction structure until changes and worker acknowledgments
+complete, so old references can be released before that region is destroyed.
+
+RELATED FAST-RELOAD ACCOUNTING
+
+The former fast-reload path cleared active handlers' quota pointers without
+counting them in the replacement tree. It also missed newly added limits when
+the old tree was empty. The replacement now releases old counts and rebinds/
+counts every active handler in the new tree while ALL workers are paused, before
+ANY worker resumes accepting. Newly limited connections are included. Lowering
+a limit retains existing connections and their true count; new accepts remain
+blocked until active occupancy drops below the new limit. Removing limits clears
+old references and leaves clients unrestricted.
+
+If either the old or replacement tree contains limits, fast_reload +p uses the
+existing synchronized pause mechanism. A nopause tree swap cannot safely rebind
+live accounting pointers while accepts/closes proceed. No new option or connection
+implementation was introduced; nopause behavior without limits is unchanged.
+
+FILES MODIFIED
+
+Production:
+  contrib/unbound/util/netevent.c
+  contrib/unbound/util/netevent.h (quota ownership comment)
+  contrib/unbound/daemon/remote.c (TCP quota reload lifecycle only)
+Regression:
+  usr.sbin/unbound/tests/forwarding.py (replace known-leak workaround with reuse test)
+  usr.sbin/unbound/tests/tcp-limits.py (new standalone TCP lifecycle suite)
+  usr.sbin/unbound/tests/tcp-limit-cleanup.c (new fault-injection unit test)
+Reports:
+  UNBOUND-TCP-ACCOUNTING-HANDOFF.txt
+  UNBOUND-FOURTH-PASS-HANDOFF.txt (resolved-issue pointer)
+
+REGRESSIONS AND RESULTS
+
+Normal Linux GCC -O2/LTO build: all four retained utilities compile/link:
+  unbound, unbound-control, unbound-checkconf, unbound-anchor.
+Separate GCC -O1 ASan/UBSan build: all four also compile/link.
+
+Targeted tcp-limits.py: 15 PASS groups in both builds.
+- Repeated TCP DNS query/close/reconnect with limit one.
+- Simultaneous cap and reuse after releasing a held connection.
+- Independent limits for 127.0.0.5 and 127.0.0.6; unrestricted 127.0.0.9.
+- Peer RST, partial-frame RST/read cleanup, and server idle timeout.
+- Ordinary reload closes old connections; unchanged/modified limits work.
+- Fast reload and requested +p preserve active connections and correct counts
+  with unchanged, raised, lowered, removed and newly added limits.
+- One- and two-worker cases, plus IPv6 ::1 sequential/simultaneous and active
+  fast-reload accounting. IPv6 actually ran on this Linux host.
+- Shutdown with an active counted connection.
+
+Fault-injection unit: PASS, normal and ASan/UBSan builds. Exercises event allocation
+failure before accept, event registration failure after quota acquisition,
+rejected accept with another client connection active, repeated close, deterministic
+read/write failures, timeout, and listener deletion with an active connection.
+It inspects count==0 and cleared pointers after release. Linker --wrap supplies
+faults in test code; no production injection hooks were added.
+
+Existing forwarding.py: 25 PASS groups (includes the new close/reuse assertion).
+Existing providers.py: 9 PASS groups.
+Existing setup.py: 3 PASS groups.
+Strict syntax checks: PASS (-Wall, -Werror=misleading-indentation,
+-Werror=unused-function) for modified production C and the new C test.
+git diff --check: PASS.
+
+ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 and
+UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1: targeted Python suite and fault
+unit both exit zero, with no sanitizer findings. Existing generated-flex and
+const-discard compiler warnings remain. No bundled upstream testcode/testdata
+or other TCP-specific suites exist in this reduced checkout beyond the retained
+forwarding coverage and the new tests.
+
+REPRODUCTION
+
+BUILD=/path/to/configured/compiled/contrib-unbound-copy
+make -C "$BUILD" -j4 unbound unbound-control unbound-checkconf unbound-anchor
+PYTHONDONTWRITEBYTECODE=1 python3 usr.sbin/unbound/tests/tcp-limits.py "$BUILD"
+PYTHONDONTWRITEBYTECODE=1 python3 usr.sbin/unbound/tests/forwarding.py "$BUILD"
+PYTHONDONTWRITEBYTECODE=1 python3 usr.sbin/unbound/tests/providers.py "$BUILD"
+PYTHONDONTWRITEBYTECODE=1 python3 usr.sbin/unbound/tests/setup.py
+cc -I"$BUILD" -Icontrib/unbound \
+  -Wl,--wrap=ub_event_new -Wl,--wrap=ub_event_add \
+  -Wl,--wrap=recv -Wl,--wrap=writev \
+  -o /tmp/unbound-tcp-limit-cleanup usr.sbin/unbound/tests/tcp-limit-cleanup.c \
+  "$BUILD/.libs/libunbound.a" -lssl -lcrypto -lpthread
+/tmp/unbound-tcp-limit-cleanup
+
+Normal build: /tmp/unbound-pass4-acl (updated disposable build copy).
+Sanitizer build: /tmp/unbound-tcp-asan.
+Sanitizer configure: --with-libevent=no,
+  CFLAGS='-g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer -fno-pie'
+  LDFLAGS='-fsanitize=address,undefined -no-pie'
+Use the same sanitizer flags when linking the C unit to that static library.
+Logs: /tmp/unbound-tcp-{limits-before,limits-after,limits-build,forwarding,
+providers,setup,limits-asan,limit-cleanup,limit-cleanup-asan,asan-build}.log.
+No tools/packages downloaded or installed.
+
+SCOPE AND NEXT STEP
+
+No remaining quota-accounting failure was observed in these tests. Tested
+ownership/error paths are now balanced; no claim is made of exhaustive coverage
+of every OS-specific failure or event backend. Tests used the built-in mini-event
+backend on Linux, not native HalfBSD, libevent, or a deployed chroot/UID setup.
+
+The DNS provider hierarchy, iterator, forwarding/caching/DNSSEC algorithms,
+configuration paths, IPFW, SSH, removed ACL subsystem, and Capsicum code are
+unchanged. Existing DNS/TLS/control suites pass. No source-reduction pass or new
+configuration directives are part of this fix.
+
+Next: buildworld/buildkernel and native testing on Anvil. Run the same TCP lifecycle
+suite against native binaries, verify deployed reload/shutdown and quota behavior,
+and perform the outstanding native IPFW boot/packet checks from its handoff.

@@ -335,7 +335,7 @@ struct comm_point {
 
 	/** if set, check for connection limit on tcp accept. */
 	struct tcl_list* tcp_conn_limit;
-	/** the entry for the connection. */
+	/** Owned quota entry for an accepted connection; cleared on close. */
 	struct tcl_addr* tcl_addr;
 
 	/** the structure to keep track of open requests on this channel */

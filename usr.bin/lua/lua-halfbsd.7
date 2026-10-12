@@ -1,0 +1,334 @@
+." SPDX-License-Identifier: BSD-2-Clause
+.Dd October 12, 2026
+.Dt LUA-HALFBSD 7
+.Os
+.Sh NAME
+.Nm lua-halfbsd
+.Nd native Lua process and operating system interfaces
+.Sh DESCRIPTION
+The HalfBSD userland interpreter uses Lua 5.4.8 from
+.Pa contrib/lua/src ,
+the same source used by the boot loader and flua.
+The boot loader uses a restricted freestanding environment;
+this interpreter uses all ordinary userland standard libraries.
+The installed static libraries are
+.Pa liblua.a , libhalfproc.a ,
+and
+.Pa libhalfbsd.a .
+The Lua C API headers are in
+.Pa /usr/include/lua .
+Applications call
+.Fn halfbsd_openlibs
+instead of
+.Fn luaL_openlibs
+to preload the native modules.
+.Pp
+This is a foundation for future orchestration.
+Installing it does not modify init, rc, services, or shutdown behavior.
+.Sh ERRORS AND OWNERSHIP
+Invalid arguments raise Lua errors.
+Operating system failures return
+.Dq nil, error .
+Error tables contain
+.Sy kind , code , name , message , operation
+and, when relevant,
+.Sy stage .
+The code is the native errno; an unmapped errno name is
+.Sq UNKNOWN .
+Timeouts have kind
+.Sq timeout .
+Lua allocation failures raise exceptions.
+Nonzero child exits and signal termination are successful observations,
+not execution failures; inspect the result table.
+.Pp
+A process result has
+.Sy pid , state , own_group , started
+and, after completion,
+.Sy finished .
+Times use the monotonic clock.
+States are
+.Sq running , exited , signaled ,
+or
+.Sq lost .
+Exited results include
+.Sy exit_code
+and
+.Sy success ;
+signaled results include
+.Sy signal , core_dumped
+and false
+.Sy success .
+Lost results report native
+.Sy code
+and must not be treated as successful exits.
+.Pp
+Process descriptors identify children without PID reuse races.
+A separate native thread owns reaping; Lua garbage collection does not
+terminate children or abandon them as zombies.
+Dropping the last Lua process handle does not stop a service.
+Closing the Lua state lets its reaper continue until remaining children exit.
+Explicitly terminate or shut down services before destroying their manager.
+This library manages its own direct children, not arbitrary adopted children.
+Do not install a competing waitpid reaper for these children.
+.Pp
+File descriptor handles have
+.Sy close , fileno , nonblock , read
+and
+.Sy write
+methods, and support Lua to-be-closed variables.
+Close is idempotent.
+Fileno returns the live descriptor number.
+Nonblock takes a boolean and changes the shared open-file description.
+Read takes an optional byte count, 1 through 1048576, default 65536.
+It returns a string, nil at EOF, or nil and an error on failure.
+Write takes a binary string of at most 64 MiB and returns bytes written;
+partial writes are possible.
+Nonblocking IO may return EAGAIN.
+SIGPIPE from a broken pipe is reported as EPIPE without killing the caller.
+.Pp
+Process handles retain redirected IO resources until exit.
+Pipe endpoints share resource ownership so accidental garbage collection does
+not unexpectedly close the other endpoint.
+Explicitly close unused pipe ends, particularly stdin writers, to deliver EOF.
+Event registrations retain their own duplicated descriptors and targets;
+explicitly cancel their watches before closing a watched descriptor.
+.Sh PROCESS MODULE
+.Bd -literal -offset indent
+local proc = require("proc")
+local child, err = proc.spawn({"/usr/sbin/example", "-f"}, {
+    cwd="/var/empty", user="nobody", group="nogroup",
+    inherit_env=false, env={PATH="/bin:/usr/bin"},
+    stdin="null", stdout={path="/var/log/example",append=true},
+    stderr="inherit", new_session=true,
+})
+.Ed
+.Pp
+.Sy spawn(argv, options)
+requires a dense array of strings including the executable at index 1.
+Executable paths are passed directly to execve; there is no shell or PATH search.
+The call returns a handle only after a close-on-exec pipe confirms execution.
+Failures identify their initialization stage.
+A handle denotes creation, not application readiness.
+The arguments and environment together must fit ARG_MAX.
+At most 4096 arguments and 1024 active children per context are allowed.
+.Pp
+Options are:
+.Bl -tag -width inherit_fds
+.It Sy cwd
+Working directory, changed before credential transition.
+.It Sy env, inherit_env
+Environment map of string names to string values or false to unset a name.
+Inheritance defaults to true; false replaces the inherited environment entirely.
+.It Sy user, group, groups
+User and primary group names or numeric IDs.
+A user must resolve in the account database so its supplementary groups can
+be resolved before forking.
+The optional dense numeric groups array replaces supplementary membership.
+A group-only transition clears inherited supplementary groups.
+Changes occur as setgroups, setresgid, then setresuid and fail closed.
+.It Sy stdin, stdout, stderr
+Default inherit, or the strings inherit, null, closed, or pipe;
+a descriptor handle; or a table with path, append and mode.
+File mode defaults to 0600. Symlink destinations are rejected.
+Path redirections accept regular files and character devices; use descriptor
+handles or anonymous pipes for other IO.
+Automatic pipes are available as child.stdin, child.stdout and child.stderr.
+They expose the parent-facing endpoint.
+.It Sy new_session, process_group
+Create a session, or a new process group without a new session.
+New sessions also create a process group.
+.It Sy inherit_fds
+At most 256 explicit handles or descriptor numbers at least 3.
+All other descriptors beyond the standard streams are closed in the child.
+.It Sy exec_timeout
+Bounded initialization/exec handshake, default 10 seconds.
+.El
+.Pp
+.Sy run(argv, options)
+returns a completed result table and accepts the same options plus:
+.Bl -tag -width output_limit
+.It Sy timeout
+Optional nonnegative wall duration in seconds after execution was confirmed.
+Timeouts terminate the child and return a timeout error.
+.It Sy grace
+TERM grace period before KILL, default 5 seconds.
+Forced termination has another bounded 5-second reap deadline.
+.It Sy input
+A binary string, at most 64 MiB, automatically piped to stdin.
+Automatic stdin pipes without input are closed to deliver EOF.
+.It Sy output_limit
+Per-stream captured output bound, default 1 MiB, maximum 64 MiB.
+With stdout or stderr set to pipe, run drains both concurrently and places
+captured strings in the result. Exceeding the bound terminates the child and
+returns EFBIG rather than allocating without limit.
+.El
+.Pp
+.Sy wait(child, timeout)
+returns a completed result or a timeout error.
+A missing timeout waits indefinitely; zero is nonblocking.
+.Sy wait_any(children, timeout)
+returns the dense array index and completed result.
+It does not consume an already-observed result; remove completed handles from
+the array before waiting for a different child.
+.Sy status(child)
+returns a current result without blocking.
+.Sy signal(child, signal, group)
+delivers a number or uppercase signal name, optionally prefixed SIG.
+It returns true on delivery, false for an already-exited child, or an error.
+.Sy kill(child, group)
+is signal KILL.
+.Sy terminate(child, grace, group)
+sends TERM, waits, then KILL if needed and returns a completed result.
+These functions are also child methods.
+.Pp
+Group signaling is permitted only for a session/group created by spawn and
+only while its leader remains unreaped; it never signals a recycled group ID.
+Descendants which escape the group require future job policy.
+.Sy active()
+returns a snapshot of active handles belonging to this context.
+.Sy shutdown(grace, group)
+terminates the snapshot with a shared grace deadline, followed by a shared
+5-second forced deadline; group defaults to true for owned groups.
+It returns true or an error.
+.Sy pipe(nonblocking)
+returns read and write handles.
+.Sy fd(number)
+duplicates an existing descriptor with close-on-exec protection.
+.Sh EVENT MODULE
+.Bd -literal -offset indent
+local event = require("halfbsd.event")
+local loop <close> = assert(event.new())
+loop:watch_process(child, function(e)
+    print(e.result.state)
+    loop:stop()
+end)
+assert(loop:run())
+.Ed
+.Pp
+New returns a loop or an error.
+Every watch function returns a unique numeric cancellation ID or an error.
+Each loop permits at most 4096 simultaneous watches.
+Callbacks receive a table with id, count, flags and eof.
+Descriptor and process events also carry target; process events carry result.
+Callbacks run synchronously on the Lua thread, never in a signal handler.
+.Bl -tag -width watch_process
+.It Sy watch_process(child, callback)
+One-shot process exit via EVFILT_PROCDESC, including registration after exit.
+The native reaper still must perform pdwait; an exit notification alone is
+not reaping. The callback receives the completed result.
+.It Sy watch_timer(seconds, callback, repeating)
+Positive interval, rounded upward to milliseconds.
+Defaults to one shot. Kernel timers do not busy-wait.
+.It Sy watch_signal(signal, callback)
+EVFILT_SIGNAL with the prior disposition restored on cancellation.
+A signal has one watcher process-wide. KILL, STOP and CHLD are not supported;
+use process watches for managed child exits.
+.It Sy watch_read(fd, callback), watch_write(fd, callback)
+EV_CLEAR readiness. Use nonblocking handles and drain or fill until EAGAIN.
+.It Sy watch_path(path, callback)
+Observe vnode write, delete, rename, attribute and revoke changes.
+Symlinks are rejected. Replacing a pathname does not retarget its old vnode;
+cancel and watch again when following a replacement is necessary.
+.It Sy cancel(id)
+Returns true if canceled, false for a nonexistent ID.
+.It Sy step(timeout)
+Waits for at most one callback, returning true for delivery and false for timeout
+or no watches. Timeout defaults to infinite and zero polls once.
+.It Sy run()
+Dispatches until stopped or no watches remain, returning true.
+.It Sy stop()
+Stops run after the current callback, preserving watches.
+.It Sy close()
+Cancels watches, restores signal dispositions and closes the kqueue.
+Idempotent; the loop is unusable afterward.
+.El
+.Pp
+Step and run return nil and an error on kernel failure.
+A callback exception is returned with kind callback and its original cause.
+Persistent watches remain registered; cancel or close before retrying.
+Blocking callbacks delay all other callbacks. Loops are not thread-safe.
+Dispatching the same loop recursively from a callback is rejected.
+.Sh OPERATING SYSTEM MODULE
+.Sy require("halfbsd.os")
+provides the following functions.
+Filesystem mutators return true or nil and an error.
+.Bl -tag -width atomic_replace
+.It Sy exists(path)
+True or false; unexpected errors remain errors.
+.It Sy stat(path, follow)
+Metadata table: type, uid, gid, mode, size, inode, device, links, mtime.
+Defaults to lstat; true follows the final link.
+.It Sy mkdir(path, mode), rmdir(path), unlink(path)
+Single-directory creation (default 0755) and explicit removal.
+No recursive deletion.
+.It Sy chmod(path, mode), chown(path, uid, gid)
+Change final-entry metadata without following the final symlink.
+Parent pathname components use ordinary filesystem semantics.
+.It Sy symlink(target, path), readlink(path)
+Create or read a link. Readlink returns a string or an error.
+.It Sy open(path, mode, permissions)
+Returns a descriptor; mode is read, write, append or exclusive.
+Permissions default to 0600. Final symlinks are rejected.
+.It Sy atomic_replace(path, data, mode)
+Binary data up to 64 MiB; default 0600.
+Walks parent components without following symlinks and rejects dot and dot-dot.
+Creates an exclusive random temporary file in the same directory, writes,
+sets permissions, fsyncs, renames and fsyncs the parent directory.
+An error includes committed=true if rename succeeded but directory sync failed.
+Replacement changes the file identity and ownership to the caller; it does not
+preserve ACLs, extended attributes or the replaced inode's other metadata.
+.It Sy hostname(), set_hostname(name)
+Read the hostname string or explicitly change it.
+.It Sy clock(kind)
+Seconds from monotonic (default) or realtime clock.
+.It Sy set_clock(seconds, nanoseconds)
+Explicit privileged realtime clock_settime; integer seconds, optional
+nanoseconds in 0 through 999999999.
+.It Sy user(name_or_id), group(name_or_id)
+Account metadata tables; failures preserve lookup errno.
+User fields: name, uid, gid, home, shell. Group fields: name, gid, members.
+.It Sy identity()
+PID, PPID, UID/EUID, GID/EGID, process group, session and supplementary groups.
+.It Sy getenv(name), setenv(name, value), environment()
+Read a variable (nil if absent), set/unset it (nil unsets), or snapshot all.
+.It Sy signal_disposition(signal, disposition)
+Explicit ignore or default; rejects watched signals and KILL/STOP/CHLD.
+Signal handlers which execute Lua asynchronously are deliberately absent.
+.It Sy mount(options, flags), unmount(path, flags)
+Explicit native nmount key/value strings (64 entries, at most 1 MiB) and unmount.
+Flags are numeric and default to zero. These require appropriate privilege.
+No filesystem is inferred and no shell is invoked.
+.El
+.Sh LOGGING MODULE
+.Sy require("halfbsd.log").new(options)
+returns a logger or an error.
+Options: console (default true, stderr), file (optional append destination),
+and service (default halfbsd).
+The file must be regular, is close-on-exec, rejects a final symlink,
+and is created mode 0600.
+.Sy logger:write(level, message, fields)
+returns true or nil and an error.
+Levels: debug, info, notice, warning, error, critical.
+Messages are binary strings up to 64 KiB; fields are at most 64 scalar values.
+Records contain an epoch timestamp, severity, service, message and optional fields.
+Control and non-ASCII bytes are escaped in JSON; no syslog daemon is required.
+Numeric formatting is independent of the caller's numeric locale.
+.Sy logger:close()
+closes the optional file and is idempotent.
+Console-only logging works before writable filesystems are available.
+Failures to one output do not prevent an attempt to write the other output.
+.Sh SECURITY CONSIDERATIONS
+These interfaces inherit the caller's authority and are not a sandbox.
+Use trusted scripts and explicit credentials, environments and descriptors.
+Privileged mount, hostname and metadata operations remain explicit.
+Lua standard libraries still include shell execution interfaces; proc never
+uses them implicitly.
+No Capsicum sandbox or replacement boot manager is installed.
+.Sh SEE ALSO
+.Xr lua 1 ,
+.Xr kqueue 2 ,
+.Xr pdfork 2 ,
+.Xr pdwait 2
+.Sh EXAMPLES
+Installed examples are in
+.Pa /usr/share/examples/halfbsd .

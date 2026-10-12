@@ -291,4 +291,6 @@ SUBDIR.${MK_TESTS}+= tests
 
 SUBDIR_PARALLEL=
 
+SUBDIR+= halfbsd
+
 .include <bsd.prog.mk>

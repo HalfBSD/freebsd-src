@@ -74,6 +74,7 @@ SUBDIR=	alias \
 	logins \
 	logname \
 	lsvfs \
+	lua \
 	lzmainfo \
 	m4 \
 	mdo \

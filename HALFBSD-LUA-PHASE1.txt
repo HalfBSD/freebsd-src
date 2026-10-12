@@ -1,0 +1,225 @@
+HALFBSD LUA PHASE 1 — IMPLEMENTATION AND NATIVE VALIDATION HANDOFF
+Date: 2026-10-12
+Branch: halfbsd2
+Status: implemented for native review/testing; NOT declared production validated.
+Commit/push: subsequently authorized by the user; native validation remains pending.
+Host: Linux. Native test target: Anvil running the current HalfBSD kernel/world.
+
+PROVENANCE AND ARCHITECTURE
+
+Lua 5.4.8 is already bundled in contrib/lua/src. This implementation uses those
+exact source paths. No Lua was downloaded, copied, vendored or installed from
+ports. Existing stand/liblua remains freestanding and restricted; existing flua
+remains unchanged. lib/liblua now installs its existing static archive and the
+current upstream API headers plus luaconf.local.h in /usr/include/lua. The older
+lib/liblua/luaconf.h is not exported as the public ABI.
+
+/usr/bin/lua uses upstream lua.c and all ordinary standard libraries, with
+native modules preloaded by halfbsd_openlibs. Existing Lua module search paths
+remain /usr/share/flua and /usr/lib/flua because liblua is shared with flua.
+The interpreter exports symbols for independently compiled Lua C modules.
+Runtime uses the existing runtime package; examples use the examples package.
+New libraries are static: libhalfproc.a (C process/resource ownership) and
+libhalfbsd.a (Lua bindings). libhalfproc depends on native pthread support;
+libhalfbsd also depends on in-tree Lua. There are no ports dependencies.
+
+Process identity uses pdfork(PD_CLOEXEC | PD_DAEMON) and process descriptors.
+Reaping uses pdwait(WEXITED | WNOHANG). A sleeping kqueue thread owns reaping,
+including when Lua handles are garbage collected or their Lua state closes.
+A kernel timer provides bounded recovery for missed/failed registrations; it is
+not a Lua polling scheduler. Event delivery to Lua uses a separate kqueue and
+EVFILT_PROCDESC, not PID-only registrations. Callbacks execute on the Lua thread.
+No cap_enter(), capability rights limiting, or Capsicum sandbox is introduced.
+
+The parent resolves users/groups, allocates arguments, and opens redirections
+before pdfork. The child performs descriptor setup, signal reset, optional
+session/group creation, chdir, setgroups/setresgid/setresuid, and execve. A bounded
+close-on-exec error pipe distinguishes creation from successful execution.
+Non-inherited descriptors are closed using close_range. No shell or PATH search
+is implicit. Native resource guards cover Lua allocation/exception cleanup.
+
+Process handles have deterministic results and descriptor-safe signaling.
+Group signals are allowed only for groups created by spawn while their leader
+is unreaped; this avoids signaling recycled IDs. Group members which outlive
+an already-reaped leader are deliberately not signaled by a stale numeric ID.
+No service-readiness claim is made merely because spawn succeeds.
+
+API AND DOCUMENTATION
+
+Read usr.bin/lua/lua-halfbsd.7 for function contracts and ownership details.
+Read usr.bin/lua/lua.1 for interpreter behavior.
+Working examples: share/examples/halfbsd/{foreground,pipe,filesystem}.lua.
+
+proc: spawn, run, status, wait, wait_any, signal, terminate, kill, active,
+shutdown, pipe and fd. Child methods expose lifecycle operations and automatic
+pipe endpoints. run concurrently feeds bounded input and drains both output
+pipes through kqueue, with timeout and output-limit handling.
+
+halfbsd.event: process exit, signal, kernel timer, read/write readiness, vnode
+changes, cancellation, stop, step, run and close. Signals have exclusive watcher
+ownership and restore previous dispositions. SIGCHLD is reserved for process
+ownership rather than Lua signal dispatch. Callback errors preserve their cause.
+
+halfbsd.os: metadata/existence, explicit directory/file removal, ownership and
+permissions, symlinks, managed file descriptors, atomic replacement, account
+lookup, identity, environment, hostname, clock reads/explicit realtime updates, signal disposition, native
+nmount/unmount. Privileged operations remain explicit. Atomic replacement walks
+parents through directory descriptors without following symlinks, writes a
+random exclusive temporary, fsyncs, renames, and fsyncs the directory. A failed
+post-rename directory sync reports committed=true. Replacement does not copy
+old ownership, ACLs or extended attributes; specify the intended permissions.
+
+halfbsd.log: console/file JSON records, timestamps, severity, service names,
+flat structured fields, byte escaping, locale-independent numeric formatting.
+No syslog service is required. File output is optional and append-only.
+
+BUILD INTEGRATION
+
+Modified: lib/Makefile, lib/liblua/Makefile, share/mk/{bsd,src}.libnames.mk,
+usr.bin/Makefile, tests/Makefile, share/examples/Makefile.
+New: lib/libhalfproc, lib/libhalfbsd, usr.bin/lua, tests/halfbsd,
+share/examples/halfbsd, and this handoff.
+No boot files, rc scripts, init, Unbound, IPFW, SSH, DNS hierarchy or security
+configuration have been modified. No new mandatory daemon is introduced.
+
+NATIVE BUILD AND TEST PROCEDURE — ANVIL
+
+The current tree includes pdwait and EVFILT_PROCDESC support. Test against the
+matching HalfBSD kernel and world; an older FreeBSD libc/kernel may not provide
+the required syscall. ENOSYS is a real failed prerequisite, not a passing test.
+
+1. Build using ordinary repository settings on FreeBSD:
+     cd /usr/src
+     make -j12 buildworld
+     make -j12 buildkernel
+   Use Anvil's normal KERNCONF/settings. No alternate Lua package is needed.
+2. Install/reboot using the established HalfBSD upgrade procedure. The new
+   runtime does not replace boot orchestration. Do not run examples as boot
+   services. Ensure tests are built/installed (WITH_TESTS=yes when necessary).
+3. Inspect:
+     /usr/bin/lua -E -v
+     /usr/bin/lua -E -e 'assert(require("proc")); assert(require("halfbsd.event")); assert(require("halfbsd.os")); assert(require("halfbsd.log"))'
+4. Run unprivileged and privileged cases through Kyua in a test-results folder:
+     kyua test -k /usr/tests/halfbsd/Kyuafile
+     kyua report
+   Root credential tests have require.user=root and modify child credentials
+   only. Ordinary cases need no root. If running a locally built interpreter,
+   configure the test's lua variable using Kyua's test_suites.FreeBSD.lua value.
+   Both native helper binaries must be built from this same tree.
+5. Save build logs, uname/freebsd-version output and the Kyua report. Repeat
+   lifecycle/ownership tests under load before accepting the foundation for
+   Phase 2. No test mounts, unmounts, changes hostname, or changes the host clock.
+6. For an instrumented native check, build the three static libraries,
+   interpreter and helpers with the same clang AddressSanitizer/UBSan flags
+   in an isolated object/staging tree. Run the same suite. Do not instrument or
+   replace the active boot system to perform this check.
+
+NATIVE AUTOMATED COVERAGE PREPARED (NOT EXECUTED HERE)
+
+Seven ATF cases:
+- processes: direct execution/nonzero exits; missing/non-executable programs;
+  failed cwd/credential lookup; argv holes/NUL/unknown options; shell-looking
+  arguments remain literal; environment inheritance/replacement/unsetting;
+  cwd; explicit descriptor inheritance and no incidental inheritance; closed
+  standard descriptor isolation; file/pipe IO and safe EPIPE; simultaneous stdin
+  feeding and dual-output draining; binary output and capture bounds.
+- lifecycle: concurrent children and wait_any; nonblocking waits; TERM/KILL;
+  graceful-to-forced timeout; already-exited handles; USR1 notification;
+  sessions/groups including descendant termination; active snapshots; garbage-collected handles; rapid creation;
+  bounded shutdown. Process-group escape policy is not implemented.
+- events: process exit including registration after exit; one-shot/repeating
+  timers; stop/cancel; read readiness; callback failure; signal notification;
+  vnode replacement; closed-loop validation.
+- filesystem: temporary records/directories, metadata, permissions, symlinks,
+  final-link replacement, refusal to follow parent symlinks, account/identity,
+  environment, clock/hostname reads and privileged argument validation.
+- logging: temporary file logging, escaping, structured fields, severity,
+  closed objects and missing destinations.
+- credentials (root only): a child becomes nobody with explicit cleared groups,
+  plus account-derived supplementary membership. Never changes host credentials.
+- ownership (native C embedding): temporary descriptor exhaustion through a
+  lowered per-process RLIMIT_NOFILE; interruption of a native event wait by
+  a signal delivered to the Lua thread; failure cleanup; repeated children; Lua
+  state destruction before a delayed child creates its marker; autonomous
+  reaping; no remaining children and no leaked descriptors afterward.
+
+Checks run on Linux MUST NOT be described as native process/kqueue validation.
+
+ACTUAL RESULTS ON THIS HOST
+
+PASS: exact in-tree Lua 5.4.8 compiled/executed with ordinary userland libraries.
+PASS: Lua test and example syntax; ATF shell syntax.
+PASS: nine new C translation units, syntax-only with WARN6-equivalent GCC
+      diagnostics and temporary declarations for unavailable FreeBSD syscalls.
+      These declarations do not establish ABI or native compilation success.
+PASS: bmake built from contrib/bmake; its bundled tests passed. All new library,
+      interpreter and test Makefiles parse with HalfBSD's make infrastructure.
+PASS: portable filesystem/logging bindings executed on Linux, including binary
+      descriptors, metadata, symlinks, atomic replacement, account lookup,
+      environment, structured errors and JSON logging.
+PASS: same portable smoke under AddressSanitizer, UndefinedBehaviorSanitizer
+      and LeakSanitizer without diagnostics. LeakSanitizer required execution
+      outside the ptrace-based sandbox. No process/kqueue assertions were run
+      against the temporary ENOSYS stubs used only for Linux linking.
+NOT RUN: native FreeBSD compilation/linking, ATF suite, process descriptors,
+         kqueue delivery, actual native credential changes, native sanitizer
+         ownership checks, buildworld/buildkernel.
+
+TOOLS / TEMPORARY ARTIFACTS
+
+Nothing downloaded or installed into the host system. /tmp/halfbsd-lua-check
+contains bmake built from contrib/bmake, Lua binaries built from contrib/lua,
+syntax-only FreeBSD declarations, ENOSYS link stubs, portable smoke scripts,
+build logs and a temporary test helper. The declarations and link stubs are
+not repository changes or a portability implementation. No libkqueue, external
+Lua, external interpreter or package was obtained.
+
+LIMITATIONS AND PHASE 2 BOUNDARIES
+
+Native results are pending, so Phase 1 is not yet certified production-ready.
+The implementation needs native review/testing before use near PID 1.
+The manager owns direct children; it does not adopt arbitrary descendants or
+implement service graphs, restart policy, readiness or a persistent control
+protocol. Restart policy can use finished timestamps and retained exit results.
+Group ownership cannot safely signal detached descendants after leader reaping;
+Phase 2 must define job/descendant policy explicitly rather than reuse stale IDs.
+Call proc.shutdown before ending an orchestrator; state destruction alone does
+not kill child services. Do not install another reaper for managed children.
+Standard Lua libraries remain available (including explicit shell APIs); Lua
+scripts are trusted code, not a sandbox. Parent path components of ordinary
+file APIs use ordinary filesystem semantics; only atomic_replace walks them
+without symlinks. Account lookups are bounded and may report ERANGE. Lua/native
+allocation exceptions remain exceptions; syscall failures preserve errno.
+Native privileged mount/hostname mutations, broader interruption stress and
+allocator fault injection need isolated test expansion/review on FreeBSD before
+production acceptance. Process supervision APIs must be reviewed against these
+native results before designing actual boot integration.
+
+C EMBEDDING / DEVELOPER LINKAGE
+
+Use <lua.h>, <lauxlib.h>, and <halfbsd_lua.h>. Create a state with
+luaL_newstate(), check for NULL, call halfbsd_openlibs(L), execute protected Lua
+chunks, report errors before lua_close(L). Call proc.shutdown explicitly before
+state destruction when services should stop. tests/halfbsd/ownership_helper.c
+is a working embedding/resource-lifetime example.
+
+For an installed native world, conventional linkage is:
+  cc -I/usr/include/lua app.c -lhalfbsd -lhalfproc -llua -lm -lpthread -Wl,-E
+For base Makefiles use LIBADD=halfbsd halfproc lua pthread m and the relevant
+source include paths. Public Lua headers must come from the current upstream
+source directory, not the obsolete local lib/liblua/luaconf.h. The existing
+bootstrapping link mapping for Lua remains intact. Native modules are statically
+linked into the interpreter; loading these builtins requires no .so at boot.
+
+C libhalfproc contracts: pointer arguments must be valid; spawn returns an owned
+process reference or NULL plus errno/stage. Status is a snapshot. Wait returns
+1 when completed, 0 on timeout with ETIMEDOUT, -1 on failure. Wait_any returns an
+array index (zero-based in C). Signal returns 1 delivered, 0 already exited,
+-1 error. Descriptor returns an owned close-on-exec duplicate or -1.
+Active returns owned references which must each be unref'd. Process_stream
+returns an owned IO reference or NULL for no live stream. FD_new consumes its
+descriptor even on failure; pipe returns two owned endpoints. Explicit FD close
+is separate from reference release. The context thread retains active children
+independently of caller references. Context_close releases the caller context
+ownership exactly once and waits for no child implicitly. C users must release
+all owned references and avoid a second reaper or external descriptor closure.

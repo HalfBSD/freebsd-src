@@ -8,6 +8,7 @@ ${PACKAGE}FILES+=		README __init__.py conftest.py
 
 KYUAFILE= yes
 
+SUBDIR+= halfbsd
 SUBDIR+= etc
 SUBDIR+= examples
 SUBDIR+= include

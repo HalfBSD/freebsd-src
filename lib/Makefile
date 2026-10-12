@@ -59,6 +59,8 @@ SUBDIR=	${SUBDIR_BOOTSTRAP} \
 	libgcc_eh \
 	libgcc_s \
 	libgeom \
+	libhalfbsd \
+	libhalfproc \
 	libifconfig \
 	libipsec \
 	libjail \
@@ -122,6 +124,8 @@ SUBDIR_DEPEND_libcrypt= libmd
 SUBDIR_DEPEND_libdevstat= libkvm
 SUBDIR_DEPEND_libedit= ncurses
 SUBDIR_DEPEND_libgeom= libexpat libsbuf
+SUBDIR_DEPEND_libhalfbsd= liblua libhalfproc
+SUBDIR_DEPEND_libhalfproc= libthr
 SUBDIR_DEPEND_libmagic= libz
 SUBDIR_DEPEND_libmemstat= libkvm
 SUBDIR_DEPEND_libpam= libcrypt libutil

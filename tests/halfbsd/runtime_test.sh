@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: BSD-2-Clause
+run_case()
+{
+	[ "$(uname -s)" = FreeBSD ] || atf_skip "native FreeBSD kernel required"
+	lua=$(atf_config_get lua /usr/bin/lua)
+	[ -x "$lua" ] || atf_skip "build/install the HalfBSD Lua interpreter first"
+	atf_check -s exit:0 -o match:PASS -e empty "$lua" -E \
+	    "$(atf_get_srcdir)/runtime.lua" "$1" "$(atf_get_srcdir)/proc_helper"
+}
+atf_test_case processes
+processes_head() { atf_set "descr" "Direct execution, errors, environments, descriptors, pipes and timeouts"; atf_set "timeout" "60"; }
+processes_body() { run_case processes; }
+atf_test_case lifecycle
+lifecycle_head() { atf_set "descr" "Signals, concurrency, groups, GC ownership and autonomous child reaping"; atf_set "timeout" "120"; }
+lifecycle_body() { run_case lifecycle; }
+atf_test_case events
+events_head() { atf_set "descr" "Native kqueue process, timer, signal, IO, vnode and cancellation events"; atf_set "timeout" "60"; }
+events_body() { run_case events; }
+atf_test_case filesystem
+filesystem_head() { atf_set "descr" "Temporary filesystem operations, atomic replacement and metadata"; }
+filesystem_body() { run_case filesystem; }
+atf_test_case logging
+logging_head() { atf_set "descr" "File logging, escaping, severity and structured failures"; }
+logging_body() { run_case logging; }
+atf_test_case credentials
+credentials_head() { atf_set "descr" "Drop child credentials only, with explicit supplementary groups"; atf_set "require.user" "root"; }
+credentials_body() { run_case credentials; }
+atf_test_case ownership
+ownership_head() { atf_set "descr" "Closing Lua state leaves children alive and reaps them without leaking descriptors"; atf_set "timeout" "30"; }
+ownership_body()
+{
+	[ "$(uname -s)" = FreeBSD ] || atf_skip "native FreeBSD kernel required"
+	atf_check -s exit:0 -o match:PASS -e empty "$(atf_get_srcdir)/ownership_helper" "$(atf_get_srcdir)/proc_helper"
+}
+atf_init_test_cases()
+{
+	atf_add_test_case ownership
+	atf_add_test_case processes
+	atf_add_test_case lifecycle
+	atf_add_test_case events
+	atf_add_test_case filesystem
+	atf_add_test_case logging
+	atf_add_test_case credentials
+}

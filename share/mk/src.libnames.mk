@@ -130,6 +130,8 @@ _LIBRARIES=	\
 		formw \
 		geom \
 		gpio \
+		halfbsd \
+		halfproc \
 		icp \
 		ipsec \
 		ipt \
@@ -270,6 +272,8 @@ _DP_mp=	crypto
 _DP_memstat=	kvm
 _DP_magic=	z
 _DP_ldns=	ssl crypto
+_DP_halfproc= pthread
+_DP_halfbsd= halfproc lua
 _DP_lua=	m
 _DP_lutok=	lua
 .if ${MK_OPENSSL} != "no"

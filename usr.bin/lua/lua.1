@@ -1,0 +1,52 @@
+." SPDX-License-Identifier: BSD-2-Clause
+.Dd October 12, 2026
+.Dt LUA 1
+.Os
+.Sh NAME
+.Nm lua
+.Nd HalfBSD userland Lua interpreter
+.Sh SYNOPSIS
+.Nm
+.Op Fl EivW
+.Op Fl e Ar statement
+.Op Fl l Ar module
+.Op Ar script Op Ar arguments ...
+.Sh DESCRIPTION
+.Nm
+runs Lua 5.4 programs using the same upstream source as the boot loader.
+All ordinary Lua standard libraries are available.
+The native modules
+.Sy proc , halfbsd.event , halfbsd.os ,
+and
+.Sy halfbsd.log
+provide explicit process, kqueue, operating system and logging interfaces.
+No service is started by installing this interpreter.
+.Pp
+.Fl e
+executes a statement;
+.Fl l
+loads a module;
+.Fl i
+enters interactive mode;
+.Fl v
+prints the version;
+.Fl E
+ignores environment variables;
+.Fl W
+turns warnings on.
+A script named
+.Sq -
+is read from standard input.
+.Sh SECURITY CONSIDERATIONS
+Lua scripts have the caller's privileges.
+This interpreter is not a sandbox.
+Privileged orchestration should use direct argument arrays through
+.Sy proc
+and avoid the standard library's shell-based
+.Sy os.execute
+and
+.Sy io.popen .
+.Sh SEE ALSO
+.Xr flua 1 ,
+.Xr kqueue 2 ,
+.Xr pdfork 2

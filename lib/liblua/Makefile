@@ -2,7 +2,9 @@ LUASRC?=	${SRCTOP}/contrib/lua/src
 .PATH: ${LUASRC}
 
 LIB=	lua
-INTERNALLIB=
+INCS= ${LUASRC}/lua.h ${LUASRC}/lauxlib.h ${LUASRC}/lualib.h \
+	${LUASRC}/luaconf.h luaconf.local.h
+INCSDIR= ${INCLUDEDIR}/lua
 WARNS?=	2
 
 CWARNFLAGS.gcc+=	-Wno-format-nonliteral

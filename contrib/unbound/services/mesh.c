@@ -1401,7 +1401,6 @@ void mesh_query_done(struct mesh_state* mstate)
 	struct reply_info* rep = (mstate->s.return_msg?
 		mstate->s.return_msg->rep:NULL);
 	struct timeval tv = {0, 0};
-	int i = 0;
 	/* No need for the serve expired timer anymore; we are going to reply. */
 	if(mstate->s.serve_expired_data) {
 		comm_timer_delete(mstate->s.serve_expired_data->timer);
@@ -1459,7 +1458,6 @@ void mesh_query_done(struct mesh_state* mstate)
 			}
 		}
 
-		i++;
 		tv = r->start_time;
 
 		/* if this query is determined to be dropped during the

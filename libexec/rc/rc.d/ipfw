@@ -1,8 +1,8 @@
 #!/bin/sh
 #
 # PROVIDE: ipfw
-# REQUIRE: netif
-# BEFORE: NETWORKING
+# REQUIRE: FILESYSTEMS sysctl hostid
+# BEFORE: netif NETWORKING
 # KEYWORD: nojailvnet
 
 . /etc/rc.subr
@@ -19,7 +19,7 @@ extra_commands="reload status"
 
 ipfw_start()
 {
-	/bin/sh /etc/rc.firewall "${1:-${firewall_mode:-open}}"
+	/bin/sh /etc/rc.firewall "${1:-${firewall_mode:-workstation}}"
 }
 
 ipfw_stop()
@@ -32,13 +32,16 @@ ipfw_status()
 {
 	local status
 
+	[ -f /var/run/ipfw.ready ] || return 1
+	/sbin/ipfw -S list 65534 | grep -q '^65534 set 31 deny ip from any to any$' || return 1
+
 	status=$(${SYSCTL} -n net.inet.ip.fw.enable) || return 1
 	[ "${status}" = 1 ] || return 1
 	if afexists inet6; then
 		status=$(${SYSCTL} -n net.inet6.ip6.fw.enable) || return 1
 		[ "${status}" = 1 ] || return 1
 	fi
-	echo "IPFW is enabled; configured mode: ${firewall_mode:-open}"
+	echo "IPFW is enabled; configured mode: ${firewall_mode:-workstation}"
 }
 
 load_rc_config $name

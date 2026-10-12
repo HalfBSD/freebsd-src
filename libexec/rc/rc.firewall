@@ -32,7 +32,9 @@
 . /etc/network.subr
 load_rc_config ipfw
 
-firewall_mode=${1:-${firewall_mode:-open}}
+rm -f /var/run/ipfw.ready
+
+firewall_mode=${1:-${firewall_mode:-workstation}}
 case "${firewall_mode}" in
 open|workstation|closed) ;;
 *)
@@ -72,6 +74,17 @@ policy_workstation()
 	fi
 
 	${fwcmd} add 2000 check-state
+	# Network access policy belongs here, not in the DNS or SSH daemon.
+	if [ -z "${firewall_trusted_networks}" ]; then
+		# Default service reachability: DNS over UDP/TCP and SSH over TCP.
+		${fwcmd} add 2500 allow udp from any to me 53 in keep-state
+		${fwcmd} add 2600 allow tcp from any to me 22,53 in setup keep-state
+	else
+		for network in ${firewall_trusted_networks}; do
+			${fwcmd} add 2500 allow udp from "${network}" to me 53 in recv "${firewall_trusted_interface}" keep-state
+			${fwcmd} add 2600 allow tcp from "${network}" to me 22,53 in recv "${firewall_trusted_interface}" setup keep-state
+		done
+	fi
 	# Outbound TCP, UDP (including DNS/NTP), and ping establish state.
 	# Replies, including TCP teardown, use the check-state rule above.
 	${fwcmd} add 3000 allow tcp from me to any out setup keep-state
@@ -99,8 +112,7 @@ policy_workstation()
 
 policy_closed()
 {
-	# Only loopback is permitted. Do not depend on rule 65535: the
-	# compiled-in fallback intentionally accepts traffic.
+	# Only loopback is permitted.
 	${fwcmd} add 65000 deny log logamount 100 ip from any to any
 }
 
@@ -112,6 +124,30 @@ if afexists inet6; then
 	${SYSCTL} net.inet6.ip6.fw.enable=1 >/dev/null
 fi
 
+# Set 31 survives ordinary flushes and cannot be disabled. The guard also
+# protects upgrades still running the older accepting kernel fallback.
+if ! ${fwcmd} -S list 65534 2>/dev/null | grep -q '^65534 set 31 deny ip from any to any$'; then
+	${fwcmd} add 65534 set 31 deny ip from any to any
+fi
+
+# Require both halves of the administrator-selected LAN policy. No interface
+# discovery or implicit trust of private address ranges is performed.
+if { [ -n "${firewall_trusted_networks}" ] && [ -z "${firewall_trusted_interface}" ]; } ||
+    { [ -z "${firewall_trusted_networks}" ] && [ -n "${firewall_trusted_interface}" ]; }; then
+	echo "Set both firewall_trusted_networks and firewall_trusted_interface, or neither" >&2
+	exit 1
+fi
+case "${firewall_trusted_interface}" in
+*[!a-zA-Z0-9_.-]*) echo "Invalid trusted interface" >&2; exit 1 ;;
+esac
+for network in ${firewall_trusted_networks}; do
+	case "${network}" in
+	*[!0-9./]*|"") echo "Invalid trusted IPv4 network: ${network}" >&2; exit 1 ;;
+	esac
+done
+
 ${fwcmd} -f flush
 setup_local
 policy_${firewall_mode}
+# A failed install never creates the readiness marker.
+: > /var/run/ipfw.ready

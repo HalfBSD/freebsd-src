@@ -325,3 +325,10 @@ usr.sbin/unbound/tests/forwarding.py
 usr.sbin/unbound/tests/setup.py
 New: usr.sbin/unbound/tests/firewall.py
 Updated reports: UNBOUND-REDUCTION-PLAN.md and UNBOUND-REDUCTION-RESULTS.txt
+
+IPFW FOLLOW-UP (2026-10-11)
+The focused follow-up is included in the user-authorized IPFW implementation commit. See
+IPFW-FOLLOWUP-HANDOFF.txt for restrictive defaults, early initialization,
+persistent deny guard, DNS/SSH startup gates, explicit LAN settings, tests and
+native acceptance limits. The original audit above describes the fourth-pass
+commit baseline; native packet-filter verification remains outstanding.

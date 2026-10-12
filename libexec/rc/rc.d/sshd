@@ -79,6 +79,10 @@ sshd_configtest()
 
 sshd_precmd()
 {
+	if [ ! -f /var/run/ipfw.ready ] || ! /usr/sbin/service ipfw status >/dev/null; then
+		warn "IPFW policy is not ready; refusing to start SSH"
+		return 1
+	fi
 	run_rc_command keygen
 	run_rc_command configtest
 }

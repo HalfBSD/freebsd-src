@@ -90,6 +90,10 @@ local_unbound_setup()
 #
 local_unbound_prestart()
 {
+	if [ ! -f /var/run/ipfw.ready ] || ! /usr/sbin/service ipfw status >/dev/null; then
+		warn "IPFW policy is not ready; refusing to start DNS"
+		return 1
+	fi
 	# Create configuration file
 	if [ ! -f ${local_unbound_config} ] ; then
 		run_rc_command setup

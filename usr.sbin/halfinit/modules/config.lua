@@ -32,10 +32,20 @@ end
 function M.load(path,system_path)
     local config=path and M.read(path) or {services=M.read(system_path),target='minimal'}
     local allowed={services=true,target=true,include=true,service_dirs=true,runtime_dir=true,state_file=true,shutdown_timeout=true,
-        max_parallel=true,log_file=true}
+        max_parallel=true,log_file=true,boot=true}
     for k in pairs(config)do assert(allowed[k],'unknown configuration field: '..tostring(k))end
     if config.services==nil then config.services={}end
     assert(type(config.services)=='table','services array expected')
+    if config.boot~=nil then
+        for _,d in ipairs(require('boot').compile(config.boot))do config.services[#config.services+1]=d end
+        if config.boot.mode=='user'then
+            if config.target==nil then config.target='desktop'end
+            if config.runtime_dir==nil then
+                local runtime=config.boot.desktop.runtime or assert(require('halfbsd.os').getenv('XDG_RUNTIME_DIR'))
+                config.runtime_dir=runtime..'/halfbsd'
+            end
+        elseif config.target==nil then config.target='multiuser'end
+    end
     for _,file in ipairs(paths(config.include))do
         local definition=M.read(file)
         if definition.name then config.services[#config.services+1]=definition

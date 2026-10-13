@@ -1,0 +1,197 @@
+HalfBSD Lua Phase III — Real initialization adapters and handoff
+October 13, 2026 | branch halfbsd2 | implementation awaiting native validation
+
+STATUS
+
+The concrete adapter implementation, build integration, examples and userspace
+regression suite are present. This is NOT a verified Lua-controlled boot or an
+rc replacement cutover. Existing /sbin/init, /etc/rc and rc.d startup remain
+unchanged. Nothing starts automatically after installation. The administrator
+authorized committing and pushing this pass on October 13, 2026.
+
+Phase II's previously reported Anvil success remains valid for its committed
+baseline. It does not establish native validation of these new C/Lua changes.
+This workspace runs Linux; Phase III buildworld/buildkernel, Clang compilation,
+FreeBSD runtime tests, ATF and isolated live boot activation remain pending.
+
+IMPLEMENTED
+
+1. A declarative boot policy compiles into the existing Phase II registry and
+   scheduler. No second scheduler, event loop, process library or daemon exists.
+   Policies select system initialization or an existing logged-in user desktop.
+   Concrete tasks remain protected unless --activate-system is explicitly used
+   with a configuration. Check/graph/dry-run/shadow perform no startup actions.
+   Shadow adds kernel mount and relevant external-process snapshots to rc flag
+   comparisons, without adopting or signaling those processes.
+
+2. Bounded native inventories: libc fstab, FreeBSD kernel mounts/processes,
+   IPv4 default routes, interface link type/carrier and terminal ownership.
+   Native interface-up preserves existing ioctl flags. New connected IPv4 UDP
+   and immediate TCP probes use managed, close-on-exec descriptors.
+
+3. Storage bootstraps before opening runtime control, lock, state and file logs,
+   using the SAME supervisor instance. Early logs go to the console. Nested
+   local mounts depend on parents; independent mounts retain parallel startup.
+   Fstab excludes root/swap/ZFS/noauto; native UFS/tmpfs/devfs/nullfs/cd9660/FAT
+   are supported. UFS/FAT preen only runs for unmounted requested filesystems.
+   Mounted sources elsewhere are refused. The kernel root is not duplicated;
+   read-only root update requires an explicit policy grant.
+
+4. Only local mounts created by this manager are tracked for unmount. Existing
+   mounts are never adopted. Reverse cleanup is deferred until child cleanup,
+   control/event descriptors, the lock and logs close. Failed native actions
+   also receive cleanup. Changed mount ownership or unmount errors are reported;
+   no forced unmount occurs. Failed cleanup blocks unsafe reuse of that service
+   during this manager session. ZFS uses direct zfs mount -a for already imported
+   pools, with no inferred unmount/export ownership.
+
+5. Interface discovery chooses one Ethernet interface, preferring carrier and
+   stable name order, or uses explicitly configured interfaces. Foreground
+   dhclient owns address/routing changes. Readiness requires IPv4 address plus
+   a default route on the primary selected interface. Existing HalfBSD DHCP DNS
+   suppression and compiled Cloudflare -> Google -> OpenDNS remain untouched.
+
+6. IPFW verification checks enabled kernel hooks, immutable set 31 guard 65534
+   and default deny. Explicit load accepts only a single empty deny baseline,
+   installs the immutable guard first, then the established workstation/closed/
+   open policy through direct ipfw invocations. There is no flush or rc-script
+   invocation. Workstation retains any-source SSH TCP22 and DNS UDP/TCP53, as
+   previously requested. Rule readback accounts for ipfw's :default state names;
+   unexpected/mismatched/disabled rules fail before network services start.
+   Native packet-policy verification is NOT claimed from these source tests.
+
+7. Unbound uses the actual retained local-unbound utility names, idempotent
+   trust-anchor initialization as unbound, configuration checking, foreground
+   service supervision and matching localhost UDP answer plus TCP readiness.
+   Existing trust anchors are retained. Automatic maintenance remains inside
+   Unbound. SSH key generation/checking precedes foreground sshd; TCP readiness
+   is separate from execution. NTP foreground execution is not clock-sync proof.
+   Seatd is opt-in. Existing rc-managed daemons cause preflight refusal rather
+   than being adopted, killed or duplicated. Kernel process inventory is checked
+   in the manager's own jail; the manager excludes its own PID and owned children.
+
+8. Desktop uses an existing non-root foreground login terminal, private owned
+   XDG runtime directory and existing seat service. TOSTOP terminals are refused
+   so background manager console logging cannot suspend it. The process library hands
+   the terminal to a live owned group under its existing reaper lock and sends
+   SIGCONT through the process descriptor, covering early SIGTTIN suspension.
+   Reaped handles fail with ESRCH. Exit/shutdown restores the manager's own live
+   group. Sway readiness defaults to runtime/wayland-0; niri requires an explicit
+   Wayland readiness socket. A stale existing readiness socket is refused.
+   An optional system desktop target waits for the configured user's manager
+   to report a READY compositor; it does not take ownership of that manager.
+
+9. Boot policy changes require a new manager session; transactional service
+   reload and ordinary runtime control continue through the existing engine.
+   Installed examples are world-managed; administrator configuration is not.
+
+DESKTOP DECISION / FUTURE OPTION (EXPLICIT USER REQUEST)
+
+The administrator approved existing-login-session desktop launch on October 13.
+Console autologin and PAM session management are a future option, NOT part of
+this implementation. That stage must define authentication, credentials,
+controlling-terminal ownership, session cleanup, recovery and seat policy.
+No compositor is launched as root, and the system login path is unchanged.
+
+VALIDATION ACTUALLY PERFORMED HERE
+
+PASS: 14 Phase III policy groups using mock OS inventories/kernel operations:
+  concrete graph, compiled DNS preservation, nested mount/check ordering,
+  invalid manifest/path/interface/duplicate rejection, fstab/FAT handling,
+  existing mount preservation, created mount ownership/refusal, privilege and
+  existing daemon gates, immutable firewall/readback policy, route readiness,
+  UDP/TCP readiness/probe release, desktop restrictions, reverse/exactly-once
+  cleanup including failed actions, output verification/EOF/exit-code handling,
+  and actual main startup ordering with a mocked kernel/runtime lock.
+PASS: all 14 existing Phase II pure policy tests, including 100 graph services,
+  50 mock children and 1,000 mock lifecycle iterations.
+PASS: GCC strict C17 -Wpedantic -Werror compilation of the foundation C sources,
+  launcher and new helpers on Linux. Temporary declarations were necessary for
+  FreeBSD-only APIs; native-only branches were NOT compiled by that check.
+PASS: complete PIE linking of actual foundation and in-tree Lua archives into
+  interpreter, halfinit and halfsvc, rejecting text relocations. Linux ENOSYS
+  stubs satisfied kernel-only symbols: this is NOT FreeBSD ABI validation.
+PASS: real Linux UDP/TCP loopback and terminal metadata smoke with an ephemeral
+  fixture; FreeBSD-only inventory returns explicitly unavailable on Linux.
+PASS: actual launcher help and user-desktop dry-run with no runtime creation.
+PASS: generated staged SYSROOT/SHLIB_MAJOR=5 archive/PIE build checks, empty and
+  repeated parallel module/example installation, and foundation archive/header
+  bootstrap/world installation checks.
+PASS: Lua syntax checks and git diff --check (see final task response).
+
+No Clang, native FreeBSD execution, live IPFW test, real mount or compositor
+launch was performed in this workspace. No tool was downloaded. In-tree Lua and
+bmake were built under /tmp/halfbsd-phase3-check solely for local checks; temporary
+headers/link stubs are not repository implementations or dependencies.
+
+ANVIL NON-DESTRUCTIVE TEST PROCEDURE
+
+Build and install the matching world using the existing rc boot. Then run:
+
+  sh /usr/src/tests/halfbsd/phase3/run.sh
+
+Run as the ordinary user first, then root if desired. The runner does not change
+mounts, interfaces, firewall, hostname or boot configuration and never starts a
+second DHCP/SSH/DNS/NTP/seatd service. It compiles private helper binaries against
+installed headers/archives, reads native inventories, verifies real oneshot
+stdout/reaping, probes an ephemeral UDP/TCP loopback fixture, and exercises TTY
+handoff/SIGCONT/restoration/reaped-handle rejection on a PRIVATE pseudo-terminal.
+It then reruns the full Phase II native stress suite and all nine Phase I gates.
+
+ATF: the new tests/halfbsd/phase3/adapters_test cases integrate into buildworld's
+existing tests tree. Run them with kyua from /usr/tests/halfbsd alongside the
+existing Phase I/II cases. Root-only credential checks remain isolated fixtures.
+The root run does not authorize live system-adapter activation.
+
+Portable policy-only check:
+
+  HALFBSD_SOURCE=/usr/src sh /usr/src/tests/halfbsd/phase3/run.sh --policy-only
+
+Safe preview of reviewed system policy:
+
+  halfinit --config /usr/share/examples/halfbsd/boot-system.lua --dry-run
+  halfinit --config /usr/share/examples/halfbsd/boot-system.lua --shadow
+
+Do NOT use --activate-system for the system profile on a running rc-managed
+Anvil. Test live adapters in an isolated VM with console/recovery access and a
+known filesystem/network/firewall policy before any real boot integration.
+Dry-run may reject unsupported fstab entries or missing interfaces; configure
+explicit local_mounts/interfaces rather than silently omitting prerequisites.
+
+REMAINING BOUNDARIES / NEXT VALIDATION
+
+- No PID 1 change, rc cutover, automatic boot hook or mandatory new service.
+- Filesystem system calls are synchronous; timers cannot interrupt blocked
+  kernel nmount/unmount calls. Created mounts fail visibly if busy. Mount source/
+  type comparison is conservative but is not a kernel mount-generation lease.
+- No swap activation, encrypted ZFS key loading, automatic pool import, ZFS share
+  policy, remote-fs ordering, device initialization or full host boot coverage.
+- DHCP uses the existing native executable, whose existing dhclient-script still
+  performs legacy shell-based hooks internally. The manager invokes no shell;
+  removing those DHCP internals is a separate networking migration.
+- IPFW load applies only to an empty deny baseline and is not a transactional
+  replacement/reload of administrator policy. Partial installation leaves the
+  deny guard present. Actual native rule rendering and packet paths need tests.
+- Boot process-name inventory is a cooperative takeover guard, not hostile
+  executable authentication or process containment. PIDs are not used to signal
+  unowned processes. Daemonization/escaped descendants remain unsupported.
+- Existing user-session desktop is opt-in and single-session oriented. No PAM,
+  autologin or automatic root/user manager shutdown coupling is provided. User
+  managers remain persistent until TERM/INT or authenticated halfsvc shutdown.
+- Gateway groups existing services only; enabling IP forwarding/NAT is not
+  inferred. No unrelated firewall, SSH, resolver hierarchy or Capsicum changes.
+- Native buildworld/buildkernel including build32, Clang checks, ATF, Anvil
+  userspace results, real DHCP/firewall/DNS/desktop readiness, and isolated boot/
+  shutdown recovery are outstanding acceptance work. Record actual results;
+  do not label Linux mocks or link stubs as native completion.
+
+SOURCE MAP
+
+New: lib/libhalfbsd/boot.c; halfinit modules boot.lua/adapters.lua; examples
+boot-system.lua/desktop-user.lua; tests/halfbsd/phase3/{policy.lua,native.lua,
+probe_helper.c,terminal_helper.c,run.sh,adapters_test.sh,Makefile}; this handoff.
+Modified: foundation headers/build lists, OS/interface/IPC/proc bindings,
+halfproc terminal handoff; config/schema/supervisor/main/provider integration;
+halfinit module/example build list and manual; lua-halfbsd API manual;
+planning graph utility path; test build lists/staged-install checks.
+No duplicate Lua source tree, external runtime, new daemon or build option.

@@ -6,7 +6,8 @@ local keys={name=true,description=true,type=true,command=true,requires=true,want
     restart=true,restart_delay=true,restart_limit=true,restart_window=true,restart_max_delay=true,
     start_timeout=true,stop_timeout=true,readiness=true,condition=true,action=true,parameters=true,
     env=true,inherit_env=true,cwd=true,user=true,group=true,groups=true,enabled=true,system=true,
-    stdout=true,stderr=true}
+    stdout=true,stderr=true,guard=true,verify=true,cleanup=true,success_codes=true,
+    new_session=true,stdin=true,foreground=true}
 function M.name(name)
     return type(name)=='string' and #name<=64 and name:match('^[a-zA-Z][a-zA-Z0-9_.-]*$')~=nil
 end
@@ -31,6 +32,14 @@ function M.validate(d)
     assert(d.condition==nil or M.name(d.condition),'invalid condition provider')
     if d.type=='virtual' then assert(d.condition,'virtual needs a condition provider') end
     assert(d.parameters==nil or type(d.parameters)=='table','parameters table expected')
+    for _,key in ipairs({'guard','verify','cleanup'})do assert(d[key]==nil or M.name(d[key]),'invalid provider: '..key)end
+    assert(not d.verify or(d.type=='oneshot'and d.command and d.stdout==nil),'verified output requires a command oneshot with captured stdout')
+    assert(not d.cleanup or d.type=='oneshot','cleanup provider requires oneshot')
+    if d.success_codes~=nil then
+        assert(d.type=='oneshot','success_codes requires oneshot')
+        array(d.success_codes,function(v)return type(v)=='number'and v%1==0 and v>=0 and v<=255 end)
+        assert(#d.success_codes>0 and #d.success_codes<=256,'invalid success_codes')
+    end
     if d.restart==nil then d.restart='never'end;assert(policies[d.restart],'unsupported restart policy')
     assert(d.type=='daemon' or d.restart=='never','restart policy requires daemon')
     for key,default in pairs({restart_delay=1,restart_max_delay=30,restart_window=60,start_timeout=10,stop_timeout=5}) do
@@ -41,7 +50,9 @@ function M.validate(d)
     if d.readiness==nil then d.readiness='process'end;assert(d.readiness=='process' or d.readiness=='notify' or d.readiness=='condition','invalid readiness strategy')
     if d.readiness=='condition' then assert(d.condition,'condition readiness needs provider') end
     assert(d.type=='daemon' or d.readiness=='process','readiness option requires daemon')
-    for _,k in ipairs({'enabled','system','inherit_env'}) do assert(d[k]==nil or type(d[k])=='boolean','boolean expected: '..k) end
+    for _,k in ipairs({'enabled','system','inherit_env','new_session','foreground'}) do assert(d[k]==nil or type(d[k])=='boolean','boolean expected: '..k) end
+    assert(d.stdin==nil or d.stdin=='null'or d.stdin=='inherit','invalid stdin policy')
+    assert(not d.foreground or(d.type=='daemon'and d.new_session==false and d.stdin=='inherit'),'foreground requires a daemon in the current session with inherited stdin')
     if d.env~=nil then assert(type(d.env)=='table','env table expected');for k,v in pairs(d.env) do assert(string(k) and k~='' and not k:find('=',1,true) and (string(v) or v==false),'invalid environment') end end
     assert(d.cwd==nil or (string(d.cwd) and d.cwd:sub(1,1)=='/'),'invalid cwd')
     for _,k in ipairs({'user','group'}) do assert(d[k]==nil or string(d[k]) or (type(d[k])=='number' and d[k]>=0 and d[k]%1==0),'invalid credentials') end

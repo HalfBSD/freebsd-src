@@ -32,11 +32,14 @@ for pass in 1 2; do
         MODULESDIR_OWN="$(id -un)" MODULESDIR_GRP="$(id -gn)" \
         DEFINITIONSDIR_OWN="$(id -un)" DEFINITIONSDIR_GRP="$(id -gn)" \
         EXAMPLESDIR_OWN="$(id -un)" EXAMPLESDIR_GRP="$(id -gn)"
-    for module in init client service config dependency supervisor control json providers fixture; do
+    for module in init client service config dependency supervisor control json providers adapters boot fixture; do
         cmp "$src/usr.sbin/halfinit/modules/$module.lua" "$work/stage/usr/lib/halfbsd/$module.lua"
     done
     cmp "$src/usr.sbin/halfinit/services/system.lua" "$work/stage/usr/lib/halfbsd/services/system.lua"
     cmp "$src/usr.sbin/halfinit/examples/services.lua" "$work/stage/usr/share/examples/halfbsd/services.lua"
+    for example in boot-system desktop-user; do
+        cmp "$src/usr.sbin/halfinit/examples/$example.lua" "$work/stage/usr/share/examples/halfbsd/$example.lua"
+    done
     [ ! -e "$work/stage/etc" ]
 done
 echo 'PASS Phase II generated PIE/archive flags and fresh/repeated parallel module installation'

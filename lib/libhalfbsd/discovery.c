@@ -82,6 +82,16 @@ int hb_interfaces(lua_State *L)
 		lua_pushstring(L, link ? "link" : "inet");
 		if (family == AF_INET6) { lua_pop(L, 1); lua_pushliteral(L, "inet6"); }
 		lua_setfield(L, -2, "family");
+#ifdef __FreeBSD__
+		if (link) {
+			lua_pushinteger(L, ((struct sockaddr_dl *)a->ifa_addr)->sdl_type);
+			lua_setfield(L, -2, "link_type");
+			if (a->ifa_data) {
+				lua_pushinteger(L, ((struct if_data *)a->ifa_data)->ifi_link_state);
+				lua_setfield(L, -2, "link_state");
+			}
+		}
+#endif
 		lua_pushboolean(L, (a->ifa_flags & IFF_UP) != 0); lua_setfield(L, -2, "up");
 		lua_pushboolean(L, (a->ifa_flags & IFF_LOOPBACK) != 0); lua_setfield(L, -2, "loopback");
 		lua_rawseti(L, -2, ++count);

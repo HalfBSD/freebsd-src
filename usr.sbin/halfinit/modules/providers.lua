@@ -1,10 +1,10 @@
 -- SPDX-License-Identifier: BSD-2-Clause
 -- Explicit native initialization operations. System definitions are protected
--- from execution in Phase II; custom administrator tasks may select providers.
+-- from execution unless explicitly activated; administrator tasks select providers.
 local M={}
 function M.native()
     local os=require('halfbsd.os');local ipc=require('halfbsd.ipc')
-    return {
+    local providers={
         interface_discovery=function()assert(os.interfaces());return true end,
         network_ready=function(p)
             for _,interface in ipairs(assert(os.interfaces()))do
@@ -30,5 +30,6 @@ function M.native()
         unmount=function(p)assert(os.unmount(assert(p.path),p.flags or 0));return true end,
         manual=function()return false end,
     }
+    return require('adapters').attach(providers,os,ipc)
 end
 return M

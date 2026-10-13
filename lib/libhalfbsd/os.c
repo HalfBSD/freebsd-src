@@ -360,7 +360,7 @@ static int unmount_lua(lua_State*L){const char*p=hb_string(L,1,NULL);
 }
 
 int luaopen_halfbsd_os(lua_State*L) {
-	static const luaL_Reg f[]={{"listdir",hb_listdir},{"interfaces",hb_interfaces},{"stat",metadata},{"exists",exists},{"mkdir",mkdir_lua},{"rmdir",rmdir_lua},{"unlink",unlink_lua},{"chmod",chmod_lua},{"chown",chown_lua},{"symlink",symlink_lua},{"readlink",readlink_lua},{"open",open_lua},{"atomic_replace",atomic_replace},{"hostname",hostname},{"set_hostname",set_hostname},{"clock",clock_lua},{"set_clock",set_clock},{"getenv",getenv_lua},{"setenv",setenv_lua},{"environment",environment},{"identity",identity},{"user",lookup_user},{"group",lookup_group},{"signal_disposition",disposition},{"mount",mount_lua},{"unmount",unmount_lua},{NULL,NULL}};
+	static const luaL_Reg f[]={{"interface_up",hb_interface_up},{"default_routes",hb_default_routes},{"terminal",hb_terminal},{"terminal_restore",hb_terminal_restore},{"fstab",hb_fstab},{"mounts",hb_mounts},{"processes",hb_processes},{"listdir",hb_listdir},{"interfaces",hb_interfaces},{"stat",metadata},{"exists",exists},{"mkdir",mkdir_lua},{"rmdir",rmdir_lua},{"unlink",unlink_lua},{"chmod",chmod_lua},{"chown",chown_lua},{"symlink",symlink_lua},{"readlink",readlink_lua},{"open",open_lua},{"atomic_replace",atomic_replace},{"hostname",hostname},{"set_hostname",set_hostname},{"clock",clock_lua},{"set_clock",set_clock},{"getenv",getenv_lua},{"setenv",setenv_lua},{"environment",environment},{"identity",identity},{"user",lookup_user},{"group",lookup_group},{"signal_disposition",disposition},{"mount",mount_lua},{"unmount",unmount_lua},{NULL,NULL}};
 	hb_fd_metatable(L);
 	luaL_newlib(L,f);
 	return 1;

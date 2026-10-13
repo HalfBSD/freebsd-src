@@ -16,7 +16,7 @@ local function read_state(path,native)
 end
 local function parse(args)
     local opts={};local value={['--config']='config',['--target']='target',['--runtime-dir']='runtime_dir',['--state-file']='state_file',['--scenario']='scenario',['--run-for']='run_for'}
-    local flags={['--check']='check',['--graph']='graph',['--dry-run']='dry',['--simulate']='simulate',['--shadow']='shadow',['--help']='help'}
+    local flags={['--check']='check',['--graph']='graph',['--dry-run']='dry',['--simulate']='simulate',['--shadow']='shadow',['--help']='help',['--activate-system']='activate'}
     local i=1
     while args[i]do
         if value[args[i]]then opts[value[args[i]]]=assert(args[i+1],'missing option value');i=i+2
@@ -28,6 +28,8 @@ local function simulation(config,module_dir,scenario)
     local fixture=module_dir..'/fixture.lua'
     for _,d in pairs(config.registry)do
         d.system=nil
+        d.guard=nil;d.verify=nil;d.cleanup=nil;d.success_codes=nil;d.foreground=nil;d.new_session=nil;d.stdin=nil
+        d.user=nil;d.group=nil;d.groups=nil;d.cwd=nil;d.env=nil;d.inherit_env=nil;d.stdout=nil;d.stderr=nil
         if d.type~='target'then
             local kind=d.type=='daemon'and'daemon'or'oneshot'
             d.type=kind;d.action=nil;d.condition=nil;d.parameters=nil
@@ -50,13 +52,14 @@ local function simulation(config,module_dir,scenario)
 end
 function M.main(args,module_dir)
     local opts=parse(args)
-    if opts.help then io.write('halfinit [--config FILE] [--target NAME] [--runtime-dir DIR] [--run-for SECONDS] [--check|--graph|--dry-run|--shadow|--simulate] [--scenario success|failure|recovery|exhaustion|forced]\n');return 0 end
+    if opts.help then io.write('halfinit [--config FILE] [--target NAME] [--runtime-dir DIR] [--run-for SECONDS] [--activate-system] [--check|--graph|--dry-run|--shadow|--simulate] [--scenario success|failure|recovery|exhaustion|forced]\n');return 0 end
     if opts.run_for then
         opts.run_for=tonumber(opts.run_for)
         assert(opts.run_for and opts.run_for>0 and opts.run_for<=3600,'--run-for must be >0 and <=3600 seconds')
     end
     local config=config_module.load(opts.config,module_dir..'/services/system.lua')
     assert(not opts.scenario or opts.simulate,'--scenario requires --simulate')
+    assert(not opts.activate or(opts.config and not opts.simulate),'--activate-system requires an explicit configuration and cannot combine with simulation')
     if opts.simulate then
         local scenarios={success=true,failure=true,recovery=true,exhaustion=true,forced=true}
         assert(scenarios[opts.scenario or 'success'],'unknown simulation scenario')
@@ -72,7 +75,7 @@ function M.main(args,module_dir)
             if d.condition=='manual'then missing[#missing+1]={service=name,prerequisite='explicit provider/session policy'}end
             if d.action=='mount'and not(d.parameters and d.parameters.options)then missing[#missing+1]={service=name,prerequisite='explicit mount configuration'}end
         end
-        local observed={}
+        local observed={};local inventory={}
         if opts.shadow then
             local flags={local_unbound_enable='dns',sshd_enable='sshd',ntpd_enable='ntpd',seatd_enable='seatd',firewall_enable='firewall'}
             for _,path in ipairs({'/etc/defaults/rc.conf','/etc/rc.conf','/etc/rc.conf.local'})do
@@ -86,9 +89,21 @@ function M.main(args,module_dir)
                 end
             end
         end
+        if opts.shadow and config.boot then
+            local mounts,mount_error=native.mounts();inventory.mounts=mounts;inventory.mount_error=mount_error
+            local processes,process_error=native.processes();inventory.process_error=process_error
+            local names={}
+            for name in pairs(plan.selected)do
+                for _,command in ipairs((config.registry[name].parameters or{}).processes or{})do names[command]=true end
+            end
+            inventory.external_processes={}
+            for _,process in ipairs(processes or{})do
+                if names[process.command]and process.pid~=native.identity().pid then inventory.external_processes[#inventory.external_processes+1]=process end
+            end
+        end
         local shutdown={};for i=#plan.waves,1,-1 do shutdown[#shutdown+1]=plan.waves[i]end
         io.write(json.encode({valid=true,target=config.target,startup=plan.waves,shutdown=shutdown,missing=missing,
-            execution='planning only; existing rc services remain external',shadow=opts.shadow or false,observed=observed})..'\n')
+            execution='planning only; existing rc services remain external',shadow=opts.shadow or false,observed=observed,inventory=inventory})..'\n')
         return 0
     end
     assert(opts.config or opts.simulate,'use --check/--dry-run, --simulate, or an explicit userspace --config')
@@ -96,14 +111,13 @@ function M.main(args,module_dir)
     local uid=native.identity().euid
     local dir=opts.runtime_dir or config.runtime_dir or(uid==0 and'/var/run/halfbsd'or nil)
     assert(dir,'unprivileged managers require an explicit --runtime-dir')
-    local stat,err=native.stat(dir)
-    if not stat then assert(err.name=='ENOENT');assert(native.mkdir(dir,uid==0 and 0x1ed or 0x1c0));stat=assert(native.stat(dir))end
-    assert(stat.type=='directory'and stat.uid==uid and (stat.mode&0x12)==0,'runtime directory must be owned and not group/world writable')
-    local ipc=require('halfbsd.ipc');local lock=assert(ipc.lock(dir..'/manager.lock'))
+    assert(not(opts.activate and config.boot and config.boot.mode=='user')or uid~=0,'user desktop activation cannot run as root')
+    local ipc=require('halfbsd.ipc');local lock,control
     local state_path=opts.state_file or config.state_file or dir..'/enabled.json'
-    local enabled=read_state(state_path,native)
-    local logger=assert(require('halfbsd.log').new({service='halfinit',file=config.log_file}))
+    local enabled={}
+    local logger=assert(require('halfbsd.log').new({service='halfinit'}))
     local engine
+    local bootstrapping=false
     local function emit(item)
         local r=engine.records[item.service];local result=r.result
         local fields={event='transition',service=item.service,state=item.state,previous=item.previous,reason=item.reason,monotonic=item.time}
@@ -112,8 +126,12 @@ function M.main(args,module_dir)
         if r.error and r.error.code then fields.errno=r.error.code;fields.error_name=r.error.name end
         local ok,error=logger:write(item.state=='FAILED'and'error'or'info','service state changed',fields)
         if not ok then io.stderr:write('halfinit log error: '..error.message..'\n')end
+        if bootstrapping then
+            if item.service=='runtime'and item.state=='READY'then engine.loop:stop()
+            elseif item.state=='FAILED'or item.state=='SKIPPED'then engine:shutdown()end
+        end
     end
-    engine=require('supervisor').new(config,{providers=require('providers').native(),emit=emit})
+    engine=require('supervisor').new(config,{providers=require('providers').native(),emit=emit,system_allowed=opts.activate or false})
     for name,value in pairs(enabled)do if engine.records[name]then engine.blocked[name]=not value or nil;engine.enabled[name]=value end end
     local handlers={}
     handlers.persist=function(name,value)
@@ -128,6 +146,7 @@ function M.main(args,module_dir)
     handlers.reload=function()
         assert(opts.config,'system graph reload requires an explicit config')
         local candidate=config_module.load(opts.config,module_dir..'/services/system.lua')
+        assert(json.encode(candidate.boot)==json.encode(config.boot),'boot policy changes require a new manager session')
         candidate.target=opts.target or candidate.target
         assert(candidate.target==config.target,'use explicit start/stop to change targets during this manager session')
         for _,key in ipairs({'runtime_dir','state_file','log_file'})do assert(candidate[key]==config[key],'cannot relocate runtime/state/log paths during reload')end
@@ -164,16 +183,35 @@ function M.main(args,module_dir)
         config=candidate;engine.config=candidate;engine:replan();engine:pump()
         logger:write('info','configuration reloaded',{event='reload'});return {reloaded=true}
     end
-    local control
     local ok,problem=xpcall(function()
-        control=require('control').new(engine.loop,dir..'/control.sock',uid,engine,handlers)
         for _,sig in ipairs({'TERM','INT','HUP'})do
             assert(engine.loop:watch_signal(sig,function()
-                if sig=='HUP'then local success,error=pcall(handlers.reload);if not success then logger:write('error','reload rejected',{event='reload',reason=failure(error)})end
+                if sig=='HUP'then
+                    if bootstrapping then return end
+                    local success,error=pcall(handlers.reload);if not success then logger:write('error','reload rejected',{event='reload',reason=failure(error)})end
                 else engine:shutdown()end
             end))
         end
         if opts.run_for then assert(engine.loop:watch_timer(opts.run_for,function()engine:shutdown()end))end
+        if opts.activate and config.boot and config.boot.mode~='user'then
+            bootstrapping=true;engine:start({'runtime'})
+            if engine.records.runtime.state~='READY'and not engine.finished then
+                local completed,err=engine.loop:run();assert(completed,err and err.message)
+            end
+            assert(engine.records.runtime.state=='READY'and not engine.shutting,'filesystem bootstrap did not complete')
+            bootstrapping=false;engine.roots.runtime=nil
+        end
+        local stat,err=native.stat(dir)
+        if not stat then assert(err.name=='ENOENT');assert(native.mkdir(dir,uid==0 and 0x1ed or 0x1c0));stat=assert(native.stat(dir))end
+        assert(stat.type=='directory'and stat.uid==uid and (stat.mode&0x12)==0,'runtime directory must be owned and not group/world writable')
+        lock=assert(ipc.lock(dir..'/manager.lock'))
+        enabled=read_state(state_path,native)
+        for name,value in pairs(enabled)do if engine.records[name]then engine.blocked[name]=not value or nil;engine.enabled[name]=value end end
+        if config.log_file then
+            local file_logger=assert(require('halfbsd.log').new({service='halfinit',file=config.log_file}))
+            logger:close();logger=file_logger
+        end
+        control=require('control').new(engine.loop,dir..'/control.sock',uid,engine,handlers)
         engine:start({config.target})
         for name,d in pairs(config.registry)do if (enabled[name]==true or(d.enabled and enabled[name]~=false))and not engine.blocked[name]then engine:start({name})end end
         if opts.simulate then
@@ -190,9 +228,23 @@ function M.main(args,module_dir)
         local completed,loop_error=engine.loop:run();if not completed then error(loop_error.message)end
     end,function(e)return failure(e)..'\n'..debug.traceback()end)
     if control then control:close()end
-    engine.loop:close()
     local cleaned,cleanup_error=engine.proc.shutdown(0.1,true)
-    lock:close();logger:close()
+    if engine.terminal_owner then
+        local restored,err=native.terminal_restore()
+        if not restored then engine.shutdown_failed.terminal=failure(err)end
+    end
+    engine.finalizing=true
+    local actions_ok,actions_error=pcall(function()
+        if cleaned then engine:cleanup_actions()else for _,r in pairs(engine.records)do engine:clear(r)end end
+    end)
+    engine.loop:close()
+    if lock then lock:close()end;logger:close()
+    if cleaned and engine.providers.finish then
+        local done,errors=pcall(engine.providers.finish)
+        if done then for name,reason in pairs(errors)do engine.shutdown_failed[name]=reason end
+        else engine.shutdown_failed.filesystems=failure(errors)end
+    end
+    if not actions_ok then io.stderr:write(failure(actions_error)..'\n');return 1 end
     if not ok then io.stderr:write(problem..'\n');return 1 end
     if not cleaned then io.stderr:write(cleanup_error.message..'\n');return 1 end
     if next(engine.shutdown_failed)then io.stderr:write(json.encode(engine.shutdown_failed)..'\n');return 1 end

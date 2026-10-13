@@ -1,5 +1,5 @@
 PACKAGE= tests
-SUBDIR+= phase2
+SUBDIR+= phase2 phase3
 TESTSDIR= ${TESTSBASE}/halfbsd
 ATF_TESTS_SH= runtime_test
 PROGS= proc_helper ownership_helper

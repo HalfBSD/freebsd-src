@@ -39,6 +39,11 @@ void hp_status(struct hp_process *, struct hp_result *);
 int hp_wait(struct hp_process *, int, struct hp_result *);
 int hp_wait_any(struct hp_process **, size_t, int, size_t *, struct hp_result *);
 int hp_signal(struct hp_process *, int, int);
+/* Same-session TTY handoff and descriptor-directed SIGCONT. Requires a live
+ * owned process group. Returns 0 or -1/errno (ESRCH after reaping). */
+int hp_foreground(struct hp_process *, int);
+/* Restore the caller's own living process group, 0 or -1/errno. */
+int hp_terminal_restore(int);
 int hp_descriptor(struct hp_process *);
 struct hp_fd *hp_process_stream(struct hp_process *, int);
 size_t hp_active(struct hp_context *, struct hp_process **, size_t);

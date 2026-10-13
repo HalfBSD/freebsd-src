@@ -9,7 +9,7 @@ function M.new(config,options)
     options=options or {}
     local self=setmetatable({config=config,records={},roots={},blocked={},holds={},enabled={},loop=options.loop or assert(require('halfbsd.event').new()),
         proc=options.proc or require('proc'),native=options.native or require('halfbsd.os'),providers=options.providers or {},
-        emit=options.emit,shutting=false,shutdown_failed={},pumping=false,again=false},M)
+        emit=options.emit,system_allowed=options.system_allowed or false,shutting=false,shutdown_failed={},pumping=false,again=false},M)
     self.clock=function()return self.native.clock('monotonic')end
     for name,d in pairs(config.registry)do
         self.records[name]={definition=d,state='INACTIVE',history={},attempts={},epoch=0,watches={},wanted=false}
@@ -37,6 +37,23 @@ function M:clear(r)
     for id in pairs(r.watches)do self.loop:cancel(id)end;r.watches={};r.epoch=r.epoch+1
     if r.notify then r.notify:close();r.notify=nil end
     if r.output then r.output:close();r.output=nil end
+    if self.providers.release then self.providers.release(r.launch_definition or r.definition)end
+end
+function M:complete_oneshot(r)
+    local d=r.launch_definition or r.definition
+    if r.state~='STARTING'or not r.result or(d.verify and not r.output_done)then return end
+    local accepted=r.result.success
+    if d.success_codes and r.result.state=='exited'then
+        accepted=false;for _,code in ipairs(d.success_codes)do if r.result.exit_code==code then accepted=true end end
+    end
+    if not accepted then self:failure(r,'oneshot process failed');return end
+    if d.verify then
+        local provider=self.providers[d.verify]
+        if not provider then self:failure(r,'unknown output verifier');return end
+        local ok,value=pcall(provider,d.parameters or{},d,r.output_buffer or'')
+        if not ok or not value then self:failure(r,'output verification failed: '..error_text(value),type(value)=='table'and value or nil);return end
+    end
+    self:clear(r);self:ready(r)
 end
 function M:ready(r)
     if r.state~='STARTING' then return end
@@ -57,6 +74,7 @@ end
 function M:failure(r,reason,native_error)
     if r.state=='FAILED' then return end
     if native_error then r.error=native_error end
+    if not r.child then self:cleanup_record(r)end
     self:clear(r);r.child=nil
     self:transition(r,'FAILED',reason);self:degrade(r.definition.name)
     local d=r.definition
@@ -81,20 +99,53 @@ function M:failure(r,reason,native_error)
 end
 function M:exit(r,result)
     r.result=result;r.child=nil
+    if r.foreground then
+        local ok,err=self.native.terminal_restore()
+        if not ok then self.shutdown_failed[r.definition.name]=error_text(err)end
+        r.foreground=nil;self.terminal_owner=nil
+    end
     if r.state=='STOPPING' then
         local failure=r.stop_failure
         self:clear(r);r.stop_failure=nil
         if failure then self:failure(r,failure)
         else self:transition(r,'INACTIVE','process reaped')end
-    elseif r.definition.type=='oneshot' and result.success then
-        self:clear(r);self:ready(r)
+    elseif r.definition.type=='oneshot' then
+        self:complete_oneshot(r)
     else self:failure(r,result.error and 'child ownership lost' or 'process exited')end
     self:pump()
+end
+function M:cleanup_record(r)
+    local d=r.launch_definition
+    if r.cleanup_error then return false end
+    if not d or not d.cleanup or r.cleanup_attempted then return true end
+    r.cleanup_attempted=true
+    local ok,value=pcall(function()
+        return assert(self.providers[d.cleanup],'unknown cleanup provider')(d.parameters or{},d,self)
+    end)
+    if not ok or not value then
+        r.cleanup_error=error_text(value);self.shutdown_failed[d.name]=r.cleanup_error;return false
+    end
+    return true
+end
+function M:cleanup_actions()
+    local roots={}
+    for name,r in pairs(self.records)do if r.launch_definition and r.launch_definition.cleanup then roots[name]=true end end
+    local plan=dependency.plan(self.config.registry,roots)
+    for i=#plan.waves,1,-1 do
+        for _,name in ipairs(plan.waves[i])do
+            local r=self.records[name]
+            if not r.child or r.child:status().state~='running'then self:cleanup_record(r)
+            else self.shutdown_failed[name]='active child prevents native cleanup'end
+        end
+    end
+    for _,r in pairs(self.records)do self:clear(r)end
 end
 function M:stop_record(r,reason,failure)
     if r.state=='STOPPING' then if failure then r.stop_failure=failure end;return end
     if r.state=='INACTIVE' then return end
     if not r.child then
+        if failure then self:failure(r,failure);return end
+        if not self:cleanup_record(r)then self:failure(r,'cleanup failed');return end
         self:clear(r)
         if r.state=='READY' or r.state=='STARTING' then self:transition(r,'STOPPING',reason)end
         self:transition(r,'INACTIVE',reason);return
@@ -112,10 +163,25 @@ function M:stop_record(r,reason,failure)
     end)
 end
 function M:start_record(r)
-    local d=r.definition;r.result=nil;r.error=nil;r.ready_at=nil;r.start_failure=nil;r.epoch=r.epoch+1;r.exhausted=nil
+    if r.cleanup_error then self:transition(r,'FAILED','previous cleanup failed; manager restart required');return end
+    local d=r.definition;r.launch_definition=d;r.result=nil;r.error=nil;r.ready_at=nil;r.start_failure=nil;r.epoch=r.epoch+1;r.exhausted=nil
+    r.output_buffer='';r.output_done=nil;r.cleanup_attempted=nil
     self:transition(r,'STARTING','dependencies satisfied')
     r.started_at=self.clock();r.generation=(r.generation or 0)+1
-    if d.system then self:failure(r,'system task is planning-only in Phase II');return end
+    if d.system and not self.system_allowed then self:failure(r,'system task requires explicit --activate-system');return end
+    if d.guard then
+        local provider=self.providers[d.guard]
+        if not provider then self:failure(r,'unknown startup guard');return end
+        local ok,value=pcall(provider,d.parameters or{},d,self)
+        if not ok or not value then self:failure(r,'startup guard failed: '..error_text(value),type(value)=='table'and value or nil);return end
+        if value=='ready'then assert(d.type=='oneshot','a guard cannot adopt a daemon');self:ready(r);return end
+    end
+    if d.foreground then
+        local terminal=self.native.terminal()
+        if self.terminal_owner or not terminal.tty or not terminal.foreground or self.native.identity().euid==0 then
+            self:failure(r,'foreground desktop needs the current non-root login terminal');return
+        end
+    end
     if d.type=='target' then self:ready(r);return end
     if d.type=='virtual' or d.action then
         local provider=self.providers[d.condition or d.action]
@@ -144,10 +210,12 @@ function M:start_record(r)
         if not user or user.uid==0 then self:failure(r,'compositors require an explicit non-root user session');return end
     end
     local opts={cwd=d.cwd,user=d.user,group=d.group,groups=d.groups,env=d.env,inherit_env=d.inherit_env,
-        new_session=true,stdin='null',stdout='null',stderr='null',exec_timeout=math.min(d.start_timeout,5)}
+        new_session=d.new_session~=false,process_group=true,stdin='null',stdout='null',stderr='null',exec_timeout=math.min(d.start_timeout,5)}
+    if d.stdin=='inherit'then opts.stdin=nil end
     for _,key in ipairs({'stdout','stderr'})do
         if d[key]and d[key]~='null'then opts[key]={path=d[key],append=true,mode=0x180}end
     end
+    if d.verify then opts.stdout='pipe'end
     local reader,writer
     if d.readiness=='notify' then
         reader,writer=self.proc.pipe(true)
@@ -166,9 +234,31 @@ function M:start_record(r)
     r.start_watch=self:watch(r,'watch_timer',math.max(0.001,remaining),function()
         self:stop_record(r,'startup deadline','readiness timeout')
     end)
+    if d.foreground then
+        local ok,err=child:foreground()
+        if not ok then
+            if writer then writer:close();reader:close()end
+            r.error=err;self:stop_record(r,'terminal handoff failed','terminal handoff failed');return end
+        r.foreground=true;self.terminal_owner=r
+    end
     if remaining<=0 then
         if writer then writer:close();reader:close()end
         self:stop_record(r,'startup deadline','readiness timeout');return
+    end
+    if d.verify then
+        r.output=assert(child.stdout);assert(r.output:nonblock(true));local id
+        id=self:watch(r,'watch_read',r.output,function()
+            while true do
+                local bytes,read_error=r.output:read(4096)
+                if not bytes then
+                    if read_error and read_error.name=='EAGAIN'then return end
+                    if read_error then self:stop_record(r,'stdout error','stdout capture failed');return end
+                    self:cancel(r,id);r.output:close();r.output=nil;r.output_done=true;self:complete_oneshot(r);return
+                end
+                r.output_buffer=r.output_buffer..bytes
+                if #r.output_buffer>65536 then self:stop_record(r,'output limit','verified output exceeds 64 KiB');return end
+            end
+        end)
     end
     if writer then
         writer:close();r.notify=reader;local bytes=''
@@ -261,6 +351,7 @@ end
 function M:restart(name)
     local r=assert(self.records[name],'unknown service')
     if not r.child then
+        if not self:cleanup_record(r)then return end
         self:clear(r)
         if r.state=='READY' or r.state=='STARTING'then self:transition(r,'STOPPING','operator restart')end
         if r.state~='INACTIVE'then self:transition(r,'INACTIVE','operator restart')end
@@ -274,7 +365,7 @@ function M:shutdown()
     if self.shutting then return end
     local roots={}
     for name,r in pairs(self.records)do
-        if r.child or r.state=='READY'or r.state=='STARTING'or r.state=='QUEUED'or r.state=='RESTARTING'then roots[name]=true end
+        if (r.launch_definition and r.launch_definition.cleanup and not r.cleanup_attempted)or r.child or r.state=='READY'or r.state=='STARTING'or r.state=='QUEUED'or r.state=='RESTARTING'then roots[name]=true end
     end
     self.shutdown_plan=dependency.plan(self.config.registry,roots)
     self.shutting=true;self.shutdown_wave=#self.shutdown_plan.waves
@@ -292,7 +383,7 @@ function M:shutdown_step()
         local complete=true
         for _,name in ipairs(waves[self.shutdown_wave])do
             local r=self.records[name]
-            if r.state~='INACTIVE' and not (r.state=='FAILED'and not r.child) then self:stop_record(r,'manager shutdown')end
+            if r.state~='INACTIVE' and not (r.state=='FAILED'and not r.child and not(r.launch_definition and r.launch_definition.cleanup)) then self:stop_record(r,'manager shutdown')end
             if r.child then complete=false end
         end
         if not complete then return end

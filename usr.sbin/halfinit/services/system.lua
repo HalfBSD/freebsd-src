@@ -12,7 +12,7 @@ return {
     {name='dhcp',type='daemon',command={'/sbin/dhclient','-d'},requires={'interfaces'},system=true,
         description='DHCP interface arguments must be configured explicitly; no second client in userspace mode'},
     {name='network',type='virtual',condition='network_ready',requires={'dhcp'},system=true},
-    {name='dns',type='daemon',command={'/usr/sbin/unbound','-d','-c','/etc/unbound/unbound.conf'},
+    {name='dns',type='daemon',command={'/usr/sbin/local-unbound','-d','-c','/etc/unbound/unbound.conf'},
         requires={'runtime','firewall'},system=true,description='Preserves compiled DNS provider selection; no DHCP DNS redesign'},
     {name='sshd',type='daemon',command={'/usr/sbin/sshd','-D'},requires={'network'},after={'dns'},system=true},
     {name='ntpd',type='daemon',command={'/usr/sbin/ntpd','-n'},requires={'network'},system=true},

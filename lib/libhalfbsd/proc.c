@@ -117,6 +117,12 @@ static int kill_child(lua_State *L) {
 	lua_pushboolean(L,n);
 	return 1;
 }
+static int foreground_child(lua_State *L)
+{
+	if (hp_foreground(child(L, 1), STDIN_FILENO) < 0)
+		return hb_error(L, "foreground", NULL, errno);
+	lua_pushboolean(L, 1); return 1;
+}
 
 static int terminate_child(lua_State *L) {
 	struct hp_process *p=child(L,1);
@@ -727,7 +733,7 @@ static int fd_lua(lua_State *L) {
 int
 luaopen_proc(lua_State *L)
 {
-	static const luaL_Reg methods[]={{"__gc",child_gc},{"__index",child_index},{"status",status},{"wait",wait_child},{"signal",signal_child},{"terminate",terminate_child},{"kill",kill_child},{NULL,NULL}};
+	static const luaL_Reg methods[]={{"__gc",child_gc},{"__index",child_index},{"status",status},{"wait",wait_child},{"signal",signal_child},{"terminate",terminate_child},{"kill",kill_child},{"foreground",foreground_child},{NULL,NULL}};
 	hb_fd_metatable(L);
 	if(luaL_newmetatable(L,HB_CHILD)){luaL_setfuncs(L,methods,0);
 		lua_pushliteral(L,HB_CHILD);

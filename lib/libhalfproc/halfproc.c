@@ -18,6 +18,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "halfproc.h"
+#include <termios.h>
 
 struct hp_io {
 	atomic_uint refs;
@@ -516,6 +517,44 @@ hp_signal(struct hp_process *p, int signal, int group)
 	e = errno; pthread_mutex_unlock(&p->ctx->lock);
 	if (result < 0 && e != ESRCH) { errno = e; return -1; }
 	return result < 0 ? 0 : 1;
+}
+static int
+terminal_group(int fd, pid_t group)
+{
+	sigset_t block, old;
+	sigemptyset(&block); sigaddset(&block, SIGTTOU);
+	int error = pthread_sigmask(SIG_BLOCK, &block, &old);
+	if (error) { errno = error; return -1; }
+	int result = tcsetpgrp(fd, group), saved = errno;
+	error = pthread_sigmask(SIG_SETMASK, &old, NULL);
+	if (result < 0) { errno = saved; return -1; }
+	if (error) { errno = error; return -1; }
+	return 0;
+}
+int
+hp_foreground(struct hp_process *p, int fd)
+{
+	int result, saved;
+	pthread_mutex_lock(&p->ctx->lock);
+	if (p->result.done || !p->result.own_group) {
+		saved = p->result.done ? ESRCH : EINVAL;
+		pthread_mutex_unlock(&p->ctx->lock); errno = saved; return -1;
+	}
+	/* Reaping cannot release/reuse the leader PID during this handoff.
+	 * A child that read before handoff may have stopped on SIGTTIN. */
+	result = terminal_group(fd, p->result.pid); saved = errno;
+	if (result == 0 && pdkill(p->pd, SIGCONT) < 0) {
+		saved = errno;
+		(void)terminal_group(fd, getpgrp());
+		result = -1;
+	}
+	pthread_mutex_unlock(&p->ctx->lock); errno = saved; return result;
+}
+int
+hp_terminal_restore(int fd)
+{
+	/* This is the caller's own living group, never a saved child PID. */
+	return terminal_group(fd, getpgrp());
 }
 int
 hp_descriptor(struct hp_process *p)

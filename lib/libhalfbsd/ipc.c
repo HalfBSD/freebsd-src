@@ -6,6 +6,7 @@
 #include <poll.h>
 #include <stddef.h>
 #include <limits.h>
+#include <arpa/inet.h>
 #include "internal.h"
 
 static struct hb_fd *owner(lua_State *L)
@@ -140,11 +141,62 @@ static int socket_probe(lua_State *L)
 	lua_pushboolean(L, result == 0 || error == EINPROGRESS);
 	return 1;
 }
+static void ipv4_address(lua_State *L, struct sockaddr_in *sin)
+{
+	const char *host = hb_string(L, 1, NULL);
+	lua_Integer port = luaL_checkinteger(L, 2);
+	luaL_argcheck(L, port > 0 && port <= 65535, 2, "port must be 1..65535");
+	memset(sin, 0, sizeof(*sin));
+	sin->sin_family = AF_INET;
+#ifdef __FreeBSD__
+	sin->sin_len = sizeof(*sin);
+#endif
+	sin->sin_port = htons((uint16_t)port);
+	luaL_argcheck(L, inet_pton(AF_INET, host, &sin->sin_addr) == 1, 1, "numeric IPv4 address required");
+}
+static int udp_connection(lua_State *L)
+{
+	struct sockaddr_in sin;
+	ipv4_address(L, &sin);
+	struct hb_fd *f = owner(L);
+	int fd = socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC | SOCK_NONBLOCK, 0);
+	if (fd < 0) return hb_error(L, "ipc.udp", NULL, errno);
+	if (connect(fd, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
+		int error = errno; close(fd); return hb_error(L, "ipc.udp", NULL, error);
+	}
+	f->fd = hp_fd_new(fd);
+	if (!f->fd) return hb_error(L, "ipc.udp", NULL, errno);
+	return 1;
+}
+static int tcp_probe(lua_State *L)
+{
+	struct sockaddr_in sin;
+	ipv4_address(L, &sin);
+	int fd = socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC | SOCK_NONBLOCK, 0);
+	if (fd < 0) return hb_error(L, "ipc.tcp_probe", NULL, errno);
+	int result = connect(fd, (struct sockaddr *)&sin, sizeof(sin)), error = 0;
+	if (result < 0) error = errno;
+	if (error == EINPROGRESS) {
+		struct pollfd p = {fd, POLLOUT, 0};
+		result = poll(&p, 1, 0);
+		if (result > 0) {
+			socklen_t length = sizeof(error);
+			if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &error, &length) < 0) error = errno;
+		} else if (result < 0) error = errno;
+	}
+	close(fd);
+	if (error && error != EINPROGRESS && error != ECONNREFUSED && error != ETIMEDOUT &&
+	    error != ENETUNREACH && error != EHOSTUNREACH && error != EINTR)
+		return hb_error(L, "ipc.tcp_probe", NULL, error);
+	lua_pushboolean(L, error == 0);
+	return 1;
+}
 int luaopen_halfbsd_ipc(lua_State *L)
 {
 	static const luaL_Reg methods[] = {
 	    {"listen", listen_unix}, {"accept", accept_unix}, {"connect", connect_unix},
-	    {"lock", lock_file}, {"probe", socket_probe}, {NULL, NULL}};
+	    {"lock", lock_file}, {"probe", socket_probe}, {"udp", udp_connection},
+	    {"tcp_probe", tcp_probe}, {NULL, NULL}};
 	hb_fd_metatable(L);
 	luaL_newlib(L, methods);
 	return 1;

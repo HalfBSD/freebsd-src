@@ -299,6 +299,49 @@ Explicit native nmount key/value strings (64 entries, at most 1 MiB) and unmount
 Flags are numeric and default to zero. These require appropriate privilege.
 No filesystem is inferred and no shell is invoked.
 .El
+.Sh BOOT INVENTORY AND TERMINAL INTERFACES
+The OS module provides the following explicit interfaces. They return a value,
+or nil and a structured native error. FreeBSD inventories are bounded snapshots;
+concurrent kernel changes may return EAGAIN and require a fresh query.
+.Bl -tag -width interface_up
+.It Sy fstab()
+Array of source, path, type, options and pass fields. The libc cursor closes
+before Lua table construction. At most 1024 entries and 1 MiB of strings.
+.It Sy mounts()
+Kernel mount records with source, path, type and readonly, using MNT_NOWAIT.
+.It Sy processes()
+Visible process records with pid, uid (effective), command and jail fields.
+Names are kernel command names, not trustworthy executable identity proofs.
+.It Sy default_routes()
+IPv4 default routes with interface and gateway. It does not change routes.
+.It Sy interface_up(name)
+Explicit privileged ioctl setting IFF_UP while preserving other flags.
+.It Sy terminal()
+Table with tty, foreground and stop_background_output (TOSTOP) booleans for
+standard input.
+.It Sy terminal_restore()
+Return the current terminal to this process's own living group.
+.El
+.Pp
+FreeBSD link rows from
+.Sy interfaces()
+include link_type and available link_state fields.
+.Sy child:foreground()
+transfers standard-input terminal foreground ownership to a live tracked child
+that owns its process group in the same session, then delivers SIGCONT through
+its process descriptor. Reaping is locked out during the handoff. Reaped handles
+return ESRCH; absent group ownership returns EINVAL. These operations do not
+create a login, authenticate a user, or establish a PAM session.
+.Pp
+The IPC module adds
+.Sy udp(numeric_ipv4, port)
+for a connected nonblocking datagram descriptor and
+.Sy tcp_probe(numeric_ipv4, port)
+for an immediate, nonblocking connection check. Both validate ports 1..65535.
+The latter returns false for pending or unreachable connections, true for
+successful connections, or nil and an error for other failures. It always closes
+its temporary descriptor. Connected UDP follows the existing FD read/write,
+nonblock and close contracts. No name lookup or shell is invoked.
 .Sh LOGGING MODULE
 .Sy require("halfbsd.log").new(options)
 returns a logger or an error.

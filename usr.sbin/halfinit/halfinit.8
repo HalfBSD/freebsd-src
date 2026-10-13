@@ -12,6 +12,7 @@
 .Op Fl Fl runtime-dir Ar directory
 .Op Fl Fl state-file Ar file
 .Op Fl Fl run-for Ar seconds
+.Op Fl Fl activate-system
 .Op Fl Fl check | Fl Fl graph | Fl Fl dry-run | Fl Fl shadow
 .Op Fl Fl simulate Op Fl Fl scenario Ar name
 .Op Fl Fl module-dir Ar directory
@@ -32,7 +33,8 @@ report validation, parallel startup waves, reverse shutdown waves and missing
 prerequisites as JSON without executing tasks or creating runtime files.
 .Fl Fl shadow
 also reads bounded rc.conf inputs for a comparison of known enable flags.
-It does not execute rc configuration or adopt existing processes.
+With a concrete boot policy it also reports kernel mount inventory and matching
+external process names. It does not execute rc configuration or adopt processes.
 .Pp
 .Fl Fl simulate
 uses disposable Lua fixtures in the actual scheduler and supervisor.
@@ -119,15 +121,80 @@ available to clients which can reach it; mutations require manager UID or root.
 Requests are versioned JSON, size-bounded and never evaluated as Lua or shell.
 Connections and their lifetimes are bounded.
 .Pp
-System-provided filesystem, networking, firewall, DNS and desktop definitions
-are protected planning tasks during this phase. The manager cannot launch a
-second instance of an rc-managed service through that graph.
-DNS retains the compiled provider hierarchy; DHCP DNS changes are deferred.
+System services require an explicit configuration and
+.Fl Fl activate-system .
+The built-in legacy graph remains a planning outline. A configuration with
+.Sy boot
+compiles a concrete graph from explicit administrator policy.
+Neither installation nor any planning mode activates it.
+Existing daemons outside this manager cause preflight refusal; never use live
+activation to take over a running rc host.
 .Pp
-Foreground execution is required. Escaped/daemonized descendants are not owned
-reliably after leader reaping; stale process groups are never signaled.
-Desktop session/controlling-terminal ownership needs a future boot integration
-adapter. Built-in desktop planning never launches a root compositor.
+Foreground execution is required. Escaped or daemonized descendants are not
+owned reliably after leader reaping; stale process groups are never signaled.
+.Sh BOOT ADAPTERS
+The installed examples
+.Pa /usr/share/examples/halfbsd/boot-system.lua
+and
+.Pa /usr/share/examples/halfbsd/desktop-user.lua
+show system and existing-login-session policies.
+System boot fields are mode, interfaces, local_mounts, zfs, root_writable,
+firewall, dns, sshd, ntpd, seatd and desktop.
+Root privilege and exclusive process ownership are checked before mutation.
+.Pp
+Storage preparation runs through the existing scheduler before the manager
+opens its runtime lock, control socket, persistent state or optional file log.
+Console logging is available during that preparation.
+Local mounts can be selected from fstab or supplied as native nmount option
+records. Root, swap, ZFS and noauto entries are excluded from the fstab list.
+Unsupported or remote filesystems require explicit separate policy.
+Nested mounts depend on their parents. Mounted filesystems are not checked or
+adopted for cleanup. Unmounted UFS and FAT entries can use fsck preen.
+ZFS mounts already imported pools; pool imports, encryption keys and exports
+remain outside this adapter.
+.Pp
+Created local mounts are released in reverse dependency order after process
+cleanup and runtime descriptors close. There is no forced unmount or blanket
+ZFS unmount. Kernel filesystem operations are synchronous and are not made
+interruptible by the manager's timers.
+.Pp
+Interfaces may be explicitly selected or one Ethernet interface chosen with
+carrier preference and stable name ordering. Native ioctl brings it up; the
+existing foreground dhclient supplies addresses and routes. Readiness requires
+an IPv4 address and default route. DHCP DNS addresses remain ignored by the
+existing HalfBSD resolver integration.
+.Pp
+Firewall ownership defaults to verify: kernel hooks, an immutable set 31 deny
+guard and default deny must be present. Explicit load requires an empty deny
+baseline; it installs the guard before rules and never flushes existing policy.
+Workstation, closed and open modes are explicit. Workstation permits SSH and
+DNS from any source, matching the established HalfBSD policy. Every installed
+rule is read back before externally reachable services start.
+.Pp
+DNS uses local-unbound-checkconf, local-unbound-anchor and foreground
+local-unbound. Existing valid anchors are preserved; initialization is run as
+unbound when needed. Readiness requires a successful matching localhost UDP
+answer and a TCP connection. Existing DNSSEC maintenance and the compiled DNS
+provider hierarchy remain in Unbound. SSH keys are generated idempotently,
+configuration is checked, and readiness probes TCP. NTP runs foreground; its
+process readiness does not claim clock synchronization.
+.Pp
+The desktop user policy requires a private XDG runtime directory and current
+foreground login terminal, with terminal TOSTOP disabled for console logging.
+A tracked child receives terminal ownership and
+SIGCONT through its process descriptor; exit or shutdown restores the manager's
+own living group. Sway readiness defaults to the Wayland socket named
+.Pa wayland-0
+under that runtime directory; niri requires an explicit absolute
+.Sy wayland_socket .
+A pre-existing readiness socket causes refusal.
+The system desktop target can wait for the configured non-root user's manager
+socket reporting a READY compositor; it does not adopt that user's processes.
+Console autologin, PAM and persistent session ownership are future work.
+.Pp
+Boot policy cannot change during configuration reload; start a new manager
+session to change it. Gateway is an explicit service group, without inferred
+packet forwarding or NAT configuration. No boot cutover or PID 1 change is made.
 .Sh SEE ALSO
 .Xr halfsvc 8 ,
 .Xr lua-halfbsd 7

@@ -315,3 +315,16 @@ strict C17 checks; all nine C translation units passed host-width strict C17
 syntax checks with temporary FreeBSD declarations. This does not establish a
 full 32-bit or native FreeBSD build. Anvil buildworld/build32 remains pending.
 The user authorized committing and pushing this correction.
+
+FOLLOW-UP: INTERPRETER POSIX CONFIGURATION MACRO
+
+Anvil rejected Lua's interpreter entry because usr.bin/lua/Makefile defined
+LUA_USE_POSIX as 1 while the shared in-tree luaconf.local.h defined it as empty.
+Removed the redundant command-line definition. The shared header remains the
+single source of this setting; POSIX support stays enabled. No warning suppressed.
+
+Actual Linux checks: the old command line reproduced macro-redefinition failure;
+the corrected upstream lua.c interpreter entry compiled in both ordinary and
+-fPIE variants with strict C17/-Wpedantic/-Werror. Existing library build metadata
+regression passed. Native FreeBSD buildworld/runtime verification remains pending.
+The user subsequently authorized committing and pushing this correction.

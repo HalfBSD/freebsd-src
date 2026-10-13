@@ -139,3 +139,13 @@ Earlier local validation: Linux shell/Lua syntax, Makefile parsing and deliberat
 Linux rejection passed; those remain distinct from the native results above.
 This update records evidence only. No runtime or boot code changed, and this
 native-results documentation update has not been committed or pushed.
+
+
+PHASE III REGRESSION GATE CONFIRMED
+
+The administrator's complete Phase III runner transcripts on Anvil FreeBSD
+15.1-RELEASE-p4 AMD64 passed all nine scenarios again, as UID 1001 and UID 0,
+using in-tree Lua 5.4.8. Phase II integration/stress and the non-destructive
+Phase III adapter suite also passed. Root passed the isolated Phase II cross-UID
+authorization case. These results do not constitute broader Phase I ATF,
+sanitizer or real boot validation. See HALFBSD-LUA-PHASE3.txt for current scope.

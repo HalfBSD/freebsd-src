@@ -1,5 +1,5 @@
 HalfBSD Lua Phase III — Real initialization adapters and handoff
-October 13, 2026 | branch halfbsd2 | implementation awaiting native validation
+October 13, 2026 | branch halfbsd2 | native userspace suite PASS; live boot untested
 
 STATUS
 
@@ -9,10 +9,18 @@ rc replacement cutover. Existing /sbin/init, /etc/rc and rc.d startup remain
 unchanged. Nothing starts automatically after installation. The administrator
 authorized committing and pushing this pass on October 13, 2026.
 
-Phase II's previously reported Anvil success remains valid for its committed
-baseline. It does not establish native validation of these new C/Lua changes.
-This workspace runs Linux; Phase III buildworld/buildkernel, Clang compilation,
-FreeBSD runtime tests, ATF and isolated live boot activation remain pending.
+The administrator supplied complete native userspace PASS runs on Anvil as UID
+1001 and root after the asynchronous readiness correction. Both passed all 16
+Phase III policy groups, real dry-run/shadow, native inventories, oneshot output
+checks, UDP/TCP readiness and private PTY ownership checks, then all Phase I/II
+regression gates. Root additionally passed isolated cross-UID authorization.
+These are user-reported native FreeBSD results, not Linux emulation.
+
+The administrator previously reported a full rebuild and installation. Detailed
+buildworld/buildkernel/build32 logs, native ATF/sanitizer results, actual system
+adapter activation and isolated live boot/shutdown recovery remain outstanding.
+The earlier native failure notes below are historical and are superseded by the
+complete success record at the end of this report.
 
 IMPLEMENTED
 
@@ -180,10 +188,10 @@ REMAINING BOUNDARIES / NEXT VALIDATION
   managers remain persistent until TERM/INT or authenticated halfsvc shutdown.
 - Gateway groups existing services only; enabling IP forwarding/NAT is not
   inferred. No unrelated firewall, SSH, resolver hierarchy or Capsicum changes.
-- Native buildworld/buildkernel including build32, Clang checks, ATF, Anvil
-  userspace results, real DHCP/firewall/DNS/desktop readiness, and isolated boot/
-  shutdown recovery are outstanding acceptance work. Record actual results;
-  do not label Linux mocks or link stubs as native completion.
+- Detailed buildworld/buildkernel/build32 logs, native ATF/sanitizer results,
+  real DHCP/firewall/Unbound/desktop activation and isolated boot/shutdown recovery
+  remain outstanding. The non-destructive native userspace suite has passed.
+  Its mock policy tests do not establish privileged adapter or packet behavior.
 
 SOURCE MAP
 
@@ -270,3 +278,45 @@ complete PIE links using real foundation/Lua archives and explicit ENOSYS kernel
 stubs; real Linux UDP/TCP loopback checks using retained descriptors; generated
 PIE/archive flags and repeated parallel module installation; Lua syntax and
 git diff --check. Native FreeBSD kernel confirmation remains pending.
+
+NATIVE ACCEPTANCE UPDATE — COMPLETE USERSPACE PASS
+
+Following the readiness correction introduced in 90d7a223fe23, the administrator
+provided two complete phase3/run.sh transcripts from Anvil: UID 1001 and UID 0.
+Both ended with:
+  PASS Phase III non-destructive userspace adapter suite
+       (real boot activation remains untested)
+
+Reported environment:
+  FreeBSD anvil 15.1-RELEASE-p4
+  halfbsd2-n283744-94e22a343818 CHARLIE amd64
+  In-tree Lua 5.4.8
+The uname revision identifies the running kernel, not the tested world/source
+revision; a separate git revision was not included in these transcripts.
+
+PASS in both runs:
+- All 16 Phase III policy groups (mock kernel operations), including retained
+  pending TCP sockets, refusal/deadline/cancellation, and retained UDP answers.
+- Real adapter dry-run and shadow without runtime-file creation.
+- Native read-only filesystem/process/route/interface/terminal inventories.
+- Actual command stdout capture, reaping, verification and fail-closed readback.
+- Real UDP DNS query and retained TCP readiness on an ephemeral loopback fixture;
+  all fixture children released. The previous readiness timeout no longer occurs.
+- Private PTY foreground handoff, SIGCONT/restoration and reaped-handle refusal.
+- All 14 Phase II policy groups and all nine Phase I supervision scenarios.
+- Full Phase II native integration/stress: 50 concurrent supervised processes,
+  100 randomized dependency tasks, 1,000 start/stop operations, readiness/restart/
+  shutdown, transactional reload, persistence, disconnected clients, authenticated
+  control, callback failure cleanup and synthetic desktop boot/shutdown.
+
+The ordinary-user run explicitly skipped the isolated cross-UID credential case.
+The root run PASSED it: read-only access permitted, unauthorized mutation denied.
+Neither transcript reported a failure. Existing rc startup remains unchanged.
+
+This establishes native userspace acceptance of the corrected Phase III runtime
+and non-destructive adapters, with Phase I/II regressions passing under both UIDs.
+It does not establish real filesystem mounting, DHCP takeover, IPFW packet policy,
+production Unbound/SSH/NTP supervision, compositor launch, autologin/PAM, PID 1
+integration or a Lua-controlled host boot. Test those separately in an isolated
+VM before any boot cutover. Native ATF and sanitizer execution remain unreported.
+The approved future autologin/PAM option remains documented above.

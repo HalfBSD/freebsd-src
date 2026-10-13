@@ -335,3 +335,15 @@ considering rc removal. Do not describe protected planning placeholders as a
 complete executable replacement for every FreeBSD boot task. PID 1 integration,
 readiness cooperation from real daemons, privilege/seat policy and operational
 recovery remain separate, explicit engineering work.
+
+
+PHASE III REGRESSION UPDATE — OCTOBER 13, 2026
+
+The administrator supplied complete phase3/run.sh PASS logs on Anvil FreeBSD
+15.1-RELEASE-p4 AMD64 as UID 1001 and root. That runner reran all 14 Phase II
+policy groups, all nine Phase I scenarios and the full Phase II native integration/
+stress suite, including 50 concurrent processes, 100 dependency tasks and 1,000
+start/stop operations. The root run passed isolated cross-UID authorization;
+the ordinary-user run skipped that root-only case. See HALFBSD-LUA-PHASE3.txt
+for the latest adapter implementation and native acceptance record. Its live
+system activation and real boot integration remain untested; no rc cutover occurs.

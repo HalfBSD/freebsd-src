@@ -5,6 +5,7 @@ LIB=	lua
 INCS= ${LUASRC}/lua.h ${LUASRC}/lauxlib.h ${LUASRC}/lualib.h \
 	${LUASRC}/luaconf.h luaconf.local.h
 INCSDIR= ${INCLUDEDIR}/lua
+DIRS+= INCSDIR
 WARNS?=	2
 
 CWARNFLAGS.gcc+=	-Wno-format-nonliteral
@@ -33,3 +34,12 @@ CFLAGS+=	-DBOOTSTRAPPING
 .endif
 
 .include <bsd.lib.mk>
+
+# Bootstrap staging does not use BSD.include.dist. Create the public header
+# directory before the batch header install, including installincludes alone.
+# Keep directory creation out of _INCSINS prerequisites: bsd.incs.mk passes
+# that target's entire .ALLSRC to install(1) as header filenames.
+.if ${MK_INCLUDES} != "no"
+installincludes: installdirs-INCSDIR
+.ORDER: installdirs-INCSDIR _INCSINS
+.endif

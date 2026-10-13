@@ -250,6 +250,8 @@
     ..
     libxo               tags=package=runtime-dev
     ..
+    lua                 tags=package=utilities-dev
+    ..
     lzma                tags=package=xz-dev
     ..
     machine

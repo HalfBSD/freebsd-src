@@ -116,7 +116,7 @@ the required syscall. ENOSYS is a real failed prerequisite, not a passing test.
 
 NATIVE AUTOMATED COVERAGE PREPARED (NOT EXECUTED HERE)
 
-Seven ATF cases:
+Eight ATF cases (including the subsequent header-install regression):
 - processes: direct execution/nonzero exits; missing/non-executable programs;
   failed cwd/credential lookup; argv holes/NUL/unknown options; shell-looking
   arguments remain literal; environment inheritance/replacement/unsetting;
@@ -223,3 +223,26 @@ is separate from reference release. The context thread retains active children
 independently of caller references. Context_close releases the caller context
 ownership exactly once and waits for no child implicitly. C users must release
 all owned references and avoid a second reaper or external descriptor closure.
+
+FOLLOW-UP: LUA HEADER DIRECTORY INSTALLATION
+
+Anvil's buildworld exposed a missing /usr/include/lua directory during legacy
+bootstrap staging. The Phase 1 header-export change introduced the new install
+path without creating it; bootstrap staging does not apply BSD.include.dist.
+lib/liblua/Makefile now registers INCSDIR with bsd.dirs.mk and orders its directory
+installation before the batch _INCSINS target, including installincludes alone.
+etc/mtree/BSD.include.dist now lists lua for normal world directory creation.
+The existing default utilities-dev header package tag is preserved.
+
+Added tests/halfbsd/header_install.sh and the headers ATF case. They install all
+five exact source headers into fresh bootstrap and fresh world destinations,
+then repeat a parallel bootstrap install and compare every installed file.
+No compilation, root privileges or changes to the active include tree are needed.
+Anvil can run the source-only test immediately:
+  sh /usr/src/tests/halfbsd/header_install.sh /usr/src
+
+Actual Linux verification: the committed baseline reproduced the missing-target
+failure; the fixed fresh bootstrap, fresh world, and repeated -j8 installs all
+passed using bmake built from contrib/bmake. Shell syntax and git diff checks
+passed. Native FreeBSD buildworld and the native runtime suite remain pending.
+The user subsequently authorized committing and pushing this follow-up.

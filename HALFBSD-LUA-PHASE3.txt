@@ -195,3 +195,20 @@ halfproc terminal handoff; config/schema/supervisor/main/provider integration;
 halfinit module/example build list and manual; lua-halfbsd API manual;
 planning graph utility path; test build lists/staged-install checks.
 No duplicate Lua source tree, external runtime, new daemon or build option.
+
+ANVIL BUILD FOLLOW-UP
+
+The first reported native Phase III buildworld failed in discovery.c and ipc.c.
+Clang rejected a sockaddr-to-sockaddr_dl cast that increases alignment; FreeBSD's
+arpa/inet.h did not provide the sockaddr_in definition indirectly as Linux did.
+
+The correction explicitly includes netinet/in.h and replaces the link-address
+cast with a length-checked memcpy into aligned local storage. Interface statistics
+also use an aligned local copy. No warning suppression or protocol change was
+introduced. AGENTS.md records both portability checks for future changes.
+
+The corrected foundation sources pass GCC strict C17 checks on Linux; complete
+PIE links and the 14 Phase III policy groups were rerun. These host checks do not
+compile discovery.c's FreeBSD-only branch. A new Anvil buildworld result and
+native userspace/ATF results remain pending. The administrator authorized
+committing and pushing this focused correction after verification.

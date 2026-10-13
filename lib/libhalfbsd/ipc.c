@@ -6,6 +6,7 @@
 #include <poll.h>
 #include <stddef.h>
 #include <limits.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
 #include "internal.h"
 

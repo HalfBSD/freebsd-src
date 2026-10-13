@@ -8,6 +8,7 @@
 #include <dirent.h>
 #include <ifaddrs.h>
 #include <netdb.h>
+#include <stddef.h>
 #include "internal.h"
 #define HB_DISCOVERY "halfbsd.discovery_guard"
 struct discovery { DIR *dir; struct ifaddrs *interfaces; };
@@ -84,10 +85,21 @@ int hb_interfaces(lua_State *L)
 		lua_setfield(L, -2, "family");
 #ifdef __FreeBSD__
 		if (link) {
-			lua_pushinteger(L, ((struct sockaddr_dl *)a->ifa_addr)->sdl_type);
+			struct sockaddr_dl link_address = {0};
+			size_t link_size = offsetof(struct sockaddr_dl, sdl_type) +
+			    sizeof(link_address.sdl_type);
+			if (a->ifa_addr->sa_len < link_size) {
+				freeifaddrs(g->interfaces); g->interfaces = NULL;
+				return hb_error(L, "interfaces", "link address", EPROTO);
+			}
+			/* sockaddr does not guarantee sockaddr_dl's alignment. */
+			memcpy(&link_address, a->ifa_addr, link_size);
+			lua_pushinteger(L, link_address.sdl_type);
 			lua_setfield(L, -2, "link_type");
 			if (a->ifa_data) {
-				lua_pushinteger(L, ((struct if_data *)a->ifa_data)->ifi_link_state);
+				struct if_data data;
+				memcpy(&data, a->ifa_data, sizeof(data));
+				lua_pushinteger(L, data.ifi_link_state);
 				lua_setfield(L, -2, "link_state");
 			}
 		}

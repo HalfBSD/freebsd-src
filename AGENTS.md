@@ -19,6 +19,10 @@ success. These notes record failures found during the Lua foundation work.
   Keep hardening enabled rather than suppressing linker diagnostics.
 - Inspect effective compiler definitions alongside shared configuration headers;
   avoid duplicate command-line definitions of Lua configuration macros.
+- Include the header that owns each network type explicitly: sockaddr_in needs
+  netinet/in.h; arpa/inet.h exposing it on Linux does not establish portability.
+  Avoid casting sockaddr pointers to more strictly aligned address structures.
+  Check the reported length and copy needed fields into aligned local storage.
 - Verify installation into an empty DESTDIR, including bootstrap staging, public
   headers and archives, and repeated parallel installation. New include
   directories need creation and ordering, not only an mtree entry.

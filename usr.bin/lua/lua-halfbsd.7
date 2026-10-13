@@ -336,12 +336,17 @@ create a login, authenticate a user, or establish a PAM session.
 The IPC module adds
 .Sy udp(numeric_ipv4, port)
 for a connected nonblocking datagram descriptor and
-.Sy tcp_probe(numeric_ipv4, port)
-for an immediate, nonblocking connection check. Both validate ports 1..65535.
-The latter returns false for pending or unreachable connections, true for
-successful connections, or nil and an error for other failures. It always closes
-its temporary descriptor. Connected UDP follows the existing FD read/write,
-nonblock and close contracts. No name lookup or shell is invoked.
+.Sy tcp(numeric_ipv4, port)
+for a managed nonblocking stream descriptor. TCP returns a descriptor even while
+its connect is pending; retain it until connection completion or cancellation.
+Both constructors validate ports 1..65535 and use close-on-exec descriptors.
+.Sy connected(descriptor)
+returns true after connection completion, false while pending, or nil and a
+native error on failure. It polls without blocking and never closes the supplied
+descriptor. After an error, close it: SO_ERROR retrieval consumes the socket error.
+The caller must close successful, failed and cancelled connections explicitly.
+Descriptors follow the existing read/write, nonblock and close contracts.
+No name lookup or shell is invoked.
 .Sh LOGGING MODULE
 .Sy require("halfbsd.log").new(options)
 returns a logger or an error.

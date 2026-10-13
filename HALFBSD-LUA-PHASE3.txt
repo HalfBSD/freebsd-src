@@ -27,7 +27,7 @@ IMPLEMENTED
 2. Bounded native inventories: libc fstab, FreeBSD kernel mounts/processes,
    IPv4 default routes, interface link type/carrier and terminal ownership.
    Native interface-up preserves existing ioctl flags. New connected IPv4 UDP
-   and immediate TCP probes use managed, close-on-exec descriptors.
+   and retained asynchronous TCP probes use managed, close-on-exec descriptors.
 
 3. Storage bootstraps before opening runtime control, lock, state and file logs,
    using the SAME supervisor instance. Early logs go to the console. Nested
@@ -228,3 +228,45 @@ The test now separates cleanup assertions, formats structured callback/native
 errors with JSON and traceback, and performs bounded KILL/reap fallback before
 reporting failure. This is a diagnostic correction, not a confirmed fix for the
 underlying native failure. Rerun on Anvil to identify its actual cause.
+
+ASYNCHRONOUS READINESS CORRECTION
+
+After a reported full rebuild and installation, the administrator's root test
+identified the hidden failure as the UDP/TCP readiness deadline. Source review
+found a defect in OUR NEW Phase III TCP readiness helper, not a FreeBSD defect:
+connect() could return EINPROGRESS, but the helper polled immediately and closed
+that socket. Later timer callbacks started new handshakes instead of retaining
+the in-flight one. Linux's fast loopback completion had concealed this defect.
+
+The IPC API now supplies tcp(address, port), returning a managed nonblocking
+socket even when connecting, and connected(fd), which checks completion without
+closing it. DNS and SSH readiness retain connections across existing kernel-timer
+callbacks, release them on success/error/timeout/cancellation, and preserve a
+validated UDP answer while TCP completes. SO_ERROR failures are consumed once
+and require closing the failed descriptor. No blocking wait or busy loop was
+added. The old immediate tcp_probe implementation and its callers were replaced;
+no external repository consumers were found. The API manual describes ownership.
+
+The disposable fixture's listener/UDP sockets and accept are now nonblocking:
+a queued connection can disappear before accept, so poll readiness must not be
+used as a guarantee that a subsequent blocking accept cannot stall. This is a
+separate race in our fixture, not established as the cause of Anvil's timeout.
+
+Added regressions force several pending checks on the SAME connection, then
+completion; refusal, timeout, cancellation and exactly-once release; and a
+single consumed UDP reply retained through delayed TCP readiness. All 16 Phase
+III policy groups and the 14 existing Phase II policy groups pass locally.
+Strict GCC C17 compilation passes; complete PIE/archive linkage and real Linux
+loopback checks are recorded below. Native confirmation of the corrected
+readiness path remains pending; the earlier Anvil run did not reach the private
+PTY or Phase I/II native gates. Rebuild/install the updated runtime before rerun,
+as these native IPC entry points are new.
+
+AGENTS.md now records the general asynchronous-lifetime lesson, delayed-completion
+regression requirement, cross-platform loopback limitation and fixture race.
+
+Correction validation completed locally: strict GCC C17 source compilation;
+complete PIE links using real foundation/Lua archives and explicit ENOSYS kernel
+stubs; real Linux UDP/TCP loopback checks using retained descriptors; generated
+PIE/archive flags and repeated parallel module installation; Lua syntax and
+git diff --check. Native FreeBSD kernel confirmation remains pending.

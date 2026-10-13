@@ -14,7 +14,9 @@ function M.attach(providers,os,ipc)
     local serial=0;local pending={};local deferred={}
     local function release(d)
         local probe=probes[d]
-        if probe then probe.fd:close();probes[d]=nil end
+        if probe then
+            probe.fd:close();if probe.tcp then probe.tcp:close()end;probes[d]=nil
+        end
     end
     providers.release=release
     providers.root_guard=function()
@@ -147,9 +149,24 @@ function M.attach(providers,os,ipc)
         assert(#text<=1048576 and(text:find('DNSKEY',1,true)or text:find(' DS ',1,true)),'DNSSEC anchor contains no trust record')
         return true
     end
-    providers.tcp_ready=function(p)
-        local ok,err=ipc.tcp_probe(p.address or'127.0.0.1',p.port)
-        if ok==nil then error(err)end;return ok
+    local unavailable={ECONNREFUSED=true,ECONNRESET=true,ECONNABORTED=true,
+        ETIMEDOUT=true,ENETUNREACH=true,EHOSTUNREACH=true,EINTR=true}
+    local function connection_error(err)
+        if not unavailable[err.name]then error(err)end
+        return false
+    end
+    providers.tcp_ready=function(p,d)
+        local probe=probes[d]
+        if probe and os.clock()-probe.time>0.5 then release(d);probe=nil end
+        if not probe then
+            local fd,err=ipc.tcp(p.address or'127.0.0.1',p.port)
+            if not fd then return connection_error(err)end
+            probe={fd=fd,time=os.clock()};probes[d]=probe
+        end
+        local ok,err=ipc.connected(probe.fd)
+        if ok==nil then release(d);return connection_error(err)end
+        if ok then release(d)end
+        return ok
     end
     providers.anchor_init_guard=function(p,d,engine)
         providers.exclusive_guard(p,d,engine)
@@ -168,19 +185,27 @@ function M.attach(providers,os,ipc)
             local query=string.pack('>I2I2I2I2I2I2',serial,0x100,1,0,0,0)..probe.question
             assert(fd:write(query));return false
         end
-        local bytes,err=probe.fd:read(1024)
-        if not bytes then
-            if not err or err.name~='EAGAIN'then release(d)end
-            return false
+        if not probe.udp_ready then
+            local bytes,err=probe.fd:read(1024)
+            if not bytes then
+                if not err or err.name~='EAGAIN'then release(d)end
+                return false
+            end
+            if #bytes<12 then return false end
+            local id,flags,questions,answers=string.unpack('>I2I2I2I2',bytes)
+            if id~=probe.id or(flags&0xfa0f)~=0x8000 or questions~=1 or answers==0 or
+                bytes:sub(13,12+#probe.question)~=probe.question then return false end
+            probe.udp_ready=true
         end
-        if #bytes<12 then return false end
-        local id,flags,questions,answers=string.unpack('>I2I2I2I2',bytes)
-        if id~=probe.id or(flags&0xfa0f)~=0x8000 or questions~=1 or answers==0 or
-            bytes:sub(13,12+#probe.question)~=probe.question then return false end
-        local ok,why=ipc.tcp_probe('127.0.0.1',p.port or 53)
-        if ok==nil then error(why)end
-        if ok then release(d);return true end
-        return false
+        if not probe.tcp then
+            local fd,err=ipc.tcp('127.0.0.1',p.port or 53)
+            if not fd then release(d);return connection_error(err)end
+            probe.tcp=fd
+        end
+        local ok,err=ipc.connected(probe.tcp)
+        if ok==nil then release(d);return connection_error(err)end
+        if ok then release(d)end
+        return ok
     end
     providers.user_session_guard=function(p)
         local uid=os.identity().euid;assert(uid~=0,'desktop sessions must start as the logged-in user')

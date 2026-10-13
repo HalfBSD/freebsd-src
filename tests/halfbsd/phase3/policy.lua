@@ -25,7 +25,7 @@ local function fixture()
     function native.getenv()return '/tmp/session'end
     function native.terminal()return {tty=true,foreground=true}end
     function native.stat()return {type='directory',uid=f.uid,mode=448}end
-    local ipc={tcp_probe=function()return true end}
+    local ipc={tcp=function()return {close=function()end}end,connected=function()return true end}
     local providers=require('adapters').attach({},native,ipc)
     return f,native,providers,ipc
 end
@@ -113,6 +113,32 @@ test('DNS readiness requires matching successful UDP and TCP; probes close',func
     answer=string.pack('>I2I2I2I2I2I2',id,0x8002,1,0,0,0);assert(not p.dns_ready({},d))
     answer=string.pack('>I2I2I2I2I2I2',id,0x8000,1,1,0,0)..query:sub(13);assert(p.dns_ready({},d)and closed==1)
     assert(not p.dns_ready({},d));p.release(d);assert(closed==2)
+end)
+test('TCP readiness retains pending sockets and releases refusal, timeout and cancellation',function()
+    local f,n,p,ipc=fixture();local made,closed,calls=0,0,0;local first;local d={}
+    ipc.tcp=function()made=made+1;local fd={close=function()closed=closed+1 end};first=first or fd;return fd end
+    ipc.connected=function(fd)assert(fd==first);calls=calls+1;return calls>=3 end
+    assert(not p.tcp_ready({port=22},d));assert(not p.tcp_ready({port=22},d))
+    assert(p.tcp_ready({port=22},d)and made==1 and closed==1)
+    ipc.connected=function()return nil,{name='ECONNREFUSED'}end
+    assert(not p.tcp_ready({port=22},d)and made==2 and closed==2)
+    ipc.connected=function()return false end
+    assert(not p.tcp_ready({port=22},d));f.clock=1
+    assert(not p.tcp_ready({port=22},d)and made==4 and closed==3)
+    p.release(d);p.release(d);assert(closed==4)
+end)
+test('DNS retains the UDP answer while its single TCP handshake completes',function()
+    local f,n,p,ipc=fixture();local query;local reads,polls,made,closed=0,0,0,0;local first;local d={}
+    ipc.udp=function()return {write=function(_,text)query=text;return #text end,
+        read=function()
+            reads=reads+1;assert(reads==1,'consumed UDP response was requested again')
+            local id=string.unpack('>I2',query)
+            return string.pack('>I2I2I2I2I2I2',id,0x8000,1,1,0,0)..query:sub(13)
+        end,close=function()closed=closed+1 end}end
+    ipc.tcp=function()made=made+1;first={close=function()closed=closed+1 end};return first end
+    ipc.connected=function(fd)assert(fd==first);polls=polls+1;return polls>=3 end
+    assert(not p.dns_ready({},d));assert(not p.dns_ready({},d));assert(not p.dns_ready({},d))
+    assert(p.dns_ready({},d)and reads==1 and made==1 and closed==2)
 end)
 test('desktop requires non-root, private runtime and foreground login terminal',function()
     local f,n,p=fixture();local r=registry({mode='user',desktop={command={'/usr/local/bin/sway'}}},n)

@@ -57,7 +57,7 @@ local function check()
 end
 local ok,why=xpcall(function()
     assert(poll:watch_timer(3,function()error('UDP/TCP readiness timeout')end));check();checked(poll:run())
-    assert(ipc.tcp_probe('127.0.0.1',port))
+    -- dns_ready already completed and closed the retained TCP probe.
 end,function(err)return debug.traceback(type(err)=='table'and json.encode(err)or tostring(err),2)end)
 providers.release(probe);poll:close()
 local sent,signal_error=child:signal('TERM')

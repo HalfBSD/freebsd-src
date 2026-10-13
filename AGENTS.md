@@ -23,6 +23,12 @@ success. These notes record failures found during the Lua foundation work.
   netinet/in.h; arpa/inet.h exposing it on Linux does not establish portability.
   Avoid casting sockaddr pointers to more strictly aligned address structures.
   Check the reported length and copy needed fields into aligned local storage.
+- Treat EINPROGRESS as an operation still in flight: retain its socket across
+  event callbacks and close it only after completion, failure or cancellation.
+  A zero-time poll followed by close restarts rather than observes a handshake.
+  Test delayed completion, refusal, deadlines and cleanup; immediate Linux
+  loopback success does not prove correct FreeBSD asynchronous behavior. Keep
+  readiness fixtures nonblocking too: readiness can disappear before accept.
 - Verify installation into an empty DESTDIR, including bootstrap staging, public
   headers and archives, and repeated parallel installation. New include
   directories need creation and ordering, not only an mtree entry.

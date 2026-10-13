@@ -12,8 +12,8 @@
 int
 main(void)
 {
-	int tcp = socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0);
-	int udp = socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0);
+	int tcp = socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC | SOCK_NONBLOCK, 0);
+	int udp = socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC | SOCK_NONBLOCK, 0);
 	struct sockaddr_in address;
 	memset(&address, 0, sizeof(address));
 	address.sin_family = AF_INET;
@@ -33,7 +33,7 @@ main(void)
 		if (result < 0 && errno == EINTR) continue;
 		if (result <= 0) break;
 		if (events[0].revents & POLLIN) {
-			int fd = accept(tcp, NULL, NULL);
+			int fd = accept4(tcp, NULL, NULL, SOCK_CLOEXEC | SOCK_NONBLOCK);
 			if (fd >= 0) close(fd);
 		}
 		if (events[1].revents & POLLIN) {

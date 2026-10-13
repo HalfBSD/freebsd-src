@@ -169,35 +169,49 @@ static int udp_connection(lua_State *L)
 	if (!f->fd) return hb_error(L, "ipc.udp", NULL, errno);
 	return 1;
 }
-static int tcp_probe(lua_State *L)
+static int tcp_connection(lua_State *L)
 {
 	struct sockaddr_in sin;
 	ipv4_address(L, &sin);
+	struct hb_fd *f = owner(L);
 	int fd = socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC | SOCK_NONBLOCK, 0);
-	if (fd < 0) return hb_error(L, "ipc.tcp_probe", NULL, errno);
-	int result = connect(fd, (struct sockaddr *)&sin, sizeof(sin)), error = 0;
-	if (result < 0) error = errno;
-	if (error == EINPROGRESS) {
-		struct pollfd p = {fd, POLLOUT, 0};
-		result = poll(&p, 1, 0);
-		if (result > 0) {
-			socklen_t length = sizeof(error);
-			if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &error, &length) < 0) error = errno;
-		} else if (result < 0) error = errno;
+	if (fd < 0) return hb_error(L, "ipc.tcp", NULL, errno);
+	if (connect(fd, (struct sockaddr *)&sin, sizeof(sin)) < 0 && errno != EINPROGRESS) {
+		int error = errno; close(fd); return hb_error(L, "ipc.tcp", NULL, error);
 	}
-	close(fd);
-	if (error && error != EINPROGRESS && error != ECONNREFUSED && error != ETIMEDOUT &&
-	    error != ENETUNREACH && error != EHOSTUNREACH && error != EINTR)
-		return hb_error(L, "ipc.tcp_probe", NULL, error);
-	lua_pushboolean(L, error == 0);
+	/* The caller owns the socket throughout the asynchronous handshake. */
+	f->fd = hp_fd_new(fd);
+	if (!f->fd) return hb_error(L, "ipc.tcp", NULL, errno);
 	return 1;
+}
+static int connection_ready(lua_State *L)
+{
+	int fd = hp_fd_number(hb_check_fd(L, 1));
+	struct pollfd p = {fd, POLLOUT, 0};
+	if (fd < 0) return hb_error(L, "ipc.connected", NULL, EBADF);
+	int result = poll(&p, 1, 0);
+	if (result < 0 && errno != EINTR) return hb_error(L, "ipc.connected", NULL, errno);
+	if (result <= 0) { lua_pushboolean(L, 0); return 1; }
+	if (p.revents & POLLNVAL) return hb_error(L, "ipc.connected", NULL, EBADF);
+	int error = 0;
+	socklen_t length = sizeof(error);
+	if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &error, &length) < 0)
+		return hb_error(L, "ipc.connected", NULL, errno);
+	if (error) return hb_error(L, "ipc.connected", NULL, error);
+	struct sockaddr_storage peer;
+	length = sizeof(peer);
+	if (getpeername(fd, (struct sockaddr *)&peer, &length) < 0) {
+		if (errno == ENOTCONN) { lua_pushboolean(L, 0); return 1; }
+		return hb_error(L, "ipc.connected", NULL, errno);
+	}
+	lua_pushboolean(L, 1); return 1;
 }
 int luaopen_halfbsd_ipc(lua_State *L)
 {
 	static const luaL_Reg methods[] = {
 	    {"listen", listen_unix}, {"accept", accept_unix}, {"connect", connect_unix},
 	    {"lock", lock_file}, {"probe", socket_probe}, {"udp", udp_connection},
-	    {"tcp_probe", tcp_probe}, {NULL, NULL}};
+	    {"tcp", tcp_connection}, {"connected", connection_ready}, {NULL, NULL}};
 	hb_fd_metatable(L);
 	luaL_newlib(L, methods);
 	return 1;

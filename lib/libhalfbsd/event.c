@@ -54,12 +54,15 @@ static int new_loop(lua_State*L) {
 		close(l->kq);
 		l->kq=-1;
 		return hb_error(L,"event.new",NULL,e);
-	}return 1;
+	}
+	return 1;
 }
 
 static struct watch*slot(lua_State*L,struct loop*l,int callback,int target) {
 	luaL_checktype(L,callback,LUA_TFUNCTION);
-	for(size_t i=0;i<HB_WATCHES;i++)if(!l->watches[i].id) {
+	for(size_t i=0;i<HB_WATCHES;i++) {
+		if(l->watches[i].id)
+			continue;
 		struct watch*w=&l->watches[i];
 		if(l->serial==INT64_MAX)luaL_error(L,"event watch identifiers exhausted");
 		/* Registry allocations happen before acquiring a kernel resource. */
@@ -71,8 +74,10 @@ static struct watch*slot(lua_State*L,struct loop*l,int callback,int target) {
 		w->callback=luaL_ref(L,LUA_REGISTRYINDEX);
 		if(target){lua_pushvalue(L,target);
 			w->target=luaL_ref(L,LUA_REGISTRYINDEX);
-		}return w;
-	}luaL_error(L,"event watch limit exceeded");
+		}
+		return w;
+	}
+	luaL_error(L,"event watch limit exceeded");
 	return NULL;
 }
 
@@ -127,7 +132,8 @@ static int watch_process(lua_State*L) {
 		if(kevent(l->kq,&trigger,1,NULL,0,NULL)<0){e=errno;
 			cancel_watch(L,l,w);
 			return hb_error(L,"event.process",NULL,e);
-		}return 1;
+		}
+		return 1;
 	}
 	w->filter=EVFILT_PROCDESC;
 	return install(L,l,w,EV_ONESHOT,NOTE_EXIT,0);
@@ -218,7 +224,8 @@ step_impl(lua_State*L,struct loop*l,int ms)
 			timeout.tv_nsec=until.tv_nsec-now.tv_nsec;
 			if(timeout.tv_nsec<0){timeout.tv_sec--;
 				timeout.tv_nsec+=1000000000L;
-			}if(timeout.tv_sec<0)timeout=(struct timespec){0,0};
+			}
+			if(timeout.tv_sec<0)timeout=(struct timespec){0,0};
 			tp=&timeout;
 		}
 		n=kevent(l->kq,NULL,0,&ev,1,tp);
@@ -288,7 +295,8 @@ static int step(lua_State*L){struct loop*l=check(L);
 	luaL_argcheck(L,!l->dispatching,1,"recursive loop dispatch is not allowed");
 	if(!count(l)){lua_pushboolean(L,0);
 		return 1;
-	}return step_impl(L,l,ms);
+	}
+	return step_impl(L,l,ms);
 }
 
 static int run(lua_State*L) {
@@ -299,7 +307,8 @@ static int run(lua_State*L) {
 		int n=step_impl(L,l,-1);
 		if(n==2)return n;
 		lua_pop(L,1);
-	}lua_pushboolean(L,1);
+	}
+	lua_pushboolean(L,1);
 	return 1;
 }
 
@@ -310,7 +319,8 @@ int luaopen_halfbsd_event(lua_State*L) {
 		lua_setfield(L,-2,"__index");
 		lua_pushliteral(L,HB_LOOP);
 		lua_setfield(L,-2,"__metatable");
-	}lua_pop(L,1);
+	}
+	lua_pop(L,1);
 	lua_newtable(L);
 	lua_pushcfunction(L,new_loop);
 	lua_setfield(L,-2,"new");

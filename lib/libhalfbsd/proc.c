@@ -18,7 +18,8 @@ static int run_gc(lua_State *L) {
 	int *fds[]={&r->kq,&r->pd,&r->input,&r->output[0],&r->output[1]};
 	for(size_t i=0;i<5;i++){if(*fds[i]>=0)close(*fds[i]);
 		*fds[i]=-1;
-	}return 0;
+	}
+	return 0;
 }
 
 struct launch {
@@ -216,9 +217,11 @@ static void environment(lua_State *L,struct launch *g,int opts) {
 				lua_pushvalue(L,-2);
 				lua_pushvalue(L,-2);
 				lua_rawset(L,map);
-			}lua_pop(L,1);
+			}
+			lua_pop(L,1);
 		}
-	}lua_pop(L,1);
+	}
+	lua_pop(L,1);
 	size_t n=0;
 	lua_pushnil(L);
 	while(lua_next(L,map)){n++;
@@ -242,7 +245,8 @@ static void environment(lua_State *L,struct launch *g,int opts) {
 		memcpy(g->env[n]+a+1,v,b+1);
 		n++;
 		lua_pop(L,1);
-	}lua_pop(L,1);
+	}
+	lua_pop(L,1);
 	g->spec.env=g->env;
 }
 
@@ -270,7 +274,8 @@ static int credentials(lua_State *L,struct launch *g,int opts) {
 		g->groups=allocate(L,(size_t)count*sizeof(gid_t));
 		if(getgrouplist(user->pw_name,user->pw_gid,g->groups,&count)<0)luaL_error(L,"supplementary groups changed during lookup");
 		g->spec.ngroups=count;
-	}lua_pop(L,1);
+	}
+	lua_pop(L,1);
 	lua_getfield(L,opts,"group");
 	if(!lua_isnil(L,-1)) {
 		if(lua_isinteger(L,-1)) {
@@ -281,8 +286,10 @@ static int credentials(lua_State *L,struct launch *g,int opts) {
 			int e=getgrnam_r(hb_string(L,-1,NULL),&gr,buffer,sizeof(buffer),&group);
 			if(e||!group){errno=e?e:ENOENT;return -1;}
 			g->spec.gid=group->gr_gid;
-		}g->spec.credentials=1;
-	}lua_pop(L,1);
+		}
+		g->spec.credentials=1;
+	}
+	lua_pop(L,1);
 	lua_getfield(L,opts,"groups");
 	if(!lua_isnil(L,-1)) {
 		size_t n=dense(L,-1,65536);
@@ -296,8 +303,10 @@ static int credentials(lua_State *L,struct launch *g,int opts) {
 			if(id<0||(uintmax_t)id>=UINT_MAX)luaL_error(L,"invalid supplementary gid");
 			g->groups[i]=(gid_t)id;
 			lua_pop(L,1);
-		}g->spec.credentials=1;
-	}lua_pop(L,1);
+		}
+		g->spec.credentials=1;
+	}
+	lua_pop(L,1);
 	g->spec.groups=g->groups;
 	return 0;
 }
@@ -365,7 +374,8 @@ spawn(lua_State *L)
 	hb_options(L,2,options);
 	if(lua_isnoneornil(L,2)){lua_settop(L,1);
 		lua_newtable(L);
-	}int opts=2;
+	}
+	int opts=2;
 	struct launch*g=lua_newuserdatauv(L,sizeof(*g),0);
 	memset(g,0,sizeof(*g));
 	for(int i=0;i<3;i++)g->opened[i]=-1;
@@ -403,7 +413,8 @@ spawn(lua_State *L)
 			g->inherit[i]=(int)fd;
 			lua_pop(L,1);
 		}
-	}lua_pop(L,1);
+	}
+	lua_pop(L,1);
 	for(int i=0;i<3;i++)if(redirect(L,g,opts,i)<0)return hb_error(L,"spawn","redirection",errno);
 	size_t bytes=(argc+1)*sizeof(char*);
 	long argument_limit=sysconf(_SC_ARG_MAX);if(argument_limit<1)argument_limit=262144;
@@ -440,6 +451,8 @@ static int
 run_child(lua_State *L)
 {
 	static const char *const keys[]={"cwd","env","inherit_env","user","group","groups","stdin","stdout","stderr","new_session","process_group","inherit_fds","exec_timeout","timeout","grace","output_limit","input",NULL};
+	struct hp_result ignored;
+	int own_group;
 	(void)context(L);
 	hb_options(L,2,keys);
 	luaL_checktype(L,1,LUA_TTABLE);
@@ -480,7 +493,8 @@ run_child(lua_State *L)
 		if(strcmp(k,"timeout")&&strcmp(k,"grace")&&strcmp(k,"output_limit")&&strcmp(k,"input")){lua_pushvalue(L,-2);
 			lua_pushvalue(L,-2);
 			lua_rawset(L,opts);
-		}lua_pop(L,1);
+		}
+		lua_pop(L,1);
 	}
 	if(input_data){lua_pushliteral(L,"pipe");
 		lua_setfield(L,opts,"stdin");
@@ -499,7 +513,8 @@ run_child(lua_State *L)
 	r->kq=kqueue();
 	if(r->kq<0){error=errno;
 		goto failed;
-	}if(fcntl(r->kq,F_SETFD,FD_CLOEXEC)<0){error=errno;
+	}
+	if(fcntl(r->kq,F_SETFD,FD_CLOEXEC)<0){error=errno;
 		goto failed;
 	}
 	struct kevent ev;
@@ -518,7 +533,8 @@ run_child(lua_State *L)
 		struct hp_fd *fd=hb_check_fd(L,-1);
 		if(hp_fd_nonblock(fd,1)<0){error=errno;
 			goto failed;
-		}r->output[i]=hp_fd_dup(fd);
+		}
+		r->output[i]=hp_fd_dup(fd);
 		lua_pop(L,1);
 		if(r->output[i]<0){error=errno;
 			goto failed;
@@ -538,7 +554,8 @@ run_child(lua_State *L)
 		if(automatic) {
 			if(input_size){if(hp_fd_nonblock(fd,1)<0){error=errno;
 					goto failed;
-				}r->input=hp_fd_dup(fd);
+				}
+				r->input=hp_fd_dup(fd);
 				if(r->input<0){error=errno;
 					goto failed;
 				}
@@ -549,7 +566,8 @@ run_child(lua_State *L)
 			/* Closing the original leaves the explicit writer duplicate alive. */
 			hp_fd_close(fd);
 		}
-	}lua_pop(L,1);
+	}
+	lua_pop(L,1);
 	if(timeout>=0){EV_SET(&ev,1,EVFILT_TIMER,EV_ADD|EV_ONESHOT,0,timeout?timeout:1,(void*)5);
 		if(kevent(r->kq,&ev,1,NULL,0,NULL)<0){error=errno;
 			goto failed;
@@ -574,7 +592,8 @@ run_child(lua_State *L)
 		}
 		if(tag==1){if(hp_wait(p,5000,&result)!=1){error=errno;
 				goto failed;
-			}continue;
+			}
+			continue;
 		}
 		if(tag==4) {
 			ssize_t wrote=hp_write(r->input,input_data+sent,input_size-sent);
@@ -586,7 +605,8 @@ run_child(lua_State *L)
 			sent+=(size_t)wrote;
 			if(sent==input_size){close(r->input);
 				r->input=-1;
-			}continue;
+			}
+			continue;
 		}
 		if(tag==2||tag==3) {
 			int i=(int)tag-2;
@@ -617,10 +637,9 @@ run_child(lua_State *L)
 	lua_replace(L,1);
 	run_gc(L);
 	return 1;
-	failed:
-	struct hp_result ignored;
+failed:
 	hp_status(p,&ignored);
-	int own_group=ignored.own_group;
+	own_group=ignored.own_group;
 	(void)hp_signal(p,SIGTERM,own_group);
 	if(hp_wait(p,grace,&ignored)!=1){(void)hp_signal(p,SIGKILL,own_group);
 		(void)hp_wait(p,5000,&ignored);
@@ -635,7 +654,8 @@ run_child(lua_State *L)
 struct snapshot { size_t count; struct hp_process *processes[HP_MAX_CHILDREN]; };
 static int snapshot_gc(lua_State *L) {
 	struct snapshot *s=luaL_checkudata(L,1,HB_SNAPSHOT);
-	for(size_t i=0;i<s->count;i++){hp_process_unref(s->processes[i]);s->processes[i]=NULL;}s->count=0;return 0;
+	for(size_t i=0;i<s->count;i++){hp_process_unref(s->processes[i]);s->processes[i]=NULL;}
+	s->count=0;return 0;
 }
 static int active_children(lua_State *L) {
 	struct hp_context *ctx=context(L);
@@ -650,8 +670,10 @@ static int active_children(lua_State *L) {
 			struct hb_fd *fd=lua_newuserdatauv(L,sizeof(*fd),0);fd->fd=NULL;luaL_setmetatable(L,HB_FD);
 			fd->fd=hp_process_stream(c->process,j);
 			if(fd->fd)lua_setfield(L,-2,names[j]);else lua_pop(L,1);
-		}lua_setiuservalue(L,-2,1);lua_rawseti(L,result,(lua_Integer)i+1);
-	}return 1;
+		}
+		lua_setiuservalue(L,-2,1);lua_rawseti(L,result,(lua_Integer)i+1);
+	}
+	return 1;
 }
 static int wait_any(lua_State *L) {
 	size_t n=dense(L,1,HP_MAX_CHILDREN);
@@ -710,17 +732,22 @@ luaopen_proc(lua_State *L)
 	if(luaL_newmetatable(L,HB_CHILD)){luaL_setfuncs(L,methods,0);
 		lua_pushliteral(L,HB_CHILD);
 		lua_setfield(L,-2,"__metatable");
-	}lua_pop(L,1);
+	}
+	lua_pop(L,1);
 	if(luaL_newmetatable(L,HB_LAUNCH)){lua_pushcfunction(L,launch_gc);
 		lua_setfield(L,-2,"__gc");
-	}lua_pop(L,1);
-	if(luaL_newmetatable(L,HB_SNAPSHOT)){lua_pushcfunction(L,snapshot_gc);lua_setfield(L,-2,"__gc");}lua_pop(L,1);
+	}
+	lua_pop(L,1);
+	if(luaL_newmetatable(L,HB_SNAPSHOT)){lua_pushcfunction(L,snapshot_gc);lua_setfield(L,-2,"__gc");}
+	lua_pop(L,1);
 	if(luaL_newmetatable(L,HB_RUN)){lua_pushcfunction(L,run_gc);
 		lua_setfield(L,-2,"__gc");
-	}lua_pop(L,1);
+	}
+	lua_pop(L,1);
 	if(luaL_newmetatable(L,HB_MANAGER)){lua_pushcfunction(L,manager_gc);
 		lua_setfield(L,-2,"__gc");
-	}lua_pop(L,1);
+	}
+	lua_pop(L,1);
 	struct manager*m=lua_newuserdatauv(L,sizeof(*m),0);
 	m->ctx=NULL;
 	luaL_setmetatable(L,HB_MANAGER);

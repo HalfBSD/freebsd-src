@@ -29,7 +29,8 @@ static void quote(luaL_Buffer*b,const char*s,size_t n) {
 			luaL_addlstring(b,escaped,6);
 		}
 		else luaL_addchar(b,(char)c);
-	}luaL_addchar(b,'"');
+	}
+	luaL_addchar(b,'"');
 }
 
 static int new_logger(lua_State*L) {
@@ -45,7 +46,8 @@ static int new_logger(lua_State*L) {
 	if(!lua_isnil(L,-1)){size_t n;
 		(void)hb_string(L,-1,&n);
 		luaL_argcheck(L,n<=1024,1,"service name too long");
-	}else{lua_pop(L,1);
+	}
+	else{lua_pop(L,1);
 		lua_pushliteral(L,"halfbsd");
 	}
 	int service=lua_gettop(L);
@@ -70,7 +72,8 @@ static int new_logger(lua_State*L) {
 			int e=stat_result<0?errno:EINVAL;
 			close(g->fd);g->fd=-1;return hb_error(L,"log.new","file_type",e);
 		}
-	}return 1;
+	}
+	return 1;
 }
 
 static int write_logger(lua_State*L) {
@@ -132,18 +135,28 @@ static int write_logger(lua_State*L) {
 			}
 			else luaL_argerror(L,4,"fields must contain strings, numbers or booleans");
 			lua_pop(L,1);
-		}luaL_addchar(&b,'}');
-	}luaL_addstring(&b,"}\n");
+		}
+		luaL_addchar(&b,'}');
+	}
+	luaL_addstring(&b,"}\n");
 	luaL_pushresult(&b);
 	const char*line=lua_tolstring(L,-1,&length);
 	int outputs[]={g->console?STDERR_FILENO:-1,g->fd};
 	int error=0;
-	for(size_t i=0;i<2;i++)if(outputs[i]>=0)for(size_t offset=0;offset<length;) {
-		ssize_t result=hp_write(outputs[i],line+offset,length-offset);
-		if(result<=0){if(!error)error=result<0?errno:EIO;
-			break;
-		}offset+=(size_t)result;
-	}if(error)return hb_error(L,"log.write",NULL,error);
+	for(size_t i=0;i<2;i++) {
+		if(outputs[i]<0)
+			continue;
+		for(size_t offset=0;offset<length;) {
+			ssize_t result=hp_write(outputs[i],line+offset,length-offset);
+			if(result<=0) {
+				if(!error)
+					error=result<0?errno:EIO;
+				break;
+			}
+			offset+=(size_t)result;
+		}
+	}
+	if(error)return hb_error(L,"log.write",NULL,error);
 	lua_pushboolean(L,1);
 	return 1;
 }
@@ -155,7 +168,8 @@ int luaopen_halfbsd_log(lua_State*L) {
 		lua_setfield(L,-2,"__index");
 		lua_pushliteral(L,HB_LOG);
 		lua_setfield(L,-2,"__metatable");
-	}lua_pop(L,1);
+	}
+	lua_pop(L,1);
 	lua_newtable(L);
 	lua_pushcfunction(L,new_logger);
 	lua_setfield(L,-2,"new");

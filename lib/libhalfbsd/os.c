@@ -50,7 +50,8 @@ static int exists(lua_State*L) {
 	if(lstat(p,&st)<0){if(errno!=ENOENT&&errno!=ENOTDIR)return hb_error(L,"exists",NULL,errno);
 		lua_pushboolean(L,0);
 		return 1;
-	}lua_pushboolean(L,1);
+	}
+	lua_pushboolean(L,1);
 	return 1;
 }
 
@@ -142,7 +143,8 @@ static int atomic_replace(lua_State*L) {
 		int d=openat(dir,component,O_RDONLY|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);
 		if(d<0){e=errno;
 			goto out;
-		}close(dir);
+		}
+		close(dir);
 		dir=d;
 		component=next;
 	}
@@ -153,14 +155,16 @@ static int atomic_replace(lua_State*L) {
 		if(errno!=EEXIST){e=errno;
 			goto out;
 		}
-	}if(fd<0){e=EEXIST;
+	}
+	if(fd<0){e=EEXIST;
 		goto out;
 	}
 	for(size_t offset=0;offset<length;) {
 		ssize_t n=hp_write(fd,data+offset,length-offset);
 		if(n<=0){e=n<0?errno:EIO;
 			goto out;
-		}offset+=(size_t)n;
+		}
+		offset+=(size_t)n;
 	}
 	if(fchmod(fd,m)<0||fsync(fd)<0){e=errno;
 		goto out;
@@ -168,16 +172,19 @@ static int atomic_replace(lua_State*L) {
 	if(close(fd)<0){fd=-1;
 		e=errno;
 		goto out;
-	}fd=-1;
+	}
+	fd=-1;
 	if(renameat(dir,temp,dir,base)<0){e=errno;
 		goto out;
-	}committed=1;
+	}
+	committed=1;
 	if(fsync(dir)<0)e=errno;
 	out:
 	if(fd>=0)close(fd);
 	if(dir>=0){if(!committed&&temp[0])unlinkat(dir,temp,0);
 		close(dir);
-	}free(copy);
+	}
+	free(copy);
 	if(e){hb_error(L,"atomic_replace",committed?"directory_sync":"replace",e);
 		lua_pushboolean(L,committed);
 		lua_setfield(L,-2,"committed");
@@ -238,7 +245,8 @@ static int environment(lua_State*L){
 		if(eq){lua_pushlstring(L,*p,(size_t)(eq-*p));
 			lua_pushstring(L,eq+1);
 			lua_rawset(L,-3);
-	}}return 1;
+	}}
+	return 1;
 }
 
 static int identity(lua_State*L) {
@@ -261,7 +269,8 @@ static int identity(lua_State*L) {
 	lua_createtable(L,n,0);
 	for(int i=0;i<n;i++){lua_pushinteger(L,g[i]);
 		lua_rawseti(L,-2,i+1);
-	}lua_setfield(L,-3,"groups");
+	}
+	lua_setfield(L,-3,"groups");
 	lua_pop(L,1);
 	return 1;
 }
@@ -308,7 +317,8 @@ static int lookup_group(lua_State*L) {
 	lua_newtable(L);
 	for(size_t i=0;gr.gr_mem[i];i++){lua_pushstring(L,gr.gr_mem[i]);
 		lua_rawseti(L,-2,(lua_Integer)i+1);
-	}lua_setfield(L,-2,"members");
+	}
+	lua_setfield(L,-2,"members");
 	return 1;
 }
 
@@ -339,7 +349,8 @@ static int mount_lua(lua_State*L) {
 		memcpy(storage+used,v,b+1);
 		iov[count++]=(struct iovec){storage+used,b+1};used+=b+1;
 		lua_pop(L,1);
-	}return success(L,nmount(iov,(unsigned int)count,(int)flags),"mount");
+	}
+	return success(L,nmount(iov,(unsigned int)count,(int)flags),"mount");
 }
 
 static int unmount_lua(lua_State*L){const char*p=hb_string(L,1,NULL);

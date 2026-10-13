@@ -1,0 +1,133 @@
+." SPDX-License-Identifier: BSD-2-Clause
+.Dd October 13, 2026
+.Dt HALFINIT 8
+.Os
+.Sh NAME
+.Nm halfinit
+.Nd Lua userspace service manager and shadow startup planner
+.Sh SYNOPSIS
+.Nm
+.Op Fl Fl config Ar file
+.Op Fl Fl target Ar name
+.Op Fl Fl runtime-dir Ar directory
+.Op Fl Fl state-file Ar file
+.Op Fl Fl run-for Ar seconds
+.Op Fl Fl check | Fl Fl graph | Fl Fl dry-run | Fl Fl shadow
+.Op Fl Fl simulate Op Fl Fl scenario Ar name
+.Op Fl Fl module-dir Ar directory
+.Sh DESCRIPTION
+.Nm
+loads declarative Lua services, validates their graph and supervises foreground
+children using HalfBSD process descriptors and kqueue.
+It runs as an ordinary userspace process. Installing it does not replace init,
+rc or the active boot sequence and does not enable any service automatically.
+.Pp
+Without an execution mode or explicit configuration,
+.Nm
+rejects startup. The default system graph is for planning only.
+.Fl Fl check , Fl Fl graph
+and
+.Fl Fl dry-run
+report validation, parallel startup waves, reverse shutdown waves and missing
+prerequisites as JSON without executing tasks or creating runtime files.
+.Fl Fl shadow
+also reads bounded rc.conf inputs for a comparison of known enable flags.
+It does not execute rc configuration or adopt existing processes.
+.Pp
+.Fl Fl simulate
+uses disposable Lua fixtures in the actual scheduler and supervisor.
+Scenarios are success, failure, recovery, exhaustion and forced.
+Fixtures have independent lifetime bounds.
+Select a private runtime directory when running unprivileged.
+.Fl Fl run-for
+sets an optional manager lifetime bound (at most 3600 seconds) for isolated tests;
+normal managers remain persistent until shutdown.
+.Pp
+An explicit configuration file returns a table with services, target and optional
+include (definition files), service_dirs, runtime_dir, state_file, log_file,
+max_parallel and shutdown_timeout fields.
+System definitions are under
+.Pa /usr/lib/halfbsd/services ;
+administrator files belong under
+.Pa /etc/halfbsd
+or an explicitly supplied private path.
+No administrator configuration is overwritten by installworld.
+.Pp
+The runtime directory must be owned by the manager UID and not group/world
+writable. An advisory lock prevents a second manager using the same directory.
+The control socket is
+.Pa control.sock ;
+enabled preferences are written atomically to
+.Pa enabled.json
+unless an alternate state file is supplied.
+.Sh SERVICES
+Services have a name, description, type, requires, wants, after, before and
+optional process/credential/readiness/restart attributes.
+Definitions load in a restricted declarative environment without OS, process,
+IO or module-loading operations.
+.Bl -tag -width oneshot
+.It Sy daemon
+A foreground process, supervised until stopped or failed.
+.It Sy oneshot
+A command becoming ready after exit zero, or an explicit native action provider.
+.It Sy target
+A group without its own process.
+.It Sy virtual
+A bounded registered condition provider, without its own process.
+.El
+.Pp
+Requires activates dependencies and gates on READY. Failure stops active hard
+dependents; they can resume after recovery. Wants activates optional dependencies
+and waits for them to settle, without propagating their failure.
+After/before add ordering only if both services are selected.
+All combined dependency/ordering cycles are rejected before startup.
+Independent eligible services start concurrently, subject to max_parallel.
+.Pp
+Readiness may be process, notify or condition. Process means successful exec
+only and is not proof of daemon initialization. Notify provides a descriptor
+number in HALFINIT_READY_FD; the child writes exactly READY followed by newline.
+Condition invokes a registered provider through bounded kernel-timer retries.
+Start_timeout bounds readiness; stop_timeout bounds TERM grace.
+.Pp
+Standard input is null. Standard output/error default to null; stdout/stderr
+may specify absolute file paths, opened append-only through the native process
+API. Manager lifecycle logs remain separate structured records.
+.Pp
+Restart policies are never, on-failure and always. Restart_limit/window bound
+retry bursts. Delay grows exponentially to restart_max_delay. Exhaustion is
+terminal until an explicit retry/restart. Readiness failures count as failures.
+.Pp
+Lifecycle states are INACTIVE, QUEUED, STARTING, READY, STOPPING, FAILED,
+RESTARTING and SKIPPED. Every transition records monotonic time, previous/new
+state and reason; history is bounded. Logs use halfbsd.log structured records.
+.Sh CONTROL AND SHUTDOWN
+TERM and INT request reverse dependency shutdown. Independent services within a
+wave stop together. TERM grace is followed by KILL and native reaping. An overall
+shutdown deadline and final five-second reap bound prevent indefinite waiting.
+HUP requests configuration reload.
+.Pp
+Reload validates the entire candidate before committing it. Active service
+removal/type/dependency changes are rejected; stop them first. Other changed
+launch attributes apply at the next launch, while restart policy applies to
+subsequent failures. Runtime/socket/state/log relocation is rejected.
+Changing the initial target during reload is rejected; use explicit target
+start/stop commands or restart the manager with the new target.
+Invalid candidates preserve the live registry.
+.Sh SECURITY
+The Unix socket authenticates FreeBSD peer credentials. Read-only commands are
+available to clients which can reach it; mutations require manager UID or root.
+Requests are versioned JSON, size-bounded and never evaluated as Lua or shell.
+Connections and their lifetimes are bounded.
+.Pp
+System-provided filesystem, networking, firewall, DNS and desktop definitions
+are protected planning tasks during this phase. The manager cannot launch a
+second instance of an rc-managed service through that graph.
+DNS retains the compiled provider hierarchy; DHCP DNS changes are deferred.
+.Pp
+Foreground execution is required. Escaped/daemonized descendants are not owned
+reliably after leader reaping; stale process groups are never signaled.
+Desktop session/controlling-terminal ownership needs a future boot integration
+adapter. Built-in desktop planning never launches a root compositor.
+.Sh SEE ALSO
+.Xr halfsvc 8 ,
+.Xr lua-halfbsd 7

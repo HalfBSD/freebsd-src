@@ -102,10 +102,40 @@ To build/install the full ATF suite, use the repository's normal WITH_TESTS=yes
 world/test installation workflow with the matching Lua libraries. Do not use
 Linux-linked binaries or ENOSYS stubs on Anvil.
 
-Validation of this test addition
--------------------------------
-Linux: shell syntax, exact in-tree Lua syntax, Makefile parsing and deliberate
-Linux rejection checked. No native supervision scenario ran in this workspace.
-No native PASS is claimed. Running the scripts on Anvil is the next step.
-The runtime source, library flags, DNS/firewall behavior and boot files are
-unchanged by this test addition. The user subsequently authorized committing and pushing these tests.
+Recorded native result — SUCCESS, 2026-10-13
+-------------------------------------------
+The user executed the source runner on Anvil as charlie, UID 1001, without root:
+
+  sh /usr/src/tests/halfbsd/run-userland.sh
+
+Environment from the supplied transcript:
+  FreeBSD anvil 15.1-RELEASE-p4, amd64
+  FreeBSD 15.1-RELEASE-p4 halfbsd2-n283744-94e22a343818 CHARLIE
+  Lua 5.4.8, Copyright (C) 1994-2025 Lua.org, PUC-Rio
+
+Observed output:
+  PASS startup
+  PASS parallel
+  PASS restart
+  PASS shutdown
+  PASS forced_shutdown
+  PASS timeout
+  PASS failure
+  PASS logging
+  PASS repeat_cleanup
+  PASS: all nine userland supervision scenarios
+
+All nine scenarios passed on the native FreeBSD kernel with the installed Lua
+runtime. This establishes actual userland integration results for the operations
+listed above. Successful native build, installation and reboot were also reported
+by the user. Existing init/rc boot behavior remains unchanged.
+
+The broader ATF suite, root-only credential transitions, embedding-helper
+resource/reaping checks and native sanitizers have not yet been reported. The
+standalone success does not imply those tests passed or that a complete rc
+replacement has been implemented.
+
+Earlier local validation: Linux shell/Lua syntax, Makefile parsing and deliberate
+Linux rejection passed; those remain distinct from the native results above.
+This update records evidence only. No runtime or boot code changed, and this
+native-results documentation update has not been committed or pushed.

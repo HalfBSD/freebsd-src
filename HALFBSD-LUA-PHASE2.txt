@@ -1,0 +1,312 @@
+HalfBSD Phase II: Lua service manager and userspace validation handoff
+Date: October 13, 2026
+Branch: halfbsd2
+Native target: FreeBSD 15.1 / AMD64; development host: Linux
+
+STATUS
+
+Implemented halfinit, halfsvc, the declarative registry, dependency planner,
+event-driven supervisor, local control protocol, planning graph and synthetic
+boot/shutdown mode. Source changes are uncommitted. The existing init, rc,
+networking, IPFW, SSH and Unbound configuration/provider hierarchy are unchanged.
+Nothing enables halfinit at boot or adopts existing processes.
+
+Phase II is NOT declared natively validated or ready to replace rc. The native
+integration/stress suite must run on Anvil after building/installing this world.
+Real filesystem/firewall/desktop boot adapters remain explicit prerequisites,
+not operations guessed or executed against the running system.
+
+PHASE I EVIDENCE
+
+The user reported successful native buildworld, installation and reboot, and
+all nine original userland scenarios PASS on Anvil as UID 1001 with Lua 5.4.8:
+startup, parallel, restart, shutdown, forced_shutdown, timeout, failure, logging,
+repeat_cleanup. These are native user-reported results, not Linux emulation.
+Broader Phase I ATF, root credential checks and native sanitizer execution have
+not been reported; the Phase II runner retains the original nine-scenario gate.
+
+ARCHITECTURE AND BUILD
+
+Small native launchers embed the existing in-tree Lua through halfbsd_openlibs.
+Lua modules contain policy; proc owns processes/reaping and halfbsd.event owns
+kqueue dispatch. No competing reaper, polling scheduler, third-party runtime,
+shell execution or mandatory daemon was added.
+
+Installed components:
+  /usr/sbin/halfinit
+  /usr/sbin/halfsvc
+  /usr/lib/halfbsd/{init,client,service,config,dependency,supervisor,control,
+                    json,providers,fixture}.lua
+  /usr/lib/halfbsd/services/system.lua
+  /usr/share/examples/halfbsd/services.lua
+  halfinit(8), halfsvc(8), /usr/tests/halfbsd/phase2/*
+
+Administrator configuration is an explicit --config file (conventionally
+/etc/halfbsd/system.lua), with optional service_dirs. installworld installs
+system definitions/examples only; it creates or overwrites no /etc policy.
+--module-dir permits testing matching source modules without copying them.
+Both launchers use existing foundation archives and the Lua PIE archive.
+libhalfbsd and libhalfproc retain PIC archive objects and existing hardening.
+
+Native additions to libhalfbsd:
+  halfbsd.ipc.listen(path) -> managed nonblocking Unix listener
+  halfbsd.ipc.accept(listener) -> managed connection, {uid,gid}
+  halfbsd.ipc.connect(path, timeout_seconds=3) -> managed connection
+  halfbsd.ipc.probe(path) -> boolean local socket-connect condition
+  halfbsd.ipc.lock(path) -> managed exclusive advisory lock
+  halfbsd.os.listdir(path) -> directory names (caller sorts)
+  halfbsd.os.interfaces() -> interface records: name, address, family, up,
+                            loopback; family is inet, inet6 or link
+These return nil plus the Phase I structured errno error on system failure;
+invalid arguments raise Lua errors. Descriptors are close-on-exec, managed by
+Phase I fd userdata and explicitly closed by manager/client ownership paths.
+Lock files must be regular, owned by the effective UID and mode 0600 or tighter.
+Locks remain as files after exit to avoid unlink/replacement lock races.
+Unix peer credentials use native FreeBSD getpeereid, never request fields.
+
+CONFIGURATION AND SERVICE CONTRACT
+
+A configuration returns a table:
+  services = dense array of definitions
+  target = registered root service (default "minimal")
+  include = array of absolute definition-file paths (one definition or array)
+  service_dirs = array of absolute directories containing *.lua definitions
+  runtime_dir, state_file, log_file = optional absolute paths
+  max_parallel = 1..256 (default 128)
+  shutdown_timeout = seconds, >0 and <=300 (default 15)
+
+Definitions load with a restricted declarative environment: no OS, IO, require,
+debug, proc or startup functions. Definitions remain trusted code, not an
+untrusted Lua sandbox. Administrators must control configuration/module paths.
+The registry rejects duplicates, unknown fields/types, missing references,
+all combined dependency/ordering cycles, malformed argv and invalid limits.
+There is a 1024-service registry limit. No process starts during validation.
+
+Definition fields:
+  name, description, type: daemon | oneshot | target | virtual
+  command: dense argv, absolute executable; no implicit shell
+  requires, wants, after, before: dense arrays of registered service names
+  restart: never | on-failure | always (daemon only)
+  restart_delay=1, restart_max_delay=30, restart_limit=5,
+  restart_window=60, start_timeout=10, stop_timeout=5 (seconds except limit)
+  readiness: process | notify | condition
+  condition: registered condition name; required for virtual/condition readiness
+  action: registered native provider, oneshot only
+  parameters: provider-specific table
+  cwd, user, group, groups, env, inherit_env: Phase I spawn attributes
+  stdout, stderr: null (default) or absolute append-only file paths
+  enabled: optional persisted-start preference default
+  system: protected system-planning task marker
+
+requires activates dependencies and gates execution on READY. Failed/disabled
+hard dependencies prevent startup; loss of a READY hard dependency stops active
+dependents. Desired dependents resume once it recovers. wants activates optional
+dependencies and waits for them to settle but tolerates failure. after/before
+only order services selected for that activation; they never activate them.
+Independent services start concurrently within max_parallel. Targets create no
+process. Successful oneshots remain READY until stopped; virtual conditions are
+bounded native provider checks. A target with only wants can become READY despite
+optional failures: use requires for mandatory target membership.
+
+Process readiness means acknowledged exec, not application initialization.
+Notification readiness gives the child an explicitly inherited write descriptor
+in HALFINIT_READY_FD. Write exactly "READY\n" once and close it; records are bounded
+to 1024 bytes. Condition readiness uses kernel-timer retries at 100 ms until the
+configured deadline. oneshot readiness requires exit zero. Startup timeout kills
+and reaps the owned child and can trigger the configured restart policy.
+proc.spawn's existing bounded exec acknowledgement is synchronous; application
+readiness and ongoing supervision use the event loop.
+
+Providers: root_ready, interface_discovery, network_ready (optional interface),
+exists (path), socket_ready (Unix socket path), directories (path/mode/uid/gid
+records), mount (explicit nmount options/flags), unmount (path/flags), manual.
+Privileged operations require an explicit custom definition and native privilege;
+there is no inferred mount/firewall/session policy or shell adapter.
+
+LIFECYCLE, OWNERSHIP AND SHUTDOWN
+
+Legal transitions are centralized in service.lua. States are INACTIVE, QUEUED,
+STARTING, READY, STOPPING, FAILED, RESTARTING and SKIPPED. Transitions contain
+monotonic timestamp, service, previous/new state and reason. Per-service history
+is bounded to 64 records. Status includes generation (not PID uniqueness),
+startup/readiness times, current PID, last result/error and restart information.
+Native execution failures retain structured errno data in status/logs.
+
+Restart attempts use a sliding window, exponential capped delay and finite burst
+limit. Exhaustion requires explicit retry/restart. Manual retry resets its burst.
+Foreground children retain process-descriptor ownership through native reaping.
+TERM targets the owned session/process group, followed by KILL after stop_timeout.
+Never signal a stale group after its leader has been reaped. Daemonization or
+descendants escaping their original group are NOT guaranteed owned; arbitrary
+descendant containment remains a future design task. GC never intentionally
+terminates children; manager cleanup explicitly invokes the Phase I shutdown API.
+
+TERM/INT and halfsvc shutdown stop selected services in reverse dependency waves,
+with independent members concurrent. The overall deadline escalates remaining
+children; a final five-second bound then returns failure if cleanup is incomplete.
+Deselected but still owned children are also stopped. Cleanup runs even if an event
+callback fails. HUP requests reload. Shutdown does not halt the operating system.
+Stopping a service cascades through hard dependents, but does not automatically
+stop shared/optional prerequisite services; use shutdown to stop the whole manager.
+
+CONTROL, SECURITY, PERSISTENCE AND ERRORS
+
+halfsvc --socket PATH list|status [NAME]|graph
+halfsvc --socket PATH start|stop|restart|enable|disable NAME
+halfsvc --socket PATH reload|shutdown
+
+Default socket: /var/run/halfbsd/control.sock. Unprivileged managers require an
+explicit runtime_dir. Its owner must be the manager UID; group/world writes are
+rejected. One manager per directory holds manager.lock. Socket mode is 0666;
+directory traversal controls reachability, peer UID controls mutations. A private
+0700 runtime directory naturally limits even status queries to its owner.
+Read-only requests are allowed to reachable clients. Mutations require owner UID
+or root. No credentials, shell commands, Lua expressions or extra request fields
+are accepted. The socket is local-only. Foreign/non-socket paths are not replaced.
+
+Protocol version 1: one newline-terminated JSON object per connection.
+Request: {"version":1,"command":"status","service":"worker"}
+Response: {"version":1,"ok":true,"data":...}
+Failure: {"version":1,"ok":false,"error":{"kind":...,"message":...}}
+Limits: 8192-byte requests, 1 MiB responses, 32 clients, three-second connection
+deadline. JSON rejects duplicate keys, malformed numbers and excessive nesting.
+Native errno failures remain structured internally; rejected control requests
+have request/protocol errors. Control acceptance is not proof of readiness: poll
+status to observe asynchronous completion. halfsvc exits nonzero on failure.
+
+enable/disable save an owned non-writable-by-others state file through native
+atomic replacement, default runtime_dir/enabled.json. Preferences survive restart;
+system definition files are never edited. stop holds activation for this manager
+session without changing persistence. start removes that runtime hold.
+Reload validates the entire candidate first. Active removal/type/dependency
+changes and runtime/state/log relocation are rejected. Other launch attributes
+apply next launch; restart-policy changes apply on subsequent failure.
+initial target changes are rejected too: use explicit start/stop target commands
+or restart the manager with its new initial target. Invalid
+configuration preserves the registry. Kernel resource failure while applying an
+otherwise valid candidate is a fatal manager error with owned-process cleanup,
+not a claim of transactional recovery from arbitrary kernel failure.
+
+Lifecycle logging reuses halfbsd.log: realtime timestamp/severity/message plus
+service, event, reason, previous/new state, monotonic time and applicable PID,
+exit status/errno fields. Console stderr works without syslog; log_file optionally
+adds output. Child file logs append separately and are not a new logging daemon.
+
+SYSTEM GRAPH AND SHADOW SAFETY
+
+Planning graph covers rootfs/localfs/ZFS/runtime directories, interface discovery,
+DHCP/network, IPFW, Unbound, sshd/ntpd, seatd, user session and compositor; targets
+are minimal, multiuser, desktop and explicit gateway. Kernel/pre-userspace root
+initialization is not duplicated. DHCP interface arguments, mount policy, active
+IPFW readiness and user/seat/controlling-terminal ownership are explicit gaps.
+All real task nodes in the supplied graph are system=true and cannot execute in
+Phase II. No real daemon is launched, killed or adopted by check/dry-run/shadow.
+Do not remove those protections to try a boot cutover.
+
+--check/--graph/--dry-run validate and report startup/shutdown waves and missing
+prerequisites without runtime files or child processes. --shadow additionally
+reads bounded known rc.conf enable assignments; it does not evaluate shell or
+claim to understand arbitrary rc.conf programming. --simulate substitutes
+disposable processes into the SAME scheduler/supervisor, not another scheduler.
+Supported scenarios: success, failure, recovery, exhaustion, forced. Fixtures
+have independent 20-second lifetime bounds and touch no active host services.
+Failure simulation injects a hard DNS dependency for the SSH fixture to exercise
+failure propagation. Reports contain both startup_status (before shutdown) and
+final status, so failures/recovery remain inspectable after cleanup.
+The existing compiled Cloudflare -> Google -> OpenDNS hierarchy stays intact;
+future DHCP DNS support is deliberately not implemented by this service-manager
+change. Gateway selection is explicit, never inferred from another interface.
+
+TEST PROCEDURES ON ANVIL
+
+Build/install the matching world first, then run as charlie (not root):
+  sh /usr/src/tests/halfbsd/phase2/run.sh
+
+This runs pure policy tests, the original nine Phase I scenarios, then native
+integration/stress in a private temporary directory. Override source/modules/
+binaries with HALFBSD_SOURCE, HALFBSD_MODULES, HALFBSD_LUA, HALFBSD_HALFINIT and
+HALFBSD_HALFSVC. Set HALFBSD_KEEP_TESTS=1 to retain manager/simulation logs.
+The native stress runner has a 600-second outer bound; fixtures do not escape
+their owned groups. Test managers also have an independent --run-for 540 lifetime
+bound, and the shell test wrapper requests shutdown on cancellation using only
+its private socket. Do not run tests against the real /var/run/halfbsd socket.
+
+Native coverage: notification/process/oneshot readiness, readiness timeout,
+runtime start/stop/restart, forced stop, crash/restart exhaustion, dependency
+recovery, valid/invalid reloads and ten repeated reloads, enable/disable across
+manager restarts, 40 disconnected clients, 50 concurrent foreground children,
+100 randomized dependency tasks, 1000 real start/stop operations, rejected eval
+and credential spoofing, native execution errno, actual halfsvc subprocess,
+structured logs, callback error cleanup, manager TERM during startup, dry-run and five desktop graph
+simulations. If explicitly run as root, an isolated nobody client additionally
+verifies read-only access and denied mutations; no host credential policy changes.
+Unprivileged execution explicitly skips that cross-UID native case.
+
+ATF after installation:
+  kyua test -k /usr/tests/halfbsd/Kyuafile
+  sh /usr/src/tests/halfbsd/phase2/build.sh /usr/src
+The Phase II ATF directory includes policy/build/native cases; matching source
+tree is required for the Phase I gate and source-module native run.
+Privileged Phase I tests remain separately subject to their existing requirements.
+
+Interactive disposable example in two terminals:
+  mkdir -m 700 /tmp/halfinit-demo
+  halfinit --config /usr/share/examples/halfbsd/services.lua \
+      --runtime-dir /tmp/halfinit-demo
+  halfsvc --socket /tmp/halfinit-demo/control.sock status
+  halfsvc --socket /tmp/halfinit-demo/control.sock restart worker
+  halfsvc --socket /tmp/halfinit-demo/control.sock shutdown
+Choose a fresh private directory; the fixture intentionally has a bounded lifetime.
+For planning/simulation:
+  halfinit --check
+  halfinit --dry-run --target desktop
+  halfinit --shadow --target multiuser
+  halfinit --simulate --target desktop --runtime-dir /tmp/halfinit-demo
+
+ACTUAL DEVELOPMENT RESULTS (LINUX)
+
+PASS: 14 pure policy cases with the actual in-tree Lua 5.4.8. Test-private fake
+kernel/process adapters establish scheduler policy only, not native supervision.
+PASS: strict C17/GCC compilation with -Wpedantic/-Werror and applicable repository
+warnings for IPC, discovery, modified OS/embedding and launcher sources.
+PASS: full PIE links of both launchers and updated Lua embedding against actual
+PIC foundation archives and in-tree Lua PIE archive, rejecting text relocations.
+FreeBSD-only APIs use temporary declarations/ENOSYS link stubs on Linux; these
+links do NOT establish FreeBSD ABI, process descriptors or kqueue behavior.
+PASS: launchers --help and actual system graph dry-run using Linux metadata.
+PASS: isolated Unix socket, request/response, lock lifetime, directory/interface
+discovery checks against actual Linux kernel calls. Temporary SO_PEERCRED shim
+substitutes only the missing Linux getpeereid symbol; native FreeBSD credential
+semantics are still pending. Socket checks require running outside this workspace
+sandbox's socket restriction; ordinary Anvil tests have no such restriction.
+PASS: Linux ASan/UBSan with leak detection on the native wrapper ownership smoke
+test outside the sandbox. Lua's archive itself is not instrumented; these results
+do not exercise FreeBSD-only kernel operations or prove native sanitizer safety.
+PASS: generated SYSROOT/inherited SHLIB_MAJOR=5 archive/PIE flags and actual fresh
+then repeated parallel module/definition/example installation into empty DESTDIR.
+
+PENDING: Phase II native buildworld/build32/buildkernel, ATF, all real native
+integration/stress cases, native cross-UID tests and native sanitizer validation.
+Clang is unavailable in this Linux workspace; native Clang warning checks are
+part of Anvil's build gate. A Linux link or fake event test is not a replacement.
+
+MAJOR FILES
+
+Added usr.sbin/halfinit/{launcher.c,Makefile,halfinit.8,modules/*,services/system.lua,
+examples/services.lua}; usr.sbin/halfsvc/{Makefile,halfsvc.8}; lib/libhalfbsd/{ipc.c,
+discovery.c}; tests/halfbsd/phase2/{unit.lua,native.lua,ipc.lua,run.sh,build.sh,
+manager_test.sh,Makefile}; this report.
+Modified libhalfbsd build/header/preload/OS tables and socket errno names;
+usr.sbin and test build lists.
+Prior uncommitted Phase I reports recording the user's native success are kept.
+
+FOLLOW-UP BEFORE BOOT INTEGRATION
+
+Run the native gates and inspect retained logs first. Resolve any native failure
+before enabling boot orchestration. Design root/localfs/ZFS initialization policy,
+IPFW readiness verification, DHCP interface ownership, DNS readiness probes,
+session/PAM/seat/controlling-terminal handling and descendant containment before
+considering rc removal. Do not describe protected planning placeholders as a
+complete executable replacement for every FreeBSD boot task. PID 1 integration,
+readiness cooperation from real daemons, privilege/seat policy and operational
+recovery remain separate, explicit engineering work.

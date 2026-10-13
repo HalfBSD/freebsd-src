@@ -1,9 +1,43 @@
 HALFBSD LUA PHASE 1 — IMPLEMENTATION AND NATIVE VALIDATION HANDOFF
-Date: 2026-10-12
+Date: 2026-10-13 (updated native results)
 Branch: halfbsd2
-Status: implemented for native review/testing; NOT declared production validated.
-Commit/push: subsequently authorized by the user; native validation remains pending.
-Host: Linux. Native test target: Anvil running the current HalfBSD kernel/world.
+Status: native build/install/reboot reported successful; all nine standalone
+userland supervision scenarios PASS. Broader ATF validation remains unreported.
+Implementation and test suite pushed through 06744071ae53.
+This native-results documentation update is not committed or pushed.
+Development host: Linux. Native testing performed by the user on Anvil.
+
+CURRENT NATIVE VALIDATION — ANVIL, 2026-10-13
+
+Evidence: user-provided console transcript of the installed runtime executing
+sh /usr/src/tests/halfbsd/run-userland.sh as charlie, UID 1001 (unprivileged).
+Host: FreeBSD anvil 15.1-RELEASE-p4, amd64.
+Kernel build identification: halfbsd2-n283744-94e22a343818 CHARLIE.
+Interpreter: Lua 5.4.8, Copyright (C) 1994-2025 Lua.org, PUC-Rio.
+
+PASS startup
+PASS parallel
+PASS restart
+PASS shutdown
+PASS forced_shutdown
+PASS timeout
+PASS failure
+PASS logging
+PASS repeat_cleanup
+PASS: all nine userland supervision scenarios
+
+This is actual native FreeBSD runtime evidence, not a Linux simulation or syntax
+check. It exercises readiness via pipe/kqueue IO, process exit notification,
+concurrent children, test-private restart, graceful/forced termination, deadlines,
+failed launches, logging and 48 repeated short-lived fixture launches. Earlier
+user reports also establish successful native build, installation and reboot.
+The active init/rc system remains in use and was not replaced by these tests.
+
+The broader foundational ATF suite, root-only credential tests, embedding helper
+reaping/descriptor accounting checks and native sanitizer runs have not yet been
+reported. These nine passes do not claim those results or certify a future PID 1
+service manager. Historical pending statements below describe earlier checkpoints;
+this current section supersedes them for build and standalone supervision status.
 
 PROVENANCE AND ARCHITECTURE
 
@@ -145,7 +179,7 @@ Ten ATF cases (including build/install regressions and userland supervision):
 
 Checks run on Linux MUST NOT be described as native process/kqueue validation.
 
-ACTUAL RESULTS ON THIS HOST
+INITIAL LINUX RESULTS (BEFORE THE NATIVE MILESTONE ABOVE)
 
 PASS: exact in-tree Lua 5.4.8 compiled/executed with ordinary userland libraries.
 PASS: Lua test and example syntax; ATF shell syntax.
@@ -161,7 +195,8 @@ PASS: same portable smoke under AddressSanitizer, UndefinedBehaviorSanitizer
       and LeakSanitizer without diagnostics. LeakSanitizer required execution
       outside the ptrace-based sandbox. No process/kqueue assertions were run
       against the temporary ENOSYS stubs used only for Linux linking.
-NOT RUN: native FreeBSD compilation/linking, ATF suite, process descriptors,
+NOT RUN AT THAT INITIAL CHECKPOINT: native FreeBSD compilation/linking,
+         ATF suite, process descriptors,
          kqueue delivery, actual native credential changes, native sanitizer
          ownership checks, buildworld/buildkernel.
 
@@ -176,8 +211,8 @@ Lua, external interpreter or package was obtained.
 
 LIMITATIONS AND PHASE 2 BOUNDARIES
 
-Native results are pending, so Phase 1 is not yet certified production-ready.
-The implementation needs native review/testing before use near PID 1.
+Nine native userland supervision scenarios now pass. Broader ATF validation
+remains unreported; Phase 1 is not yet certified for use near PID 1.
 The manager owns direct children; it does not adopt arbitrary descendants or
 implement service graphs, restart policy, readiness or a persistent control
 protocol. Restart policy can use finished timestamps and retained exit results.
@@ -393,3 +428,12 @@ an integration test of its native foundation, not a claim of boot replacement.
 Local validation: Lua and shell syntax, component Makefile parsing, and explicit
 Linux refusal passed. Native supervision execution remains pending Anvil results.
 The user subsequently authorized committing and pushing this test addition.
+
+NATIVE SUPERVISION SUCCESS RECORDED — 2026-10-13
+
+The user ran the source runner on Anvil as UID 1001 and provided a complete
+transcript showing all nine scenarios PASS. See CURRENT NATIVE VALIDATION above
+and HALFBSD-LUA-USERSPACE-TESTS.txt for the environment and exact outcome. This
+supersedes the standalone-supervision pending status of the previous checkpoint.
+The full ATF suite and native sanitizer results remain unreported. Documentation
+only changed; no runtime, boot, networking or service behavior was modified.

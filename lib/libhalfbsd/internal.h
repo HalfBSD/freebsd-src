@@ -20,6 +20,8 @@
 #define HB_MAX_IO (64U * 1024U * 1024U)
 struct hb_fd { struct hp_fd *fd; };
 struct hb_child { struct hp_process *process; };
+int hb_listdir(lua_State *);
+int hb_interfaces(lua_State *);
 const char *hb_string(lua_State *, int, size_t *);
 int hb_error(lua_State *, const char *, const char *, int);
 int hb_timeout(lua_State *, int, int);

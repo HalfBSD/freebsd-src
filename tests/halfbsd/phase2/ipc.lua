@@ -1,0 +1,20 @@
+-- SPDX-License-Identifier: BSD-2-Clause
+-- Isolated Unix IPC/ownership checks; no process or host service changes.
+local ipc=require('halfbsd.ipc');local native=require('halfbsd.os')
+local root=assert(arg[1]);assert(root:sub(1,1)=='/')
+assert(native.mkdir(root,0x1c0))
+local lock <close> = assert(ipc.lock(root..'/lock'))
+local duplicate,err=ipc.lock(root..'/lock');assert(duplicate==nil and err)
+local listener <close> = assert(ipc.listen(root..'/socket'))
+local second,error=ipc.listen(root..'/socket');assert(second==nil and error)
+local client <close> = assert(ipc.connect(root..'/socket',1))
+local accepted,peer=ipc.accept(listener);assert(accepted and peer.uid==native.identity().euid)
+local connection <close> = accepted
+assert(client:write('request\n'));assert(connection:read()=='request\n')
+assert(connection:write('reply\n'));assert(client:read()=='reply\n')
+connection:close();client:close();listener:close();lock:close()
+local names=assert(native.listdir(root));assert(#names==2)
+assert(type(native.interfaces())=='table')
+local missing,failure=native.listdir(root..'/missing');assert(missing==nil and failure.name=='ENOENT')
+assert(native.unlink(root..'/socket'));assert(native.unlink(root..'/lock'));assert(native.rmdir(root))
+print('PASS Unix IPC, peer UID, lock lifetime, directory/interface discovery')

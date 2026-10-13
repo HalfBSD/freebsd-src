@@ -1,0 +1,111 @@
+HALFBSD LUA: NATIVE USERLAND TEST GUIDE
+2026-10-13
+
+Scope
+-----
+The Phase 1 runtime is a foundation, not yet a production rc replacement. These
+scenarios test startup/supervision/shutdown primitives with disposable foreground
+Lua services. No dependency manager, actual system-service policy, init/rc
+replacement, boot integration, networking changes, mounts, hostname updates or
+host shutdown operations are performed.
+
+The user reports that native world/kernel build, installation and reboot now
+succeed. That is distinct from native runtime regression verification, which
+these tests are intended to establish on Anvil.
+
+Quick start on Anvil
+-------------------
+After transferring these new test files into /usr/src, run as an ordinary user:
+
+  sh /usr/src/tests/halfbsd/run-userland.sh
+
+No additional compilation, test helpers, ports packages, Kyua, or root privileges
+are needed for this runner. It uses /usr/bin/lua and the base /bin/timeout.
+It refuses Linux because Linux cannot exercise the native process-descriptor
+and kqueue APIs. This does not modify the active rc system. Root can run it too,
+but root is unnecessary. Never run it as a boot script.
+
+To keep temporary logs for debugging:
+
+  HALFBSD_KEEP_TESTS=1 sh /usr/src/tests/halfbsd/run-userland.sh
+
+To test another HalfBSD-built interpreter:
+
+  HALFBSD_LUA=/absolute/path/to/lua HALFBSD_KEEP_TESTS=1 \
+    sh /usr/src/tests/halfbsd/run-userland.sh
+
+HALFBSD_LUA must be an absolute path. Test scripts must come from the same current
+source tree as the installed interpreter. The runner prints native OS/version,
+UID and interpreter version, followed by PASS/FAIL for each scenario. A nonzero
+exit means one or more tests failed. Save the complete console output and any
+retained artifacts when reporting results.
+
+Safety and isolation
+--------------------
+Each scenario runs in a separate private mktemp directory and Lua process.
+Only explicitly launched fixture children/process groups are signaled. The
+fixture self-expires after 8 seconds if its supervisor fails. Each scenario has
+an internal 5-second event-loop watchdog and an external 30-second timeout with
+a 3-second forced termination grace. Graceful/forced cleanup runs on Lua assertion
+failures. The test-private crash/restart logic is not installed service policy.
+All file output is temporary. Direct argv execution is used by the Lua test API;
+no shell strings are passed to proc.run/spawn. No ports/listening sockets used.
+
+The shell timeout cannot contain every kernel-stuck process, and an escaped
+fixture session could briefly outlive the test; the fixture's own lifetime bound
+is independent. Do not interpret tests as a proof of a future PID 1 manager's
+adopted-child, descendant or process-group escape policy.
+
+Nine scenarios
+--------------
+startup         Spawn a delayed service; distinguish creation from readiness;
+                observe readiness using nonblocking pipe/kqueue IO; stop/reap.
+parallel        Three concurrently started services become ready, then all stop
+                through the existing shared-deadline shutdown primitive.
+restart         Observe a service exiting 17 through a process event; start one
+                replacement, observe readiness, and stop it. Check old-handle
+                signal delivery cannot target the replacement.
+shutdown        Deliver TERM to a ready service's owned group; observe graceful
+                exit and its process event; repeat wait/already-exited signaling.
+forced_shutdown A fixture explicitly ignores TERM; terminate must escalate to
+                KILL and report signal 9 within the bounded cleanup interval.
+timeout         Synchronous proc.run times out against a stubborn fixture and
+                releases the managed child instead of returning success.
+failure         Missing executable and working directory preserve distinct
+                errno/stage errors; failed launches leave no active children.
+logging         Service stdout redirection, supervisor JSON logging with omitted
+                and structured fields, exact exit status, temporary files.
+repeat_cleanup  48 short-lived interpreter/fixture launches, captured IO and
+                garbage collection; no tracked children remain.
+
+Full foundational regression suite
+----------------------------------
+The existing ATF suite tests finer-grained argv/environment/descriptor handling,
+concurrent waits, child-state destruction, autonomous reaping and descriptor
+counts, native signal interruptions, resource-exhaustion cleanup, sessions/group
+termination, malformed options, filesystem/atomic replacement, logging buffer
+boundaries, and child privilege transitions. Run both suites; the new runner
+supplements these tests rather than replacing them.
+
+If /usr/tests/halfbsd is installed and Kyua is available:
+
+  kyua test -k /usr/tests/halfbsd/Kyuafile
+  kyua report
+
+The new supervision ATF case runs the same nine scenarios. Credentials is the
+only root-only case and changes test child credentials, not host credentials.
+Other cases can run unprivileged. A native source tree is needed for the two
+build/install metadata cases. Configure source_tree if it is not /usr/src.
+
+If tests were omitted from installworld, the source runner above still works.
+To build/install the full ATF suite, use the repository's normal WITH_TESTS=yes
+world/test installation workflow with the matching Lua libraries. Do not use
+Linux-linked binaries or ENOSYS stubs on Anvil.
+
+Validation of this test addition
+-------------------------------
+Linux: shell syntax, exact in-tree Lua syntax, Makefile parsing and deliberate
+Linux rejection checked. No native supervision scenario ran in this workspace.
+No native PASS is claimed. Running the scripts on Anvil is the next step.
+The runtime source, library flags, DNS/firewall behavior and boot files are
+unchanged by this test addition. The user subsequently authorized committing and pushing these tests.

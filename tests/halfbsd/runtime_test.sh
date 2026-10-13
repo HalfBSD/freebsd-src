@@ -50,8 +50,18 @@ libraries_body()
 	atf_check -s exit:0 -o match:PASS -e empty sh \
 	    "$(atf_get_srcdir)/library_build.sh" "$source_tree" "$(atf_config_get bmake make)"
 }
+atf_test_case supervision
+supervision_head() { atf_set "descr" "Isolated userland startup, supervision and shutdown scenarios"; atf_set "timeout" "300"; }
+supervision_body()
+{
+	[ "$(uname -s)" = FreeBSD ] || atf_skip "native FreeBSD kernel required"
+	atf_check -s exit:0 -o match:PASS -e empty env \
+	    HALFBSD_LUA="$(atf_config_get lua /usr/bin/lua)" \
+	    sh "$(atf_get_srcdir)/run-userland.sh"
+}
 atf_init_test_cases()
 {
+	atf_add_test_case supervision
 	atf_add_test_case libraries
 	atf_add_test_case headers
 	atf_add_test_case ownership

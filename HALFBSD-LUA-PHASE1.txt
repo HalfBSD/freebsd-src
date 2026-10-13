@@ -116,7 +116,7 @@ the required syscall. ENOSYS is a real failed prerequisite, not a passing test.
 
 NATIVE AUTOMATED COVERAGE PREPARED (NOT EXECUTED HERE)
 
-Nine ATF cases (including subsequent header-install and library-build regressions):
+Ten ATF cases (including build/install regressions and userland supervision):
 - processes: direct execution/nonzero exits; missing/non-executable programs;
   failed cwd/credential lookup; argv holes/NUL/unknown options; shell-looking
   arguments remain literal; environment inheritance/replacement/unsetting;
@@ -372,3 +372,24 @@ The notes apply to later agent work in this checkout.
 Rebuild the native archive objects before retrying the interpreter link; an old
 non-PIC archive cannot be repaired at link time. The user subsequently
 authorized committing and pushing this follow-up.
+
+NATIVE BUILD MILESTONE AND USERLAND SUPERVISION TESTS — 2026-10-13
+
+The user reports successful native build, installation and reboot on Anvil.
+That milestone is user-reported evidence; it does not imply runtime tests passed.
+Added a standalone userland runner, nine disposable-service supervision scenarios,
+a bounded-lifetime Lua fixture, and an ATF supervision case using the same runner.
+The source runner needs no C helper build, root or Kyua. It uses the installed
+HalfBSD interpreter and base timeout utility, private temporary directories and
+owned test processes only. It does not modify init/rc or start real host services.
+
+Read HALFBSD-LUA-USERSPACE-TESTS.txt for commands, isolation rules, individual
+scenarios and full foundational ATF instructions. Tests cover readiness rather
+than merely creation, parallel startup, crash/one restart, graceful and forced
+shutdown, deadlines, failed execution, output/logging and repeated cleanup.
+The rc replacement/dependency manager itself is still a future phase; this is
+an integration test of its native foundation, not a claim of boot replacement.
+
+Local validation: Lua and shell syntax, component Makefile parsing, and explicit
+Linux refusal passed. Native supervision execution remains pending Anvil results.
+The user subsequently authorized committing and pushing this test addition.

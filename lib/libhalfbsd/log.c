@@ -76,88 +76,135 @@ static int new_logger(lua_State*L) {
 	return 1;
 }
 
-static int write_logger(lua_State*L) {
-	struct logger*g=luaL_checkudata(L,1,HB_LOG);
-	luaL_argcheck(L,!g->closed,1,"closed logger");
-	const char*level=hb_string(L,2,NULL);
-	static const char*const levels[]={"debug","info","notice","warning","error","critical",NULL};
-	int found=0;
-	for(size_t i=0;levels[i];i++)found|=!strcmp(level,levels[i]);
-	luaL_argcheck(L,found,2,"unknown severity");
-	size_t n;
-	luaL_checktype(L,3,LUA_TSTRING);
-	const char*message=lua_tolstring(L,3,&n);
-	luaL_argcheck(L,n<=65536,3,"message exceeds 64 KiB");
-	if(!lua_isnoneornil(L,4))luaL_checktype(L,4,LUA_TTABLE);
-	struct timespec now;
-	if(clock_gettime(CLOCK_REALTIME,&now)<0)return hb_error(L,"log.write","clock",errno);
-	luaL_Buffer b;
-	luaL_buffinit(L,&b);
-	char stamp[64];
-	snprintf(stamp,sizeof(stamp),"{\"time\":%jd.%09ld,\"level\":",(intmax_t)now.tv_sec,now.tv_nsec);
-	luaL_addstring(&b,stamp);
-	quote(&b,level,strlen(level));
-	luaL_addstring(&b,",\"service\":");
-	lua_getiuservalue(L,1,1);
-	size_t length;
-	const char*s=lua_tolstring(L,-1,&length);
-	quote(&b,s,length);
-	lua_pop(L,1);
-	luaL_addstring(&b,",\"message\":");
-	quote(&b,message,n);
-	if(!lua_isnoneornil(L,4)) {
-		luaL_addstring(&b,",\"fields\":{");
-		size_t count=0;
+struct log_field {
+	const char *key, *value;
+	size_t key_length, value_length;
+	int quoted;
+	char scalar[64];
+};
+
+static int
+write_logger(lua_State *L)
+{
+	struct logger *g = luaL_checkudata(L, 1, HB_LOG);
+	luaL_argcheck(L, !g->closed, 1, "closed logger");
+	const char *level = hb_string(L, 2, NULL);
+	static const char *const levels[] = {
+	    "debug", "info", "notice", "warning", "error", "critical", NULL};
+	int found = 0;
+	for (size_t i = 0; levels[i]; i++)
+		found |= !strcmp(level, levels[i]);
+	luaL_argcheck(L, found, 2, "unknown severity");
+	size_t message_length;
+	luaL_checktype(L, 3, LUA_TSTRING);
+	const char *message = lua_tolstring(L, 3, &message_length);
+	luaL_argcheck(L, message_length <= 65536, 3, "message exceeds 64 KiB");
+	int has_fields = !lua_isnoneornil(L, 4);
+	if (has_fields)
+		luaL_checktype(L, 4, LUA_TTABLE);
+	/* Reserve the optional argument before a buffer pushes its placeholder. */
+	lua_settop(L, 4);
+	lua_getiuservalue(L, 1, 1);
+	size_t service_length;
+	const char *service = lua_tolstring(L, -1, &service_length);
+	/* Snapshot and pin all strings before any buffer allocation can run GC.
+	 * Once buffering starts, its box must remain at the top of the stack. */
+	lua_newtable(L);
+	int snapshot = lua_gettop(L);
+	struct log_field fields[64];
+	size_t count = 0;
+	if (has_fields) {
 		lua_pushnil(L);
-		while(lua_next(L,4)) {
-			if(++count>64)luaL_argerror(L,4,"too many structured fields");
-			size_t klen;
-			const char*k=hb_string(L,-2,&klen);
-			if(klen>1024)luaL_argerror(L,4,"field name too long");
-			if(count>1)luaL_addchar(&b,',');
-			quote(&b,k,klen);
-			luaL_addchar(&b,':');
-			if(lua_type(L,-1)==LUA_TSTRING){size_t vlen;
-				const char*v=lua_tolstring(L,-1,&vlen);
-				if(vlen>65536)luaL_argerror(L,4,"field value too long");
-				quote(&b,v,vlen);
-			}
-			else if(lua_isboolean(L,-1))luaL_addstring(&b,lua_toboolean(L,-1)?"true":"false");
-			else if(lua_type(L,-1)==LUA_TNUMBER){double v=lua_tonumber(L,-1);
-				if(!isfinite(v))luaL_argerror(L,4,"nonfinite number");
-				char number[64];
-				locale_t old=uselocale(g->numeric);
-				if(!old)return hb_error(L,"log.write","locale",errno);
-				if(lua_isinteger(L,-1))snprintf(number,sizeof(number),"%jd",(intmax_t)lua_tointeger(L,-1));
-				else snprintf(number,sizeof(number),"%.17g",v);
+		while (lua_next(L, 4)) {
+			if (count == 64)
+				luaL_argerror(L, 4, "too many structured fields");
+			struct log_field *field = &fields[count];
+			field->key = hb_string(L, -2, &field->key_length);
+			if (field->key_length > 1024)
+				luaL_argerror(L, 4, "field name too long");
+			field->quoted = lua_type(L, -1) == LUA_TSTRING;
+			if (field->quoted) {
+				field->value = lua_tolstring(L, -1, &field->value_length);
+				if (field->value_length > 65536)
+					luaL_argerror(L, 4, "field value too long");
+			} else if (lua_isboolean(L, -1)) {
+				field->value = lua_toboolean(L, -1) ? "true" : "false";
+				field->value_length = strlen(field->value);
+			} else if (lua_type(L, -1) == LUA_TNUMBER) {
+				double value = lua_tonumber(L, -1);
+				if (!isfinite(value))
+					luaL_argerror(L, 4, "nonfinite number");
+				locale_t old = uselocale(g->numeric);
+				if (!old)
+					return hb_error(L, "log.write", "locale", errno);
+				if (lua_isinteger(L, -1))
+					snprintf(field->scalar, sizeof(field->scalar), "%jd",
+					    (intmax_t)lua_tointeger(L, -1));
+				else
+					snprintf(field->scalar, sizeof(field->scalar), "%.17g", value);
 				(void)uselocale(old);
-				luaL_addstring(&b,number);
-			}
-			else luaL_argerror(L,4,"fields must contain strings, numbers or booleans");
-			lua_pop(L,1);
+				field->value = field->scalar;
+				field->value_length = strlen(field->value);
+			} else
+				luaL_argerror(L, 4, "fields must contain strings, numbers or booleans");
+			lua_pushvalue(L, -2);
+			lua_rawseti(L, snapshot, (lua_Integer)(count * 2 + 1));
+			lua_pushvalue(L, -1);
+			lua_rawseti(L, snapshot, (lua_Integer)(count * 2 + 2));
+			count++;
+			lua_pop(L, 1);
 		}
-		luaL_addchar(&b,'}');
 	}
-	luaL_addstring(&b,"}\n");
-	luaL_pushresult(&b);
-	const char*line=lua_tolstring(L,-1,&length);
-	int outputs[]={g->console?STDERR_FILENO:-1,g->fd};
-	int error=0;
-	for(size_t i=0;i<2;i++) {
-		if(outputs[i]<0)
+	struct timespec now;
+	if (clock_gettime(CLOCK_REALTIME, &now) < 0)
+		return hb_error(L, "log.write", "clock", errno);
+	luaL_Buffer buffer;
+	luaL_buffinit(L, &buffer);
+	char stamp[64];
+	snprintf(stamp, sizeof(stamp), "{\"time\":%jd.%09ld,\"level\":",
+	    (intmax_t)now.tv_sec, now.tv_nsec);
+	luaL_addstring(&buffer, stamp);
+	quote(&buffer, level, strlen(level));
+	luaL_addstring(&buffer, ",\"service\":");
+	quote(&buffer, service, service_length);
+	luaL_addstring(&buffer, ",\"message\":");
+	quote(&buffer, message, message_length);
+	if (has_fields) {
+		luaL_addstring(&buffer, ",\"fields\":{");
+		for (size_t i = 0; i < count; i++) {
+			if (i)
+				luaL_addchar(&buffer, ',');
+			quote(&buffer, fields[i].key, fields[i].key_length);
+			luaL_addchar(&buffer, ':');
+			if (fields[i].quoted)
+				quote(&buffer, fields[i].value, fields[i].value_length);
+			else
+				luaL_addlstring(&buffer, fields[i].value, fields[i].value_length);
+		}
+		luaL_addchar(&buffer, '}');
+	}
+	luaL_addstring(&buffer, "}\n");
+	luaL_pushresult(&buffer);
+	size_t length;
+	const char *line = lua_tolstring(L, -1, &length);
+	int outputs[] = {g->console ? STDERR_FILENO : -1, g->fd};
+	int error = 0;
+	for (size_t i = 0; i < 2; i++) {
+		if (outputs[i] < 0)
 			continue;
-		for(size_t offset=0;offset<length;) {
-			ssize_t result=hp_write(outputs[i],line+offset,length-offset);
-			if(result<=0) {
-				if(!error)
-					error=result<0?errno:EIO;
+		for (size_t offset = 0; offset < length;) {
+			ssize_t result = hp_write(outputs[i], line + offset, length - offset);
+			if (result <= 0) {
+				if (!error)
+					error = result < 0 ? errno : EIO;
 				break;
 			}
-			offset+=(size_t)result;
+			offset += (size_t)result;
 		}
 	}
-	if(error)return hb_error(L,"log.write",NULL,error);
-	lua_pushboolean(L,1);
+	if (error)
+		return hb_error(L, "log.write", NULL, error);
+	lua_pushboolean(L, 1);
 	return 1;
 }
 

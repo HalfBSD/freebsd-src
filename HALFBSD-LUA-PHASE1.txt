@@ -328,3 +328,47 @@ the corrected upstream lua.c interpreter entry compiled in both ordinary and
 -fPIE variants with strict C17/-Wpedantic/-Werror. Existing library build metadata
 regression passed. Native FreeBSD buildworld/runtime verification remains pending.
 The user subsequently authorized committing and pushing this correction.
+
+FOLLOW-UP: PIE ARCHIVE OBJECTS AND PERSISTENT ENGINEERING NOTES
+
+Anvil reached interpreter linking and rejected absolute relocations from
+libhalfbsd.a and libhalfproc.a. NO_PIC suppresses shared-library targets but
+still builds ordinary non-PIC archive objects. It does not make a static archive
+safe for the default PIE interpreter. Both native archive Makefiles now compile
+objects with -fPIC while keeping their static-only targets. PIE/ASLR and linker
+text-relocation checks remain enabled; no new configuration option was added.
+The library metadata regression now checks the PIC compiler flags as well.
+
+Actual Linux checks: compiling init.o without PIC reproduced a PIE linker
+rejection. All native binding/process objects compiled with strict C17 warnings
+and PIC using temporary FreeBSD declarations. Their static archives and the
+in-tree Lua PIE archive linked into a complete interpreter with -pie -z text.
+readelf confirmed ELF type DYN. Native module registration and portable OS/log
+smoke tests executed. FreeBSD-only calls were ENOSYS link stubs, not emulation;
+these checks do not establish native process or kqueue behavior.
+
+That real linked smoke exposed a separate logger bug: an omitted fields
+argument's stack slot was occupied by luaL_Buffer's placeholder. The encoder
+also pushed field values over the buffer while it could grow. Logging now
+reserves the optional argument slot, validates/snapshots/pins field strings
+before starting the buffer, and keeps the buffer box on top during encoding.
+Native logging regression coverage adds omitted/nil fields, growing message and
+field buffers, maximum field counts, and excessive field-value rejection.
+
+Portable actual-file tests passed for omitted/nil fields, 64 KiB messages/values,
+and 64 fields each containing 64 KiB of escaped bytes; resulting records parsed
+as JSON. The new binding/process objects also passed the logging smoke under
+ASan/UBSan/LeakSanitizer, linked against the unsanitized in-tree Lua archive.
+LeakSanitizer ran outside the ptrace sandbox. These are Linux logging/link tests,
+not native FreeBSD runtime tests. Library metadata, Lua syntax and diff checks
+passed. Native Anvil buildworld and full ATF validation remain pending.
+
+At the user's request, AGENTS.md now records durable repository engineering
+instructions: strict C17 and Clang warnings, build32/type bounds, effective macro
+settings, staged/parallel install checks, complete PIE executable links, archive
+compiler flags, Lua C stack/buffer ownership, and honest validation scope.
+The notes apply to later agent work in this checkout.
+
+Rebuild the native archive objects before retrying the interpreter link; an old
+non-PIC archive cannot be repaired at link time. The user subsequently
+authorized committing and pushing this follow-up.

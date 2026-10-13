@@ -30,6 +30,13 @@ for context in world bootstrap; do
     esac
     for component in lib/libhalfbsd lib/libhalfproc lib/liblua; do
         [ -z "$(query "$component" SHLIB_NAME "$@")" ]
+        case "$component" in
+            lib/libhalfbsd|lib/libhalfproc)
+                case " $(query "$component" CFLAGS "$@") " in
+                    *' -fPIC '*) ;;
+                    *) echo "Archive objects are not PIC: $component" >&2; exit 1 ;;
+                esac ;;
+        esac
     done
     [ "$(query lib/liblua LUASTATIC "$@")" = liblua.a ]
     [ "$(query lib/liblua LUASTATICDIR "$@")" = /usr/lib ]

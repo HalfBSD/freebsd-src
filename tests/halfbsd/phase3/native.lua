@@ -3,6 +3,13 @@ package.path=assert(arg[1])..'/?.lua'
 local helper=assert(arg[2]);local native=require('halfbsd.os');local ipc=require('halfbsd.ipc')
 local proc=require('proc');local event=require('halfbsd.event');local config=require('config')
 local providers=require('providers').native()
+local json=require('json')
+local function checked(value,err,operation)
+    if value==nil or value==false then
+        error((operation or 'native operation')..': '..(type(err)=='table'and json.encode(err)or tostring(err)),2)
+    end
+    return value
+end
 local function engine(definitions,override)
     return require('supervisor').new({registry=config.registry(definitions),max_parallel=128,shutdown_timeout=2},
         {providers=override or providers})
@@ -49,9 +56,17 @@ local function check()
     else assert(poll:watch_timer(0.01,check))end
 end
 local ok,why=xpcall(function()
-    assert(poll:watch_timer(3,function()error('UDP/TCP readiness timeout')end));check();assert(poll:run())
+    assert(poll:watch_timer(3,function()error('UDP/TCP readiness timeout')end));check();checked(poll:run())
     assert(ipc.tcp_probe('127.0.0.1',port))
-end,debug.traceback)
-providers.release(probe);poll:close();assert(child:signal('TERM'));assert(child:wait(3));assert(ok,why)
+end,function(err)return debug.traceback(type(err)=='table'and json.encode(err)or tostring(err),2)end)
+providers.release(probe);poll:close()
+local sent,signal_error=child:signal('TERM')
+local result,wait_error=child:wait(3)
+if not result then child:signal('KILL');result,wait_error=child:wait(5)end
+if not ok then io.stderr:write('Loopback readiness failure: '..why..'\n')end
+-- Already-exited children legitimately return false from signal().
+if sent==nil then checked(sent,signal_error,'fixture TERM')end
+checked(result,wait_error,'fixture reap')
+assert(ok,why)
 assert(#proc.active()==0);assert(proc.shutdown(0.1,true))
 print('PASS native UDP query and TCP readiness against ephemeral loopback fixture; all children released')

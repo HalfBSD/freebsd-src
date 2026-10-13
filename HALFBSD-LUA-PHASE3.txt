@@ -212,3 +212,19 @@ PIE links and the 14 Phase III policy groups were rerun. These host checks do no
 compile discovery.c's FreeBSD-only branch. A new Anvil buildworld result and
 native userspace/ATF results remain pending. The administrator authorized
 committing and pushing this focused correction after verification.
+
+NATIVE USERSPACE TEST REPORT — PARTIAL PASS
+
+The administrator ran phase3/run.sh on Anvil FreeBSD 15.1-RELEASE-p4 AMD64 as
+UID 1001 and root. Both runs passed all 14 policy groups, adapter dry-run/shadow,
+native mount/fstab/process/route/interface/terminal inventories, actual oneshot
+pipe capture/reaping/output verification, and invalid-readback rejection.
+Both stopped at native.lua line 55 during the loopback fixture stage. Several
+assertions shared that line, and the raised structured table hid the error.
+The TCP/UDP readiness result, fixture reaping, private PTY test and later Phase
+I/II regression gates therefore are not yet established by these runs.
+
+The test now separates cleanup assertions, formats structured callback/native
+errors with JSON and traceback, and performs bounded KILL/reap fallback before
+reporting failure. This is a diagnostic correction, not a confirmed fix for the
+underlying native failure. Rerun on Anvil to identify its actual cause.

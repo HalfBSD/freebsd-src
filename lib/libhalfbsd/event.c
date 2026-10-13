@@ -64,7 +64,9 @@ static struct watch*slot(lua_State*L,struct loop*l,int callback,int target) {
 		if(l->watches[i].id)
 			continue;
 		struct watch*w=&l->watches[i];
-		if(l->serial==INT64_MAX)luaL_error(L,"event watch identifiers exhausted");
+		/* Keep IDs positive in both pointer-sized kqueue tags and Lua integers.
+		 * This also prevents serial wrap and reuse during a 32-bit build. */
+		if(l->serial==(UINTPTR_MAX >> 1))luaL_error(L,"event watch identifiers exhausted");
 		/* Registry allocations happen before acquiring a kernel resource. */
 		w->target=LUA_NOREF;
 		w->callback=LUA_NOREF;

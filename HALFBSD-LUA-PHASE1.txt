@@ -302,3 +302,16 @@ These results establish Linux archive/header/link behavior only. Native FreeBSD
 libhalfproc/libhalfbsd compilation, full interpreter linking, buildworld and
 runtime regression validation still require Anvil. The user subsequently
 authorized committing and pushing this follow-up.
+
+FOLLOW-UP: EVENT ID LIMIT IN BUILD32
+
+Anvil's build32 pass diagnosed a uintptr_t counter compared to INT64_MAX:
+a 32-bit pointer-sized counter cannot reach that 64-bit constant. The exhaustion
+check now uses UINTPTR_MAX >> 1, keeping IDs positive and preventing wrap/reuse
+at either pointer width. The counter type and native event API remain unchanged.
+
+Actual Linux checks: the corrected guard compiled in freestanding -m32 and -m64
+strict C17 checks; all nine C translation units passed host-width strict C17
+syntax checks with temporary FreeBSD declarations. This does not establish a
+full 32-bit or native FreeBSD build. Anvil buildworld/build32 remains pending.
+The user authorized committing and pushing this correction.

@@ -43,15 +43,8 @@ distribution:
 	${_+_}cd ${SRCTOP}/share/termcap; ${MAKE} etc-termcap
 	${INSTALL_SYMLINK} -T "package=runtime" ../var/run/os-release \
 		${DESTDIR}/etc/os-release
-.if ${MK_UNBOUND} != "no"
-# If NO_ROOT is defined, we are doing a stage install and always need to
-# install the /etc/unbound symlink, otherwise, don't overwrite the user's
-# existing symlink.
-	if [ "${NO_ROOT:Dtrue}" = true -o ! -e ${DESTDIR}/etc/unbound ]; then \
-		${INSTALL_SYMLINK} -Tpackage=local-unbound ../var/unbound \
-			${DESTDIR}/etc/unbound; \
-	fi
-.endif
+# BSD.root.dist creates /etc/unbound as a real configuration directory.
+# local-unbound-setup migrates the former symlink on existing installations.
 
 	cd ${.CURDIR}/..; ${INSTALL} -o ${BINOWN} -g ${BINGRP} -m 444 \
 		-T "package=runtime" ${FREEBSD} ${DESTDIR}/

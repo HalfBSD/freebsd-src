@@ -159,7 +159,13 @@ migrate_config() {
 		[ -f "${file}" ] && printf '%s\n' "${file#${D}}"
 	done)
 	DESTDIR="${D}" LEGACY_WORKDIR="${workdir}" FRAGMENTS="${fragments}" \
-	    OLD_LAYOUT="${old_layout}" RETIRED="${retired}" awk '
+	    OLD_LAYOUT="${old_layout}" OLD_CONFIG_ALIAS="${legacy_link}" RETIRED="${retired}" awk '
+	function physical(path) {
+	    if (alias && path == "/etc/unbound") return work
+	    if (alias && index(path, "/etc/unbound/") == 1)
+	        return work substr(path, length("/etc/unbound") + 1)
+	    return path
+	}
 	function advance(line, i, ch, escaped) {
 	    escaped = 0
 	    for (i = 1; i <= length(line); i++) {
@@ -191,7 +197,7 @@ migrate_config() {
 	    active[file] = 1
 	    while ((status = (getline line < file)) > 0) {
 	        if (quote == "" && line ~ /^[[:space:]]*include:/) {
-	            path = value(line)
+	            path = physical(value(line))
 	            if (path == work "/forward.conf") {
 	                while ((getline forwardline < (dest path)) > 0)
 	                    if (forwardline ~ /^[[:space:]]*forward-(tls|ssl)-upstream:[[:space:]]*yes/)
@@ -214,7 +220,14 @@ migrate_config() {
 	                }
 	                continue
 	            }
+	            if (alias && path != value(line))
+	                line = "include: \"" path "\""
 	            custom_include = 1
+	        }
+	        if (alias && quote == "" && line ~ /^[[:space:]]*((server|control)-(key|cert)-file|auto-trust-anchor-file|trust-anchor-file|trusted-keys-file|root-hints|cookie-secret-file|directory|logfile|pidfile|control-interface|(tls|ssl)-cert-bundle):/) {
+	            path = physical(value(line))
+	            if (path != value(line))
+	                line = substr(line, 1, index(line, ":")) " \"" path "\""
 	        }
 	        if (quote == "" && line ~ /^[[:space:]]*chroot:/) {
 	            path = value(line); sub(/\/$/, "", path)
@@ -233,6 +246,7 @@ migrate_config() {
 	}
 	BEGIN {
 	    dest = ENVIRON["DESTDIR"]; work = ENVIRON["LEGACY_WORKDIR"]
+	    alias = ENVIRON["OLD_CONFIG_ALIAS"] == "yes"
 	    retired = ENVIRON["RETIRED"]
 	    fragments = split(ENVIRON["FRAGMENTS"], fragment, "\n")
 	    if (ENVIRON["FRAGMENTS"] == "") fragments = 0
@@ -397,15 +411,39 @@ main() {
 	#
 	[ "$#" -eq 0 ] || usage
 
+	# The former /etc/unbound symlink aliases the state directory. Validate
+	# through its physical path, including when DESTDIR contains an absolute
+	# symlink which must never be followed into the active host filesystem.
+	local legacy_link=no config_dir="${unbound_conf%/*}" link_target
+	if [ "${config_dir}" = /etc/unbound ] && [ -L "${D}${config_dir}" ]; then
+		if [ "${unbound_conf}" != /etc/unbound/unbound.conf ]; then
+			echo "Custom configuration ${unbound_conf} requires administrator review before replacing the ${config_dir} symlink." >&2
+			return 1
+		fi
+		link_target=$(readlink "${D}${config_dir}") || return 1
+		case "${workdir}:${link_target}" in
+		/var/unbound:../var/unbound|/var/unbound:/var/unbound)
+			legacy_link=yes ;;
+		*)
+			echo "Custom ${config_dir} symlink (${link_target}) requires administrator review." >&2
+			return 1 ;;
+		esac
+	fi
 	# Configuration belongs to root; mutable state belongs to unbound.
-	mkdir -p "${D}${unbound_conf%/*}" "${D}${workdir}" "${D}${bkdir}"
+	mkdir -p "${D}${workdir}" "${D}${bkdir}" || return 1
+	if [ "${legacy_link}" = no ]; then
+		mkdir -p "${D}${config_dir}" || return 1
+	fi
 	if [ -z "${D}" ]; then
 		chown "${user}" "${workdir}" || return 1
 	fi
 	local old_conf="${workdir}/unbound.conf"
 	local source_conf="${unbound_conf}"
 	local old_layout=no
-	if [ "${old_conf}" != "${unbound_conf}" ] && [ -f "${D}${old_conf}" ]; then
+	if [ "${legacy_link}" = yes ]; then
+		source_conf="${old_conf}"
+		old_layout=yes
+	elif [ "${old_conf}" != "${unbound_conf}" ] && [ -f "${D}${old_conf}" ]; then
 		if [ -f "${D}${unbound_conf}" ]; then
 			echo "Both ${unbound_conf} and ${old_conf} exist; reconcile them before setup." >&2
 			return 1
@@ -414,9 +452,11 @@ main() {
 		old_layout=yes
 	fi
 	local tmp_unbound_conf expanded retired
-	tmp_unbound_conf=$(tmp "${unbound_conf}") || return 1
-	expanded=$(tmp "${unbound_conf}") || { rm -f "${tmp_unbound_conf}"; return 1; }
-	retired=$(tmp "${unbound_conf}") || { rm -f "${tmp_unbound_conf}" "${expanded}"; return 1; }
+	local staging_conf="${unbound_conf}"
+	if [ "${legacy_link}" = yes ]; then staging_conf="${workdir}/.unbound-migrate"; fi
+	tmp_unbound_conf=$(tmp "${staging_conf}") || return 1
+	expanded=$(tmp "${staging_conf}") || { rm -f "${tmp_unbound_conf}"; return 1; }
+	retired=$(tmp "${staging_conf}") || { rm -f "${tmp_unbound_conf}" "${expanded}"; return 1; }
 	trap 'rm -f "${tmp_unbound_conf}" "${expanded}" "${retired}"' EXIT
 	trap 'exit 1' HUP INT TERM
 	if [ -f "${D}${source_conf}" ]; then
@@ -434,7 +474,22 @@ main() {
 		gen_unbound_conf >"${tmp_unbound_conf}"
 	fi
 	chmod 644 "${tmp_unbound_conf}"
-	replace "${unbound_conf}" "${tmp_unbound_conf}" || return 1
+	if [ "${legacy_link}" = yes ]; then
+		local saved_link
+		saved_link=$(mktemp "${D}${bkdir}/unbound-link.${bkext}.XXXXXX") || return 1
+		mv "${D}${config_dir}" "${saved_link}" || { rm -f "${saved_link}"; return 1; }
+		if ! mkdir -m 755 "${D}${config_dir}"; then
+			mv "${saved_link}" "${D}${config_dir}"
+			return 1
+		fi
+		if ! replace "${unbound_conf}" "${tmp_unbound_conf}"; then
+			rmdir "${D}${config_dir}" && mv "${saved_link}" "${D}${config_dir}"
+			return 1
+		fi
+		echo "Previous ${config_dir} symlink saved as ${saved_link}"
+	else
+		replace "${unbound_conf}" "${tmp_unbound_conf}" || return 1
+	fi
 	# Retire successfully inlined files, never blindly delete conf.d contents.
 	while IFS= read -r file; do
 		backup "${file}" || return 1

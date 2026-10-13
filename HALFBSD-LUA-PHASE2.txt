@@ -7,12 +7,14 @@ STATUS
 
 Implemented halfinit, halfsvc, the declarative registry, dependency planner,
 event-driven supervisor, local control protocol, planning graph and synthetic
-boot/shutdown mode. Source changes are uncommitted. The existing init, rc,
+boot/shutdown mode. Initial implementation committed as 753c7b4fa3e3. The existing init, rc,
 networking, IPFW, SSH and Unbound configuration/provider hierarchy are unchanged.
 Nothing enables halfinit at boot or adopts existing processes.
 
-Phase II is NOT declared natively validated or ready to replace rc. The native
-integration/stress suite must run on Anvil after building/installing this world.
+The user reported native integration/stress PASS on Anvil on October 13, 2026,
+first as charlie (UID 1001), then as root (UID 0). The root run also passed the
+isolated cross-UID read-only/mutation authorization check. Phase II userspace
+behavior is now natively tested; this does not authorize or validate rc removal.
 Real filesystem/firewall/desktop boot adapters remain explicit prerequisites,
 not operations guessed or executed against the running system.
 
@@ -247,7 +249,7 @@ ATF after installation:
   sh /usr/src/tests/halfbsd/phase2/build.sh /usr/src
 The Phase II ATF directory includes policy/build/native cases; matching source
 tree is required for the Phase I gate and source-module native run.
-Privileged Phase I tests remain separately subject to their existing requirements.
+Privileged Phase I ATF tests remain separately subject to their existing requirements.
 
 Interactive disposable example in two terminals:
   mkdir -m 700 /tmp/halfinit-demo
@@ -285,10 +287,33 @@ do not exercise FreeBSD-only kernel operations or prove native sanitizer safety.
 PASS: generated SYSROOT/inherited SHLIB_MAJOR=5 archive/PIE flags and actual fresh
 then repeated parallel module/definition/example installation into empty DESTDIR.
 
-PENDING: Phase II native buildworld/build32/buildkernel, ATF, all real native
-integration/stress cases, native cross-UID tests and native sanitizer validation.
-Clang is unavailable in this Linux workspace; native Clang warning checks are
-part of Anvil's build gate. A Linux link or fake event test is not a replacement.
+NATIVE USER-REPORTED RESULTS (ANVIL, OCTOBER 13, 2026)
+
+Both runs used FreeBSD 15.1-RELEASE-p4 / AMD64, CHARLIE kernel identifying
+halfbsd2-n283744-94e22a343818, and the installed in-tree Lua 5.4.8 runtime.
+PASS as UID 1001 and UID 0: all 14 policy cases and all nine original Phase I
+userland scenarios. PASS as both users: Unix IPC/peer credentials/locking,
+notification readiness and runtime restart, readiness timeout, native execution
+errno, forced stop, restart exhaustion/dependency recovery, valid/invalid reloads,
+disconnected clients, configuration activation/stop holds/removal, persisted
+enable/disable, 50 concurrent real processes, 100 randomized native dependency
+tasks, 1000 native start/stop operations, rejected execution/credential spoofing,
+manager TERM cleanup, structured logs, callback-error cleanup, dry-run and all
+five complete synthetic desktop boot/shutdown scenarios.
+The UID 1001 run explicitly skipped cross-UID testing; the subsequent UID 0 run
+PASSed the isolated nobody client's allowed reads and denied mutations.
+Both runs ended with "PASS Phase II native service manager integration/stress suite".
+This is actual native userspace evidence supplied by the user, not Linux stubs.
+
+Native installed components compiled sufficiently to execute these tests.
+Full Phase II buildworld/build32/buildkernel logs and ATF/sanitizer results have
+not been separately supplied. The reported installworld installed the world but
+its Unbound post-install setup failed on the old /etc/unbound symlink layout;
+that upgrade problem is addressed separately in UNBOUND-CONFIGURATION-HANDOFF.txt.
+PENDING: broader native ATF (including Phase I privileged credential cases),
+native sanitizer validation, full build status confirmation and real boot adapters.
+Clang is unavailable in this Linux workspace; native Clang warning checks remain
+part of Anvil's build gate. Native userland success does not establish boot cutover.
 
 MAJOR FILES
 
@@ -298,7 +323,7 @@ discovery.c}; tests/halfbsd/phase2/{unit.lua,native.lua,ipc.lua,run.sh,build.sh,
 manager_test.sh,Makefile}; this report.
 Modified libhalfbsd build/header/preload/OS tables and socket errno names;
 usr.sbin and test build lists.
-Prior uncommitted Phase I reports recording the user's native success are kept.
+Phase I reports recording the user's native success were included in that commit.
 
 FOLLOW-UP BEFORE BOOT INTEGRATION
 

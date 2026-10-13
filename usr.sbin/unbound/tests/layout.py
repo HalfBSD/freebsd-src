@@ -30,6 +30,61 @@ def setup(root, success=True, *options):
     return result
 
 
+# distribution used to recreate this symlink, aliasing the two config paths.
+# Absolute links in a staged filesystem must not touch the active host's /var.
+assert '../var/unbound' not in (repo / 'etc/Makefile').read_text()
+for target in ('../var/unbound', '/var/unbound'):
+    with tempfile.TemporaryDirectory(prefix='unbound-symlink-') as directory:
+        root = Path(directory)
+        prepare(root)
+        old = root / 'var/unbound'
+        link = root / 'etc/unbound'
+        link.symlink_to(target)
+        main = old / 'unbound.conf'
+        records = '    local-data: "preserved.home.test. IN A 192.0.2.10"\n'
+        original = ('server:\n    chroot: ""\n    directory: /etc/unbound\n'
+                    '    auto-trust-anchor-file: /etc/unbound/root.key\n'
+                    '    tls-cert-bundle: /etc/unbound/site.pem\n' + records +
+                    'include: "/etc/unbound/control.conf"\n'
+                    'include: "/etc/unbound/conf.d/*.conf"\n'
+                    'include: "/etc/unbound/manual.conf"\n')
+        main.write_text(original)
+        setup(root, False, '-c', '/etc/unbound/site.conf')
+        assert link.is_symlink() and main.read_text() == original
+        # Validate before removing the link: missing fragments leave it intact.
+        setup(root, False)
+        assert link.is_symlink() and os.readlink(link) == target
+        assert main.read_text() == original
+        (old / 'control.conf').write_text('remote-control:\n    control-enable: yes\n')
+        (old / 'conf.d/local.conf').write_text('server:\n    local-data: "extra.home.test. IN A 192.0.2.11"\n')
+        manual = old / 'manual.conf'
+        manual.write_text('server:\n    local-data-ptr: "192.0.2.10 preserved.home.test."\n')
+        anchor = old / 'root.key'
+        anchor.write_text('TEST-ONLY anchor state\n')
+        certificate = old / 'site.pem'
+        certificate.write_text('TEST-ONLY certificate data\n')
+        setup(root)
+        assert link.is_dir() and not link.is_symlink()
+        config = link / 'unbound.conf'
+        result = config.read_text()
+        assert records in result and 'control-enable: yes' in result
+        assert 'extra.home.test.' in result and not (old / 'conf.d').exists()
+        assert 'include: "/var/unbound/manual.conf"' in result
+        assert 'directory: "/var/unbound"' in result
+        assert 'auto-trust-anchor-file: "/var/unbound/root.key"' in result
+        assert 'tls-cert-bundle: "/var/unbound/site.pem"' in result
+        assert not main.exists()
+        assert manual.read_text().startswith('server:')
+        assert anchor.read_text() == 'TEST-ONLY anchor state\n'
+        assert certificate.read_text() == 'TEST-ONLY certificate data\n'
+        backups = root / 'var/backups'
+        assert any(p.read_text() == original for p in backups.glob('unbound.conf.*'))
+        assert any(p.is_symlink() and os.readlink(p) == target for p in backups.glob('unbound-link.*'))
+        setup(root)
+        assert config.read_text() == result and not main.exists()
+print('PASS relative/absolute legacy directory symlinks migrate safely and idempotently without losing manual files or anchor state')
+
+
 with tempfile.TemporaryDirectory(prefix='unbound-layout-') as directory:
     root = Path(directory)
     old = root / 'var/unbound'

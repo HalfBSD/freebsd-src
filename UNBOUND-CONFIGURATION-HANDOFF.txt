@@ -1,6 +1,39 @@
 HalfBSD Unbound configuration consolidation
 Status: Implemented and tested on Linux; included in the user-authorized configuration consolidation commit. Commit and push authorized on 2026-10-11.
 
+October 13 follow-up: legacy /etc/unbound directory symlink
+
+Anvil's installworld setup reported that both /etc/unbound/unbound.conf and
+/var/unbound/unbound.conf exist. Source review found a missed rule in
+etc/Makefile's distribution target: it still created /etc/unbound as a symlink
+to ../var/unbound, including staged installations. Through that symlink the two
+config paths alias one physical file; setup previously misclassified them as
+independent conflicting configurations. Anvil's actual link target has not been
+directly inspected by this Linux workspace; inspect it with ls -ld /etc/unbound.
+
+Removed the obsolete installation rule. BSD.root.dist already supplies a real
+/etc/unbound directory. Setup now recognizes the former relative or absolute
+symlink to /var/unbound, prepares/validates migration through its physical state
+directory, then archives the symlink and installs a real configuration directory.
+The old main file and consumed fragments are backed up as before. Root-key state
+and unconsumed manual files remain intact. Includes/file settings which used the
+former /etc/unbound alias are rewritten to their existing physical /var/unbound
+paths, avoiding broken manual includes or certificate paths. These are existing
+administrator files, not newly generated configuration under /var.
+
+Absolute symlinks inside DESTDIR are never followed into the active host's /var.
+Failed expansion leaves the original symlink/configuration untouched. Nonstandard
+directory symlinks require administrator review. Two genuinely separate main
+configurations still fail rather than silently discard either administrator file.
+No forwarding/provider, DNSSEC, rc restart or chroot behavior was otherwise changed.
+
+Linux validation: python3 usr.sbin/unbound/tests/setup.py PASS, including the
+installworld stale-rc regression, fresh setup, migration/idempotence, both symlink
+forms, missing-fragment preservation, manual records/includes/certificate paths,
+unchanged anchor state, and genuine conflicting configurations. Shell syntax and
+git diff checks PASS. Native installworld confirmation remains pending. This
+follow-up commit and push were explicitly authorized by the user on October 13.
+
 Chroot decision (recorded before implementation)
 
 A /var/unbound chroot cannot read /etc/unbound/unbound.conf on reload or reach

@@ -116,7 +116,7 @@ the required syscall. ENOSYS is a real failed prerequisite, not a passing test.
 
 NATIVE AUTOMATED COVERAGE PREPARED (NOT EXECUTED HERE)
 
-Eight ATF cases (including the subsequent header-install regression):
+Nine ATF cases (including subsequent header-install and library-build regressions):
 - processes: direct execution/nonzero exits; missing/non-executable programs;
   failed cwd/credential lookup; argv holes/NUL/unknown options; shell-looking
   arguments remain literal; environment inheritance/replacement/unsetting;
@@ -267,3 +267,38 @@ under that stricter check. These are syntax-only results, not native compilation
 or execution. Clang is unavailable on this host. Native buildworld and regression
 execution must be retried on Anvil. No warning suppressions or C23 flags added.
 The user subsequently authorized committing and pushing this follow-up.
+
+FOLLOW-UP: STATIC FOUNDATION LIBRARIES AND WORLD LINK ORDER
+
+Anvil reported libhalfbsd.so.5 failing to resolve -lhalfproc while the generic
+library pass was still building. The inherited SHLIB_MAJOR=5 enabled an
+unintended shared library. During that pass, lib's subdirectories finish all
+before their install step, so libhalfproc was not yet in the staged sysroot.
+The foundation was designed to use installed static archives, not new DSOs.
+
+libhalfbsd and libhalfproc now explicitly set the existing bsd.lib.mk NO_PIC
+variable, making their static-only intent independent of inherited shared ABI
+settings. This is a fixed library declaration, not a new user-selectable build
+option. Lua again uses INTERNALLIB plus NO_PIC to preserve its existing static
+and PIE bootstrap archives. Regular include rules explicitly publish its API;
+a standard file group installs liblua.a with development package metadata.
+The _INTERNALLIBS Lua link mapping remains unchanged and the interpreter keeps
+its explicit halfbsd/halfproc/lua/pthread/m dependency list. No C APIs changed.
+
+Added the libraries ATF case and tests/halfbsd/library_build.sh. It verifies
+both world and bootstrap metadata with SYSROOT set and SHLIB_MAJOR=5 inherited:
+no foundation shared library is selected, both Lua archive variants remain,
+the public Lua archive still installs, and interpreter dependencies remain.
+Run directly on Anvil before retrying buildworld:
+  sh /usr/src/tests/halfbsd/library_build.sh /usr/src
+
+Actual Linux results: library metadata regression PASS; existing fresh and
+repeated parallel header installation regression PASS. Using the repository's
+bsd Makefiles, in-tree Lua actually built liblua.a and liblua_pie.a with inherited
+SHLIB_MAJOR=5, then installed liblua.a and all five headers into a fresh temporary
+stage. A strict-C17 embedding program compiled against those installed headers,
+linked that exact installed archive, and executed Lua 5.4 successfully.
+These results establish Linux archive/header/link behavior only. Native FreeBSD
+libhalfproc/libhalfbsd compilation, full interpreter linking, buildworld and
+runtime regression validation still require Anvil. The user subsequently
+authorized committing and pushing this follow-up.

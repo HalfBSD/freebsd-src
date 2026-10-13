@@ -2,6 +2,14 @@ LUASRC?=	${SRCTOP}/contrib/lua/src
 .PATH: ${LUASRC}
 
 LIB=	lua
+# Preserve bootstrap's static and PIE archives while exporting the userland API.
+INTERNALLIB=
+NO_PIC=
+FILESGROUPS+= LUASTATIC
+LUASTATIC= liblua.a
+LUASTATICDIR= ${LIBDIR}
+LUASTATICMODE= ${LIBMODE}
+LUASTATICTAGS= package=${PACKAGE:Uutilities},dev
 INCS= ${LUASRC}/lua.h ${LUASRC}/lauxlib.h ${LUASRC}/lualib.h \
 	${LUASRC}/luaconf.h luaconf.local.h
 INCSDIR= ${INCLUDEDIR}/lua
@@ -33,6 +41,11 @@ CFLAGS+=	-DLUA_CPATH_DEFAULT="\"/nonexistent/?.so\""
 CFLAGS+=	-DBOOTSTRAPPING
 .endif
 
+# INTERNALLIB skips the default header/archive installation. Register the
+# public include rules before bsd.lib.mk creates its generic install targets.
+# The static archive is installed by the file group above.
+.include <bsd.init.mk>
+.include <bsd.incs.mk>
 .include <bsd.lib.mk>
 
 # Bootstrap staging does not use BSD.include.dist. Create the public header

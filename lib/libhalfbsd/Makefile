@@ -1,4 +1,6 @@
 PACKAGE= runtime
+# These foundation libraries are installed static archives.
+NO_PIC=
 LIB= halfbsd
 SRCS= common.c proc.c event.c os.c log.c init.c
 INCS= halfbsd_lua.h

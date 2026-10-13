@@ -41,8 +41,18 @@ headers_body()
 	atf_check -s exit:0 -o match:PASS -e empty sh \
 	    "$(atf_get_srcdir)/header_install.sh" "$source_tree" "$(atf_config_get bmake make)"
 }
+atf_test_case libraries
+libraries_head() { atf_set "descr" "Foundation archives and interpreter linkage survive inherited SHLIB_MAJOR"; }
+libraries_body()
+{
+	source_tree=$(atf_config_get source_tree /usr/src)
+	[ -f "$source_tree/lib/liblua/Makefile" ] || atf_skip "source tree required (source_tree configuration)"
+	atf_check -s exit:0 -o match:PASS -e empty sh \
+	    "$(atf_get_srcdir)/library_build.sh" "$source_tree" "$(atf_config_get bmake make)"
+}
 atf_init_test_cases()
 {
+	atf_add_test_case libraries
 	atf_add_test_case headers
 	atf_add_test_case ownership
 	atf_add_test_case processes

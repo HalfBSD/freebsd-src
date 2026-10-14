@@ -11,7 +11,7 @@ end
 function M.attach(providers,os,ipc)
     local probes=setmetatable({},{__mode='k'})
     local created=setmetatable({},{__mode='k'})
-    local serial=0;local pending={};local deferred={}
+    local serial=0;local pending={};local deferred={};local swaps=setmetatable({},{__mode='k'})
     local function release(d)
         local probe=probes[d]
         if probe then
@@ -39,6 +39,44 @@ function M.attach(providers,os,ipc)
                     assert(process.command~=name or(name=='halfinit'and process.uid~=os.identity().euid),'already running outside this manager: '..name)
                 end
             end
+        end
+        return true
+    end
+    providers.boot_devices=function(p)
+        providers.root_guard()
+        local found=false
+        for _,m in ipairs(assert(os.mounts()))do if m.path=='/dev'and m.type=='devfs'then found=true end end
+        assert(found,'PID 1 must mount devfs before Lua starts')
+        for _,path in ipairs({'/dev/null','/dev/console'})do assert(os.stat(path),'essential device missing: '..path)end
+        for _,rule in ipairs(p.rules or{})do
+            assert(type(rule.path)=='string'and rule.path:sub(1,5)=='/dev/'and not rule.path:find('/../',1,true),'device rule must name a devfs entry')
+            local st=assert(os.stat(rule.path));assert(st.type=='device','device rule requires a real device entry')
+            if rule.mode then assert(os.chmod(rule.path,rule.mode))end
+            if rule.uid then assert(os.chown(rule.path,rule.uid,assert(rule.gid)))end
+        end
+        return true
+    end
+    providers.loopback_guard=function()
+        providers.root_guard()
+        for _,row in ipairs(assert(os.interfaces()))do
+            if row.name=='lo0'and row.family=='inet'and row.up and row.address=='127.0.0.1'then return 'ready'end
+        end
+        return true
+    end
+    providers.boot_hostname=function(p)providers.root_guard();assert(os.set_hostname(p.name));return true end
+    providers.swap_up=function(p,d)
+        providers.root_guard();local st=assert(os.stat(p.path),'swap device is missing; no automatic encryption or device attachment')
+        assert(st.type=='device','swap must use an existing device')
+        local ok,err=os.swap_on(p.path)
+        if not ok then assert(err.name=='EBUSY',err);return true end
+        swaps[d]={path=p.path,inode=st.inode,device=st.device};return true
+    end
+    providers.swap_down=function(p,d)
+        local owned=swaps[d]
+        if owned then
+            local st=assert(os.stat(owned.path),'owned swap device disappeared')
+            assert(st.type=='device'and st.inode==owned.inode and st.device==owned.device,'owned swap device changed; refusing cleanup')
+            assert(os.swap_off(owned.path));swaps[d]=nil
         end
         return true
     end

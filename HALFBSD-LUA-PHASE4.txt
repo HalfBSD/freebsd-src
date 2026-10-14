@@ -1,0 +1,282 @@
+HalfBSD Lua Phase IV — PID 1 boot/shutdown integration
+October 13, 2026 | branch halfbsd2
+STATUS: implementation and portable tests present; LIVE BOOT ACCEPTANCE PENDING
+
+This pass has NOT demonstrated a Lua-controlled boot. No native Phase IV
+buildworld/buildkernel/build32, ATF execution, VM boot, packet-policy test or
+25-cycle acceptance run has occurred. Do not enable Lua on Anvil yet.
+Existing Phase I–III native results remain historical evidence for those
+versions; they are not results for the new PID 1 integration. The administrator
+authorized committing and pushing this pass on October 13, 2026. Existing RC,
+rc.d, rc.subr and rcorder remain.
+
+ARCHITECTURE AND MODE SELECTION
+
+The existing C /sbin/init remains PID 1. Default startup is unchanged RC.
+A root-owned, zero-length regular /etc/halfbsd/lua-boot file (not writable by
+group/others, no additional hard links) opts into Lua. A one-boot kernel
+variable halfbsd.boot_mode=rc or lua overrides that marker. Unknown values or
+unsafe markers enter single-user mode. Loader init_exec/init_script/init_chroot
+are honored only in RC mode, preventing a second startup path in Lua mode.
+
+PID 1 starts /usr/sbin/halfinit with /etc/halfbsd/system.lua, --activate-system
+and an internal descriptor-3 channel. Configuration and included definitions
+must have root-owned, non-group/world-writable path components. The existing
+Lua registry, scheduler, supervisor, process descriptors and kqueue remain;
+there is no second reaper, dependency engine or supervisor daemon.
+
+The manager bootstraps storage before lock/control/state/log initialization.
+It sends READY exactly once after devices, runtime, loopback, firewall and
+control readiness. PID 1 waits at most 600 seconds for that handoff, retains
+its supervisor child, and then proceeds to its existing console/getty handling.
+The supervisor has its own session without a controlling terminal, null input
+and console output opened O_NOCTTY. Native file opens also use O_NOCTTY. The
+example retains lifecycle logs under /var/run/halfbsd/boot.log. The final shutdown
+record reopens /dev/console because login can revoke old console descriptors.
+Local console recovery does not depend on successful DHCP, upstream DNS or NTP
+clock synchronization. Those readiness states remain visible through halfsvc.
+
+The default /etc/rc.console tty entry is mapped to native authenticated login
+in Lua mode, retaining existing controlling-terminal initialization. RC mode
+is untouched. Automatic login and PAM/session orchestration are deliberately
+not added; that remains the previously discussed future option. Optional
+non-root desktop execution continues to use the Phase III existing-user-session
+model, not a compositor run by the root system manager.
+
+halfbsd.boot_active records the actual selected startup mode for reboot(8).
+Unexpected manager exit is recognized before getty child handling and enters
+controlled single-user recovery. Lua startup/shutdown never executes /etc/rc,
+rc.shutdown, rc.final or the rc.console helper. Partial Lua initialization does
+not automatically fall back to RC. A failed attempt latches recovery; changing
+startup systems after an attempt requires a full reboot.
+
+SHUTDOWN
+
+Normal shutdown(8) already signals PID 1. In active Lua mode, ordinary reboot
+and halt now request the corresponding existing PID 1 transition instead of
+stopping init and killing the manager before it can orchestrate cleanup.
+Reboot, halt, poweroff and powercycle signals retain native PID 1 handling.
+Explicit reboot -q remains an emergency bypass. Advanced reboot flags and live
+reroot are not supported through the initial orderly Lua path; advanced flags
+require explicit quick reboot and reroot requests are refused into recovery.
+
+PID 1 sends TERM/CONT to its retained supervisor and waits up to 120 seconds,
+then KILL with a five-second reap bound. The manager refuses new control
+mutations/reloads, uses its existing bounded reverse-dependency stop sequence,
+reaps owned children, releases only its own mount/swap resources and calls sync.
+PID 1 retains its existing remaining-process cleanup, final sync and kernel
+reboot duties. RC shutdown and Lua shutdown are mutually exclusive. A shutdown
+failure is logged, not silently described as clean. Descendants escaping the
+owned foreground-process/group model remain a known limitation; the native
+PID 1 remaining-process cleanup is still necessary.
+
+SUPPORTED INITIAL BOOT CONFIGURATION / RC RESPONSIBILITY AUDIT
+
+Initial integrated boot requires an already kernel-mounted ZFS root with /usr,
+manager, modules, interpreter and libraries accessible before additional mounts.
+Separate /usr and non-ZFS integrated roots are outside this initial scope;
+choose RC for those layouts. This restriction does not remove Phase III's
+ordinary userspace local-filesystem support.
+
+Devices: init's existing devfs mount is retained and verified. Essential
+/dev/null and /dev/console must exist. Optional explicit device_rules change
+mode/owner only on real device entries. Arbitrary rc devfs rulesets, kld loading,
+legacy device discovery, encrypted disks and custom devd behavior are not copied.
+Kernel-supported Ethernet/IPFW and already accessible storage are prerequisites.
+
+Storage: explicit read-only root update; existing local fstab filtering and
+UFS/FAT preen (only unmounted supported entries); zfs mount -a for already
+imported pools. No automatic pool imports, key loading, destructive repair,
+exports, remote filesystem boot or guessed ownership. New /tmp and /var/tmp
+preparation uses 1777; /var/run uses 0755. Existing content is not blanket-deleted.
+
+Swap: false, fstab (default, excluding noauto), or explicit existing /dev paths.
+Native swapon/swapoff wrappers preserve errno. EBUSY is treated as already active
+and not owned. Only successfully activated devices receive cleanup; changed
+device identity refuses cleanup. External root swapoff/re-swapon of the same
+unchanged device cannot be distinguished and must not race this manager. No encrypted
+swap attachment, file-backed swap, automatic device creation or forced swapoff.
+
+Hostname: optional explicit native hostname initialization. Kernel/loader root
+and devfs work are not duplicated. RC hostid/entropy-save/pool-import policies,
+extra kernel-module requirements and site-specific RC tasks are not inferred;
+a VM image must have its required kernel storage/network/firewall support and
+existing identity/configuration prepared. Broader hardware/host coverage remains
+outside the documented initial supported configuration.
+
+Network: existing Ethernet discovery/direct foreground dhclient and route
+readiness. One-second event timers monitor loss of address/default route and
+recover the network readiness service when both return, honoring operator holds
+and shutdown state. Dependents follow the existing supervisor's degradation
+policy. DHCP's existing dhclient-script remains an executable implementation
+helper; it does not source rc.subr. Administrator DHCP hooks require review.
+This is not a rewrite of DHCP and does not adopt another client's processes.
+DHCP DNS suppression and the compiled Cloudflare -> Google -> OpenDNS hierarchy
+are unchanged. No automatic NAT or gateway selection is introduced.
+
+IPFW: existing Phase III load/verify behavior remains. Loading requires the
+empty immutable default deny baseline, installs the guard before selected rules,
+verifies enabled kernel hooks and readback, and never flushes. Firewall failure
+prevents network services and the READY handoff. Workstation policy retains the
+previously requested ANY-SOURCE SSH/DNS permits; do not describe it as LAN-only.
+Open/closed policies remain explicit. Native packet tests are pending.
+
+Services: existing Unbound validation/anchor/foreground DNS readiness, SSH keys
+and foreground TCP readiness, NTP foreground supervision and optional seatd
+remain. Configuration/provider hierarchy unchanged. An NTP exec is not clock
+synchronization. A DNS TCP handshake is not full DNS-over-TCP response validation.
+
+INSTALLATION AND ADMINISTRATOR CONFIGURATION
+
+The boot-system.lua example is installed under /usr/share/examples/halfbsd.
+Installworld does not create the marker or overwrite /etc/halfbsd/system.lua.
+Review/copy the example explicitly. FreeBSD bsd.confs.mk installs configuration
+contents directly; using it for this opt-in administrator file would overwrite
+local edits, so it is intentionally not registered as a CONFS payload.
+
+FILES
+
+New: sbin/init/halfbsd.c/.h; halfinit modules/handoff.lua;
+tests/halfbsd/phase4/{Makefile,boot_test.sh,handoff_test.c,policy.lua,run.sh,
+vm-cycles.sh,vm-ready.lua}; this report.
+Modified: sbin/init/init.c and Makefile; sbin/reboot/reboot.c;
+lib/libhalfbsd/{boot.c,internal.h,os.c}; halfinit module/build/example files;
+halfinit.8 and lua-halfbsd.7; test build/module lists and phase3 swap fixture.
+sys/conf/NOTES corrects stale default-accept prose to match existing HALFBSD
+configuration; no firewall kernel option or policy is changed.
+No /etc/rc removal, configuration directory migration, IPFW policy redesign,
+DNS provider change, Capsicum or PID 1 replacement occurs.
+
+CHECKS PERFORMED IN THIS LINUX WORKSPACE
+
+PASS nine Phase IV Lua policy groups: root/PID1/ZFS gates; one-time local
+readiness independent of DHCP; critical failure; route loss/recovery/holds;
+graph ordering; swap ownership; essential devfs/explicit permission behavior;
+shutdown control guards and boot configuration trust checks.
+PASS actual portable C helper tests: default RC/override/unsafe-marker selection,
+fragmented readiness, malformed/embedded-NUL/trailing messages, EOF, transferred
+inheritable descriptor, exact child reaping, stale/reaped handle rejection,
+invalid PID rejection and bounded forced termination of PRIVATE children.
+PASS all 16 existing Phase III policy groups and all 14 Phase II policy groups.
+PASS strict GCC C17/Wpedantic/Werror host foundation compilation with temporary
+FreeBSD API declarations. This is NOT native FreeBSD branch/ABI verification.
+PASS staged SYSROOT/SHLIB_MAJOR=5 PIE/archive queries and fresh/repeated parallel
+manager module/example installation. No administrator config payload installed.
+Further exact link/install/sanitizer results are recorded in the final validation
+addendum below. Clang and QEMU are absent; neither has been downloaded.
+
+Native FreeBSD full buildworld/buildkernel/build32, Phase I native scenarios,
+Phase II/III native regressions after these changes, Phase IV ATF, privilege
+checks and all live VM gates are PENDING. Native sbin/init/reboot compilation is
+PENDING. The userspace C tests do not execute PID 1 or signal host services.
+
+TEST COMMANDS ON ANVIL (SAFE USERSPACE ONLY)
+
+  sh /usr/src/tests/halfbsd/phase4/run.sh
+
+Run as regular user and root. This includes the existing Phase III runner, which
+includes Phase I/II native gates. The root run covers root-owned private marker
+selection without touching /etc. Run installed ATF boot_test through kyua along
+with the broader suites. Native compiler/ABI results must be logged separately.
+Do NOT create the boot marker on Anvil to run userspace tests.
+
+DISPOSABLE VM PREPARATION AND REPEATED-CYCLE HARNESS
+
+Prepare a BIOS-bootable FreeBSD/AMD64 ZFS-root base image with THIS world/kernel,
+serial console enabled, root console recovery available, DHCP on virtio Ethernet,
+IPFW kernel support/default deny and reviewed /etc/unbound/unbound.conf/root.key.
+Run native buildworld/buildkernel and all userspace/ATF gates first. Keep a clean
+RC snapshot and verify RC boots before opting into Lua in a disposable clone.
+Copy/review boot-system.lua into /etc/halfbsd/system.lua, root:wheel 0600.
+Create /etc/halfbsd as root:wheel 0755. Keep /usr on kernel-mounted root.
+Check graph/dry-run and use loader one-boot halfbsd.boot_mode=lua for the FIRST
+supervised boot, before creating a persistent marker.
+
+For automated successful-boot cycles only, copy vm-ready.lua into a root-owned
+private guest test directory and add this reviewed definition to system.lua:
+
+  services={{name='vm-cycle',type='oneshot',enabled=true,
+    requires={'multiuser'},command={'/usr/bin/lua','-E',
+      '/root/phase4/vm-ready.lua'},
+    env={HALFBSD_PHASE4_DISPOSABLE_VM='YES'},stdout='/dev/console',
+    stderr='/dev/console',start_timeout=60}},
+
+This fixture REBOOTS ITS HOST and belongs ONLY in a disposable guest. It emits
+multiuser readiness with monotonic time, waits five seconds, then invokes native
+shutdown -r now without a shell. Preserve console logs. After manual boot/shutdown
+verification, create the persistent marker in that guest. Remove this fixture
+before any ordinary deployment. Never copy it into Anvil's active configuration.
+
+On a VM host with qemu-system-x86_64, qemu-img, timeout and rg:
+
+  sh tests/halfbsd/phase4/vm-cycles.sh prepared.qcow2 new-results-directory 25
+
+The harness creates a private qcow2 overlay, leaves the base untouched, reuses
+the SAME overlay for all cycles, limits each run to 900 seconds, and records TSV
+results plus serial logs. QEMU -no-reboot exits on the guest reboot. Success
+requires the actual multiuser fixture and clean boot.shutdown record, not just
+QEMU exit status. HALFBSD_VM_FORMAT=raw supports raw bases; HALFBSD_VM_BIOS may
+specify firmware. Review filesystem and process logs after each cycle. This
+harness is prepared but UNEXECUTED; it cannot substitute for the failure matrix.
+Do not infer absence of resource leaks or filesystem errors from its PASS alone.
+
+ISOLATED FAILURE MATRIX (ALL UNEXECUTED)
+
+Use a separate recoverable clone/snapshot for each injection. Save serial logs,
+service status, firewall readback/packet captures, mounts, swap and process
+inventory before/after. Restore the snapshot between cases:
+- RC normal boot and shutdown, without Lua manager/service duplication.
+- Lua normal boot: console login plus actual DNS UDP/TCP, SSH, NTP and DHCP.
+- Missing/invalid configuration and service definitions: diagnostics and recovery.
+- DHCP disabled: local login available, WAN services blocked/degraded.
+- Unbound/SSH exec failure: reported states, local recovery retained.
+- Missing/broken firewall support/readback: no external network service startup;
+  native inbound packet probes must confirm fail-closed behavior.
+- Crash supervised foreground daemon: restart and bounded exhaustion as configured.
+- Kill manager in guest: single-user recovery, no RC takeover of partial state.
+- Shutdown while startup pending; ordinary reboot, poweroff and forced stop;
+  resource cleanup and subsequent boot. Test failure cleanup/owned mount and swap.
+- 25 persistent-overlay Lua cycles and comparison against RC timing/behavior.
+
+RECOVERY AND ANVIL PREPARATION (NOT A TESTED CUTOVER PROCEDURE YET)
+
+At loader prompt: set halfbsd.boot_mode=rc; boot. This is one boot, not persistent
+loader.conf. To inspect first: set halfbsd.boot_mode=rc; boot -s. Review/fix
+configuration or remove /etc/halfbsd/lua-boot on a writable root, then reboot.
+On ZFS, select the known-good boot environment/snapshot if binaries cannot run.
+A started/failed Lua boot must reboot before RC can take over. Do not attempt
+Ctrl-D switching over partially applied mounts/network/firewall state.
+
+Only after all VM acceptance gates pass: save Anvil config/world/kernel/boot
+environment, confirm console/loader access and tested RC override, install the
+validated build, rerun userspace gates, prepare/review system.lua and compare
+shadow plan against active host responsibilities. Stop for unresolved missing
+site tasks. First cutover must be console-supervised with a ONE-BOOT Lua override;
+keep recovery media and RC snapshot. Do not create persistent marker until actual
+Anvil startup/shutdown/recovery is verified. Root autologin/PAM remains an optional
+future design, not part of this cutover. Nothing auto-enables Lua on Anvil.
+
+ACCEPTANCE
+
+Phase IV is awaiting native compilation and live boot validation. ZERO VM cycles
+completed. No claim of complete RC replacement or Anvil readiness is made.
+
+FINAL LOCAL VALIDATION ADDENDUM
+
+PASS complete Linux PIE links of halfinit, halfsvc and embedded Lua against real
+foundation/Lua PIC archives, with -z text and fatal linker warnings. FreeBSD-only
+kernel symbols use explicit ENOSYS test stubs; this does not prove native linking
+or runtime behavior. readelf confirms PIE and no TEXTREL for the checked manager.
+PASS fresh bootstrap/world and repeated parallel Lua public-header installation.
+PASS inherited SHLIB_MAJOR=5 foundation-library build checks and archive selection.
+PASS staged init source/static-link target queries and Phase IV test target queries.
+PASS actual closed-stdio promotion and session initialization in a private child,
+preserving the readiness descriptor, in addition to the portable handoff tests.
+PASS AddressSanitizer + UndefinedBehaviorSanitizer on the real portable PID 1
+helper/private-child tests with leak detection disabled. LeakSanitizer cannot
+operate in this workspace's tracing environment; leak/native sanitizer acceptance
+is not claimed. No real PID 1, firewall, mount, swap or reboot was exercised.
+PASS shell harness syntax, Lua load/syntax checks and git diff whitespace checks.
+No tools were downloaded for Phase IV. Existing temporary in-tree Lua/bmake build
+artifacts and Linux-only declarations/stubs under /tmp remain local verification
+tools, not new installed runtime dependencies. QEMU/Clang/native gates pending.

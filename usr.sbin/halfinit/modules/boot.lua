@@ -24,7 +24,7 @@ local function dense(value)
 end
 function M.compile(policy,os)
     fields(policy,{mode=true,interfaces=true,local_mounts=true,zfs=true,firewall=true,dns=true,sshd=true,ntpd=true,seatd=true,
-        desktop=true,root_writable=true})
+        desktop=true,root_writable=true,swap=true,device_rules=true,hostname=true})
     os=os or require('halfbsd.os')
     local services={}
     local function add(d)d.system=true;services[#services+1]=d;return d end
@@ -89,7 +89,18 @@ function M.compile(policy,os)
     if ntp then processes[#processes+1]='ntpd'end
     if seat then processes[#processes+1]='seatd'end
     add({name='boot-preflight',type='virtual',condition='root_ready',guard='exclusive_guard',parameters={processes=processes}})
-    add({name='rootfs',type='oneshot',action='root_writable',requires={'boot-preflight'},parameters={update=boolean(policy.root_writable,false)}})
+    local rules=dense(policy.device_rules or{})
+    for _,rule in ipairs(rules)do
+        fields(rule,{path=true,mode=true,uid=true,gid=true});path(rule.path)
+        assert(rule.path:sub(1,5)=='/dev/','device rules require a devfs path')
+        for _,key in ipairs({'mode','uid','gid'})do
+            local value=rule[key]
+            assert(value==nil or(type(value)=='number'and value%1==0 and value>=0 and value<=(key=='mode'and 4095 or 4294967295)),'invalid device permission')
+        end
+        assert(rule.uid==nil or rule.gid~=nil,'device owner requires a group')
+    end
+    add({name='devices',type='oneshot',action='boot_devices',requires={'boot-preflight'},parameters={rules=policy.device_rules or{}}})
+    add({name='rootfs',type='oneshot',action='root_writable',requires={'devices'},parameters={update=boolean(policy.root_writable,false)}})
     local fsnodes={};local points={}
     for i,m in ipairs(mounts)do
         assert(type(m.options)=='table','mount options required');local point=path(m.options.fspath)
@@ -125,9 +136,28 @@ function M.compile(policy,os)
     if boolean(policy.zfs,true)then
         add({name='zfs',type='oneshot',command={'/sbin/zfs','mount','-a'},requires={'localfs'},guard='root_guard',start_timeout=120})
     else target('zfs',{'localfs'})end
-    add({name='runtime',type='oneshot',action='directories',guard='root_guard',requires={'zfs'},parameters={directories={
+    add({name='temporary',type='oneshot',action='directories',guard='root_guard',requires={'zfs'},parameters={directories={
+        {path='/var/run',mode=493,uid=0,gid=0},{path='/tmp',mode=1023,uid=0,gid=0},{path='/var/tmp',mode=1023,uid=0,gid=0}}}})
+    add({name='runtime',type='oneshot',action='directories',guard='root_guard',requires={'temporary'},parameters={directories={
         {path='/var/run/halfbsd',mode=493},{path='/var/run/dhclient',mode=493}}}})
-    local previous='runtime'
+    add({name='loopback',type='oneshot',command={'/sbin/ifconfig','lo0','inet','127.0.0.1/8','up'},requires={'runtime'},guard='loopback_guard'})
+    local swap=policy.swap
+    if swap==nil or swap=='fstab'then
+        swap={};for _,entry in ipairs(assert(os.fstab()))do
+            if entry.type=='swap'and not entry.options:match('noauto')then swap[#swap+1]=entry.source end
+        end
+    elseif swap==false then swap={}end
+    dense(swap);local swaps={}
+    for i,source in ipairs(swap)do
+        path(source);assert(source:sub(1,5)=='/dev/','swap must be an existing device, not a file or automatic attachment')
+        local n='swap-'..i;swaps[#swaps+1]=n
+        add({name=n,type='oneshot',action='swap_up',cleanup='swap_down',requires={'runtime'},parameters={path=source}})
+    end
+    if policy.hostname then
+        assert(type(policy.hostname)=='string'and #policy.hostname>0 and not policy.hostname:find('\0',1,true),'invalid hostname')
+        add({name='hostname',type='oneshot',action='boot_hostname',requires={'runtime'},parameters={name=policy.hostname}})
+    end
+    local previous='loopback'
     if load then
         add({name='ipfw-baseline',type='oneshot',command={'/sbin/ipfw','-S','list'},verify='firewall_baseline',guard='root_guard',requires={previous}})
         previous='ipfw-baseline'
@@ -194,6 +224,7 @@ function M.compile(policy,os)
     target('dhcp',dhcp)
     add({name='network',type='virtual',condition='route_ready',requires={'dhcp'},parameters={interface=interfaces[1]},start_timeout=30})
     local essentials={'network','firewall','runtime'}
+    if policy.hostname then essentials[#essentials+1]='hostname' end
     if dns then
         local user=assert(os.user('unbound'));local anchor='/var/unbound/root.key'
         add({name='dns-state',type='oneshot',action='directories',guard='root_guard',requires={'runtime'},parameters={directories={
@@ -222,7 +253,7 @@ function M.compile(policy,os)
     end
     if seat then add({name='seatd',type='daemon',command={'/usr/local/bin/seatd'},requires={'runtime'},guard='exclusive_guard',restart='on-failure',
         readiness='condition',condition='socket_ready',parameters={path='/var/run/seatd.sock',processes={'seatd'}}})end
-    target('minimal',{'runtime'});target('multiuser',essentials);target('gateway',{'multiuser'})
+    target('minimal',{'runtime'});target('multiuser',essentials,swaps);target('gateway',{'multiuser'})
     if policy.desktop then
         fields(policy.desktop,{socket=true,user=true});assert(seat,'desktop system target requires seatd=true')
         local user=assert(os.user(assert(policy.desktop.user,'desktop user required')));assert(user.uid~=0,'root desktop forbidden')

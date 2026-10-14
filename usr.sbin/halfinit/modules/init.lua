@@ -15,7 +15,7 @@ local function read_state(path,native)
     return value.enabled
 end
 local function parse(args)
-    local opts={};local value={['--config']='config',['--target']='target',['--runtime-dir']='runtime_dir',['--state-file']='state_file',['--scenario']='scenario',['--run-for']='run_for'}
+    local opts={};local value={['--config']='config',['--target']='target',['--runtime-dir']='runtime_dir',['--state-file']='state_file',['--scenario']='scenario',['--run-for']='run_for',['--boot-notify-fd']='notify'}
     local flags={['--check']='check',['--graph']='graph',['--dry-run']='dry',['--simulate']='simulate',['--shadow']='shadow',['--help']='help',['--activate-system']='activate'}
     local i=1
     while args[i]do
@@ -57,7 +57,13 @@ function M.main(args,module_dir)
         opts.run_for=tonumber(opts.run_for)
         assert(opts.run_for and opts.run_for>0 and opts.run_for<=3600,'--run-for must be >0 and <=3600 seconds')
     end
-    local config=config_module.load(opts.config,module_dir..'/services/system.lua')
+    local native=require('halfbsd.os');local handoff
+    if opts.notify then
+        assert(opts.activate and opts.config and not(opts.simulate or opts.check or opts.graph or opts.dry or opts.shadow),'boot handoff requires a real explicit system configuration')
+        handoff=require('handoff').new(native,require('proc'),assert(tonumber(opts.notify),'invalid handoff descriptor'))
+    end
+    local config=config_module.load(opts.config,module_dir..'/services/system.lua',opts.notify and 0 or nil)
+    if opts.notify then assert(config.boot and config.boot.mode~='user','PID 1 requires a system boot policy')end
     assert(not opts.scenario or opts.simulate,'--scenario requires --simulate')
     assert(not opts.activate or(opts.config and not opts.simulate),'--activate-system requires an explicit configuration and cannot combine with simulation')
     if opts.simulate then
@@ -66,7 +72,6 @@ function M.main(args,module_dir)
     end
     config.target=opts.target or config.target;assert(config.registry[config.target],'unknown target')
     local plan=dependency.plan(config.registry,{[config.target]=true})
-    local native=require('halfbsd.os')
     if opts.check or opts.graph or opts.dry or opts.shadow then
         local missing={}
         for name in pairs(plan.selected)do
@@ -117,7 +122,7 @@ function M.main(args,module_dir)
     local enabled={}
     local logger=assert(require('halfbsd.log').new({service='halfinit'}))
     local engine
-    local bootstrapping=false
+    local bootstrapping=false;local control_ready=false
     local function emit(item)
         local r=engine.records[item.service];local result=r.result
         local fields={event='transition',service=item.service,state=item.state,previous=item.previous,reason=item.reason,monotonic=item.time}
@@ -126,6 +131,7 @@ function M.main(args,module_dir)
         if r.error and r.error.code then fields.errno=r.error.code;fields.error_name=r.error.name end
         local ok,error=logger:write(item.state=='FAILED'and'error'or'info','service state changed',fields)
         if not ok then io.stderr:write('halfinit log error: '..error.message..'\n')end
+        if handoff and not bootstrapping then handoff:check(engine,control_ready)end
         if bootstrapping then
             if item.service=='runtime'and item.state=='READY'then engine.loop:stop()
             elseif item.state=='FAILED'or item.state=='SKIPPED'then engine:shutdown()end
@@ -144,8 +150,9 @@ function M.main(args,module_dir)
         return {persisted=true}
     end
     handlers.reload=function()
+        assert(not engine.shutting,'manager is shutting down')
         assert(opts.config,'system graph reload requires an explicit config')
-        local candidate=config_module.load(opts.config,module_dir..'/services/system.lua')
+        local candidate=config_module.load(opts.config,module_dir..'/services/system.lua',opts.notify and 0 or nil)
         assert(json.encode(candidate.boot)==json.encode(config.boot),'boot policy changes require a new manager session')
         candidate.target=opts.target or candidate.target
         assert(candidate.target==config.target,'use explicit start/stop to change targets during this manager session')
@@ -212,7 +219,18 @@ function M.main(args,module_dir)
             logger:close();logger=file_logger
         end
         control=require('control').new(engine.loop,dir..'/control.sock',uid,engine,handlers)
+        control_ready=true
         engine:start({config.target})
+        if handoff then
+            engine:start({'firewall'})
+            handoff:check(engine,true)
+            local function network_check()
+                if engine.shutting then return end
+                require('handoff').network(engine)
+                assert(engine.loop:watch_timer(1,network_check))
+            end
+            assert(engine.loop:watch_timer(1,network_check))
+        end
         for name,d in pairs(config.registry)do if (enabled[name]==true or(d.enabled and enabled[name]~=false))and not engine.blocked[name]then engine:start({name})end end
         if opts.simulate then
             local function conclude()
@@ -227,6 +245,7 @@ function M.main(args,module_dir)
         end
         local completed,loop_error=engine.loop:run();if not completed then error(loop_error.message)end
     end,function(e)return failure(e)..'\n'..debug.traceback()end)
+    if handoff then handoff:fail()end
     if control then control:close()end
     local cleaned,cleanup_error=engine.proc.shutdown(0.1,true)
     if engine.terminal_owner then
@@ -243,6 +262,13 @@ function M.main(args,module_dir)
         local done,errors=pcall(engine.providers.finish)
         if done then for name,reason in pairs(errors)do engine.shutdown_failed[name]=reason end
         else engine.shutdown_failed.filesystems=failure(errors)end
+    end
+    if handoff then
+        assert(native.sync())
+        local record=json.encode({event='boot.shutdown',cleaned=ok and cleaned and actions_ok and next(engine.shutdown_failed)==nil})..'\n'
+        -- Login revokes old console descriptors; reacquire without owning its tty.
+        local console=native.open('/dev/console','append')
+        if console then console:write(record);console:close()else io.stderr:write(record)end
     end
     if not actions_ok then io.stderr:write(failure(actions_error)..'\n');return 1 end
     if not ok then io.stderr:write(problem..'\n');return 1 end

@@ -221,3 +221,31 @@ hb_default_routes(lua_State *L)
 	return hb_error(L, "default_routes", NULL, ENOSYS);
 #endif
 }
+
+int
+hb_sync(lua_State *L)
+{
+	sync(); lua_pushboolean(L, 1); return 1;
+}
+int
+hb_swap_on(lua_State *L)
+{
+	const char *path = hb_string(L, 1, NULL);
+#ifdef __FreeBSD__
+	if (swapon(path) < 0) return hb_error(L, "swapon", NULL, errno);
+	lua_pushboolean(L, 1); return 1;
+#else
+	(void)path; return hb_error(L, "swapon", NULL, ENOSYS);
+#endif
+}
+int
+hb_swap_off(lua_State *L)
+{
+	const char *path = hb_string(L, 1, NULL);
+#ifdef __FreeBSD__
+	if (swapoff(path, 0) < 0) return hb_error(L, "swapoff", NULL, errno);
+	lua_pushboolean(L, 1); return 1;
+#else
+	(void)path; return hb_error(L, "swapoff", NULL, ENOSYS);
+#endif
+}

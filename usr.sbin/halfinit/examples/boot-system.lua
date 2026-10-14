@@ -4,10 +4,11 @@
 -- Copy and review under /etc/halfbsd; installworld does not enable this file.
 return {
     target='multiuser',
+    log_file='/var/run/halfbsd/boot.log',
     boot={mode='system',interfaces='auto',local_mounts='fstab',zfs=true,
-        root_writable=false,
-        -- Verify an existing immutable deny guard and enabled kernel hooks.
-        -- 'load' installs workstation rules only over an empty deny baseline.
-        firewall={ownership='verify',mode='workstation',ipv6=true},
+        root_writable=true,swap='fstab',
+        -- Fresh Lua boot installs rules over the kernel's empty deny baseline.
+        -- Existing administrator policy must use ownership='verify'.
+        firewall={ownership='load',mode='workstation',ipv6=true},
         dns=true,sshd=true,ntpd=true,seatd=false},
 }

@@ -883,9 +883,9 @@ device		dummymbuf
 # limits the number of times a matching entry can be logged.
 #
 # Without IPFIREWALL_DEFAULT_TO_ACCEPT, IPFIREWALL defaults to denying all
-# traffic. HalfBSD builds IPFIREWALL_DEFAULT_TO_ACCEPT into its amd64 kernel
-# and selects open, workstation, or closed with firewall_mode in rc.conf.
-# Restrictive HalfBSD policies install an explicit terminal deny rule.
+# traffic. HalfBSD omits IPFIREWALL_DEFAULT_TO_ACCEPT in its amd64 kernel.
+# RC selects open, workstation, or closed with firewall_mode in rc.conf;
+# optional Lua startup selects the same modes through its boot policy.
 #
 # IPFIREWALL_DEFAULT_TO_ACCEPT causes the default rule (at boot) to
 # allow everything.  Use with care, if a cracker can crash your

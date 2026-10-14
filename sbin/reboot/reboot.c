@@ -32,6 +32,7 @@
 #include <sys/boottrace.h>
 #include <sys/mount.h>
 #include <sys/reboot.h>
+#include <kenv.h>
 #include <sys/stat.h>
 #include <sys/sysctl.h>
 #include <sys/time.h>
@@ -365,6 +366,13 @@ main(int argc, char *argv[])
 		err(1, NULL);
 	}
 
+	char boot_active[16] = {0};
+	bool lua_boot = !donextboot &&
+	    kenv(KENV_GET, "halfbsd.boot_active", boot_active,
+	    sizeof(boot_active) - 1) > 0 && !strcmp(boot_active, "lua");
+	if (lua_boot && (howto & ~(RB_HALT | RB_POWEROFF | RB_POWERCYCLE)))
+		errx(1, "advanced reboot flags require explicit quick reboot (-q) in Lua mode");
+
 	if (kernel != NULL) {
 		if (!fflag) {
 			char *k;
@@ -445,6 +453,15 @@ main(int argc, char *argv[])
 			err(1, "SIGEMT init");
 
 		return (0);
+	}
+
+	/* A persistent Lua supervisor must finish its ordered shutdown before
+	 * PID 1 kills remaining processes and invokes the kernel reboot. */
+	if (lua_boot) {
+		int sig = (howto & RB_POWEROFF) ? SIGUSR2 :
+		    (howto & RB_POWERCYCLE) ? SIGWINCH : (howto & RB_HALT) ? SIGUSR1 : SIGINT;
+		if (kill(1, sig) < 0) err(1, "request ordered Lua shutdown");
+		for (;;) pause();
 	}
 
 	/* Just stop init -- if we fail, we'll restart it. */

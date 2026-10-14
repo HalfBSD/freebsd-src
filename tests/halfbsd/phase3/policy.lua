@@ -61,7 +61,7 @@ end)
 test('fstab skips kernel root, swap, ZFS and noauto; FAT fsck supported',function()
     local f,n=fixture();n.fstab=function()return {
         {path='/',source='root',type='ufs',options='rw',pass=1},
-        {path='none',source='swap',type='swap',options='sw',pass=0},
+        {path='none',source='/dev/swap',type='swap',options='sw',pass=0},
         {path='/skip',source='x',type='ufs',options='rw,noauto',pass=0},
         {path='/boot/efi',source='/dev/efi',type='msdosfs',options='rw',pass=2}}end
     local r=registry({},n);assert(r['fsck-1'].command[1]=='/sbin/fsck'and not r['mount-2'])

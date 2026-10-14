@@ -139,7 +139,7 @@ and
 .Pa /usr/share/examples/halfbsd/desktop-user.lua
 show system and existing-login-session policies.
 System boot fields are mode, interfaces, local_mounts, zfs, root_writable,
-firewall, dns, sshd, ntpd, seatd and desktop.
+firewall, dns, sshd, ntpd, seatd, desktop, swap, device_rules and hostname.
 Root privilege and exclusive process ownership are checked before mutation.
 .Pp
 Storage preparation runs through the existing scheduler before the manager
@@ -194,7 +194,67 @@ Console autologin, PAM and persistent session ownership are future work.
 .Pp
 Boot policy cannot change during configuration reload; start a new manager
 session to change it. Gateway is an explicit service group, without inferred
-packet forwarding or NAT configuration. No boot cutover or PID 1 change is made.
+packet forwarding or NAT configuration. Installing the runtime leaves RC selected. Optional PID 1 integration is
+described below.
+.Sh BOOT INTEGRATION
+Traditional RC remains the default.
+Optional Lua mode retains the C-based PID 1 and its login, single-user and
+kernel reboot responsibilities.
+Initially supported boot layouts require a kernel-mounted ZFS root containing
+the interpreter, manager, modules and their libraries; a separately mounted
+.Pa /usr
+is not supported by this early integration.
+.Pp
+Prepare a root-owned, non-writable-to-other-users configuration at
+.Pa /etc/halfbsd/system.lua
+by reviewing the installed
+.Pa /usr/share/examples/halfbsd/boot-system.lua .
+Installworld neither overwrites this configuration nor enables Lua startup.
+Create a root-owned zero-length regular file
+.Pa /etc/halfbsd/lua-boot
+with mode 0600 to persistently opt in, only after disposable VM validation.
+The loader variable
+.Sy halfbsd.boot_mode=rc
+selects traditional RC for one boot; setting it to
+.Sy lua
+selects Lua for one boot.
+Use the loader prompt rather than loader.conf for a one-boot override.
+Invalid selection enters single-user recovery.
+.Pp
+PID 1 launches the manager with an internal descriptor-3 readiness channel.
+That option requires root with PID 1 as its direct parent.
+After devfs, runtime storage, loopback, firewall and control readiness, PID 1
+starts existing console login sessions while the manager continues supervising.
+WAN readiness is separate: DHCP failure does not prevent local recovery login.
+The legacy rc.console entry becomes authenticated native login in Lua mode.
+There is no automatic root login or invocation of that shell helper.
+.Pp
+The kernel/PID 1 devfs mount is verified rather than duplicated.
+Temporary directories are prepared with mode 1777 and runtime storage with 0755.
+.Sy device_rules
+is an explicit array of path, mode and optional uid/gid records for real devfs
+entries; it does not execute rc devfs scripts or discover arbitrary policy.
+.Sy swap
+accepts false, fstab (the default), or an array of existing /dev paths.
+No swap file, encrypted device attachment or pool import is synthesized.
+Already-active swap is not adopted for cleanup; only newly activated devices
+are deactivated.
+.Sy hostname
+optionally sets the host name through the native API.
+.Pp
+Ordinary shutdown and reboot request PID 1's ordered Lua shutdown.
+The manager refuses new mutations, stops dependents first, releases owned
+resources and synchronizes filesystems. PID 1 then performs its established
+remaining-process cleanup and kernel reboot. Lua mode executes neither
+rc.shutdown nor rc.final. Explicit quick reboot bypasses orderly cleanup;
+advanced reboot flags and live reroot are outside the initial integration.
+.Pp
+Unexpected manager exit or critical startup failure enters single-user recovery,
+without automatically running RC over partially initialized Lua state.
+Once startup has been attempted, changing startup systems in the same boot is
+refused. Reboot and select RC at the loader prompt.
+Preserve console access, a recoverable VM disk and traditional RC throughout
+validation; installation alone does not establish live boot acceptance.
 .Sh SEE ALSO
 .Xr halfsvc 8 ,
 .Xr lua-halfbsd 7

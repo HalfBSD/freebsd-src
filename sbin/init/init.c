@@ -48,6 +48,8 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <kenv.h>
+#include <limits.h>
+#include <poll.h>
 #include <libutil.h>
 #include <mntopts.h>
 #include <paths.h>
@@ -74,6 +76,7 @@
 #endif
 
 #include "pathnames.h"
+#include "halfbsd.h"
 
 /*
  * Sleep times; used to prevent thrashing.
@@ -124,6 +127,11 @@ static state_func_t reroot_phase_two(void);
 static state_func_t run_script(const char *);
 
 static enum { AUTOBOOT, FASTBOOT } runcom_mode = AUTOBOOT;
+
+static bool lua_mode, boot_attempted, lua_failed;
+static pid_t lua_pid;
+static state_func_t lua_runcom(void);
+static void lua_shutdown(void);
 
 static bool Reboot = false;
 static int howto = RB_AUTOBOOT;
@@ -323,19 +331,28 @@ invalid:
 	close(1);
 	close(2);
 
-	if (kenv(KENV_GET, "init_exec", kenv_value, sizeof(kenv_value)) > 0) {
+	char boot_override[32] = {0};
+	(void)kenv(KENV_GET, HB_BOOT_OVERRIDE, boot_override, sizeof(boot_override) - 1);
+	int selected_mode = hb_boot_mode(HB_BOOT_MARKER, boot_override);
+	if (selected_mode < 0) {
+		warning("invalid HalfBSD boot selection: %m; entering single-user recovery");
+		initial_transition = single_user;
+	}
+	bool allow_legacy_loader = selected_mode == 0;
+
+	if (allow_legacy_loader && kenv(KENV_GET, "init_exec", kenv_value, sizeof(kenv_value)) > 0) {
 		replace_init(kenv_value);
 		_exit(0); /* reboot */
 	}
 
-	if (kenv(KENV_GET, "init_script", kenv_value, sizeof(kenv_value)) > 0) {
+	if (allow_legacy_loader && kenv(KENV_GET, "init_script", kenv_value, sizeof(kenv_value)) > 0) {
 		state_func_t next_transition;
 
 		if ((next_transition = run_script(kenv_value)) != NULL)
 			initial_transition = (state_t) next_transition;
 	}
 
-	if (kenv(KENV_GET, "init_chroot", kenv_value, sizeof(kenv_value)) > 0) {
+	if (allow_legacy_loader && kenv(KENV_GET, "init_chroot", kenv_value, sizeof(kenv_value)) > 0) {
 		if (chdir(kenv_value) != 0 || chroot(".") != 0)
 			warning("Can't chroot to %s: %m", kenv_value);
 	}
@@ -746,6 +763,10 @@ mount_tmpfs(const char *fspath)
 static state_func_t
 reroot(void)
 {
+	if (lua_mode) {
+		warning("live reroot is not supported in Lua mode; use a full reboot");
+		lua_failed = true; lua_shutdown(); return (state_func_t)death_single;
+	}
 	void *buf;
 	size_t bufsize;
 	int error;
@@ -872,7 +893,7 @@ single_user(void)
 		BOOTTRACE("shutting down the system");
 		sync();
 		/* Run scripts after all processes have been terminated. */
-		runfinal();
+		if (!lua_mode) runfinal();
 		if (reboot(howto) == -1) {
 			emergency("reboot(%#x) failed, %m", howto);
 			_exit(1); /* panic and reboot */
@@ -1030,6 +1051,19 @@ static state_func_t
 runcom(void)
 {
 	state_func_t next_transition;
+	char override[32] = {0};
+	(void)kenv(KENV_GET, HB_BOOT_OVERRIDE, override, sizeof(override) - 1);
+	int mode = hb_boot_mode(HB_BOOT_MARKER, override);
+	if (mode < 0 || lua_failed || (boot_attempted && lua_mode != (mode == 1))) {
+		warning("boot selection unsafe or Lua recovery latched; reboot with halfbsd.boot_mode=rc");
+		return (state_func_t)single_user;
+	}
+	lua_mode = mode == 1; boot_attempted = true;
+	if (kenv(KENV_SET, HB_BOOT_ACTIVE, lua_mode ? "lua" : "rc", lua_mode ? 4 : 3) < 0) {
+		warning("cannot publish active boot mode: %m");
+		return (state_func_t)single_user;
+	}
+	if (lua_mode) return lua_runcom();
 
 	BOOTTRACE("/etc/rc starting...");
 	if ((next_transition = run_script(_PATH_RUNCOM)) != NULL)
@@ -1038,6 +1072,76 @@ runcom(void)
 
 	runcom_mode = AUTOBOOT;		/* the default */
 	return (state_func_t) read_ttys;
+}
+
+/* READY means local filesystems/firewall/control are ready, not WAN or clock sync. */
+static state_func_t
+lua_runcom(void)
+{
+	int fds[2], status;
+	char text[16] = {0}; size_t used = 0;
+	struct timespec begin, now;
+	requested_transition = 0;
+	if (hb_boot_pipe(fds) < 0) goto failed;
+	lua_pid = fork();
+	if (lua_pid == 0) {
+		if (hb_boot_child_fd(fds) < 0) _exit(126);
+		if (hb_boot_stdio(_PATH_DEVNULL, _PATH_CONSOLE) < 0) _exit(126);
+#ifdef LOGIN_CAP
+		setprocresources(RESOURCE_RC);
+#endif
+		sigset_t empty; sigemptyset(&empty);
+		(void)sigprocmask(SIG_SETMASK, &empty, NULL);
+		if (close_range(4, UINT_MAX, 0) < 0) _exit(126);
+		execl(HB_BOOT_PROGRAM, HB_BOOT_PROGRAM, "--config", HB_BOOT_CONFIG,
+		    "--activate-system", "--boot-notify-fd", "3", (char *)NULL);
+		warning("cannot execute " HB_BOOT_PROGRAM ": %m"); _exit(127);
+	}
+	close(fds[1]);
+	if (lua_pid < 0) { close(fds[0]); lua_pid = 0; goto failed; }
+	if (clock_gettime(CLOCK_MONOTONIC, &begin) < 0) { close(fds[0]); goto failed; }
+	for (;;) {
+		pid_t child = waitpid(lua_pid, &status, WNOHANG);
+		if (child == lua_pid) {
+			warning("Lua manager exited during startup, status %#x", status);
+			lua_pid = 0; close(fds[0]); goto failed;
+		}
+		if (child < 0 && errno != EINTR) { close(fds[0]); goto failed; }
+		if (requested_transition) { close(fds[0]); lua_shutdown(); return (state_func_t)death_single; }
+		struct pollfd p = {fds[0], POLLIN, 0};
+		int result = poll(&p, 1, 250);
+		if (result < 0 && errno != EINTR) { close(fds[0]); goto failed; }
+		if (result > 0) {
+			result = hb_boot_read(fds[0], text, &used);
+			if (result == 1) { close(fds[0]); runcom_mode = AUTOBOOT; return (state_func_t)read_ttys; }
+			if (result < 0) {
+				warning("Lua readiness channel failed: %m");
+				close(fds[0]); goto failed;
+			}
+		}
+		if (clock_gettime(CLOCK_MONOTONIC, &now) < 0 || now.tv_sec - begin.tv_sec >= 600) {
+			close(fds[0]); goto failed;
+		}
+	}
+failed:
+	warning("Lua startup failed; entering single-user recovery, no RC fallback");
+	lua_failed = true; lua_shutdown();
+	return (state_func_t)death_single;
+}
+static void
+lua_shutdown(void)
+{
+	if (lua_pid > 1) {
+		int status;
+		int result = hb_boot_stop(lua_pid, DEATH_SCRIPT * 1000, &status);
+		if (result != 1) warning("Lua shutdown did not reap its supervisor: %m");
+		else {
+			if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+				warning("Lua supervisor shutdown status %#x", status);
+			lua_pid = 0;
+		}
+	}
+	sync();
 }
 
 static void
@@ -1351,6 +1455,8 @@ new_session(session_t *sprev, struct ttyent *typ)
 static int
 setupargv(session_t *sp, struct ttyent *typ)
 {
+	const char *getty = lua_mode && strcmp(typ->ty_getty, _PATH_CONSOLE_LOGIN) == 0 ?
+	    _PATH_LOGIN : typ->ty_getty;
 
 	if (sp->se_getty) {
 		free(sp->se_getty);
@@ -1358,13 +1464,13 @@ setupargv(session_t *sp, struct ttyent *typ)
 		free(sp->se_getty_argv);
 	}
 	/* Direct login and its console helper do not take a tty argument. */
-	sp->se_login = strcmp(typ->ty_getty, _PATH_CONSOLE_LOGIN) == 0 ||
-	    (strncmp(typ->ty_getty, _PATH_LOGIN,
+	sp->se_login = strcmp(getty, _PATH_CONSOLE_LOGIN) == 0 ||
+	    (strncmp(getty, _PATH_LOGIN,
 	    sizeof(_PATH_LOGIN) - 1) == 0 &&
-	    (typ->ty_getty[sizeof(_PATH_LOGIN) - 1] == '\0' ||
-	    typ->ty_getty[sizeof(_PATH_LOGIN) - 1] == ' ' ||
-	    typ->ty_getty[sizeof(_PATH_LOGIN) - 1] == '\t'));
-	if (asprintf(&sp->se_getty, "%s%s%s", typ->ty_getty,
+	    (getty[sizeof(_PATH_LOGIN) - 1] == '\0' ||
+	    getty[sizeof(_PATH_LOGIN) - 1] == ' ' ||
+	    getty[sizeof(_PATH_LOGIN) - 1] == '\t'));
+	if (asprintf(&sp->se_getty, "%s%s%s", getty,
 	    sp->se_login ? "" : " ", sp->se_login ? "" : typ->ty_name) < 0)
 		err(1, "asprintf");
 	sp->se_getty_argv_space = strdup(sp->se_getty);
@@ -1629,6 +1735,12 @@ static void
 collect_child(pid_t pid)
 {
 	session_t *sp, *sprev, *snext;
+	if (pid == lua_pid && lua_pid > 1) {
+		lua_pid = 0; lua_failed = true;
+		warning("Lua supervisor exited unexpectedly; entering single-user recovery");
+		requested_transition = death;
+		return;
+	}
 
 	if (! sessions)
 		return;
@@ -1944,7 +2056,8 @@ death(void)
 	revoke_ttys();
 
 	/* Try to run the rc.shutdown script within a period of time */
-	runshutdown();
+	if (lua_mode) lua_shutdown();
+	else runshutdown();
 
 	/* Unblock suspend if we blocked it. */
 	if (!blocked)
@@ -1965,6 +2078,7 @@ death_single(void)
 	pid_t pid;
 	static const int death_sigs[2] = { SIGTERM, SIGKILL };
 
+	if (lua_mode) lua_shutdown();
 	revoke(_PATH_CONSOLE);
 
 	BOOTTRACE("start killing user processes");

@@ -365,13 +365,23 @@ Numeric formatting is independent of the caller's numeric locale.
 closes the optional file and is idempotent.
 Console-only logging works before writable filesystems are available.
 Failures to one output do not prevent an attempt to write the other output.
+.Ss Boot filesystem operations
+.Sy halfbsd.os.sync()
+returns true after sync(2); it does not report per-filesystem durability errors.
+.Sy halfbsd.os.swap_on(path)
+and
+.Sy halfbsd.os.swap_off(path)
+wrap FreeBSD swapon(2) and swapoff(2) with zero flags.
+They return true or nil and the structured native errno error.
+These privileged operations do not create devices or files and do not infer
+ownership; callers must track which swap devices they actually activated.
 .Sh SECURITY CONSIDERATIONS
 These interfaces inherit the caller's authority and are not a sandbox.
 Use trusted scripts and explicit credentials, environments and descriptors.
 Privileged mount, hostname and metadata operations remain explicit.
 Lua standard libraries still include shell execution interfaces; proc never
 uses them implicitly.
-No Capsicum sandbox or replacement boot manager is installed.
+No Capsicum sandbox is provided. Boot integration remains an explicit opt-in.
 .Sh SEE ALSO
 .Xr lua 1 ,
 .Xr kqueue 2 ,

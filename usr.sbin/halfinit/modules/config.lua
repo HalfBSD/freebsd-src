@@ -14,7 +14,17 @@ local function paths(value)
 end
 -- Definitions/configuration have no OS, IO, require, debug or process functions.
 -- Declarative loading cannot accidentally start services.
-function M.read(path)
+function M.read(path,owner)
+    if owner~=nil then
+        local native=require('halfbsd.os');local prefix=''
+        assert(type(path)=='string'and path:sub(1,1)=='/'and not path:find('/../',1,true),'boot configuration path must be absolute and canonical')
+        for component in path:gmatch('[^/]+')do
+            prefix=prefix..'/'..component
+            local st=assert(native.stat(prefix),'cannot inspect boot configuration '..prefix)
+            assert(st.uid==owner and (st.mode&0x12)==0 and(st.type=='directory'or(prefix==path and st.type=='file')),
+                'unsafe boot configuration ownership/type/permissions: '..prefix)
+        end
+    end
     local env={assert=assert,error=error,pairs=pairs,ipairs=ipairs,tonumber=tonumber,tostring=tostring,
         math=math,string=string,table=table}
     local chunk,err=loadfile(path,'t',env);assert(chunk,err)
@@ -29,8 +39,8 @@ function M.registry(definitions)
     end
     assert(#definitions<=1024,'service registry exceeds 1024 entries');dependency.validate(result);return result
 end
-function M.load(path,system_path)
-    local config=path and M.read(path) or {services=M.read(system_path),target='minimal'}
+function M.load(path,system_path,owner)
+    local config=path and M.read(path,owner) or {services=M.read(system_path,owner),target='minimal'}
     local allowed={services=true,target=true,include=true,service_dirs=true,runtime_dir=true,state_file=true,shutdown_timeout=true,
         max_parallel=true,log_file=true,boot=true}
     for k in pairs(config)do assert(allowed[k],'unknown configuration field: '..tostring(k))end
@@ -47,7 +57,7 @@ function M.load(path,system_path)
         elseif config.target==nil then config.target='multiuser'end
     end
     for _,file in ipairs(paths(config.include))do
-        local definition=M.read(file)
+        local definition=M.read(file,owner)
         if definition.name then config.services[#config.services+1]=definition
         else
             -- Validate density before merging: ipairs would silently drop holes.
@@ -62,7 +72,7 @@ function M.load(path,system_path)
     end
     for _,dir in ipairs(paths(config.service_dirs))do
         local names=assert(require('halfbsd.os').listdir(dir));table.sort(names)
-        for _,name in ipairs(names)do if name:match('%.lua$')then config.services[#config.services+1]=M.read(dir..'/'..name)end end
+        for _,name in ipairs(names)do if name:match('%.lua$')then config.services[#config.services+1]=M.read(dir..'/'..name,owner)end end
     end
     config.registry=M.registry(config.services)
     if config.target==nil then config.target='minimal'end;assert(service.name(config.target)and config.registry[config.target],'invalid target')

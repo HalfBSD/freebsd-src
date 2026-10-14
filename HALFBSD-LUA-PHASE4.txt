@@ -280,3 +280,25 @@ PASS shell harness syntax, Lua load/syntax checks and git diff whitespace checks
 No tools were downloaded for Phase IV. Existing temporary in-tree Lua/bmake build
 artifacts and Linux-only declarations/stubs under /tmp remain local verification
 tools, not new installed runtime dependencies. QEMU/Clang/native gates pending.
+
+NATIVE BUILD CORRECTION — KENV BUFFER QUALIFIERS
+
+The administrator's subsequent native buildworld stopped in sbin/init/init.c:
+the new KENV_SET call supplied a string literal where FreeBSD's actual kenv.h
+declares a writable char * buffer. This was a Phase IV implementation error.
+The setter now uses a writable four-byte array and passes strlen(buffer)+1:
+three bytes for RC and four for Lua, including NUL. No qualifier cast or warning
+suppression is used. Other new kenv calls already use writable arrays.
+
+PASS strict C17/Wpedantic/Werror/Wwrite-strings compilation and execution of
+the actual extracted setter against the repository kenv.h declaration, with a
+Linux mock checking both values, exact lengths and writable storage. This is
+not native syscall execution or compilation of all init.c. PASS all nine Phase
+IV policy groups and portable handoff/private-child tests after this correction.
+
+The function-pointer mismatch warnings reflect init's pre-existing recursive
+state-function convention, also used by the new transitions. They are warnings
+under the current native build flags and are not the reported build-stopping
+error. No unrelated PID 1 state-machine rewrite or diagnostic suppression was
+introduced. Native buildworld acceptance remains pending a successful rerun;
+the supplied failed build log does not establish installation or live boot.

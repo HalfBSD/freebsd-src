@@ -1059,7 +1059,10 @@ runcom(void)
 		return (state_func_t)single_user;
 	}
 	lua_mode = mode == 1; boot_attempted = true;
-	if (kenv(KENV_SET, HB_BOOT_ACTIVE, lua_mode ? "lua" : "rc", lua_mode ? 4 : 3) < 0) {
+	char active_mode[4] = "rc";
+	if (lua_mode)
+		memcpy(active_mode, "lua", sizeof(active_mode));
+	if (kenv(KENV_SET, HB_BOOT_ACTIVE, active_mode, strlen(active_mode) + 1) < 0) {
 		warning("cannot publish active boot mode: %m");
 		return (state_func_t)single_user;
 	}

@@ -19,6 +19,10 @@ success. These notes record failures found during the Lua foundation work.
   Keep hardening enabled rather than suppressing linker diagnostics.
 - Inspect effective compiler definitions alongside shared configuration headers;
   avoid duplicate command-line definitions of Lua configuration macros.
+- Check native syscall declarations in the repository headers, including buffer
+  qualifiers and length conventions. FreeBSD kenv() takes a writable char * even
+  for KENV_SET; use writable storage and include the terminating NUL in its size.
+  Compile new call sites against those declarations rather than permissive stubs.
 - Include the header that owns each network type explicitly: sockaddr_in needs
   netinet/in.h; arpa/inet.h exposing it on Linux does not establish portability.
   Avoid casting sockaddr pointers to more strictly aligned address structures.

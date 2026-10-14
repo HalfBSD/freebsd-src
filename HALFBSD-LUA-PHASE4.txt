@@ -1,28 +1,24 @@
 HalfBSD Lua Phase IV — PID 1 boot/shutdown integration
 October 13, 2026 | branch halfbsd2
-STATUS: native userspace regressions PASS (UID 1001 and root); LIVE BOOT ACCEPTANCE PENDING
+STATUS: Lua-default cutover implemented; current native rebuild/live boot PENDING
 
-This pass has NOT demonstrated a Lua-controlled boot. After the kenv correction,
-the administrator reported successful rebuilding, installation and reboot, then
-supplied complete Phase IV userspace PASS logs from Anvil as UID 1001 and root.
-Both include the Phase I–III regression gates; root also passed cross-UID control
-authorization. These are user-reported native FreeBSD results, not Linux mocks.
-The selected boot mode was not supplied; installation defaults to RC, so the
-successful reboot does not establish Lua-controlled startup or shutdown.
-Detailed buildworld/buildkernel/build32 logs, native ATF/sanitizer results, VM
-boot, packet-policy tests and the 25-cycle acceptance gate remain outstanding.
-Do not enable Lua on Anvil yet. The administrator authorized committing and
-pushing this pass and subsequently authorized committing/pushing when work is
-done. Existing RC, rc.d, rc.subr and rcorder remain.
+The administrator explicitly authorized changing HalfBSD's default startup to
+Lua after the successful native userspace runs recorded below. This supersedes
+the earlier opt-in/default-RC and VM-before-Anvil deployment policy. No real
+Lua-controlled boot, shutdown or recovery has yet been demonstrated. The user
+subsequently authorized committing and pushing this cutover. RC remains installed for
+explicit recovery; there is no automatic fallback over partial Lua initialization.
+Earlier native results below apply to the preceding opt-in revision, not this
+new default, complete-target readiness gate or additional boot services.
 
 ARCHITECTURE AND MODE SELECTION
 
-The existing C /sbin/init remains PID 1. Default startup is unchanged RC.
-A root-owned, zero-length regular /etc/halfbsd/lua-boot file (not writable by
-group/others, no additional hard links) opts into Lua. A one-boot kernel
-variable halfbsd.boot_mode=rc or lua overrides that marker. Unknown values or
-unsafe markers enter single-user mode. Loader init_exec/init_script/init_chroot
-are honored only in RC mode, preventing a second startup path in Lua mode.
+The existing C /sbin/init remains PID 1. Lua is now the default. The selector
+requires no marker and no loader opt-in. halfbsd.boot_mode=rc explicitly selects
+traditional RC recovery; lua explicitly selects Lua. Invalid overrides enter
+single-user recovery. The obsolete /etc/halfbsd/lua-boot marker is not read.
+Loader init_exec/init_script/init_chroot are honored only when RC is selected,
+preventing a second startup path in ordinary Lua mode.
 
 PID 1 starts /usr/sbin/halfinit with /etc/halfbsd/system.lua, --activate-system
 and an internal descriptor-3 channel. Configuration and included definitions
@@ -31,15 +27,18 @@ Lua registry, scheduler, supervisor, process descriptors and kqueue remain;
 there is no second reaper, dependency engine or supervisor daemon.
 
 The manager bootstraps storage before lock/control/state/log initialization.
-It sends READY exactly once after devices, runtime, loopback, firewall and
-control readiness. PID 1 waits at most 600 seconds for that handoff, retains
+It sends READY exactly once after devices, runtime, loopback, firewall, control
+and the COMPLETE selected multiuser/desktop/gateway target are ready. Configured
+swap is a hard dependency, not an optional target member. PID 1 waits at most 600 seconds for that handoff, retains
 its supervisor child, and then proceeds to its existing console/getty handling.
 The supervisor has its own session without a controlling terminal, null input
 and console output opened O_NOCTTY. Native file opens also use O_NOCTTY. The
 example retains lifecycle logs under /var/run/halfbsd/boot.log. The final shutdown
 record reopens /dev/console because login can revoke old console descriptors.
-Local console recovery does not depend on successful DHCP, upstream DNS or NTP
-clock synchronization. Those readiness states remain visible through halfsvc.
+Required DHCP/network/DNS/SSH/NTP initialization failure now refuses multiuser
+readiness and enters single-user recovery. NTP process readiness still does not
+claim clock synchronization. Ordinary console login is started only after the
+complete selected target; recovery retains PID 1 single-user console handling.
 
 The default /etc/rc.console tty entry is mapped to native authenticated login
 in Lua mode, retaining existing controlling-terminal initialization. RC mode
@@ -133,11 +132,34 @@ synchronization. A DNS TCP handshake is not full DNS-over-TCP response validatio
 
 INSTALLATION AND ADMINISTRATOR CONFIGURATION
 
-The boot-system.lua example is installed under /usr/share/examples/halfbsd.
-Installworld does not create the marker or overwrite /etc/halfbsd/system.lua.
-Review/copy the example explicitly. FreeBSD bsd.confs.mk installs configuration
-contents directly; using it for this opt-in administrator file would overwrite
-local edits, so it is intentionally not registered as a CONFS payload.
+The boot-system.lua example remains installed under /usr/share/examples/halfbsd.
+The halfinit afterinstall target atomically seeds /etc/halfbsd/system.lua mode
+0600, root:wheel, ONLY if that pathname is absent. A temporary complete file is
+published with a no-replace hard link; parallel installations cannot truncate or
+overwrite an administrator file. Existing files, modes and symlinks are preserved;
+unsafe symlinks/ownership are rejected by the boot loader of configuration.
+A symlinked /etc/halfbsd directory refuses installation. There is no configuration-generation service,
+configuration synchronization daemon or duplicated mutable configuration.
+
+The default uses max_parallel=1 through the existing scheduler for deterministic
+initial boot debugging, as explicitly approved by the administrator. It selects
+multiuser, kernel-mounted ZFS root update when read-only,
+fstab local filesystems/swap, runtime/temp directories, loopback, IPFW workstation
+policy, automatic Ethernet DHCP, Unbound, SSH, NTP and local-only foreground
+syslogd (-F -ss). Native ldconfig updates /lib,/usr/lib and existing /usr/local/lib;
+existing /usr/lib32 also receives its compatibility hints. DNS/SSH/NTP wait for
+library hints and syslogd when enabled. This does not run RC or rc.subr.
+
+Fresh staged images default to hostname halfbsd. A first live install seeds the
+current valid ASCII kernel hostname (such as anvil), without parsing or sourcing
+RC. Existing system.lua is unchanged. Before the physical attempt, verify that
+hostname='anvil' is present if that is the intended DHCP registration.
+RC hostname/sysctl/devfs/module customizations are NOT silently translated or
+executed. Review required site settings and explicitly configure supported Lua
+policy/device rules; choose RC if storage needs automatic encryption/imports,
+separate /usr, unsupported device setup or other missing site prerequisites.
+Console is authenticated native login, not prior rc.console autologin. Optional
+seatd/desktop are disabled by default and remain explicit non-root session policy.
 
 FILES
 
@@ -152,7 +174,7 @@ configuration; no firewall kernel option or policy is changed.
 No /etc/rc removal, configuration directory migration, IPFW policy redesign,
 DNS provider change, Capsicum or PID 1 replacement occurs.
 
-CHECKS PERFORMED IN THIS LINUX WORKSPACE
+ORIGINAL OPT-IN LOCAL CHECKS (HISTORICAL; CURRENT CUTOVER RESULTS BELOW)
 
 PASS nine Phase IV Lua policy groups: root/PID1/ZFS gates; one-time local
 readiness independent of DHCP; critical failure; route loss/recovery/holds;
@@ -182,10 +204,10 @@ TEST COMMANDS ON ANVIL (SAFE USERSPACE ONLY)
   sh /usr/src/tests/halfbsd/phase4/run.sh
 
 Run as regular user and root. This includes the existing Phase III runner, which
-includes Phase I/II native gates. The root run covers root-owned private marker
-selection without touching /etc. Run installed ATF boot_test through kyua along
-with the broader suites. Native compiler/ABI results must be logged separately.
-Do NOT create the boot marker on Anvil to run userspace tests.
+includes Phase I/II native gates. No boot marker is used or changed by these
+tests. Run installed ATF boot_test through kyua along with the broader suites.
+Native compiler/ABI results must be logged separately. Userspace tests never
+activate the real system graph or switch the current running startup system.
 
 DISPOSABLE VM PREPARATION AND REPEATED-CYCLE HARNESS
 
@@ -193,11 +215,11 @@ Prepare a BIOS-bootable FreeBSD/AMD64 ZFS-root base image with THIS world/kernel
 serial console enabled, root console recovery available, DHCP on virtio Ethernet,
 IPFW kernel support/default deny and reviewed /etc/unbound/unbound.conf/root.key.
 Run native buildworld/buildkernel and all userspace/ATF gates first. Keep a clean
-RC snapshot and verify RC boots before opting into Lua in a disposable clone.
+RC snapshot and verify RC recovery in a disposable clone.
 Copy/review boot-system.lua into /etc/halfbsd/system.lua, root:wheel 0600.
 Create /etc/halfbsd as root:wheel 0755. Keep /usr on kernel-mounted root.
-Check graph/dry-run and use loader one-boot halfbsd.boot_mode=lua for the FIRST
-supervised boot, before creating a persistent marker.
+Check graph/dry-run. Lua is the default; use halfbsd.boot_mode=rc explicitly
+when checking the traditional recovery boot.
 
 For automated successful-boot cycles only, copy vm-ready.lua into a root-owned
 private guest test directory and add this reviewed definition to system.lua:
@@ -211,7 +233,7 @@ private guest test directory and add this reviewed definition to system.lua:
 This fixture REBOOTS ITS HOST and belongs ONLY in a disposable guest. It emits
 multiuser readiness with monotonic time, waits five seconds, then invokes native
 shutdown -r now without a shell. Preserve console logs. After manual boot/shutdown
-verification, create the persistent marker in that guest. Remove this fixture
+verification, run the repeated-cycle harness. Remove this fixture
 before any ordinary deployment. Never copy it into Anvil's active configuration.
 
 On a VM host with qemu-system-x86_64, qemu-img, timeout and rg:
@@ -249,26 +271,52 @@ RECOVERY AND ANVIL PREPARATION (NOT A TESTED CUTOVER PROCEDURE YET)
 
 At loader prompt: set halfbsd.boot_mode=rc; boot. This is one boot, not persistent
 loader.conf. To inspect first: set halfbsd.boot_mode=rc; boot -s. Review/fix
-configuration or remove /etc/halfbsd/lua-boot on a writable root, then reboot.
-On ZFS, select the known-good boot environment/snapshot if binaries cannot run.
-A started/failed Lua boot must reboot before RC can take over. Do not attempt
-Ctrl-D switching over partially applied mounts/network/firewall state.
+/etc/halfbsd/system.lua on a writable root, then reboot. On ZFS, select the
+known-good boot environment if binaries cannot run. A started/failed Lua boot
+must reboot before RC can take over. Do not attempt Ctrl-D switching over
+partially applied mounts/network/firewall state. The override is implemented
+and helper-tested, but actual recovery boot remains untested.
 
-Only after all VM acceptance gates pass: save Anvil config/world/kernel/boot
-environment, confirm console/loader access and tested RC override, install the
-validated build, rerun userspace gates, prepare/review system.lua and compare
-shadow plan against active host responsibilities. Stop for unresolved missing
-site tasks. First cutover must be console-supervised with a ONE-BOOT Lua override;
-keep recovery media and RC snapshot. Do not create persistent marker until actual
-Anvil startup/shutdown/recovery is verified. Root autologin/PAM remains an optional
-future design, not part of this cutover. Nothing auto-enables Lua on Anvil.
+FIRST EXPERIMENTAL PHYSICAL ATTEMPT (AUTHORIZED, NOT EXECUTED HERE)
+
+1. Have physical console/loader access and a known-good recoverable ZFS boot
+   environment. For example: bectl create pre-lua-boot. Keep recovery media.
+2. Build/install this world and supported kernel through the normal native
+   process; log buildworld/buildkernel/build32 separately. This workspace cannot
+   perform those native builds. Do not interpret the prior build as current proof.
+3. Before reboot, inspect /etc/halfbsd/system.lua. Installation creates it only
+   if absent; existing experimental/userspace-only configs are preserved and may
+   require manual updates. Require target='multiuser' and a system boot policy.
+   Set hostname to anvil and review fstab swap/encryption, ZFS mounts, device rules,
+   firewall policy, NIC selection and Unbound/SSH/NTP configuration. The default
+   workstation firewall intentionally retains any-source SSH/DNS permits.
+4. Validate without activation:
+     halfinit --config /etc/halfbsd/system.lua --check
+     halfinit --config /etc/halfbsd/system.lua --dry-run
+   Inspect JSON missing prerequisites, not just exit status. Confirm root-owned,
+   non-group/world-writable configuration path components and no symlinks.
+5. Run sh /usr/src/tests/halfbsd/phase4/run.sh as regular user and root with the
+   newly installed world. Rerun staged install/build checks and ATF when available.
+6. Reboot with console attached. Lua is selected automatically unless loader.conf
+   already explicitly selects RC. Do not start halfinit --activate-system beside
+   the running RC daemons as a substitute for this boot.
+7. After successful startup: kenv halfbsd.boot_active should print lua;
+   pgrep -laf halfinit and halfsvc status should show the persistent supervisor
+   and READY target. Check actual DNS UDP/TCP/DNSSEC/cache, SSH, DHCP/default route,
+   NTP process, mounts/swap and ipfw -S list/hooks. Inspect boot.log for failures.
+8. Test ordinary shutdown/reboot/poweroff with console/log capture, then the RC
+   override and boot-environment rollback. Keep the experimental label until
+   actual boot/shutdown/recovery and repeated-cycle evidence exists.
+
+Autologin/PAM remains the previously discussed future option, not silently
+implemented during cutover. No physical machine was changed remotely here.
 
 ACCEPTANCE
 
-Native userspace acceptance passed on Anvil after the reported successful
-rebuild/install/reboot. Phase IV still awaits live Lua boot/shutdown validation.
-ZERO VM cycles completed. No claim of complete RC replacement or Anvil Lua
-cutover readiness is made.
+The preceding opt-in version passed native userspace acceptance on Anvil. This
+Lua-default cutover still requires its OWN native rebuild and userspace rerun,
+then actual Lua boot/shutdown/recovery. ZERO VM cycles completed. No successful
+Lua boot or current native buildworld/buildkernel acceptance is claimed.
 
 FINAL LOCAL VALIDATION ADDENDUM
 
@@ -344,3 +392,40 @@ in the unprivileged run. Native ATF and sanitizer results remain unreported.
 Next gate: prepare a disposable supported ZFS-root VM, verify both RC and Lua
 boot modes, execute the isolated failure matrix and 25 persistent-overlay boot/
 shutdown cycles. The current successful userspace runs do not replace that gate.
+
+LUA-DEFAULT CUTOVER LOCAL VALIDATION
+
+PASS eleven Phase IV policy groups, including the complete installed workstation
+graph and refusal of failed required target readiness. PASS portable C default
+Lua/explicit RC/invalid selector tests, readiness protocol, session/stdio and
+private-child graceful/forced reap checks. PASS all 16 Phase III and 14 Phase II
+pure policy groups. These replace the old default-RC and degraded-multiuser
+handoff assertions. They do not establish actual PID 1 execution.
+
+PASS staged SYSROOT/SHLIB_MAJOR/PIE archive checks and fresh/repeated parallel
+module/example installation. PASS fresh/parallel configuration seeding, exact
+administrator byte/mode preservation, and preservation of existing symlinks.
+The root native installworld/ATF/package metadata paths require native validation;
+no packageworld/NO_ROOT image acceptance is claimed. Default configuration is
+root:wheel 0600 under /etc/halfbsd, and normal installs preserve administrator
+files rather than replacing them through CONFS.
+
+PASS strict GCC C17/Wpedantic/Werror host foundation compilation (FreeBSD-only
+branches remain declarations/stubs). Subsequent link/sanitizer results are noted
+below. No QEMU/Clang tools were downloaded. Source/kernel firewall policy and
+compiled DNS providers are unchanged. No RC infrastructure was deleted.
+
+Final cutover local checks: PASS real Linux PIE links of foundation/Lua archives
+with explicit ENOSYS FreeBSD kernel stubs, not native ABI/runtime proof. PASS
+portable selector/handoff/session tests under ASan+UBSan with leak detection
+disabled due tracing limitations. PASS shell/Lua syntax and diff hygiene checks.
+Hostname is ordered before DHCP and syslog startup. Current native world/kernel,
+Phase I–IV native reruns, ATF, physical boot, recovery and VM cycles remain pending.
+
+Additional final checks: PASS fresh/repeated parallel bootstrap/world public
+header installation and inherited ABI/library archive selection. PASS effective
+empty-DESTDIR and root-DESTDIR seed recipe syntax (never executed against this
+Linux host's /etc). Live-install hostname preservation is prepared but requires
+native installation verification; staged images deliberately do not inherit the
+build host's hostname. Process stream file opens now include O_NOCTTY so explicit
+console redirection cannot acquire a supervisor's controlling terminal.

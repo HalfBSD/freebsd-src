@@ -341,7 +341,7 @@ redirect(lua_State *L,struct launch *g,int opts,int index)
 		lua_getfield(L,table,"mode");
 		lua_Integer mode=luaL_optinteger(L,-1,0600);
 		if(mode<0||mode>0777)luaL_error(L,"invalid redirection mode");
-		fd=open(path,O_CLOEXEC|O_NOFOLLOW|O_NONBLOCK|(index==0?O_RDONLY:O_WRONLY|O_CREAT|(append?O_APPEND:O_TRUNC)),(mode_t)mode);
+		fd=open(path,O_CLOEXEC|O_NOFOLLOW|O_NOCTTY|O_NONBLOCK|(index==0?O_RDONLY:O_WRONLY|O_CREAT|(append?O_APPEND:O_TRUNC)),(mode_t)mode);
 		lua_pop(L,3);
 		g->opened[index]=fd;
 		if(fd<0)return -1;

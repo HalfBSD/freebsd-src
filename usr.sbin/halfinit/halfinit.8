@@ -20,8 +20,9 @@
 .Nm
 loads declarative Lua services, validates their graph and supervises foreground
 children using HalfBSD process descriptors and kqueue.
-It runs as an ordinary userspace process. Installing it does not replace init,
-rc or the active boot sequence and does not enable any service automatically.
+It runs as a userspace supervisor beneath the existing C-based PID 1.
+HalfBSD defaults to Lua boot orchestration; traditional RC remains an explicit
+loader recovery choice. Independent userspace test sessions remain supported.
 .Pp
 Without an execution mode or explicit configuration,
 .Nm
@@ -139,7 +140,7 @@ and
 .Pa /usr/share/examples/halfbsd/desktop-user.lua
 show system and existing-login-session policies.
 System boot fields are mode, interfaces, local_mounts, zfs, root_writable,
-firewall, dns, sshd, ntpd, seatd, desktop, swap, device_rules and hostname.
+firewall, dns, sshd, ntpd, syslogd, seatd, desktop, swap, device_rules and hostname.
 Root privilege and exclusive process ownership are checked before mutation.
 .Pp
 Storage preparation runs through the existing scheduler before the manager
@@ -197,35 +198,41 @@ session to change it. Gateway is an explicit service group, without inferred
 packet forwarding or NAT configuration. Installing the runtime leaves RC selected. Optional PID 1 integration is
 described below.
 .Sh BOOT INTEGRATION
-Traditional RC remains the default.
-Optional Lua mode retains the C-based PID 1 and its login, single-user and
-kernel reboot responsibilities.
+Lua is the default startup system; no marker file is required.
+The C-based PID 1 retains its login, single-user and kernel reboot responsibilities.
 Initially supported boot layouts require a kernel-mounted ZFS root containing
 the interpreter, manager, modules and their libraries; a separately mounted
 .Pa /usr
 is not supported by this early integration.
 .Pp
-Prepare a root-owned, non-writable-to-other-users configuration at
+Installation seeds a root-owned mode-0600
 .Pa /etc/halfbsd/system.lua
-by reviewing the installed
-.Pa /usr/share/examples/halfbsd/boot-system.lua .
-Installworld neither overwrites this configuration nor enables Lua startup.
-Create a root-owned zero-length regular file
-.Pa /etc/halfbsd/lua-boot
-with mode 0600 to persistently opt in, only after disposable VM validation.
+from the installed workstation example only when that path is absent.
+Existing administrator contents, permissions and symlinks are never replaced.
+Unsafe configuration ownership or symlinks are rejected at boot.
+The default selects DHCP Ethernet discovery, filesystem and swap initialization,
+IPFW workstation policy, Unbound, SSH, NTP, local-only foreground syslogd,
+shared-library hints and authenticated console login.
+A first live install preserves the current valid ASCII kernel hostname; staged
+images default to halfbsd. Verify the intended site hostname before reboot.
+Review custom filesystem, device and network requirements before the first boot.
+.Pp
 The loader variable
 .Sy halfbsd.boot_mode=rc
 selects traditional RC for one boot; setting it to
 .Sy lua
-selects Lua for one boot.
+explicitly selects Lua.
 Use the loader prompt rather than loader.conf for a one-boot override.
-Invalid selection enters single-user recovery.
+Invalid selection enters single-user recovery. The former opt-in marker is
+obsolete and has no effect.
 .Pp
 PID 1 launches the manager with an internal descriptor-3 readiness channel.
 That option requires root with PID 1 as its direct parent.
-After devfs, runtime storage, loopback, firewall and control readiness, PID 1
-starts existing console login sessions while the manager continues supervising.
-WAN readiness is separate: DHCP failure does not prevent local recovery login.
+After devfs, runtime storage, loopback, firewall, control and the complete
+selected multiuser target are ready, PID 1 starts existing console login sessions
+while the manager continues supervising. Configured swap is a hard requirement.
+Failure of required network or service startup enters single-user recovery,
+rather than announcing an incomplete multiuser environment.
 The legacy rc.console entry becomes authenticated native login in Lua mode.
 There is no automatic root login or invocation of that shell helper.
 .Pp
@@ -254,7 +261,8 @@ without automatically running RC over partially initialized Lua state.
 Once startup has been attempted, changing startup systems in the same boot is
 refused. Reboot and select RC at the loader prompt.
 Preserve console access, a recoverable VM disk and traditional RC throughout
-validation; installation alone does not establish live boot acceptance.
+validation; installation alone does not establish live boot acceptance. This cutover remains
+experimental until actual Lua-controlled boot and recovery have been tested.
 .Sh SEE ALSO
 .Xr halfsvc 8 ,
 .Xr lua-halfbsd 7

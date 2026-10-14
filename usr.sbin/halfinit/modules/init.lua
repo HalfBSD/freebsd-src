@@ -71,6 +71,7 @@ function M.main(args,module_dir)
         assert(scenarios[opts.scenario or 'success'],'unknown simulation scenario')
     end
     config.target=opts.target or config.target;assert(config.registry[config.target],'unknown target')
+    if handoff then assert(config.target=='multiuser'or config.target=='desktop'or config.target=='gateway','PID 1 boot requires a complete multiuser target')end
     local plan=dependency.plan(config.registry,{[config.target]=true})
     if opts.check or opts.graph or opts.dry or opts.shadow then
         local missing={}

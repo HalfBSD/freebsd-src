@@ -381,7 +381,7 @@ Use trusted scripts and explicit credentials, environments and descriptors.
 Privileged mount, hostname and metadata operations remain explicit.
 Lua standard libraries still include shell execution interfaces; proc never
 uses them implicitly.
-No Capsicum sandbox is provided. Boot integration remains an explicit opt-in.
+No Capsicum sandbox is provided. HalfBSD defaults to Lua boot orchestration, with an explicit RC recovery override.
 .Sh SEE ALSO
 .Xr lua 1 ,
 .Xr kqueue 2 ,

@@ -8,7 +8,7 @@ modules=${HALFBSD_MODULES:-$src/usr.sbin/halfinit/modules}
 lua=${HALFBSD_LUA:-/usr/bin/lua}
 work=$(mktemp -d "${TMPDIR:-/tmp}/halfbsd-phase4.XXXXXX")
 trap 'rm -rf "$work"' EXIT HUP INT TERM
-"$lua" -E "$suite/policy.lua" "$modules"
+"$lua" -E "$suite/policy.lua" "$modules" "$src/usr.sbin/halfinit/examples/boot-system.lua"
 cc -D_GNU_SOURCE -std=c17 -Wall -Wextra -Wpedantic -Werror \
     -Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wcast-align \
     -I"$src/sbin/init" "$suite/handoff_test.c" "$src/sbin/init/halfbsd.c" -o "$work/handoff_test"

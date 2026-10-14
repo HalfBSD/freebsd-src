@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause
  * PID 1's single supervisor handoff; service reaping remains in libhalfproc.
  */
-#include <sys/stat.h>
 #include <sys/wait.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -13,19 +12,16 @@
 #include <unistd.h>
 #include "halfbsd.h"
 int
-hb_boot_mode(const char *marker, const char *override)
+hb_boot_mode(const char *override)
 {
 	if (override && *override) {
 		if (!strcmp(override, "rc")) return 0;
 		if (!strcmp(override, "lua")) return 1;
 		errno = EINVAL; return -1;
 	}
-	struct stat st;
-	if (lstat(marker, &st) < 0) return errno == ENOENT ? 0 : -1;
-	if (!S_ISREG(st.st_mode) || st.st_uid != 0 || (st.st_mode & 022) ||
-	    st.st_nlink != 1 || st.st_size != 0) { errno = EPERM; return -1; }
 	return 1;
 }
+
 int
 hb_boot_pipe(int fds[2])
 {

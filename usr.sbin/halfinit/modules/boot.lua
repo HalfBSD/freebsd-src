@@ -24,7 +24,7 @@ local function dense(value)
 end
 function M.compile(policy,os)
     fields(policy,{mode=true,interfaces=true,local_mounts=true,zfs=true,firewall=true,dns=true,sshd=true,ntpd=true,seatd=true,
-        desktop=true,root_writable=true,swap=true,device_rules=true,hostname=true})
+        desktop=true,root_writable=true,swap=true,device_rules=true,hostname=true,syslogd=true})
     os=os or require('halfbsd.os')
     local services={}
     local function add(d)d.system=true;services[#services+1]=d;return d end
@@ -82,8 +82,10 @@ function M.compile(policy,os)
     assert(firewall.ownership==nil or firewall.ownership=='verify'or load,'unknown firewall ownership')
     local mode=firewall.mode or'workstation';assert(mode=='workstation'or mode=='closed'or mode=='open','unknown firewall mode')
     local ipv6=boolean(firewall.ipv6,true)
+    local logs=boolean(policy.syslogd,true)
     local dns=boolean(policy.dns,true);local ssh=boolean(policy.sshd,true);local ntp=boolean(policy.ntpd,true);local seat=boolean(policy.seatd,false)
     local processes={'halfinit','dhclient'}
+    if logs then processes[#processes+1]='syslogd' end
     if dns then processes[#processes+1]='local-unbound';processes[#processes+1]='unbound'end
     if ssh then processes[#processes+1]='sshd'end
     if ntp then processes[#processes+1]='ntpd'end
@@ -215,7 +217,8 @@ function M.compile(policy,os)
     local dhcp={}
     for _,interface in ipairs(interfaces)do
         local up='interface-'..interface
-        add({name=up,type='oneshot',action='interface_up',requires={'firewall'},parameters={interface=interface}})
+        local before={'firewall'};if policy.hostname then before[#before+1]='hostname' end
+        add({name=up,type='oneshot',action='interface_up',requires=before,parameters={interface=interface}})
         local n='dhcp-'..interface;dhcp[#dhcp+1]=n
         add({name=n,type='daemon',command={'/sbin/dhclient','-d','-p','/var/run/dhclient/dhclient.'..interface..'.pid',interface},
             requires={up},guard='exclusive_guard',condition='interface_ready',readiness='condition',start_timeout=90,
@@ -223,7 +226,22 @@ function M.compile(policy,os)
     end
     target('dhcp',dhcp)
     add({name='network',type='virtual',condition='route_ready',requires={'dhcp'},parameters={interface=interfaces[1]},start_timeout=30})
-    local essentials={'network','firewall','runtime'}
+    local libraries={'/sbin/ldconfig','-elf','/lib','/usr/lib'}
+    local local_lib,local_error=os.exists('/usr/local/lib');assert(local_lib~=nil,local_error)
+    if local_lib then libraries[#libraries+1]='/usr/local/lib' end
+    add({name='ldconfig',type='oneshot',command=libraries,guard='root_guard',requires={'runtime'}})
+    local essentials={'network','firewall','runtime','ldconfig'}
+    local compat_lib,compat_error=os.exists('/usr/lib32');assert(compat_lib~=nil,compat_error)
+    if compat_lib then
+        add({name='ldconfig32',type='oneshot',command={'/sbin/ldconfig','-32','/usr/lib32'},guard='root_guard',requires={'runtime'}})
+        essentials[#essentials+1]='ldconfig32'
+    end
+    if logs then
+        local before={'runtime','ldconfig','firewall'};if policy.hostname then before[#before+1]='hostname' end
+        add({name='syslogd',type='daemon',command={'/usr/sbin/syslogd','-F','-ss'},requires=before,
+            guard='exclusive_guard',restart='on-failure',stderr='/dev/console',parameters={processes={'syslogd'}}})
+        essentials[#essentials+1]='syslogd'
+    end
     if policy.hostname then essentials[#essentials+1]='hostname' end
     if dns then
         local user=assert(os.user('unbound'));local anchor='/var/unbound/root.key'
@@ -236,24 +254,30 @@ function M.compile(policy,os)
             guard='anchor_init_guard',verify='anchor_ready',success_codes={0,1},start_timeout=120,
             parameters={anchor=anchor,uid=user.uid,processes={'unbound','local-unbound'}}})
         add({name='dns-check',type='oneshot',command={'/usr/sbin/local-unbound-checkconf','/etc/unbound/unbound.conf'},requires={'dns-anchor','firewall'},guard='root_guard'})
-        add({name='dns',type='daemon',command={'/usr/sbin/local-unbound','-d','-c','/etc/unbound/unbound.conf'},requires={'dns-check'},
+        add({name='dns',type='daemon',command={'/usr/sbin/local-unbound','-d','-c','/etc/unbound/unbound.conf'},requires={'dns-check','ldconfig'},
             readiness='condition',condition='dns_ready',guard='exclusive_guard',restart='on-failure',parameters={port=53,processes={'unbound','local-unbound'}}})
         essentials[#essentials+1]='dns'
     end
     if ssh then
         add({name='ssh-keys',type='oneshot',command={'/usr/bin/ssh-keygen','-A'},requires={'runtime','boot-preflight'},guard='root_guard'})
         add({name='ssh-check',type='oneshot',command={'/usr/sbin/sshd','-t'},requires={'ssh-keys'},guard='root_guard'})
-        add({name='sshd',type='daemon',command={'/usr/sbin/sshd','-D'},requires={'network','firewall','ssh-check'},guard='exclusive_guard',
+        add({name='sshd',type='daemon',command={'/usr/sbin/sshd','-D'},requires={'network','firewall','ssh-check','ldconfig'},guard='exclusive_guard',
             readiness='condition',condition='tcp_ready',restart='on-failure',parameters={port=22,processes={'sshd'}}});essentials[#essentials+1]='sshd'
     end
     if ntp then
         add({name='ntp-state',type='oneshot',action='directories',guard='root_guard',requires={'runtime'},parameters={directories={{path='/var/db/ntp',mode=493}}}})
-        add({name='ntpd',type='daemon',command={'/usr/sbin/ntpd','-n','-c','/etc/ntp.conf','-p','/var/run/ntpd.pid'},requires={'network','firewall','ntp-state'},
+        add({name='ntpd',type='daemon',command={'/usr/sbin/ntpd','-n','-c','/etc/ntp.conf','-p','/var/run/ntpd.pid'},requires={'network','firewall','ntp-state','ldconfig'},
             guard='exclusive_guard',restart='on-failure',parameters={processes={'ntpd'}}});essentials[#essentials+1]='ntpd'
+    end
+    if logs then
+        for _,d in ipairs(services)do
+            if d.name=='dns'or d.name=='sshd'or d.name=='ntpd'then d.requires[#d.requires+1]='syslogd' end
+        end
     end
     if seat then add({name='seatd',type='daemon',command={'/usr/local/bin/seatd'},requires={'runtime'},guard='exclusive_guard',restart='on-failure',
         readiness='condition',condition='socket_ready',parameters={path='/var/run/seatd.sock',processes={'seatd'}}})end
-    target('minimal',{'runtime'});target('multiuser',essentials,swaps);target('gateway',{'multiuser'})
+    for _,n in ipairs(swaps)do essentials[#essentials+1]=n end
+    target('minimal',{'runtime'});target('multiuser',essentials);target('gateway',{'multiuser'})
     if policy.desktop then
         fields(policy.desktop,{socket=true,user=true});assert(seat,'desktop system target requires seatd=true')
         local user=assert(os.user(assert(policy.desktop.user,'desktop user required')));assert(user.uid~=0,'root desktop forbidden')

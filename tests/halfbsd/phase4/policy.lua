@@ -18,15 +18,16 @@ test('handoff accepts only root directly owned by PID 1 and supported root',func
     n.mounts=function()return {{path='/',type='ufs'}}end;rejects(function()handoff.new(n,p,3)end)
 end)
 local function engine()
-    local e={records={},holds={},blocked={},providers={}}
+    local e={config={target='multiuser'},records={multiuser={state='READY'}},holds={},blocked={},providers={}}
     for _,name in ipairs({'devices','runtime','loopback','firewall'})do e.records[name]={state='READY'}end
     e.records.network={state='FAILED',wanted=true,definition={parameters={}}}
     function e:shutdown()self.shutting=true end
     return e
 end
-test('local recovery login readiness does not require DHCP; notification once',function()
+test('multiuser handoff waits for the complete target and notifies once',function()
     local n,p,w,closed=fixture();local h=handoff.new(n,p,3);local e=engine()
-    h:check(e,false);assert(#w==0);e.records.firewall.state='STARTING';h:check(e,true);assert(#w==0)
+    e.records.multiuser.state='STARTING';h:check(e,true);assert(#w==0)
+    e.records.multiuser.state='READY';h:check(e,false);assert(#w==0);e.records.firewall.state='STARTING';h:check(e,true);assert(#w==0)
     e.records.firewall.state='READY';h:check(e,true);h:check(e,true);h:fail()
     assert(#w==1 and w[1]=='READY\n'and closed()==1)
 end)
@@ -52,7 +53,9 @@ test('boot graph prepares devices and loopback before exposing services',functio
     for i,names in ipairs(plan.waves)do for _,name in ipairs(names)do wave[name]=i end end
     assert(wave.devices<wave.rootfs and wave.temporary<wave.runtime and wave.loopback<wave.firewall)
     assert(wave.firewall<wave.dns and wave.firewall<wave['dhcp-em0'])
-    assert(wave.hostname and wave['swap-1'])
+    assert(wave.hostname and wave['swap-1'] and wave['swap-1']<wave.multiuser)
+    assert(wave.ldconfig<wave.dns and wave.syslogd<wave.multiuser)
+    assert(wave.hostname<wave['dhcp-em0'] and wave.hostname<wave.syslogd)
     rejects(function()require('boot').compile({swap={'/tmp/swapfile'}},native)end)
 end)
 test('swap is released once only when activated by this manager',function()
@@ -102,4 +105,23 @@ test('boot configuration requires trusted path ownership and rejects links',func
     end)
     package.loaded['halfbsd.os']=previous;assert(os.remove(path));assert(ok,err)
 end)
+test('required target failure refuses the PID 1 multiuser handoff',function()
+    local n,p,w=fixture();local h=handoff.new(n,p,3);local e=engine()
+    e.records.multiuser.state='SKIPPED';h:check(e,true)
+    assert(e.shutting and w[1]=='FAIL\n')
+end)
+if arg[2]then
+    test('installed default policy contains the complete workstation boot graph',function()
+        local default=require('config').read(arg[2])
+        assert(default.target=='multiuser'and default.boot.hostname=='halfbsd'and default.max_parallel==1)
+        local n={exists=function()return true end,user=function()return {uid=59,gid=59}end,
+            fstab=function()return {}end,interfaces=function()return {{name='em0',family='link',link_type=6}}end}
+        local r=require('config').registry(require('boot').compile(default.boot,n))
+        local plan=require('dependency').plan(r,{multiuser=true})
+        for _,name in ipairs({'devices','rootfs','localfs','zfs','temporary','runtime','loopback',
+            'firewall','dhcp-em0','network','dns','sshd','ntpd','syslogd','ldconfig','ldconfig32','hostname'})do
+            assert(plan.selected[name],'default omitted '..name)
+        end
+    end)
+end
 print('PASS Phase IV policy groups: '..count..' (no live boot validation)')

@@ -1,15 +1,12 @@
 /* SPDX-License-Identifier: BSD-2-Clause
  * Harmless private children only: never run PID 1 or signal host services.
  */
-#include <sys/stat.h>
 #include <sys/wait.h>
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 #include "halfbsd.h"
 
@@ -89,21 +86,11 @@ children(void)
 int
 main(void)
 {
-	char directory[] = "/tmp/halfbsd-handoff.XXXXXX";
-	assert(mkdtemp(directory));
-	char *marker = NULL; assert(asprintf(&marker, "%s/marker", directory) >= 0);
-	assert(hb_boot_mode(marker, NULL) == 0);
-	assert(hb_boot_mode(marker, "lua") == 1);
-	assert(hb_boot_mode(marker, "rc") == 0);
-	assert(hb_boot_mode(marker, "unknown") == -1 && errno == EINVAL);
-	int fd = open(marker, O_CREAT | O_EXCL | O_WRONLY, 0600); assert(fd >= 0);
-	assert(hb_boot_mode(marker, NULL) == (getuid() == 0 ? 1 : -1));
-	assert(write(fd, "x", 1) == 1); close(fd);
-	assert(hb_boot_mode(marker, NULL) == -1 && errno == EPERM);
-	assert(hb_boot_mode(marker, "rc") == 0);
-	assert(unlink(marker) == 0); assert(symlink("missing", marker) == 0);
-	assert(hb_boot_mode(marker, NULL) == -1 && errno == EPERM);
-	assert(unlink(marker) == 0); assert(rmdir(directory) == 0); free(marker);
-	puts("PASS default RC, overrides and unsafe persistent marker rejection");
+	assert(hb_boot_mode(NULL) == 1);
+	assert(hb_boot_mode("") == 1);
+	assert(hb_boot_mode("lua") == 1);
+	assert(hb_boot_mode("rc") == 0);
+	assert(hb_boot_mode("unknown") == -1 && errno == EINVAL);
+	puts("PASS default Lua, explicit RC recovery and invalid override rejection");
 	channel(); children(); return 0;
 }

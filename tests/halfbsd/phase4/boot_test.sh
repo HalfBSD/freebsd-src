@@ -4,7 +4,7 @@ policy_head() { atf_set descr 'PID 1 readiness and boot policy invariants withou
 policy_body()
 {
     modules=$(atf_config_get modules /usr/lib/halfbsd)
-    atf_check -s exit:0 -o match:PASS -e empty /usr/bin/lua -E "$(atf_get_srcdir)/policy.lua" "$modules"
+    atf_check -s exit:0 -o match:PASS -e empty /usr/bin/lua -E "$(atf_get_srcdir)/policy.lua" "$modules" /usr/share/examples/halfbsd/boot-system.lua
 }
 atf_test_case handoff
 handoff_head() { atf_set descr 'Private child pipe transfer, selection, reaping and forced shutdown'; atf_set timeout 15; }

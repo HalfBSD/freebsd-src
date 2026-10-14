@@ -14,7 +14,10 @@ end
 function M:check(engine,control_ready)
     if self.sent then return end
     local ready=control_ready and not engine.shutting
-    for _,name in ipairs(critical)do
+    local required={}
+    for _,name in ipairs(critical)do required[#required+1]=name end
+    required[#required+1]=engine.config.target
+    for _,name in ipairs(required)do
         local r=assert(engine.records[name],'boot configuration lacks critical service '..name)
         if r.state=='FAILED'or r.state=='SKIPPED'then self:fail();engine:shutdown();return end
         if r.state~='READY'then ready=false end

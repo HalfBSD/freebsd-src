@@ -333,7 +333,7 @@ invalid:
 
 	char boot_override[32] = {0};
 	(void)kenv(KENV_GET, HB_BOOT_OVERRIDE, boot_override, sizeof(boot_override) - 1);
-	int selected_mode = hb_boot_mode(HB_BOOT_MARKER, boot_override);
+	int selected_mode = hb_boot_mode(boot_override);
 	if (selected_mode < 0) {
 		warning("invalid HalfBSD boot selection: %m; entering single-user recovery");
 		initial_transition = single_user;
@@ -1053,7 +1053,7 @@ runcom(void)
 	state_func_t next_transition;
 	char override[32] = {0};
 	(void)kenv(KENV_GET, HB_BOOT_OVERRIDE, override, sizeof(override) - 1);
-	int mode = hb_boot_mode(HB_BOOT_MARKER, override);
+	int mode = hb_boot_mode(override);
 	if (mode < 0 || lua_failed || (boot_attempted && lua_mode != (mode == 1))) {
 		warning("boot selection unsafe or Lua recovery latched; reboot with halfbsd.boot_mode=rc");
 		return (state_func_t)single_user;

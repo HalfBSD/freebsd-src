@@ -1,14 +1,19 @@
 HalfBSD Lua Phase IV — PID 1 boot/shutdown integration
 October 13, 2026 | branch halfbsd2
-STATUS: implementation and portable tests present; LIVE BOOT ACCEPTANCE PENDING
+STATUS: native userspace regressions PASS (UID 1001 and root); LIVE BOOT ACCEPTANCE PENDING
 
-This pass has NOT demonstrated a Lua-controlled boot. No native Phase IV
-buildworld/buildkernel/build32, ATF execution, VM boot, packet-policy test or
-25-cycle acceptance run has occurred. Do not enable Lua on Anvil yet.
-Existing Phase I–III native results remain historical evidence for those
-versions; they are not results for the new PID 1 integration. The administrator
-authorized committing and pushing this pass on October 13, 2026. Existing RC,
-rc.d, rc.subr and rcorder remain.
+This pass has NOT demonstrated a Lua-controlled boot. After the kenv correction,
+the administrator reported successful rebuilding, installation and reboot, then
+supplied complete Phase IV userspace PASS logs from Anvil as UID 1001 and root.
+Both include the Phase I–III regression gates; root also passed cross-UID control
+authorization. These are user-reported native FreeBSD results, not Linux mocks.
+The selected boot mode was not supplied; installation defaults to RC, so the
+successful reboot does not establish Lua-controlled startup or shutdown.
+Detailed buildworld/buildkernel/build32 logs, native ATF/sanitizer results, VM
+boot, packet-policy tests and the 25-cycle acceptance gate remain outstanding.
+Do not enable Lua on Anvil yet. The administrator authorized committing and
+pushing this pass and subsequently authorized committing/pushing when work is
+done. Existing RC, rc.d, rc.subr and rcorder remain.
 
 ARCHITECTURE AND MODE SELECTION
 
@@ -165,9 +170,11 @@ manager module/example installation. No administrator config payload installed.
 Further exact link/install/sanitizer results are recorded in the final validation
 addendum below. Clang and QEMU are absent; neither has been downloaded.
 
-Native FreeBSD full buildworld/buildkernel/build32, Phase I native scenarios,
-Phase II/III native regressions after these changes, Phase IV ATF, privilege
-checks and all live VM gates are PENDING. Native sbin/init/reboot compilation is
+The later Anvil acceptance record below supersedes the pending userspace and
+compilation status from the original local implementation. Rebuilding,
+installation and reboot were reported successful; detailed separate world/kernel/
+build32 logs were not supplied. Native Phase I–IV userspace runners passed as
+both regular user and root. ATF, native sanitizer and all live VM gates remain
 PENDING. The userspace C tests do not execute PID 1 or signal host services.
 
 TEST COMMANDS ON ANVIL (SAFE USERSPACE ONLY)
@@ -258,8 +265,10 @@ future design, not part of this cutover. Nothing auto-enables Lua on Anvil.
 
 ACCEPTANCE
 
-Phase IV is awaiting native compilation and live boot validation. ZERO VM cycles
-completed. No claim of complete RC replacement or Anvil readiness is made.
+Native userspace acceptance passed on Anvil after the reported successful
+rebuild/install/reboot. Phase IV still awaits live Lua boot/shutdown validation.
+ZERO VM cycles completed. No claim of complete RC replacement or Anvil Lua
+cutover readiness is made.
 
 FINAL LOCAL VALIDATION ADDENDUM
 
@@ -302,3 +311,36 @@ under the current native build flags and are not the reported build-stopping
 error. No unrelated PID 1 state-machine rewrite or diagnostic suppression was
 introduced. Native buildworld acceptance remains pending a successful rerun;
 the supplied failed build log does not establish installation or live boot.
+
+ANVIL NATIVE USERSPACE ACCEPTANCE — OCTOBER 13, 2026
+
+The administrator supplied complete sh /usr/src/tests/halfbsd/phase4/run.sh
+output as charlie (UID 1001) and root on FreeBSD 15.1-RELEASE-p4 AMD64, kernel
+halfbsd2-n283744-94e22a343818 CHARLIE, with in-tree Lua 5.4.8. The kernel version
+string is the one printed by the supplied logs; it does not independently
+identify the userland source revision used for the reported rebuild.
+
+Both runs PASS:
+- All nine Phase IV policy groups (mock OS/engine checks, not live boot).
+- Native C private-child selection, fragmented/invalid/EOF readiness channel,
+  inherited descriptor, closed stdio/session setup, reaping and forced stop.
+- All 16 Phase III policy groups and real non-mutating dry-run/shadow checks.
+- Native mount/fstab/process/route/interface/terminal inventories, actual pipe
+  capture/output verification/reaping, failure readback, ephemeral UDP/TCP
+  loopback readiness and private PTY handoff/restoration.
+- All 14 Phase II pure policy groups and nine Phase I supervision scenarios.
+- Native control/readiness/restarts/reloads/persistence, 50 concurrent children,
+  100 randomized dependency tasks and 1,000 start/stop operations.
+- Protocol/credential spoofing rejection, manager TERM cleanup, structured logs,
+  callback/resource cleanup, dry-run and synthetic desktop startup/shutdown.
+
+The unprivileged run appropriately skipped cross-UID authorization. The root
+run PASSed isolated native cross-UID read-only versus mutation authorization.
+Neither run activated real boot adapters or tested PID 1 takeover/recovery,
+production firewall packets, mounts/swap mutation, actual DHCP takeover or
+Lua-controlled reboot/poweroff. No skipped root-only test is claimed as passed
+in the unprivileged run. Native ATF and sanitizer results remain unreported.
+
+Next gate: prepare a disposable supported ZFS-root VM, verify both RC and Lua
+boot modes, execute the isolated failure matrix and 25 persistent-overlay boot/
+shutdown cycles. The current successful userspace runs do not replace that gate.

@@ -1,15 +1,142 @@
 HalfBSD Lua Phase IV — PID 1 boot/shutdown integration
 October 13, 2026 | branch halfbsd2
-STATUS: Lua-default cutover implemented; current native rebuild/live boot PENDING
+STATUS: diagnostic Lua -> ZFS -> AMDGPU -> PID 1 shell bring-up implemented;
+current native compilation and real diagnostic boot remain UNTESTED.
 
-The administrator explicitly authorized changing HalfBSD's default startup to
-Lua after the successful native userspace runs recorded below. This supersedes
-the earlier opt-in/default-RC and VM-before-Anvil deployment policy. No real
-Lua-controlled boot, shutdown or recovery has yet been demonstrated. The user
-subsequently authorized committing and pushing this cutover. RC remains installed for
-explicit recovery; there is no automatic fallback over partial Lua initialization.
-Earlier native results below apply to the preceding opt-in revision, not this
-new default, complete-target readiness gate or additional boot services.
+CURRENT TASK — OCTOBER 20, 2026
+
+The administrator reported a hang during an attempted boot, followed by a hard
+reset and a boot whose halfbsd.boot_active was rc. The source does not implement
+reset-triggered RC fallback. The actual source revision/installed init/boot
+environment/loader override used by those boots has not been established.
+Do not describe that observation as successful Lua-controlled boot or recovery.
+
+The administrator now requests a console-visible incremental bring-up and
+explicitly requests loading AMDGPU. The default Lua stage now stops at a
+single-user shell; networking and all downstream services are intentionally out
+of scope. This supersedes the preceding full-multiuser-default deployment plan.
+The administrator authorized documenting, committing and pushing this task. Earlier native acceptance
+records below apply to their historical versions, not this implementation.
+
+DIAGNOSTIC BOOT IMPLEMENTATION
+
+PID 1 defaults to Lua, with halfbsd.boot_stage=single when no stage is supplied.
+Explicit halfbsd.boot_mode=rc still selects RC recovery; it is never silently
+ignored. Unknown modes/stages enter recovery. The new visible banner contains
+"PID 1 diagnostic build 2026-10-20" and reports the actual selector decision.
+An RC banner indicates an explicit override; absence of the new banner suggests
+an older/different init or unavailable console, not proof that Lua ran.
+
+The child launcher prints before Lua allocation, native module initialization
+and manager-module loading. --boot-single branches before configuration loading:
+it does NOT compile the full service graph, inspect DHCP interfaces or load the
+administrator's enabled-state database. A missing/broken multiuser configuration
+therefore cannot activate networking or obstruct this checkpoint.
+
+The small singleboot.lua task path uses existing halfbsd.os/proc APIs, direct
+argv execution and bounded synchronous waits. This is not another scheduler,
+process supervisor or shell-command layer. Steps printed as BEGIN/OK/FAILED:
+1. Confirm root directly launched by PID 1, notification descriptor 3.
+2. Verify the already kernel-mounted ZFS root and devfs, report root read-only
+   state and console availability. Do not remount root writable automatically.
+3. Run /sbin/zfs mount -a for already-imported pools; list mounted ZFS datasets.
+   No imports, encryption/key setup, fstab mounts, swap or destructive repairs.
+4. Run /sbin/kldload -n -v amdgpu, then /sbin/kldstat -n amdgpu.ko.
+   This preserves already-loaded modules and shows native module/kernel output.
+5. List DRM card/render nodes and require a card node. Module load plus a DRM
+   node is only bring-up evidence: it does not prove acceleration, compositor
+   correctness or which driver owns every node. Inspect native kernel output.
+6. Send SINGLE, close notification and exit normally. PID 1 requires both the
+   exact token and successful exit before publishing single-ready and opening
+   its existing single-user shell. PID 1 retains console ownership/password
+   policy, alternate-shell prompt, signals, reaping and reboot responsibilities.
+
+ZFS and kldload each have a 120-second proc.run deadline; kldstat has ten seconds,
+with bounded exec/termination handling. PID 1 prints elapsed waiting progress
+every five seconds, with the existing 600-second outer startup bound. A kernel
+hang/uninterruptible driver operation cannot be guaranteed recoverable by these
+userspace timers. A graphics modeset may temporarily blank the physical display.
+Failures print reasons, send FAIL when possible, publish boot_result=failed and
+enter PID 1 recovery; they never start RC over partial Lua changes.
+
+No DHCP, IPFW policy setup, DNS, SSH, NTP, syslog, ldconfig, getty, desktop,
+configuration reload server or service manager socket is started. Kernel IPFW
+retains its existing built-in policy. Loaded AMDGPU and ZFS mounts remain for
+inspection; kernel/PID 1 handle final reboot. No new logging daemon or persistent
+boot-log file is required. Output goes to the physical console as it happens;
+full multiuser service transitions also now have plain console progress.
+
+At the shell, exiting/Ctrl-D restarts single-user handling without rerunning
+initialization or continuing to multiuser. The default-stage change deliberately
+allows incremental tests without editing or overwriting system.lua.
+
+FIRST DIAGNOSTIC CONSOLE TEST
+
+Rebuild/install this world and the matching supported kernel using the usual
+native process. Preserve a known-good boot environment and console recovery.
+AMDGPU, firmware and dependencies must already be installed for the running
+kernel (commonly under /boot/modules). This task does not download/vendor them.
+At the loader prompt, override any persistent RC selection explicitly:
+
+  set halfbsd.boot_mode=lua
+  set halfbsd.boot_stage=single
+  boot
+
+Use plain boot, NOT boot -s: -s asks PID 1 for a shell before Lua runs. If the
+first diagnostic banner is absent, check the boot environment and installed
+/sbin/init before interpreting a shell as success. A loader/kernel failure
+before init is outside these userspace print statements.
+
+Expected final messages include "OK load AMDGPU", "DRM device nodes", and
+"SINGLE READY received and Lua exited successfully; handing console to shell".
+The existing "Enter full pathname of shell or RETURN for /bin/sh" prompt may
+appear; press RETURN. Check:
+
+  kenv halfbsd.boot_active          # lua
+  kenv halfbsd.boot_stage           # single
+  kenv halfbsd.boot_result          # single-ready (failed means recovery)
+  mount -t zfs
+  kldstat -n amdgpu.ko
+  ls /dev/dri
+
+The diagnostic Lua process intentionally exits. No pgrep halfinit result or
+halfsvc socket is expected here. A shell alone is not proof of success.
+Record the last BEGIN/OK/FAILED line and kernel messages, especially around
+AMDGPU initialization. To recover through RC, reboot and select
+halfbsd.boot_mode=rc. The full Lua graph remains available only when explicitly
+selecting halfbsd.boot_stage=multiuser for a later experiment; do not enable it
+merely by exiting the diagnostic shell.
+
+LOCAL VALIDATION FOR THIS TASK
+
+Actual Linux portable C tests PASS: mode/stage selection, fragmented SINGLE and
+READY tokens, malformed/trailing/embedded-NUL messages, immediate trace output,
+errno preservation, descriptor inheritance/session setup and private-child
+reaping/forced termination. Single-stage Lua policy tests PASS using injected
+OS/process fixtures: ZFS/AMDGPU command order, console output, deadlines, required
+DRM card, failure/exec-error propagation, root/PID1 gating and exact notification.
+These fixtures do NOT load a GPU or mutate real mounts.
+The existing Phase II/III/IV pure policy groups also pass. Strict GCC C17,
+Wpedantic/Werror launcher and portable helper compilation pass. ASan/UBSan passes
+for the portable C helper with leak detection disabled under tracing.
+
+The in-tree Lua and bmake sources were built locally under
+/tmp/halfbsd-single-check for verification; nothing was downloaded. Clang is not
+available. Native full init compilation, buildworld/buildkernel/build32, installed
+ATF/native regression reruns, actual ZFS/AMDGPU activation, shell handoff and
+physical/VM boot remain pending. Existing native historical tests below do not
+establish this new boot path. Further build/install results are appended below.
+
+Fresh/repeated parallel module/example installation (including singleboot.lua),
+configuration byte/mode preservation, effective live-root recipe syntax,
+bootstrap/world header installation and inherited ABI/archive checks PASS with
+locally built in-tree bmake. The new Markdown operator guide is
+HALFBSD-LUA-SINGLE-USER-BOOT.md; it contains the exact expected console messages,
+loader selections, success checks and recovery/graphics limitations. The
+administrator authorized committing and pushing code plus documentation after
+these checks. Native full-init compilation and real boot remain pending.
+
+HISTORICAL PHASE IV MULTIUSER IMPLEMENTATION (SUPERSEDED AS DEFAULT)
 
 ARCHITECTURE AND MODE SELECTION
 

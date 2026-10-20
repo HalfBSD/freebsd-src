@@ -7,6 +7,7 @@
 #include <poll.h>
 #include <signal.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
@@ -20,6 +21,35 @@ hb_boot_mode(const char *override)
 		errno = EINVAL; return -1;
 	}
 	return 1;
+}
+
+int
+hb_boot_stage(const char *stage)
+{
+	if (!stage || !*stage || !strcmp(stage, "single")) return 0;
+	if (!strcmp(stage, "multiuser")) return 1;
+	errno = EINVAL; return -1;
+}
+void
+hb_boot_trace(const char *path, const char *message)
+{
+	int saved = errno;
+	int fd = open(path, O_WRONLY | O_APPEND | O_NOCTTY | O_CLOEXEC | O_NONBLOCK);
+	if (fd >= 0) {
+		char line[512];
+		int length = snprintf(line, sizeof(line), "[HalfBSD init] %s\n", message);
+		if (length > 0 && (size_t)length < sizeof(line)) {
+			size_t offset = 0;
+			while (offset < (size_t)length) {
+				ssize_t n = write(fd, line + offset, (size_t)length - offset);
+				if (n < 0 && errno == EINTR) continue;
+				if (n <= 0) break;
+				offset += (size_t)n;
+			}
+		}
+		close(fd);
+	}
+	errno = saved;
 }
 
 int
@@ -76,6 +106,8 @@ hb_boot_read(int fd, char text[16], size_t *used)
 	*used += (size_t)n; text[*used] = '\0';
 	if (*used == sizeof(HB_BOOT_READY) - 1 &&
 	    !memcmp(text, HB_BOOT_READY, sizeof(HB_BOOT_READY) - 1)) return 1;
+	if (*used == sizeof(HB_BOOT_SINGLE) - 1 &&
+	    !memcmp(text, HB_BOOT_SINGLE, sizeof(HB_BOOT_SINGLE) - 1)) return 2;
 	if (memchr(text, '\n', *used)) { errno = EPROTO; return -1; }
 	return 0;
 }

@@ -195,10 +195,67 @@ Console autologin, PAM and persistent session ownership are future work.
 .Pp
 Boot policy cannot change during configuration reload; start a new manager
 session to change it. Gateway is an explicit service group, without inferred
-packet forwarding or NAT configuration. Installing the runtime leaves RC selected. Optional PID 1 integration is
+packet forwarding or NAT configuration. The current diagnostic boot stage is
 described below.
 .Sh BOOT INTEGRATION
-Lua is the default startup system; no marker file is required.
+The current default is a diagnostic Lua stage ending at the existing PID 1
+single-user shell, rather than multiuser startup.
+PID 1 prints a dated diagnostic-build banner and selected startup path directly
+to the console. The native launcher and Lua print unbuffered progress; PID 1
+prints a waiting message every five seconds while Lua runs.
+.Pp
+The diagnostic stage verifies the kernel-mounted ZFS root and devfs, invokes
+.Pa /sbin/zfs mount -a
+for already-imported datasets, then runs
+.Pa /sbin/kldload -n -v amdgpu
+and
+.Pa /sbin/kldstat -n amdgpu.ko .
+A DRM card device must appear. This proves neither display acceleration nor
+compositor operation. AMDGPU and its firmware must already be installed and
+compatible with the running kernel. No driver package is installed automatically.
+.Pp
+The diagnostic path bypasses
+.Pa /etc/halfbsd/system.lua
+and enabled-state files entirely. It starts no network interfaces, DHCP, firewall
+policy loader, DNS, SSH, NTP, syslog, swap, getty or desktop services.
+It does not import pools, remount root writable or mount fstab filesystems.
+ZFS mount changes and the loaded graphics driver are retained for shell inspection.
+After a distinct SINGLE notification and successful Lua process exit, PID 1
+opens its existing single-user shell. Errors print their reason and open recovery
+instead. Neither case falls back automatically to RC.
+.Pp
+At the loader prompt select the diagnostic test explicitly with:
+.Bd -literal -offset indent
+set halfbsd.boot_mode=lua
+set halfbsd.boot_stage=single
+boot
+.Ed
+Do not use boot -s for the test: that requests PID 1's direct single-user shell
+before the Lua handoff. Once at the diagnostic shell, inspect:
+.Bd -literal -offset indent
+kenv halfbsd.boot_active
+kenv halfbsd.boot_stage
+kenv halfbsd.boot_result
+mount -t zfs
+kldstat -n amdgpu.ko
+ls /dev/dri
+.Ed
+The expected kernel values are lua, single and single-ready. A shell by itself
+is not proof of Lua success. The diagnostic Lua process exits before the shell,
+so no persistent halfinit process or halfsvc socket is expected.
+Exiting that shell stays single-user; it does not activate networking.
+.Pp
+Explicit loader
+.Sy halfbsd.boot_mode=rc
+retains traditional RC recovery.
+.Sy halfbsd.boot_stage=multiuser
+selects the full Lua service-manager path described below for a later test.
+A mode/stage change after initialization requires rebooting; no partially
+initialized RC/Lua switching is attempted.
+.Pp
+The following describes the retained FULL MULTIUSER path, not the diagnostic
+default. Lua is the default startup system; no marker file is required.
+
 The C-based PID 1 retains its login, single-user and kernel reboot responsibilities.
 Initially supported boot layouts require a kernel-mounted ZFS root containing
 the interpreter, manager, modules and their libraries; a separately mounted

@@ -7,6 +7,8 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include "halfbsd.h"
 
@@ -22,9 +24,15 @@ channel(void)
 	assert(write(fds[1], "DY\n", 3) == 3);
 	assert(hb_boot_read(fds[0], text, &used) == 1);
 	close(fds[0]); close(fds[1]);
-	const char *invalid[] = {"FAIL\n", "READY\nX", "REA\0Y\n"};
-	const size_t lengths[] = {5, 7, 6};
-	for (size_t i = 0; i < 3; i++) {
+	assert(hb_boot_pipe(fds) == 0); used = 0;
+	assert(write(fds[1], "SIN", 3) == 3);
+	assert(hb_boot_read(fds[0], text, &used) == 0);
+	assert(write(fds[1], "GLE\n", 4) == 4);
+	assert(hb_boot_read(fds[0], text, &used) == 2);
+	close(fds[0]); close(fds[1]);
+	const char *invalid[] = {"FAIL\n", "READY\nX", "REA\0Y\n", "SINGLE\nX", "SIN\0LE\n"};
+	const size_t lengths[] = {5, 7, 6, 8, 7};
+	for (size_t i = 0; i < sizeof(lengths) / sizeof(lengths[0]); i++) {
 		assert(hb_boot_pipe(fds) == 0); used = 0;
 		assert(write(fds[1], invalid[i], lengths[i]) == (ssize_t)lengths[i]);
 		assert(hb_boot_read(fds[0], text, &used) == -1 && errno == EPROTO);
@@ -34,6 +42,19 @@ channel(void)
 	assert(hb_boot_read(fds[0], text, &used) == -1 && errno == EPIPE);
 	close(fds[0]);
 	puts("PASS fragmented readiness, malformed messages and EOF");
+}
+
+static void
+trace(void)
+{
+	char path[] = "/tmp/halfbsd-trace.XXXXXX", text[128] = {0};
+	int fd = mkstemp(path); assert(fd >= 0);
+	errno = ERANGE; hb_boot_trace(path, "visible progress"); assert(errno == ERANGE);
+	ssize_t n = read(fd, text, sizeof(text) - 1); assert(n > 0);
+	assert(!strcmp(text, "[HalfBSD init] visible progress\n"));
+	close(fd); assert(unlink(path) == 0);
+	hb_boot_trace(path, "absent destination"); assert(errno == ERANGE);
+	puts("PASS immediate progress trace and preserved errno on unavailable console");
 }
 
 static void
@@ -92,5 +113,9 @@ main(void)
 	assert(hb_boot_mode("rc") == 0);
 	assert(hb_boot_mode("unknown") == -1 && errno == EINVAL);
 	puts("PASS default Lua, explicit RC recovery and invalid override rejection");
-	channel(); children(); return 0;
+	assert(hb_boot_stage(NULL) == 0 && hb_boot_stage("") == 0);
+	assert(hb_boot_stage("single") == 0 && hb_boot_stage("multiuser") == 1);
+	assert(hb_boot_stage("unknown") == -1 && errno == EINVAL);
+	puts("PASS diagnostic single-user stage default and explicit multiuser selection");
+	channel(); trace(); children(); return 0;
 }

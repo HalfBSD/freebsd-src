@@ -16,7 +16,7 @@ local function read_state(path,native)
 end
 local function parse(args)
     local opts={};local value={['--config']='config',['--target']='target',['--runtime-dir']='runtime_dir',['--state-file']='state_file',['--scenario']='scenario',['--run-for']='run_for',['--boot-notify-fd']='notify'}
-    local flags={['--check']='check',['--graph']='graph',['--dry-run']='dry',['--simulate']='simulate',['--shadow']='shadow',['--help']='help',['--activate-system']='activate'}
+    local flags={['--check']='check',['--graph']='graph',['--dry-run']='dry',['--simulate']='simulate',['--shadow']='shadow',['--help']='help',['--activate-system']='activate',['--boot-single']='single'}
     local i=1
     while args[i]do
         if value[args[i]]then opts[value[args[i]]]=assert(args[i+1],'missing option value');i=i+2
@@ -58,6 +58,11 @@ function M.main(args,module_dir)
         assert(opts.run_for and opts.run_for>0 and opts.run_for<=3600,'--run-for must be >0 and <=3600 seconds')
     end
     local native=require('halfbsd.os');local handoff
+    if opts.single then
+        assert(opts.notify and not(opts.config or opts.activate or opts.simulate or opts.check or opts.graph or opts.dry or opts.shadow or opts.target or opts.run_for),
+            'single boot is an internal PID 1 entry, without the multiuser configuration')
+        return require('singleboot').run(native,require('proc'),tonumber(opts.notify))
+    end
     if opts.notify then
         assert(opts.activate and opts.config and not(opts.simulate or opts.check or opts.graph or opts.dry or opts.shadow),'boot handoff requires a real explicit system configuration')
         handoff=require('handoff').new(native,require('proc'),assert(tonumber(opts.notify),'invalid handoff descriptor'))
@@ -125,6 +130,9 @@ function M.main(args,module_dir)
     local engine
     local bootstrapping=false;local control_ready=false
     local function emit(item)
+        if handoff then
+            io.stdout:write('[halfinit boot] '..item.service..' '..tostring(item.previous)..' -> '..item.state..': '..tostring(item.reason)..'\n');io.stdout:flush()
+        end
         local r=engine.records[item.service];local result=r.result
         local fields={event='transition',service=item.service,state=item.state,previous=item.previous,reason=item.reason,monotonic=item.time}
         if r.child then fields.pid=r.child.pid elseif result then fields.pid=result.pid end

@@ -128,7 +128,7 @@ static state_func_t run_script(const char *);
 
 static enum { AUTOBOOT, FASTBOOT } runcom_mode = AUTOBOOT;
 
-static bool lua_mode, boot_attempted, lua_failed;
+static bool lua_mode, boot_attempted, lua_failed, lua_single_boot, lua_single_done;
 static pid_t lua_pid;
 static state_func_t lua_runcom(void);
 static void lua_shutdown(void);
@@ -409,6 +409,11 @@ invalid:
 		if (s != NULL)
 			free(s);
 	}
+
+	hb_boot_trace(_PATH_CONSOLE, "PID 1 diagnostic build 2026-10-20 started; default Lua single-user stage");
+	hb_boot_trace(_PATH_CONSOLE, selected_mode < 0 ? "invalid boot-mode override; recovery selected" :
+	    (selected_mode == 0 ? "explicit halfbsd.boot_mode=rc override detected" : "Lua selected (no automatic RC fallback)"));
+	hb_boot_trace(_PATH_CONSOLE, "initial devfs setup finished; entering startup state machine");
 
 	if (initial_transition != reroot_phase_two) {
 		/*
@@ -902,6 +907,9 @@ single_user(void)
 		_exit(0); /* panic as well */
 	}
 
+	hb_boot_trace(_PATH_CONSOLE, lua_single_done ?
+	    "Lua diagnostic stage completed; opening PID 1 single-user shell" :
+	    "opening PID 1 single-user/recovery shell");
 	BOOTTRACE("going to single user mode");
 	shell = get_shell();
 
@@ -910,6 +918,8 @@ single_user(void)
 		 * Start the single user session.
 		 */
 		open_console();
+		if (lua_single_done)
+			write_stderr("[HalfBSD init] Lua ZFS/AMDGPU diagnostic completed; this is the single-user shell handoff.\n");
 
 		pp = getpwnam("root");
 #ifdef SECURE
@@ -921,7 +931,8 @@ single_user(void)
 		typ = getttynam("console");
 		if (typ && (typ->ty_status & TTY_SECURE) == 0 &&
 		    pp && *pp->pw_passwd) {
-			write_stderr(banner);
+			write_stderr(lua_single_done ?
+			    "Enter root password; this diagnostic boot remains single-user\n" : banner);
 			for (;;) {
 				clear = getpass("Password:");
 				if (clear == NULL || *clear == '\0')
@@ -1051,6 +1062,10 @@ static state_func_t
 runcom(void)
 {
 	state_func_t next_transition;
+	if (lua_single_done) {
+		hb_boot_trace(_PATH_CONSOLE, "diagnostic shell exited; staying single-user, no multiuser services");
+		return (state_func_t)single_user;
+	}
 	char override[32] = {0};
 	(void)kenv(KENV_GET, HB_BOOT_OVERRIDE, override, sizeof(override) - 1);
 	int mode = hb_boot_mode(override);
@@ -1066,7 +1081,26 @@ runcom(void)
 		warning("cannot publish active boot mode: %m");
 		return (state_func_t)single_user;
 	}
-	if (lua_mode) return lua_runcom();
+	if (lua_mode) {
+		char stage[32] = {0};
+		(void)kenv(KENV_GET, HB_BOOT_STAGE, stage, sizeof(stage) - 1);
+		int selected = hb_boot_stage(stage);
+		if (selected < 0) {
+			hb_boot_trace(_PATH_CONSOLE, "invalid halfbsd.boot_stage; entering recovery");
+			lua_failed = true;
+			return (state_func_t)single_user;
+		}
+		lua_single_boot = selected == 0;
+		char active_stage[10] = "single";
+		if (!lua_single_boot) memcpy(active_stage, "multiuser", sizeof(active_stage));
+		if (kenv(KENV_SET, HB_BOOT_STAGE, active_stage, strlen(active_stage) + 1) < 0) {
+			warning("cannot publish boot stage: %m");
+			return (state_func_t)single_user;
+		}
+		hb_boot_trace(_PATH_CONSOLE, lua_single_boot ? "launching Lua SINGLE-USER diagnostic stage" : "launching Lua MULTIUSER stage");
+		return lua_runcom();
+	}
+	hb_boot_trace(_PATH_CONSOLE, "starting explicit RC recovery startup");
 
 	BOOTTRACE("/etc/rc starting...");
 	if ((next_transition = run_script(_PATH_RUNCOM)) != NULL)
@@ -1077,13 +1111,14 @@ runcom(void)
 	return (state_func_t) read_ttys;
 }
 
-/* READY means local filesystems/firewall/control are ready, not WAN or clock sync. */
+/* READY starts multiuser; SINGLE requires successful diagnostic-process exit. */
 static state_func_t
 lua_runcom(void)
 {
 	int fds[2], status;
 	char text[16] = {0}; size_t used = 0;
 	struct timespec begin, now;
+	long last_report = -5;
 	requested_transition = 0;
 	if (hb_boot_pipe(fds) < 0) goto failed;
 	lua_pid = fork();
@@ -1096,7 +1131,10 @@ lua_runcom(void)
 		sigset_t empty; sigemptyset(&empty);
 		(void)sigprocmask(SIG_SETMASK, &empty, NULL);
 		if (close_range(4, UINT_MAX, 0) < 0) _exit(126);
-		execl(HB_BOOT_PROGRAM, HB_BOOT_PROGRAM, "--config", HB_BOOT_CONFIG,
+		hb_boot_trace(_PATH_CONSOLE, "exec /usr/sbin/halfinit; console attached, notification fd=3");
+		if (lua_single_boot)
+			execl(HB_BOOT_PROGRAM, HB_BOOT_PROGRAM, "--boot-single", "--boot-notify-fd", "3", (char *)NULL);
+		else execl(HB_BOOT_PROGRAM, HB_BOOT_PROGRAM, "--config", HB_BOOT_CONFIG,
 		    "--activate-system", "--boot-notify-fd", "3", (char *)NULL);
 		warning("cannot execute " HB_BOOT_PROGRAM ": %m"); _exit(127);
 	}
@@ -1106,8 +1144,12 @@ lua_runcom(void)
 	for (;;) {
 		pid_t child = waitpid(lua_pid, &status, WNOHANG);
 		if (child == lua_pid) {
+			int message = hb_boot_read(fds[0], text, &used);
+			lua_pid = 0; close(fds[0]);
+			if (lua_single_boot && message == 2 && WIFEXITED(status) && WEXITSTATUS(status) == 0)
+				goto single_ready;
 			warning("Lua manager exited during startup, status %#x", status);
-			lua_pid = 0; close(fds[0]); goto failed;
+			goto failed;
 		}
 		if (child < 0 && errno != EINTR) { close(fds[0]); goto failed; }
 		if (requested_transition) { close(fds[0]); lua_shutdown(); return (state_func_t)death_single; }
@@ -1116,17 +1158,45 @@ lua_runcom(void)
 		if (result < 0 && errno != EINTR) { close(fds[0]); goto failed; }
 		if (result > 0) {
 			result = hb_boot_read(fds[0], text, &used);
-			if (result == 1) { close(fds[0]); runcom_mode = AUTOBOOT; return (state_func_t)read_ttys; }
+			if (result == 2 && lua_single_boot) {
+				close(fds[0]);
+				if (hb_boot_wait(lua_pid, 10000, &status) != 1) goto failed;
+				lua_pid = 0;
+				if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) goto failed;
+				goto single_ready;
+			}
+			if (result == 1 && !lua_single_boot) {
+				hb_boot_trace(_PATH_CONSOLE, "Lua multiuser READY; starting console logins");
+				close(fds[0]); runcom_mode = AUTOBOOT; return (state_func_t)read_ttys;
+			}
+			if (result > 0) { close(fds[0]); goto failed; }
 			if (result < 0) {
 				warning("Lua readiness channel failed: %m");
 				close(fds[0]); goto failed;
 			}
 		}
 		if (clock_gettime(CLOCK_MONOTONIC, &now) < 0 || now.tv_sec - begin.tv_sec >= 600) {
+			hb_boot_trace(_PATH_CONSOLE, "Lua boot timed out after 600 seconds");
 			close(fds[0]); goto failed;
 		}
+		long elapsed = (long)(now.tv_sec - begin.tv_sec);
+		if (elapsed - last_report >= 5) {
+			char message[128];
+			(void)snprintf(message, sizeof(message), "waiting for Lua boot: %ld seconds elapsed", elapsed);
+			hb_boot_trace(_PATH_CONSOLE, message); last_report = elapsed;
+		}
 	}
+single_ready:
+	lua_single_done = true;
+	char success[] = "single-ready";
+	if (kenv(KENV_SET, HB_BOOT_RESULT, success, sizeof(success)) < 0)
+		warning("cannot publish diagnostic result: %m");
+	hb_boot_trace(_PATH_CONSOLE, "SINGLE READY received and Lua exited successfully; handing console to shell");
+	return (state_func_t)single_user;
 failed:
+	hb_boot_trace(_PATH_CONSOLE, "Lua startup FAILED; opening recovery shell, not RC");
+	char failure_result[] = "failed";
+	(void)kenv(KENV_SET, HB_BOOT_RESULT, failure_result, sizeof(failure_result));
 	warning("Lua startup failed; entering single-user recovery, no RC fallback");
 	lua_failed = true; lua_shutdown();
 	return (state_func_t)death_single;
@@ -1135,6 +1205,7 @@ static void
 lua_shutdown(void)
 {
 	if (lua_pid > 1) {
+		hb_boot_trace(_PATH_CONSOLE, "stopping Lua process; waiting up to 120 seconds, then forced termination");
 		int status;
 		int result = hb_boot_stop(lua_pid, DEATH_SCRIPT * 1000, &status);
 		if (result != 1) warning("Lua shutdown did not reap its supervisor: %m");

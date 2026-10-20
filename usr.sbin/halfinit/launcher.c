@@ -11,15 +11,17 @@
 #ifndef HALF_MODULE_DIR
 #define HALF_MODULE_DIR "/usr/lib/halfbsd"
 #endif
-struct invocation { int argc; char **argv; const char *directory; };
+struct invocation { int argc; char **argv; const char *directory; int boot; };
 static int launch(lua_State *L)
 {
 	struct invocation *call = lua_touserdata(L, lua_upvalueindex(1));
+	if (call->boot) fprintf(stdout, "[halfinit launcher] opening native Lua libraries\n");
 	halfbsd_openlibs(L);
 	lua_getglobal(L, "package");
 	lua_pushfstring(L, "%s/?.lua", call->directory); lua_setfield(L, -2, "path");
 	lua_pushliteral(L, ""); lua_setfield(L, -2, "cpath");
 	lua_pop(L, 1);
+	if (call->boot) fprintf(stdout, "[halfinit launcher] loading %s/%s.lua\n", call->directory, HALF_ENTRY);
 	lua_getglobal(L, "require"); lua_pushliteral(L, HALF_ENTRY); lua_call(L, 1, 1);
 	lua_getfield(L, -1, "main"); lua_remove(L, -2);
 	lua_newtable(L); int n = 0;
@@ -32,14 +34,19 @@ static int launch(lua_State *L)
 }
 int main(int argc, char **argv)
 {
-	struct invocation call = {argc, argv, HALF_MODULE_DIR};
+	struct invocation call = {argc, argv, HALF_MODULE_DIR, 0};
 	for (int i = 1; i < argc; i++) {
+		if (!strcmp(argv[i], "--boot-notify-fd")) call.boot = 1;
 		if (!strcmp(argv[i], "--module-dir")) {
 			if (++i == argc || argv[i][0] != '/' || strpbrk(argv[i], ";?")) {
 				fprintf(stderr, "--module-dir requires an absolute directory without Lua path separators\n"); return 2;
 			}
 			call.directory = argv[i];
 		}
+	}
+	if (call.boot) {
+		setvbuf(stdout, NULL, _IONBF, 0);
+		fprintf(stdout, "[halfinit launcher] executable entered; allocating Lua state\n");
 	}
 	lua_State *L = luaL_newstate();
 	if (!L) { fprintf(stderr, "cannot allocate Lua state\n"); return 1; }

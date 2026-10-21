@@ -1,7 +1,37 @@
 HalfBSD Lua Phase IV — PID 1 boot/shutdown integration
 October 13, 2026 | branch halfbsd2
-STATUS: administrator reports native NETWORK READY on Anvil with DHCP/syslog
-supervised. Default now advances to multiuser; native multiuser/shutdown pending.
+STATUS: administrator reports native "Lua multiuser READY" on Anvil.
+Full startup handoff reached; application and shutdown acceptance remain pending.
+
+NATIVE MULTIUSER HANDOFF ACCEPTANCE — OCTOBER 20, 2026
+
+After the full-multiuser change (39d1446f3dee), the administrator reported:
+  "Success! We got the Lua multiuser READY... message!"
+This confirms the native Lua multiuser readiness handoff was reached on Anvil.
+A console login prompt appeared, consistent with the implemented authenticated
+native-login path. The previous RC console_user autologin behavior is not yet
+restored. This is user-reported native evidence, not a Linux simulation result.
+
+Do not infer successful SSH authentication, external DNS/DNSSEC/failover, NTP
+synchronization, seatd/desktop, reboot/poweroff/repeated cycles or VM acceptance
+from the readiness banner alone. Those results have not yet been supplied.
+Phase IV's broader completion criteria remain open.
+
+Administrator's requested next work is recorded in HALFBSD-LUA-NEXT-STEPS.md:
+- Restore local console autologin, default root, configurable account and an
+  explicit way to select another account at the local prompt.
+- Activate and supervise seatd through the existing Lua dependency graph.
+- Use/extend halfsvc as the Lua service interface instead of a second manager;
+  evaluate a thin service-compatible frontend only if useful.
+- Preserve concurrent user sessions and dedicated service identities/roles.
+- Prefer named service profiles over a special everyday "single-user" workflow,
+  while retaining independent recovery until a replacement is demonstrated.
+
+Current selectors are halfbsd.boot_mode and halfbsd.boot_stage; boot_state and
+stage=networking are not implemented spellings. Current stage=network includes
+DHCP; stage=single is the old no-network diagnostic. Profiles must state their
+actual service sets and login/session behavior rather than inherit ambiguous
+historical names. No behavior changes are made by this documentation update.
 
 FULL MULTIUSER CUTOVER — OCTOBER 20, 2026
 

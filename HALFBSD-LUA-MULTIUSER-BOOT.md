@@ -2,7 +2,11 @@
 
 October 20, 2026. The administrator confirmed `NETWORK READY` on Anvil with DHCP
 and syslog supervised. This change enables the remaining multiuser services in
-one pass. Full native multiuser startup and shutdown still require testing.
+one pass. **The administrator has now confirmed the native “Lua multiuser READY”
+message on Anvil**, followed by the console login prompt. This establishes the
+startup handoff; application-level checks and managed shutdown remain pending.
+Requested workstation follow-up is in
+[HALFBSD-LUA-NEXT-STEPS.md](HALFBSD-LUA-NEXT-STEPS.md).
 
 ## What changes
 

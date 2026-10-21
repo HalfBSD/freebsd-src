@@ -90,6 +90,7 @@ function M.compile(policy,os)
     if ssh then processes[#processes+1]='sshd'end
     if ntp then processes[#processes+1]='ntpd'end
     processes[#processes+1]='seatd'
+    processes[#processes+1]='devd'
     add({name='boot-preflight',type='virtual',condition='root_ready',guard='exclusive_guard',parameters={processes=processes}})
     local rules=dense(policy.device_rules or{})
     for _,rule in ipairs(rules)do
@@ -291,8 +292,15 @@ function M.compile(policy,os)
             if d.name=='dns'or d.name=='sshd'or d.name=='ntpd'then d.requires[#d.requires+1]='syslogd' end
         end
     end
+    -- Keep device-event delivery alive for compositor input hotplug. The
+    -- foreground flag retains process ownership; wait for the event socket.
+    add({name='devd',type='daemon',command={'/sbin/devd','-d'},
+        requires={'runtime','ldconfig','firewall'},guard='exclusive_guard',restart='on-failure',
+        readiness='condition',condition='socket_ready',parameters={path='/var/run/devd.pipe',processes={'devd'}},
+        stderr='/dev/console'})
+    essentials[#essentials+1]='devd'
     add({name='seatd',type='daemon',command={'/usr/sbin/seatd','-u','root','-g','video','-l','info'},
-        requires={'runtime','ldconfig'},guard='exclusive_guard',restart='on-failure',
+        requires={'runtime','ldconfig','devd'},guard='exclusive_guard',restart='on-failure',
         readiness='condition',condition='seat_ready',parameters={path='/var/run/seatd.sock',processes={'seatd'}},
         env={SEATD_VTBOUND='1'},stderr='/dev/console'})
     essentials[#essentials+1]='seatd'

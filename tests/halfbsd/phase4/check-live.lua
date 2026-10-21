@@ -9,7 +9,7 @@ local function checked(value,err)
 end
 local rows=checked(require('client').exchange('/var/run/halfbsd/control.sock',{version=1,command='status'}))
 local states={};for _,row in ipairs(rows)do states[row.name]=row.state end
-for _,name in ipairs({'rootfs','zfs','graphics','runtime','loopback','firewall','network','dns','sshd','ntpd','syslogd','seatd','multiuser'})do
+for _,name in ipairs({'rootfs','zfs','graphics','runtime','loopback','firewall','network','dns','sshd','ntpd','syslogd','devd','seatd','multiuser'})do
     assert(states[name]=='READY',name..' is '..tostring(states[name])..', expected READY')
     print('PASS live '..name..' READY')
 end

@@ -124,7 +124,7 @@ if arg[2]then
         local r=require('config').registry(require('boot').compile(default.boot,n))
         local plan=require('dependency').plan(r,{multiuser=true})
         for _,name in ipairs({'devices','rootfs','localfs','zfs','temporary','runtime','loopback',
-            'firewall','dhcp-em0','network','dns','sshd','ntpd','syslogd','ldconfig','ldconfig32','hostname'})do
+            'firewall','dhcp-em0','network','dns','sshd','ntpd','syslogd','devd','seatd','ldconfig','ldconfig32','hostname'})do
             assert(plan.selected[name],'default omitted '..name)
         end
     end)

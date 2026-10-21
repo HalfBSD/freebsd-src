@@ -3,6 +3,14 @@ HalfBSD base seatd / libseat integration
 STATUS: source/build/Lua integration implemented; Linux and staged checks PASS.
 Native FreeBSD buildworld/build32, ATF and workstation/device validation PENDING.
 
+USB HOTPLUG FOLLOW-UP
+
+Administrator reports Sway graphics and initial keyboard work. Starting base
+devd manually restores keyboard/mouse across USB-switch cycles without an
+explicit hms load. Lua multiuser now requires supervised foreground devd before
+seatd, with event-socket readiness and exclusive ownership guards. See
+HALFBSD-DEVD-HOTPLUG.md for tests and native automatic-start acceptance steps.
+
 NATIVE BUILD FAILURE CORRECTION
 
 Detailed explanation and broader language-policy assessment:

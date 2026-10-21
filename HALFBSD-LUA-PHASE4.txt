@@ -3,6 +3,14 @@ October 13, 2026 | branch halfbsd2
 STATUS: administrator reports native "Lua multiuser READY" on Anvil.
 Full startup handoff reached; application and shutdown acceptance remain pending.
 
+MANDATORY DEVD FOLLOW-UP
+
+Base /sbin/devd -d is now a required supervised multiuser service, ordered after
+firewall/runtime/ldconfig and before seatd. Manual native devd startup restored
+USB keyboard/mouse hotplug in Sway. Automatic graph startup awaits native
+verification. Portable Phase III/IV tests pass; HALFBSD-DEVD-HOTPLUG.md records
+the evidence, implementation, existing devd-action limitations and acceptance.
+
 SEATD NATIVE COMPILATION CORRECTION — OCTOBER 21, 2026
 
 Administrator supplied buildworld failure: unix macro expands to 1 in the

@@ -209,3 +209,7 @@ Console autologin, a service-command frontend, boot-profile redesign and package
 repository dependency policy remain separate work. SSH login and ordinary DNS
 name resolution on the prior Lua multiuser build were reported by the admin;
 DNSSEC, failover, clock synchronization and shutdown acceptance remain separate.
+
+Subsequent workstation batch implements console autologin, the service frontend
+and named configuration profiles; see HALFBSD-WORKSTATION-FOLLOWUP.md. Their
+native acceptance remains pending; package dependency policy is still separate.

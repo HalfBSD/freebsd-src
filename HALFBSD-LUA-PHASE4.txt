@@ -3,6 +3,19 @@ October 13, 2026 | branch halfbsd2
 STATUS: administrator reports native "Lua multiuser READY" on Anvil.
 Full startup handoff reached; application and shutdown acceptance remain pending.
 
+WORKSTATION POLICY FOLLOW-UP — OCTOBER 21, 2026
+
+New halfconsole native launcher and Lua policy provide local root/named-user
+autologin with bounded selection and authenticated fallback, preserving native
+login/session behavior for upcoming validation. service now dispatches by
+active PID 1 ownership to halfsvc or explicit RC. Configuration profiles reuse
+the existing graph for workstation/network/maintenance startup. Added private
+PTY, policy, service frontend, native helper build/install and opt-in live
+acceptance checks. Linux tests pass; native world/build32, login/PAM, boot and
+shutdown results for this batch are PENDING. RC remains installed.
+HALFBSD-WORKSTATION-FOLLOWUP.md contains APIs, migration, commands and limits;
+HALFBSD-RC-RESPONSIBILITY-AUDIT.md records remaining dependencies.
+
 MANDATORY DEVD FOLLOW-UP
 
 Base /sbin/devd -d is now a required supervised multiuser service, ordered after

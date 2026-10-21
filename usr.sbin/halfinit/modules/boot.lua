@@ -305,6 +305,9 @@ function M.compile(policy,os)
         env={SEATD_VTBOUND='1'},stderr='/dev/console'})
     essentials[#essentials+1]='seatd'
     for _,n in ipairs(swaps)do essentials[#essentials+1]=n;networking[#networking+1]=n end
+    local maintenance={'runtime','loopback','firewall','ldconfig'}
+    for _,n in ipairs(swaps)do maintenance[#maintenance+1]=n end
+    target('maintenance',maintenance)
     target('network-checkpoint',networking);target('minimal',{'runtime'});target('multiuser',essentials);target('gateway',{'multiuser'})
     if policy.desktop then
         fields(policy.desktop,{socket=true,user=true})

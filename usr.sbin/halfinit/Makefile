@@ -8,7 +8,7 @@ LDFLAGS+= -Wl,-E
 FILESGROUPS= MODULES DEFINITIONS EXAMPLES
 MODULES= modules/init.lua modules/client.lua modules/service.lua modules/config.lua \
 	modules/dependency.lua modules/supervisor.lua modules/control.lua modules/json.lua \
-	modules/providers.lua modules/adapters.lua modules/boot.lua modules/handoff.lua modules/fixture.lua modules/singleboot.lua
+	modules/providers.lua modules/adapters.lua modules/boot.lua modules/handoff.lua modules/fixture.lua modules/singleboot.lua modules/console.lua
 MODULESDIR= /usr/lib/halfbsd
 DEFINITIONS= services/system.lua
 DEFINITIONSDIR= /usr/lib/halfbsd/services

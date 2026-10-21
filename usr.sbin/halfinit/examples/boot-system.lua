@@ -5,6 +5,8 @@
 -- Never activate this system graph alongside an already running rc system.
 return {
     target='multiuser',
+    profile='workstation', -- Also: network (inspection shell), maintenance (offline console).
+    console={user='root',autologin=true,select_timeout=3},
     max_parallel=1, -- Deterministic initial boot; uses the existing scheduler limit.
     log_file='/var/run/halfbsd/boot.log',
     boot={mode='system',interfaces='auto',local_mounts='fstab',zfs=true,

@@ -1,0 +1,49 @@
+." SPDX-License-Identifier: BSD-2-Clause
+.Dd October 21, 2026
+.Dt HALFCONSOLE 8
+.Os
+.Sh NAME
+.Nm halfconsole
+.Nd HalfBSD local console account selection
+.Sh DESCRIPTION
+.Nm
+is launched only by PID 1 as root on console sessions whose tty entry uses
+.Pa /etc/rc.console .
+Lua mode substitutes this helper without executing that RC script.
+It preserves the controlling terminal and replaces itself with native
+.Xr login 1 ,
+retaining PAM session setup, groups, home directory and logout behavior.
+It does not supervise login or create a desktop session.
+.Pp
+The trusted
+.Pa /etc/halfbsd/system.lua
+may contain
+.Bd -literal -offset indent
+console={user='charlie',autologin=true,select_timeout=3}
+.Ed
+.Pp
+Defaults are root, automatic login and a three-second selection deadline.
+Enter another existing login account followed by Return to select it, or
+enter login to request authenticated login. Empty input selects the default.
+A zero timeout selects the default immediately.
+Set autologin=false for authenticated login without selection.
+These settings grant passwordless access to the designated physical console;
+SSH authentication and other getty terminals remain unchanged.
+.Pp
+When console policy is absent, literal console_user assignments in trusted
+.Pa /etc/rc.conf
+and
+.Pa /etc/rc.conf.local
+are recognized, in that order, with a migration warning.
+Shell expressions and indirect configuration are not evaluated.
+Move the intended account into the Lua console table to complete migration.
+Administrator files are never rewritten.
+.Pp
+Invalid accounts, unsupported legacy expressions and selection failures use
+authenticated login rather than silently selecting root.
+Configuration rejected earlier by the boot manager can instead enter native
+recovery before console sessions start.
+.Sh SEE ALSO
+.Xr login 1 ,
+.Xr halfinit 8 ,
+.Xr init 8

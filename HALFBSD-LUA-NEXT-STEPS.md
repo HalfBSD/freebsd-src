@@ -2,6 +2,31 @@
 
 October 20, 2026. Branch `halfbsd2`.
 
+## October 21 workstation implementation batch
+
+The six-item agenda is now implemented as code, tests and an RC source audit;
+native acceptance of this batch is pending. See
+[HALFBSD-WORKSTATION-FOLLOWUP.md](HALFBSD-WORKSTATION-FOLLOWUP.md) for the complete
+test batch and [HALFBSD-RC-RESPONSIBILITY-AUDIT.md](HALFBSD-RC-RESPONSIBILITY-AUDIT.md)
+for remaining RC callers. The original sections below preserve the requested
+behavior; this update supersedes their implementation-status statements.
+
+- Mandatory devd is integrated before seatd. Manual devd startup restored Sway
+  USB hotplug; automatic graph startup needs native verification.
+- Native halfconsole implements root/named-account autologin, a bounded account
+  selector, authenticated-login choice and literal-only console_user migration.
+- service dispatches to halfsvc in actively selected Lua mode, never to an RC
+  duplicate on failure. RC mode retains the original path.
+- Optional workstation/network/maintenance configuration profiles reuse the
+  existing graph; independent native and RC recovery are retained.
+- New private PTY, policy and frontend tests pass on Linux. A native build/install
+  gate and opt-in live DNSSEC/cache/NTP/service collector are included.
+
+Next action: one full native build/install/boot and acceptance batch, including
+console account/session behavior, Sway/VT/USB cycles, concurrent SSH, orderly
+reboot/poweroff and recovery. No additional implementation prerequisite or
+intermediate testing is requested before that batch. RC removal remains deferred.
+
 ## October 21 update
 
 SSH authentication and ordinary DNS name resolution have now been confirmed by

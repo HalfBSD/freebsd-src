@@ -12,11 +12,19 @@ trap 'rm -rf "$work"' EXIT HUP INT TERM
 HALFBSD_LIVE_CHECK="$suite/check-live.lua" "$lua" -E -e 'assert(loadfile(os.getenv("HALFBSD_LIVE_CHECK")))'
 "$lua" -E "$suite/singleboot.lua" "$modules"
 "$lua" -E "$suite/policy.lua" "$modules" "$src/usr.sbin/halfinit/examples/boot-system.lua"
+"$lua" -E "$suite/workstation.lua" "$modules"
+sh "$suite/service_test.sh" "$src"
+cc -D_POSIX_C_SOURCE=200809L -std=c17 -Wall -Wextra -Wpedantic -Werror -fPIE -pie -Wl,-z,text \
+    -I"$src/usr.sbin/halfconsole" "$suite/console_input_test.c" \
+    "$src/usr.sbin/halfconsole/console_input.c" -lutil -o "$work/console_input_test"
+"$work/console_input_test"
 cc -D_GNU_SOURCE -std=c17 -Wall -Wextra -Wpedantic -Werror \
     -Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wcast-align \
     -I"$src/sbin/init" "$suite/handoff_test.c" "$src/sbin/init/halfbsd.c" -o "$work/handoff_test"
 "$work/handoff_test"
 if [ "${1:-}" = --portable-only ]; then exit 0; fi
 [ "$(uname -s)" = FreeBSD ] || { echo 'Native regression gate requires FreeBSD.' >&2; exit 1; }
+sh "$suite/build-console.sh" "$src"
+sh "$suite/config_install.sh" "$src"
 sh "$src/tests/halfbsd/phase3/run.sh"
 echo 'PASS Phase IV userspace checks; actual VM boot/shutdown acceptance is separate'

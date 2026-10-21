@@ -5,7 +5,8 @@
 # name  The name of the terminal device.
 #
 # getty The program to start running on the terminal.  HalfBSD starts
-#       login through rc.console; init prepares its controlling terminal. Use
+#       login through halfconsole in Lua mode, rc.console in RC mode;
+#       init prepares its controlling terminal. Use
 #       none when no login session is needed.
 #
 # type The initial terminal type for this port.  For hardwired
@@ -24,5 +25,6 @@
 # when going to single-user mode.
 console	none				unknown	off secure
 #
-# HalfBSD automatically logs in as console_user (default root) from rc.conf.
+# Lua mode uses console policy in /etc/halfbsd/system.lua (default root).
+# Explicit RC mode uses console_user from rc.conf.
 ttyv0	"/etc/rc.console"		xterm	onifexists secure

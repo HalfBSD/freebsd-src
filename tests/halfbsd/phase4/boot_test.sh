@@ -16,4 +16,14 @@ singleboot_body()
     modules=$(atf_config_get modules /usr/lib/halfbsd)
     atf_check -s exit:0 -o match:PASS -e empty /usr/bin/lua -E "$(atf_get_srcdir)/singleboot.lua" "$modules"
 }
-atf_init_test_cases() { atf_add_test_case singleboot; atf_add_test_case policy; atf_add_test_case handoff; }
+atf_test_case console_input
+console_input_head() { atf_set descr 'Private PTY console selection, deadlines and interrupted calls'; atf_set timeout 10; }
+console_input_body() { atf_check -s exit:0 -o match:PASS -e empty "$(atf_get_srcdir)/console_input_test"; }
+atf_test_case workstation
+workstation_head() { atf_set descr 'Console policy and diagnostic profile isolation without host mutation'; }
+workstation_body()
+{
+    modules=$(atf_config_get modules /usr/lib/halfbsd)
+    atf_check -s exit:0 -o match:PASS -e empty /usr/bin/lua -E "$(atf_get_srcdir)/workstation.lua" "$modules"
+}
+atf_init_test_cases() { atf_add_test_case singleboot; atf_add_test_case policy; atf_add_test_case handoff; atf_add_test_case console_input; atf_add_test_case workstation; }

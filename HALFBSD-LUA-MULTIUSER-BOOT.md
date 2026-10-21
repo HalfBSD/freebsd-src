@@ -15,7 +15,9 @@ startup. See [HALFBSD-SEATD.txt](HALFBSD-SEATD.txt) before upgrading: it covers 
 ports package, ABI/library lookup and `video` membership. The old `seatd` boolean
 is no longer a startup switch; existing generated values are consumed in memory
 with a warning. No administrator file is overwritten. A compositor is still not
-automatically launched, and console autologin remains follow-up work.
+automatically launched. Console autologin/selection and active-mode service
+dispatch are now implemented; native acceptance is pending. See
+[HALFBSD-WORKSTATION-FOLLOWUP.md](HALFBSD-WORKSTATION-FOLLOWUP.md).
 
 The administrator also confirmed SSH authentication and hostname resolution with
 a remote login and git pull on the prior build. Seatd's native device/desktop
@@ -33,7 +35,7 @@ account selection/autologin is a separate pending change.
 With no loader override, PID 1 now selects Lua `multiuser`. It reuses the existing
 dependency graph and supervisor, keeping the example's `max_parallel=1`. Startup
 includes writable storage, ZFS, AMDGPU, runtime directories, swap, hostname,
-loopback, IPFW, DHCP, library hints, syslog, Unbound, SSH, NTP and seatd. NTP and SSH
+loopback, IPFW, DHCP, library hints, syslog, Unbound, SSH, NTP, devd and seatd. NTP and SSH
 configuration verification wait for DNS readiness when DNS is configured.
 AMDGPU defaults on for system boot policies; an explicit `amdgpu=false` remains
 respected. Existing administrator files and service enable/disable settings are
@@ -45,16 +47,18 @@ the existing initialization adapter. SSH prepares host keys, checks configuratio
 and runs foreground with TCP readiness. NTP runs foreground after DNS/network;
 its process readiness does **not** mean the clock has synchronized.
 
-When all required services reach readiness, PID 1 opens authenticated console
-logins using existing `/etc/ttys` handling. Lua mode invokes native login instead
-of the legacy `rc.console` helper. There is no automatic root autologin. The
+When all required services reach readiness, PID 1 opens configured console
+logins using existing `/etc/ttys` handling. Lua mode invokes halfconsole instead
+of the legacy `rc.console` helper. It defaults to root autologin with a three-second
+account selector; the administrator can select another account or authenticated
+login through the Lua console policy. The
 supervisor remains alive and its runtime controls work normally. Console progress
 reopens the console each transition so login's descriptor revocation does not
 silence later service changes. `/etc/rc` is not run in Lua mode.
 
-Desktop/autologin are not enabled automatically: they require an explicit user
+Desktop compositors are not launched automatically: they require an explicit user
 session policy. This is multiuser boot with console/SSH access, not automatic
-compositor launch. Cron, devd/hotplug, arbitrary rc.conf services and complete RC
+compositor launch. Devd is now required for input hotplug. Cron, arbitrary rc.conf services and complete RC
 feature parity are not claimed by this change. The default-mode change adds no
 kernel code; rebuilding the kernel solely for this change is unnecessary.
 

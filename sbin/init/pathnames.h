@@ -38,6 +38,7 @@
 #define	_PATH_SLOGGER		"/sbin/session_logger"
 #define	_PATH_RUNCOM		"/etc/rc"
 #define	_PATH_CONSOLE_LOGIN	"/etc/rc.console"
+#define	_PATH_LUA_CONSOLE_LOGIN	"/usr/sbin/halfconsole"
 #define	_PATH_RUNDOWN		"/etc/rc.shutdown"
 #define	_PATH_RUNFINAL		"/etc/rc.final"
 #define	_PATH_REROOT		"/dev/reroot"

@@ -1550,7 +1550,7 @@ static int
 setupargv(session_t *sp, struct ttyent *typ)
 {
 	const char *getty = lua_mode && strcmp(typ->ty_getty, _PATH_CONSOLE_LOGIN) == 0 ?
-	    _PATH_LOGIN : typ->ty_getty;
+	    _PATH_LUA_CONSOLE_LOGIN : typ->ty_getty;
 
 	if (sp->se_getty) {
 		free(sp->se_getty);
@@ -1559,6 +1559,7 @@ setupargv(session_t *sp, struct ttyent *typ)
 	}
 	/* Direct login and its console helper do not take a tty argument. */
 	sp->se_login = strcmp(getty, _PATH_CONSOLE_LOGIN) == 0 ||
+	    strcmp(getty, _PATH_LUA_CONSOLE_LOGIN) == 0 ||
 	    (strncmp(getty, _PATH_LOGIN,
 	    sizeof(_PATH_LOGIN) - 1) == 0 &&
 	    (getty[sizeof(_PATH_LOGIN) - 1] == '\0' ||

@@ -26,6 +26,32 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 #  SUCH DAMAGE.
 
+# PID 1 publishes active ownership, not merely the next boot preference.
+# Never source RC configuration or fall back to RC after Lua claims startup.
+boot_mode=$(/bin/kenv -q halfbsd.boot_active 2>/dev/null) || {
+	echo 'service: cannot establish active startup ownership; use halfsvc for Lua services' >&2
+	exit 1
+}
+case "$boot_mode" in
+lua)
+	if [ "$#" -eq 1 ] && [ "$1" = -l ]; then
+		exec /usr/sbin/halfsvc list
+	fi
+	if [ "$#" -ne 2 ]; then
+		echo 'Usage in Lua mode: service NAME start|stop|restart|status|enable|disable (or service -l)' >&2
+		exit 1
+	fi
+	service_name=$1
+	case "$service_name" in local_unbound|local-unbound|unbound) service_name=dns ;; esac
+	case "$2" in
+	start|stop|restart|status|enable|disable) exec /usr/sbin/halfsvc "$2" "$service_name" ;;
+	*) echo 'service: unsupported Lua action; use halfsvc --help' >&2; exit 1 ;;
+	esac
+	;;
+rc) ;;
+*) echo 'service: invalid active startup ownership' >&2; exit 1 ;;
+esac
+
 . /etc/rc.subr
 load_rc_config
 

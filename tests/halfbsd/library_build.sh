@@ -45,4 +45,15 @@ for context in world bootstrap; do
         *) echo 'Interpreter lost its native/Lua archive dependencies' >&2; exit 1 ;;
     esac
 done
+for arch in amd64 i386; do
+    case "$(query usr.sbin/halfconsole LDADD MACHINE_ARCH="$arch")" in
+        *-lhalfbsd*-lhalfproc*-llua_pie*) ;;
+        *) echo 'Console helper lost native or Lua PIE archive linkage' >&2; exit 1 ;;
+    esac
+    [ "$(query usr.sbin/halfconsole CSTD MACHINE_ARCH="$arch")" = c17 ]
+    case " $(query usr.sbin/halfconsole CFLAGS MACHINE_ARCH="$arch") " in
+        *' -fPIE '*) ;;
+        *) echo 'Console helper lost PIE compilation' >&2; exit 1 ;;
+    esac
+done
 printf '%s\n' 'PASS: inherited ABI version cannot enable shared foundation libraries; Lua archive linkage preserved'

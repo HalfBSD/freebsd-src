@@ -53,8 +53,20 @@ end
 function M.load(path,system_path,owner,checkpoint)
     local config=path and M.read(path,owner) or {services=M.read(system_path,owner),target='minimal'}
     local allowed={services=true,target=true,include=true,service_dirs=true,runtime_dir=true,state_file=true,shutdown_timeout=true,
-        max_parallel=true,log_file=true,boot=true}
+        max_parallel=true,log_file=true,boot=true,console=true,profile=true}
     for k in pairs(config)do assert(allowed[k],'unknown configuration field: '..tostring(k))end
+    config.console=require('console').validate(config.console)
+    local profile=config.profile;if profile==nil then profile='workstation'end
+    assert(profile=='workstation'or profile=='network'or profile=='maintenance','unknown startup profile')
+    if not checkpoint and profile=='network'then checkpoint=true end
+    if not checkpoint and profile=='maintenance'then
+        assert(type(config.boot)=='table'and(config.boot.mode==nil or config.boot.mode=='system'),'maintenance requires system boot policy')
+        config.boot.interfaces={'lo0'} -- No hardware/network requirement for an offline profile.
+        config.boot.dns=false;config.boot.sshd=false;config.boot.ntpd=false
+        config.boot.desktop=nil;config.boot.syslogd=false
+        config.services={};config.include={};config.service_dirs={}
+        config.target='maintenance'
+    end
     if config.boot and config.boot.seatd~=nil then
         assert(type(config.boot.seatd)=='boolean','obsolete boot.seatd must be boolean')
         io.stderr:write('halfinit: boot.seatd is obsolete; seatd is a required workstation service; remove this field\n')
@@ -96,7 +108,8 @@ function M.load(path,system_path,owner,checkpoint)
     if config.max_parallel==nil then config.max_parallel=128 end;assert(type(config.max_parallel)=='number' and config.max_parallel%1==0 and config.max_parallel>=1 and config.max_parallel<=256,'max_parallel must be 1..256')
     if config.shutdown_timeout==nil then config.shutdown_timeout=15 end;assert(type(config.shutdown_timeout)=='number'and config.shutdown_timeout>0 and config.shutdown_timeout<=300,'shutdown timeout must be 0..300 seconds')
     for _,k in ipairs({'runtime_dir','state_file','log_file'})do assert(config[k]==nil or (type(config[k])=='string'and config[k]:sub(1,1)=='/'and not config[k]:find('\0',1,true)),'invalid path '..k)end
-    if checkpoint then config.checkpoint='network'end
+    if checkpoint then config.checkpoint='network'
+    elseif profile=='maintenance'then config.checkpoint='maintenance'end
     return config
 end
 return M

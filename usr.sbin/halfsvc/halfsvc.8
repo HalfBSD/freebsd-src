@@ -35,5 +35,12 @@ it does not shut down the operating system.
 Only one request is accepted per connection. Version 1 requests contain version,
 command and optional service. Responses contain version, ok and data or error.
 No arbitrary expressions, credentials or extra request fields are accepted.
+.Pp
+In Lua boot mode, service NAME start, stop, restart, status, enable or disable
+dispatches here. The names local_unbound, local-unbound and unbound select dns.
+service -l lists registered services. Unsupported RC actions and unknown
+services do not cause an RC fallback. Use this utility directly for reload,
+graph and explicit socket selection. A failed control connection remains an
+error; it never starts a second daemon.
 .Sh SEE ALSO
 .Xr halfinit 8

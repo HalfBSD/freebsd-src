@@ -81,8 +81,11 @@ function M.main(args,module_dir)
         assert(scenarios[opts.scenario or 'success'],'unknown simulation scenario')
     end
     if opts.network_checkpoint then assert(not opts.target or opts.target=='network-checkpoint','network checkpoint target is fixed')end
+    if config.checkpoint then assert(not opts.target or opts.target==config.target,'diagnostic profile target is fixed')end
     config.target=opts.target or config.target;assert(config.registry[config.target],'unknown target')
-    if handoff then assert(config.target=='multiuser'or config.target=='desktop'or config.target=='gateway'or(opts.network_checkpoint and config.target=='network-checkpoint'),'PID 1 boot requires a complete target')end
+    if handoff then assert(config.target=='multiuser'or config.target=='desktop'or config.target=='gateway'or
+        (config.checkpoint=='network'and config.target=='network-checkpoint')or
+        (config.checkpoint=='maintenance'and config.target=='maintenance'),'PID 1 boot requires a complete target')end
     local plan=dependency.plan(config.registry,{[config.target]=true})
     if opts.check or opts.graph or opts.dry or opts.shadow then
         local missing={}
@@ -170,7 +173,7 @@ function M.main(args,module_dir)
         return {persisted=true}
     end
     handlers.reload=function()
-        assert(not config.checkpoint,'network inspection checkpoint does not reload configuration')
+        assert(not config.checkpoint,'diagnostic profiles do not reload configuration; select the next profile and reboot')
         assert(not engine.shutting,'manager is shutting down')
         assert(opts.config,'system graph reload requires an explicit config')
         local candidate=config_module.load(opts.config,module_dir..'/services/system.lua',opts.notify and 0 or nil,opts.network_checkpoint)

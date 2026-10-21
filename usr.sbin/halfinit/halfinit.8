@@ -324,8 +324,23 @@ selected multiuser target are ready, PID 1 starts existing console login session
 while the manager continues supervising. Configured swap is a hard requirement.
 Failure of required network or service startup enters single-user recovery,
 rather than announcing an incomplete multiuser environment.
-The legacy rc.console entry becomes authenticated native login in Lua mode.
-There is no automatic root login or invocation of that shell helper.
+The legacy rc.console terminal entry becomes
+.Xr halfconsole 8
+in Lua mode, without invoking that shell helper.
+Local console policy defaults to root autologin with a three-second account
+selector; set console.autologin=false for authenticated login.
+Other getty sessions and SSH authentication remain unchanged.
+.Pp
+The top-level profile selects workstation (default), network or maintenance.
+Workstation starts the configured multiuser target, including mandatory devd
+and seatd. Network selects DHCP and the inspection graph, omitting downstream
+services. Maintenance selects filesystems, graphics, runtime, loopback, swap
+and firewall without DHCP or network services. Diagnostic profiles discard
+custom service includes and persisted activations and allow only read-only
+control. They apply on a fresh boot, not as live session isolation mechanisms.
+Configuration-selected profiles use normal console login after readiness;
+the loader boot_stage=network remains the dedicated inspection-shell entry.
+Independent PID 1 recovery and explicit RC mode remain available.
 .Pp
 The kernel/PID 1 devfs mount is verified rather than duplicated.
 Temporary directories are prepared with mode 1777 and runtime storage with 0755.

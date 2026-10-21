@@ -119,9 +119,10 @@ main(void)
 	assert(hb_boot_mode("rc") == 0);
 	assert(hb_boot_mode("unknown") == -1 && errno == EINVAL);
 	puts("PASS default Lua, explicit RC recovery and invalid override rejection");
-	assert(hb_boot_stage(NULL) == 2 && hb_boot_stage("") == 2);
+	assert(hb_boot_stage(NULL) == 1 && hb_boot_stage("") == 1);
 	assert(hb_boot_stage("single") == 0 && hb_boot_stage("multiuser") == 1);
+	assert(hb_boot_stage("network") == 2);
 	assert(hb_boot_stage("unknown") == -1 && errno == EINVAL);
-	puts("PASS network checkpoint default and explicit single/multiuser selection");
+	puts("PASS multiuser default and explicit single/network recovery stages");
 	channel(); trace(); children(); return 0;
 }

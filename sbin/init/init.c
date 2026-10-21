@@ -410,7 +410,7 @@ invalid:
 			free(s);
 	}
 
-	hb_boot_trace(_PATH_CONSOLE, "PID 1 diagnostic build 2026-10-20 started; default Lua network inspection stage");
+	hb_boot_trace(_PATH_CONSOLE, "PID 1 diagnostic build 2026-10-20 started; default Lua multiuser stage");
 	hb_boot_trace(_PATH_CONSOLE, selected_mode < 0 ? "invalid boot-mode override; recovery selected" :
 	    (selected_mode == 0 ? "explicit halfbsd.boot_mode=rc override detected" : "Lua selected (no automatic RC fallback)"));
 	hb_boot_trace(_PATH_CONSOLE, "initial devfs setup finished; entering startup state machine");
@@ -1183,6 +1183,9 @@ lua_runcom(void)
 				return (state_func_t)single_user;
 			}
 			if (result == 1 && !lua_single_boot && !lua_network_boot) {
+				char multiuser_ready[] = "multiuser-ready";
+				if (kenv(KENV_SET, HB_BOOT_RESULT, multiuser_ready, sizeof(multiuser_ready)) < 0)
+					warning("cannot publish multiuser result: %m");
 				hb_boot_trace(_PATH_CONSOLE, "Lua multiuser READY; starting console logins");
 				close(fds[0]); runcom_mode = AUTOBOOT; return (state_func_t)read_ttys;
 			}

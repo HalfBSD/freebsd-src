@@ -1,7 +1,7 @@
 -- SPDX-License-Identifier: BSD-2-Clause
 -- Planning is safe: halfinit --config FILE --dry-run
 -- Installed as /etc/halfbsd/system.lua only when no administrator file exists.
--- PID 1 selects Lua by default; halfbsd.boot_mode=rc selects recovery.
+-- PID 1 selects Lua multiuser by default; halfbsd.boot_mode=rc selects recovery.
 -- Never activate this system graph alongside an already running rc system.
 return {
     target='multiuser',

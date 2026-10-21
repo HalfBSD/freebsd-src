@@ -15,7 +15,7 @@
 #define HB_BOOT_FAIL "FAIL\n"
 /* 0 explicit RC recovery, 1 default/explicit Lua, -1 invalid override. */
 int hb_boot_mode(const char *);
-/* 0 single-user, 1 full multiuser, 2 network inspection (default), -1 invalid. */
+/* 0 single-user, 1 full multiuser (default), 2 network inspection, -1 invalid. */
 int hb_boot_stage(const char *);
 void hb_boot_trace(const char *, const char *);
 int hb_boot_pipe(int [2]);

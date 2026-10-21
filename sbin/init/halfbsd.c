@@ -26,9 +26,9 @@ hb_boot_mode(const char *override)
 int
 hb_boot_stage(const char *stage)
 {
-	if (!stage || !*stage || !strcmp(stage, "network")) return 2;
+	if (!stage || !*stage || !strcmp(stage, "multiuser")) return 1;
 	if (!strcmp(stage, "single")) return 0;
-	if (!strcmp(stage, "multiuser")) return 1;
+	if (!strcmp(stage, "network")) return 2;
 	errno = EINVAL; return -1;
 }
 void

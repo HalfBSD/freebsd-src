@@ -1,7 +1,47 @@
 HalfBSD Lua Phase IV — PID 1 boot/shutdown integration
 October 13, 2026 | branch halfbsd2
-STATUS: administrator reports native build/install and intended single-user
-diagnostic boot PASS on Anvil; full multiuser boot/shutdown remain UNVERIFIED.
+STATUS: administrator reports native NETWORK READY on Anvil with DHCP/syslog
+supervised. Default now advances to multiuser; native multiuser/shutdown pending.
+
+FULL MULTIUSER CUTOVER — OCTOBER 20, 2026
+
+Administrator confirmed NETWORK READY and the supervised DHCP/syslog inspection
+shell. SSH refusal at that checkpoint was expected because sshd was excluded.
+Administrator now requests enabling the remaining normal services together to
+avoid repeated rebuild/reboot checkpoints. See HALFBSD-LUA-MULTIUSER-BOOT.md.
+
+PID 1 defaults to stage=multiuser; explicit network/single and RC recovery remain.
+Successful full handoff publishes mutable, NUL-terminated multiuser-ready kernel
+metadata before existing console login startup. No kernel changes or separate
+supervisor were introduced. Full stage uses existing administrator configuration,
+not the network projection: DNS, SSH, NTP and normal runtime administration return.
+The installed example already enables these services and stays max_parallel=1.
+Existing configuration is preserved; explicit disabled services remain disabled.
+System boot policies now default AMDGPU on (explicit false remains honored).
+DNS readiness precedes SSH configuration checks and NTP name resolution.
+Console transitions reopen console descriptors for all boot handoffs, preserving
+visibility after PID 1/login revocation. First-failure summaries remain intact.
+
+Tests extend the full graph checks for graphics/runtime, DNS/SSH/NTP ordering and
+aggregate multiuser readiness. Portable mode-selection checks cover multiuser
+default and explicit diagnostic overrides. New opt-in check-live.lua verifies
+required live service states and local DNS/SSH listeners without mutation.
+It is syntax-checked, not executed, in ordinary isolated regression runs.
+
+Linux results: 14 Phase II, 18 Phase III and 14 Phase IV policy groups PASS;
+singleboot fixtures and strict C17 handoff helper PASS; launcher strict C17 PIE
+object compilation PASS; staged generated build/archive/header/module installation
+checks PASS. These are not native PID 1 or system daemon tests. Native full world/
+kernel/build32, Phase I-IV integration, full multiuser boot, actual SSH login,
+external DNS/DNSSEC, NTP synchronization, console login and shutdown remain pending.
+Clang is unavailable locally. Live check syntax PASS; live execution pending.
+Phase IV test data now uses bsd.test.mk's testsFILES group, so the opt-in live
+check and existing fixture scripts install. Empty-stage and repeated parallel
+installfiles passed with byte-for-byte verification of the live check.
+
+No automatic desktop/compositor/autologin is added. Existing configured desktop
+paths remain optional. Cron/devd, arbitrary rc.conf services and complete RC
+feature parity are outside this multiuser handoff; RC remains installed.
 
 IPFW BASELINE CORRECTION — OCTOBER 20, 2026
 

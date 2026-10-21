@@ -198,7 +198,15 @@ session to change it. Gateway is an explicit service group, without inferred
 packet forwarding or NAT configuration. The current diagnostic boot stage is
 described below.
 .Sh BOOT INTEGRATION
-The current default is the network inspection checkpoint
+The current default is full Lua multiuser startup:
+.Sy halfbsd.boot_stage=multiuser .
+It waits for configured DNS, SSH, NTP and other required services before PID 1
+starts authenticated console logins. The supervisor remains alive.
+The kernel handoff result is
+.Sy halfbsd.boot_result=multiuser-ready .
+Startup remains serial under the installed example configuration.
+.Pp
+The earlier network inspection checkpoint remains explicitly selectable with
 .Sy halfbsd.boot_stage=network .
 It remounts root writable, initializes configured local storage, AMDGPU,
 runtime directories, swap, hostname, library hints, local logging, IPFW and DHCP.
@@ -213,7 +221,7 @@ and halfbsd.boot_result=network-ready.
 An explicit loader override halfbsd.boot_mode=rc still selects recovery.
 The earlier minimal diagnostic remains available with
 .Sy halfbsd.boot_stage=single ;
-the following describes that explicit diagnostic, not the network default.
+the following describes that explicit diagnostic, not the multiuser default.
 PID 1 prints a dated diagnostic-build banner and selected startup path directly
 to the console. The native launcher and Lua print unbuffered progress; PID 1
 prints a waiting message every five seconds while Lua runs.
@@ -263,12 +271,11 @@ Explicit loader
 .Sy halfbsd.boot_mode=rc
 retains traditional RC recovery.
 .Sy halfbsd.boot_stage=multiuser
-selects the full Lua service-manager path described below for a later test.
+selects the default full Lua service-manager path described below.
 A mode/stage change after initialization requires rebooting; no partially
 initialized RC/Lua switching is attempted.
 .Pp
-The following describes the retained FULL MULTIUSER path, not the diagnostic
-default. Lua is the default startup system; no marker file is required.
+The following describes the default FULL MULTIUSER path. Lua is the default startup system; no marker file is required.
 
 The C-based PID 1 retains its login, single-user and kernel reboot responsibilities.
 Initially supported boot layouts require a kernel-mounted ZFS root containing

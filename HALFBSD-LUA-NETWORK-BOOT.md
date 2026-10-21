@@ -1,6 +1,9 @@
 # HalfBSD Lua network inspection checkpoint
 
-The default is now `halfbsd.boot_mode=lua`, `halfbsd.boot_stage=network`.
+**The network checkpoint has reached `NETWORK READY` on Anvil.** The default now
+advances to multiuser; see [HALFBSD-LUA-MULTIUSER-BOOT.md](HALFBSD-LUA-MULTIUSER-BOOT.md).
+Select `halfbsd.boot_mode=lua`, `halfbsd.boot_stage=network` explicitly to repeat
+this earlier checkpoint.
 This extends the successful ZFS/AMDGPU single-user checkpoint without enabling
 full multiuser startup. The first reported native attempt reached the new graph but failed because the
 root remount remained read-only. The adapter now explicitly supplies `rw` with

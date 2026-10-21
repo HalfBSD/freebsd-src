@@ -138,12 +138,10 @@ function M.main(args,module_dir)
     local function emit(item)
         if handoff then
             local line='[halfinit boot] '..item.service..' '..tostring(item.previous)..' -> '..item.state..': '..tostring(item.reason)..'\n'
-            -- PID 1 revokes the console when opening its inspection shell.
-            -- Reopen for each checkpoint transition instead of retaining that fd.
-            if config.checkpoint then
-                local console=native.open('/dev/console','append')
-                if console then console:write(line);console:close()else io.stderr:write(line)end
-            else io.stdout:write(line);io.stdout:flush()end
+            -- PID 1/login revoke console descriptors during shell/login handoff.
+            -- Reopen per transition so supervision stays visible afterward.
+            local console=native.open('/dev/console','append')
+            if console then console:write(line);console:close()else io.stderr:write(line)end
         end
         local r=engine.records[item.service];local result=r.result
         if handoff then handoff:observe(item,r)end

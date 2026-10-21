@@ -139,7 +139,7 @@ function M.compile(policy,os)
         add({name='zfs',type='oneshot',command={'/sbin/zfs','mount','-a'},requires={'localfs'},guard='root_guard',start_timeout=120})
     else target('zfs',{'localfs'})end
     local platform='zfs'
-    if boolean(policy.amdgpu,false)then
+    if boolean(policy.amdgpu,true)then
         add({name='amdgpu-load',type='oneshot',command={'/sbin/kldload','-n','-v','amdgpu'},
             requires={'zfs'},guard='root_guard',stdout='/dev/console',stderr='/dev/console',start_timeout=120})
         add({name='amdgpu-module',type='oneshot',command={'/sbin/kldstat','-n','amdgpu.ko'},
@@ -278,6 +278,13 @@ function M.compile(policy,os)
         add({name='ntp-state',type='oneshot',action='directories',guard='root_guard',requires={'runtime'},parameters={directories={{path='/var/db/ntp',mode=493}}}})
         add({name='ntpd',type='daemon',command={'/usr/sbin/ntpd','-n','-c','/etc/ntp.conf','-p','/var/run/ntpd.pid'},requires={'network','firewall','ntp-state','ldconfig'},
             guard='exclusive_guard',restart='on-failure',parameters={processes={'ntpd'}}});essentials[#essentials+1]='ntpd'
+    end
+    -- NTP pool names and SSH configuration may need the local resolver. Keep
+    -- those consumers behind DNS readiness when the resolver is configured.
+    if dns then
+        for _,d in ipairs(services)do
+            if d.name=='ssh-check'or d.name=='ntpd'then d.requires[#d.requires+1]='dns' end
+        end
     end
     if logs then
         for _,d in ipairs(services)do

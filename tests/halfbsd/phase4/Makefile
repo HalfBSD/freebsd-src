@@ -7,7 +7,6 @@ SRCS.handoff_test= handoff_test.c halfbsd.c
 CFLAGS.handoff_test+= -I${SRCTOP}/sbin/init
 BINDIR= ${TESTSDIR}
 MAN=
-FILES= singleboot.lua policy.lua run.sh vm-cycles.sh vm-ready.lua
-FILESDIR= ${TESTSDIR}
+testsFILES+= singleboot.lua policy.lua run.sh vm-cycles.sh vm-ready.lua check-live.lua
 WARNS= 6
 .include <bsd.test.mk>

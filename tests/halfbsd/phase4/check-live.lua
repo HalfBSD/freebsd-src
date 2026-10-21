@@ -9,7 +9,7 @@ local function checked(value,err)
 end
 local rows=checked(require('client').exchange('/var/run/halfbsd/control.sock',{version=1,command='status'}))
 local states={};for _,row in ipairs(rows)do states[row.name]=row.state end
-for _,name in ipairs({'rootfs','zfs','graphics','runtime','loopback','firewall','network','dns','sshd','ntpd','syslogd','multiuser'})do
+for _,name in ipairs({'rootfs','zfs','graphics','runtime','loopback','firewall','network','dns','sshd','ntpd','syslogd','seatd','multiuser'})do
     assert(states[name]=='READY',name..' is '..tostring(states[name])..', expected READY')
     print('PASS live '..name..' READY')
 end
@@ -30,4 +30,5 @@ local function probe(name,fn,parameters)
 end
 probe('DNS localhost UDP answer and TCP listener',providers.dns_ready,{port=53})
 probe('SSH TCP listener',providers.tcp_ready,{port=22})
+probe('seatd socket permissions and connection',providers.seat_ready,{path='/var/run/seatd.sock'})
 print('PASS live multiuser status/listener checks; external DNS, DNSSEC, SSH login, NTP synchronization and shutdown need separate checks')

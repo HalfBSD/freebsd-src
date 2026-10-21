@@ -1,0 +1,13 @@
+prefix=/usr
+exec_prefix=${prefix}
+libdir=@LIBDIR@
+includedir=@INCLUDEDIR@
+have_seatd=true
+have_logind=false
+have_builtin=false
+
+Name: libseat
+Description: HalfBSD seat management client library
+Version: 0.9.3
+Libs: -L${libdir} -lseat
+Cflags: -I${includedir}

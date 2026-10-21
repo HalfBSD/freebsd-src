@@ -41,6 +41,38 @@ test('system graph is declarative and preserves compiled DNS configuration',func
     assert(position(p,'firewall')<position(p,'dhcp-em0')and position(p,'dns-anchor')<position(p,'dns'))
     assert(not r.gateway.enabled and not r.desktop)
 end)
+test('workstation always requires base seatd; legacy generated setting migrates without editing config',function()
+    local f,n=fixture();local r=registry({},n);local plan=dependency.plan(r,{multiuser=true})
+    assert(plan.selected.seatd and r.seatd.command[1]=='/usr/sbin/seatd')
+    assert(r.seatd.condition=='seat_ready'and r.seatd.command[5]=='video')
+    assert(r.seatd.env.SEATD_VTBOUND=='1')
+    assert(position(plan,'seatd')<position(plan,'multiuser'))
+    rejects(function()registry({seatd=false},n)end)
+    local path=os.tmpname();local text='return {boot={seatd=false,interfaces={"em0"}},target="multiuser"}'
+    local file=assert(io.open(path,'w'));file:write(text);file:close()
+    local previous=package.loaded['halfbsd.os'];package.loaded['halfbsd.os']=n
+    local ok,problem=pcall(function()
+        local c=config.load(path);assert(c.boot.seatd==nil and c.registry.seatd)
+        assert(dependency.plan(c.registry,{multiuser=true}).selected.seatd)
+        local read=assert(io.open(path));assert(read:read('*a')==text);read:close()
+    end)
+    package.loaded['halfbsd.os']=previous;assert(os.remove(path));assert(ok,problem)
+end)
+test('seatd readiness enforces root/video socket permissions before connection',function()
+    local f,n,p,ipc=fixture();local st={type='socket',uid=0,gid=44,mode=0x1f8};local probes=0
+    n.group=function(name)assert(name=='video');return {gid=44}end
+    n.stat=function()return st end
+    ipc.probe=function()probes=probes+1;return true end
+    assert(p.seat_ready({path='/var/run/seatd.sock'}));assert(probes==1)
+    for _,change in ipairs({{uid=1001},{gid=0},{mode=0x1ff},{type='file'}})do
+        local old={};for key,value in pairs(change)do old[key]=st[key];st[key]=value end
+        assert(not p.seat_ready({path='/var/run/seatd.sock'}))
+        for key,value in pairs(old)do st[key]=value end
+    end
+    assert(probes==1)
+    assert(p.seat_ready({path='/var/run/seatd.sock'}));assert(probes==2)
+    n.stat=function()return nil,{name='ENOENT'}end;assert(not p.seat_ready({path='/var/run/seatd.sock'}))
+end)
 test('root remount explicitly overrides read-only options and verifies kernel readback',function()
     local f,n,p=fixture();f.rows[1].readonly=true
     local calls=0

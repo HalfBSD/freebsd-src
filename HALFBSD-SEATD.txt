@@ -1,0 +1,173 @@
+HalfBSD base seatd / libseat integration
+2026-10-21 | halfbsd2
+STATUS: source/build/Lua integration implemented; Linux and staged checks PASS.
+Native FreeBSD buildworld/build32, ATF and workstation/device validation PENDING.
+
+PURPOSE AND PROVENANCE
+
+Seat management is a standard workstation responsibility. Normal Lua multiuser
+boot now requires seatd just as it requires the other configured core services.
+It no longer needs a ports daemon or a seatd=true switch.
+
+contrib/seatd contains the unchanged upstream 0.9.3 release tree, MIT licensed.
+Canonical upstream: https://git.sr.ht/~kennylevinsen/seatd
+Fetched upstream mirror: https://github.com/kennylevinsen/seatd.git
+Annotated tag object: 24dd75b462660e2244a023d637a6c753049e0d9d
+Release commit: daa8196e10b180b8b0caeafa8e5f860eb1bd6706
+The fetched tag/commit were recorded; no cryptographic signature verification
+is claimed. Every tracked upstream file was compared byte-for-byte after import.
+FREEBSD-upgrade is the sole added provenance file inside the imported directory.
+No external Lua, Meson, Ninja, scdoc, systemd, elogind or libdrm build dependency
+was introduced. The daemon and selected library backend need libc only.
+
+BUILD AND INSTALLATION
+
+usr.sbin/seatd: native BSD make daemon build, installed /usr/sbin/seatd, seatd(8).
+lib/libseat: native BSD make client library, installed:
+  /usr/lib/libseat.so.1 and normal linker symlink
+  /usr/lib/libseat.a (PIC objects for PIE/static consumers)
+  /usr/include/libseat.h
+  /usr/libdata/pkgconfig/libseat.pc
+Compatibility libraries use their own LIBDIR/LIBDATADIR (e.g. /usr/lib32 and
+/usr/lib32/pkgconfig). This separation was checked in generated make settings;
+it is not a completed native build32.
+
+lib/Makefile and usr.sbin/Makefile include the components unconditionally.
+BSD public/source library-name tables register seat. The upstream public ABI
+SONAME is fixed at libseat.so.1 even under an inherited SHLIB_MAJOR=5.
+The upstream export map is used. The seatd backend is built; logind and embedded
+privileged-server backends are not linked. No new build options were added.
+seatd-launch is not installed: the supervisor owns the privileged daemon, so
+there is no new setuid launcher. Upstream source for it remains in the import.
+
+The daemon and libseat use /var/run/seatd.sock. Build settings, metadata and
+provenance must all be updated together when importing a new release. BSD rules
+and HalfBSD documentation remain outside upstream source files.
+
+LUA GRAPH AND OWNERSHIP
+
+Normal system policy registers:
+  /usr/sbin/seatd -u root -g video -l info
+with SEATD_VTBOUND=1, foreground supervision, restart-on-failure and runtime /
+library-hint dependencies. Multiuser requires it; desktop transitively requires
+it. No compositor, autologin or root desktop is automatically added.
+
+Readiness requires a root:video socket mode 0770 and a successful local socket
+connection. It waits through upstream's transient bind -> chmod/chown startup
+sequence, never declaring READY for wrong permissions. Persistent mismatches
+hit the normal startup deadline. Exclusive-process guards prevent launching a
+second seatd over a running instance. Existing supervisor shutdown owns cleanup.
+Network-checkpoint and earlier diagnostic targets still omit seatd. A missing
+base daemon or missing video group fails normal workstation startup rather than
+silently changing it into a headless profile.
+
+boot.seatd is removed from the graph schema and installed examples. To preserve
+existing administrator configuration during upgrade, config.load consumes an
+old boolean field in memory and warns that it is obsolete. It never rewrites
+the administrator file, and false can no longer suppress required seatd. Remove
+that obsolete field manually when convenient. Direct graph definitions reject
+the old switch. No alternative implementation or build profile is introduced.
+
+PORTS / CLIENT MIGRATION
+
+Do not automatically delete package-managed files or change user memberships
+in installworld. A safe migration on Anvil is:
+1. Inventory the old package and its consumers before changing anything:
+     pkg info -l seatd
+     pkg info -r seatd
+   Review /usr/local/etc/rc.d/seatd and any rc.conf entries. Lua mode does not
+   invoke that script. Do not start the package daemon alongside the base one.
+2. Build/install the new world using the usual procedure. No kernel source was
+   changed by this import. Check /usr/sbin/seatd -v and the installed .pc/header.
+3. Remove the obsolete ports seatd package only after reviewing its recorded
+   reverse dependencies. A forced package deletion, if chosen by the admin,
+   removes package ownership without deleting dependent compositor packages;
+   it leaves their package dependency metadata unsatisfied. This task does not
+   silently force that operation or claim to fix the external package database.
+   The HalfBSD ports/package policy must stop requiring the ports seatd package
+   when the base implementation satisfies it; that separate tree is not here.
+4. Verify the actual compositor/library resolution, not merely daemon startup:
+     ldd /usr/local/bin/sway
+     ldd /usr/local/bin/niri
+     env PKG_CONFIG_LIBDIR=/usr/libdata/pkgconfig:/usr/local/libdata/pkgconfig \
+         pkgconf --path libseat
+   Use only installed compositor paths. Packages using the same upstream ABI 1
+   should be compatible, but verify each client. An explicit /usr/local RPATH,
+   stale hints, old library or package metadata can still select ports files.
+   Rebuild/relink affected clients against /usr/include and /usr/lib as needed;
+   do not create duplicate libraries or libmap compatibility machinery here.
+5. Ensure the intended desktop user belongs to video. Review `id charlie` and
+   `pw groupshow video`; make any membership change explicitly without dropping
+   the user's other groups. Log out/in for updated supplementary groups.
+   video membership grants graphics/input privileges; no world-writable socket.
+
+Keep RC recovery available. It remains an explicit older orchestration path;
+this change does not install another RC seatd startup implementation. If testing
+seatd under RC, use only one owner/daemon and the installed base executable;
+never assume a removed ports rc script still works. halfsvc is the runtime
+interface for Lua-owned seatd; the proposed service frontend is still future work.
+
+VERIFICATION PERFORMED
+
+On Linux, as an ordinary user, tests/halfbsd/seatd/run.sh:
+- upstream linked-list, connection and poller unit tests PASS;
+- full imported daemon and library strict C17 (-Wall -Wextra -Wpedantic -Werror)
+  compilation and complete PIE/shared links with -z text PASS;
+- actual PIC static archive linked into a PIE client PASS;
+- real private-socket daemon/libseat protocol and enable callbacks PASS;
+- 20 repeated open/close cycles for both shared and static clients PASS;
+- non-device /etc/passwd request rejected, no device opened PASS;
+- daemon SIGTERM, process reaping and socket removal PASS.
+The socket path is private and SEATD_VTBOUND=0 disables VT acquisition ONLY in
+the fixtures. No running system service or active device was touched. Sandbox
+socket restrictions required running that private test outside the sandbox.
+
+BSD-make staging tests/halfbsd/seatd/build.sh:
+- SYSROOT/inherited ABI settings, backend source resolution and PIE flags PASS;
+- fixed .so.1, static/shared targets and PIC archive compiler flags PASS;
+- 32-bit metadata directory setting PASS (not full compilation);
+- empty-stage/repeated parallel API and pkg-config installs PASS.
+The actual BSD make all targets were also built on Linux with explicit host
+CFLAGS (not a FreeBSD sysroot), producing daemon, shared library and PIC archive.
+Fresh/repeated parallel realinstall of these artifacts plus header/metadata
+passed in a private standard-layout stage. GNU install adaptations disabled
+strip/compare/safe-copy options and used ln for the relative symlink. Static
+archive bytes and installed daemon version were checked. This exercises the BSD
+recipes; it does not establish native FreeBSD build/install semantics.
+Existing Lua staging/header/library checks PASS. Phase II 14, Phase III 20 and
+Phase IV 14 portable policy groups, singleboot and strict C handoff tests PASS.
+Source comparison confirms all imported upstream tracked files unchanged.
+Clang is unavailable locally. None of these results proves the FreeBSD device
+ABI, native world build, compositor behavior or real terminal switching.
+
+NATIVE ACCEPTANCE TO RUN
+
+From a normal user:
+  sh /usr/src/tests/halfbsd/seatd/run.sh
+  sh /usr/src/tests/halfbsd/phase4/run.sh
+The ATF seatd private case is installed under /usr/tests/halfbsd/seatd and also
+requires the source tree (configurable halfbsd_source, default /usr/src).
+Run buildworld/buildkernel as appropriate for the target and record the actual
+results; this Linux workspace cannot supply native world/kernel or ATF results.
+
+After installing world and rebooting into Lua multiuser:
+  /usr/sbin/seatd -v
+  halfsvc status seatd
+  ls -l /var/run/seatd.sock
+  id charlie
+  /usr/bin/lua -E /usr/src/tests/halfbsd/phase4/check-live.lua
+Expect seatd READY and root:video mode 0770 before multiuser readiness.
+Then test Sway/Niri as the non-root user, input/graphics access, VT switching,
+multiple sessions, disconnect/reconnect, controlled seatd restart, and orderly
+reboot/poweroff. A READY socket alone is not desktop acceptance. Do not restart
+seatd casually underneath a valuable active desktop session during these tests.
+
+TOOLS / LIMITS
+
+No packages were installed or downloaded into /tmp. The fetched material was
+seatd's upstream source. In-tree bmake and Lua were built temporarily under
+/tmp/halfbsd-seatd-tools because neither command was installed on this host.
+Console autologin, a service-command frontend, boot-profile redesign and package
+repository dependency policy remain separate work. SSH login and ordinary DNS
+name resolution on the prior Lua multiuser build were reported by the admin;
+DNSSEC, failover, clock synchronization and shutdown acceptance remain separate.

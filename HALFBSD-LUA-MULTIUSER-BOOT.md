@@ -8,12 +8,25 @@ startup handoff; application-level checks and managed shutdown remain pending.
 Requested workstation follow-up is in
 [HALFBSD-LUA-NEXT-STEPS.md](HALFBSD-LUA-NEXT-STEPS.md).
 
+## Base seat management update (October 21)
+
+Seatd/libseat are now included in world and seatd is required by normal multiuser
+startup. See [HALFBSD-SEATD.txt](HALFBSD-SEATD.txt) before upgrading: it covers the
+ports package, ABI/library lookup and `video` membership. The old `seatd` boolean
+is no longer a startup switch; existing generated values are consumed in memory
+with a warning. No administrator file is overwritten. A compositor is still not
+automatically launched, and console autologin remains follow-up work.
+
+The administrator also confirmed SSH authentication and hostname resolution with
+a remote login and git pull on the prior build. Seatd's native device/desktop
+checks and managed shutdown remain pending.
+
 ## What changes
 
 With no loader override, PID 1 now selects Lua `multiuser`. It reuses the existing
 dependency graph and supervisor, keeping the example's `max_parallel=1`. Startup
 includes writable storage, ZFS, AMDGPU, runtime directories, swap, hostname,
-loopback, IPFW, DHCP, library hints, syslog, Unbound, SSH and NTP. NTP and SSH
+loopback, IPFW, DHCP, library hints, syslog, Unbound, SSH, NTP and seatd. NTP and SSH
 configuration verification wait for DNS readiness when DNS is configured.
 AMDGPU defaults on for system boot policies; an explicit `amdgpu=false` remains
 respected. Existing administrator files and service enable/disable settings are

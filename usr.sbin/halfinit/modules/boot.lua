@@ -23,7 +23,7 @@ local function dense(value)
     assert(count==#value and count<=128,'array too large or sparse');return value
 end
 function M.compile(policy,os)
-    fields(policy,{mode=true,interfaces=true,local_mounts=true,zfs=true,firewall=true,dns=true,sshd=true,ntpd=true,seatd=true,
+    fields(policy,{mode=true,interfaces=true,local_mounts=true,zfs=true,firewall=true,dns=true,sshd=true,ntpd=true,
         desktop=true,root_writable=true,swap=true,device_rules=true,hostname=true,syslogd=true,amdgpu=true})
     os=os or require('halfbsd.os')
     local services={}
@@ -83,13 +83,13 @@ function M.compile(policy,os)
     local mode=firewall.mode or'workstation';assert(mode=='workstation'or mode=='closed'or mode=='open','unknown firewall mode')
     local ipv6=boolean(firewall.ipv6,true)
     local logs=boolean(policy.syslogd,true)
-    local dns=boolean(policy.dns,true);local ssh=boolean(policy.sshd,true);local ntp=boolean(policy.ntpd,true);local seat=boolean(policy.seatd,false)
+    local dns=boolean(policy.dns,true);local ssh=boolean(policy.sshd,true);local ntp=boolean(policy.ntpd,true)
     local processes={'halfinit','dhclient'}
     if logs then processes[#processes+1]='syslogd' end
     if dns then processes[#processes+1]='local-unbound';processes[#processes+1]='unbound'end
     if ssh then processes[#processes+1]='sshd'end
     if ntp then processes[#processes+1]='ntpd'end
-    if seat then processes[#processes+1]='seatd'end
+    processes[#processes+1]='seatd'
     add({name='boot-preflight',type='virtual',condition='root_ready',guard='exclusive_guard',parameters={processes=processes}})
     local rules=dense(policy.device_rules or{})
     for _,rule in ipairs(rules)do
@@ -291,12 +291,15 @@ function M.compile(policy,os)
             if d.name=='dns'or d.name=='sshd'or d.name=='ntpd'then d.requires[#d.requires+1]='syslogd' end
         end
     end
-    if seat then add({name='seatd',type='daemon',command={'/usr/local/bin/seatd'},requires={'runtime'},guard='exclusive_guard',restart='on-failure',
-        readiness='condition',condition='socket_ready',parameters={path='/var/run/seatd.sock',processes={'seatd'}}})end
+    add({name='seatd',type='daemon',command={'/usr/sbin/seatd','-u','root','-g','video','-l','info'},
+        requires={'runtime','ldconfig'},guard='exclusive_guard',restart='on-failure',
+        readiness='condition',condition='seat_ready',parameters={path='/var/run/seatd.sock',processes={'seatd'}},
+        env={SEATD_VTBOUND='1'},stderr='/dev/console'})
+    essentials[#essentials+1]='seatd'
     for _,n in ipairs(swaps)do essentials[#essentials+1]=n;networking[#networking+1]=n end
     target('network-checkpoint',networking);target('minimal',{'runtime'});target('multiuser',essentials);target('gateway',{'multiuser'})
     if policy.desktop then
-        fields(policy.desktop,{socket=true,user=true});assert(seat,'desktop system target requires seatd=true')
+        fields(policy.desktop,{socket=true,user=true})
         local user=assert(os.user(assert(policy.desktop.user,'desktop user required')));assert(user.uid~=0,'root desktop forbidden')
         add({name='session',type='virtual',condition='external_desktop_ready',requires={'seatd'},parameters={socket=path(policy.desktop.socket),uid=user.uid},start_timeout=120})
         target('desktop',{'multiuser','session'})

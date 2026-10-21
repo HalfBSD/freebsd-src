@@ -167,6 +167,7 @@ _LIBRARIES=	\
 		rtld_db \
 		sbuf \
 		sdp \
+		seat \
 		spl \
 		ssl \
 		ssp_nonshared \

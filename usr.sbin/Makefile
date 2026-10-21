@@ -55,6 +55,7 @@ SUBDIR=	adduser \
 	quot \
 	rtprio \
 	service \
+	seatd \
 	services_mkdb \
 	sesutil \
 	setfib \

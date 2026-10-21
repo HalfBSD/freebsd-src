@@ -1,0 +1,70 @@
+." SPDX-License-Identifier: BSD-2-Clause
+.Dd October 21, 2026
+.Dt SEATD 8
+.Os
+.Sh NAME
+.Nm seatd
+.Nd mediate access to workstation graphics and input devices
+.Sh SYNOPSIS
+.Nm
+.Op Fl h
+.Op Fl v
+.Op Fl n Ar fd
+.Op Fl u Ar user
+.Op Fl g Ar group
+.Op Fl l Ar level
+.Sh DESCRIPTION
+.Nm
+is the upstream seat management daemon, built into HalfBSD.
+It runs in the foreground and grants connected libseat clients controlled
+access to graphics, input devices and virtual terminals.
+The Lua workstation graph supervises it as a required service.
+Clients must have permission to connect to
+.Pa /var/run/seatd.sock .
+HalfBSD starts the daemon with root ownership and group
+.Ql video ;
+add workstation users to that group explicitly and establish a new login session
+for supplementary group changes to take effect.
+.Pp
+The flags are:
+.Bl -tag -width indent
+.It Fl h
+Print usage.
+.It Fl v
+Print the upstream version.
+.It Fl n Ar fd
+Write a newline to the supplied descriptor and close it when ready.
+.It Fl u Ar user
+Set the socket owner.
+.It Fl g Ar group
+Set the socket group.
+.It Fl l Ar level
+Set logging to debug, info, error or silent.
+.El
+.Sh ENVIRONMENT
+.Bl -tag -width LIBSEAT_BACKEND
+.It Ev LIBSEAT_BACKEND
+Clients may explicitly select
+.Ql seatd .
+.It Ev SEATD_SOCK
+Override the socket path for libseat clients.
+.It Ev SEATD_VTBOUND
+Set to 0 only for isolated tests that must not acquire a virtual terminal.
+Do not disable terminal binding for ordinary desktop operation.
+.El
+.Sh FILES
+.Bl -tag -width /var/run/seatd.sock
+.It Pa /var/run/seatd.sock
+Local seat management socket.
+.It Pa /usr/include/libseat.h
+Client API declarations and contracts.
+.El
+.Sh SEE ALSO
+.Xr halfinit 8 ,
+.Xr halfsvc 8
+.Sh SECURITY
+Socket access permits privileged graphics/input operations.
+Do not grant access to all users or make the socket world writable.
+Do not run a second daemon over the same socket or launch a compositor as root.
+.Sh HISTORY
+HalfBSD imports seatd and libseat 0.9.3 from the upstream MIT-licensed project.

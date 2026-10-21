@@ -62,6 +62,16 @@ function M.attach(providers,os,ipc)
         end
         return true
     end
+    providers.seat_ready=function(p)
+        local st,err=os.stat(p.path)
+        if not st then assert(err.name=='ENOENT',err);return false end
+        local video=assert(os.group('video'),'required video group is missing')
+        -- bind/listen precedes chmod/chown in upstream startup. Keep waiting
+        -- through that transient state; never report ready before ownership
+        -- and permissions are final. A persistent mismatch hits the deadline.
+        if st.type~='socket'or st.uid~=0 or st.gid~=video.gid or st.mode~=0x1f8 then return false end
+        local ok,problem=ipc.probe(p.path);if ok==nil then error(problem)end;return ok
+    end
     providers.drm_ready=function()
         local exists,err=os.exists('/dev/dri');assert(exists~=nil,err)
         if not exists then return false end

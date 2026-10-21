@@ -1,0 +1,20 @@
+HalfBSD imports seatd 0.9.3 without modifying the upstream sources.
+
+Canonical upstream: https://git.sr.ht/~kennylevinsen/seatd
+Fetched mirror: https://github.com/kennylevinsen/seatd.git
+Release tag: 0.9.3
+Tag object: 24dd75b462660e2244a023d637a6c753049e0d9d
+Commit: daa8196e10b180b8b0caeafa8e5f860eb1bd6706
+Import date: 2026-10-21
+License: MIT (see LICENSE)
+
+BSD build integration lives in lib/libseat and usr.sbin/seatd.
+HalfBSD does not require Meson, Ninja, scdoc or a ports package for buildworld.
+The installed libseat uses the upstream seatd backend, not logind or an embedded
+privileged server. The upstream tree is preserved to keep future imports simple.
+Tests and integration notes: tests/halfbsd/seatd and HALFBSD-SEATD.txt.
+
+For updates, replace the tracked upstream files with the selected release tree,
+retain this provenance file, update version definitions/metadata, compare the
+Meson source lists and flags, rerun strict/native/ABI/install/runtime checks,
+and document any downstream source patches explicitly.

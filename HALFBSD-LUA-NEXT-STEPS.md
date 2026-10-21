@@ -2,18 +2,28 @@
 
 October 20, 2026. Branch `halfbsd2`.
 
+## October 21 update
+
+SSH authentication and ordinary DNS name resolution have now been confirmed by
+the administrator through a remote SSH login and git pull. Base seatd/libseat
+integration is implemented; see [HALFBSD-SEATD.txt](HALFBSD-SEATD.txt). Seatd is
+required by normal multiuser rather than controlled by a seatd=true toggle.
+Private Linux/staged tests pass; native build/device/desktop acceptance is pending.
+The seatd section below records the original requested work; its graph gap is
+now fixed. Console autologin, service frontend evaluation and profile work remain.
+
 ## Native milestone
 
 The administrator reports **“Lua multiuser READY” on Anvil**, after the earlier
 successful network checkpoint. The console then displayed a login prompt. This
 is native startup-handoff acceptance for the full multiuser change, not merely
-portable policy-test success. Actual SSH login, external DNS and DNSSEC behavior,
-NTP synchronization, desktop operation and managed shutdown/repeated boot results
-have not yet been reported. Retain the earlier test limitations in the Phase IV
+portable policy-test success. SSH login and ordinary hostname resolution have since been reported successful.
+DNSSEC behavior, NTP synchronization, desktop operation and managed shutdown/
+repeated boot results have not yet been reported. Retain the earlier test limitations in the Phase IV
 handoff; the banner alone does not complete every acceptance criterion.
 
-This file records requested next work. None of the proposed changes below is
-implemented by this documentation update.
+This file retains the requested work and its current status. The October 21
+seatd implementation supersedes the original optional-service proposal.
 
 ## 1. Restore the intended console experience
 
@@ -47,24 +57,21 @@ missing/invalid accounts, group setup, logout/relogin, terminal ownership and
 recovery. Never turn an invalid account into unexpected root access; document
 its failure behavior. Multiple terminals and SSH sessions must still coexist.
 
-## 2. Make seatd part of the real workstation graph
+## 2. Base seatd integration (implemented; native tests pending)
 
-The native boot graph already has a foreground `seatd` definition with Unix
-socket readiness and supervision. It is disabled in the installed example.
-There is also a graph gap: setting `seatd=true` creates the service, but the
-current `multiuser` target does not itself require or want it. Desktop policy
-pulls it in through the session dependency; ordinary multiuser does not.
+Seatd/libseat 0.9.3 is imported under `contrib/seatd`, with native BSD build rules
+and installation into the base system. The Lua workstation graph now requires
+`/usr/sbin/seatd`; there is no startup toggle to set. It waits for a root:video
+mode-0770 socket and a successful connection. The former missing target edge
+is fixed. Legacy boolean fields in existing configurations are normalized in
+memory with a warning, without changing administrator files.
 
-Next implementation should enable seatd for the workstation policy and add the
-appropriate target dependency so it actually starts. Preserve explicit
-administrator policy, including installations without the seatd executable.
-Define whether missing/failed seatd prevents desktop readiness or is optional
-for text-console operation. Verify the installed seatd command-line options,
-socket permissions and user/group access on Anvil; do not infer those from a
-successful process spawn. Keep a compositor inside a non-root user session.
-
-Test startup, socket readiness, user access, restart, dependency propagation and
-shutdown through halfinit. Do not start a duplicate seatd through an RC script.
+Before native acceptance, complete the ports-package/library migration review,
+verify the user's `video` membership, and test input/graphics access, virtual
+terminal switching, restart and shutdown on Anvil. The full report and commands
+are in [HALFBSD-SEATD.txt](HALFBSD-SEATD.txt). Private Linux tests do not prove
+native device behavior. A compositor still belongs in a non-root user session.
+Do not start another seatd through an RC script.
 
 ## 3. Provide one coherent service-control interface
 
@@ -72,10 +79,10 @@ shutdown through halfinit. Do not start a duplicate seatd through an RC script.
 through the manager's authenticated Unix socket. It should remain the control
 engine for Lua-owned services; there is no need for another supervisor.
 
-The reported `service seatd start` failure is consistent with an RC-oriented
-control path and an unregistered/inactive Lua seatd configuration. It is not
-proof that seatd cannot work under Lua. First register and activate it in the
-real graph, then support normal `halfsvc start seatd` / `halfsvc status seatd`.
+The earlier `service seatd start` failure was consistent with the RC-oriented
+control path and the then-inactive Lua definition. Seatd is now registered and
+required in the real graph; use `halfsvc status seatd` and the existing halfsvc
+lifecycle commands. A new `service` frontend has not yet been implemented.
 
 For administrator familiarity, evaluate whether `service` should become a thin
 mode-aware frontend to halfsvc when Lua owns startup, with RC behavior retained
@@ -139,8 +146,8 @@ selection.
 
 ## Suggested next implementation batch
 
-Implement configurable console autologin and seatd graph integration together,
-then test both during one workstation boot. Use halfsvc for runtime control;
+Implement configurable console autologin next, and validate it together with
+the newly integrated base seatd during one workstation boot. Use halfsvc for runtime control;
 assess the thin `service` frontend in the same review. Preserve serial startup
 and first-failure console summaries while bringing up the desktop path.
 

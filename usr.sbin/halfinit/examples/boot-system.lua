@@ -12,5 +12,5 @@ return {
         -- Fresh Lua boot installs rules over the kernel's empty deny baseline.
         -- Existing administrator policy must use ownership='verify'.
         firewall={ownership='load',mode='workstation',ipv6=true},
-        dns=true,sshd=true,ntpd=true,syslogd=true,seatd=false},
+        dns=true,sshd=true,ntpd=true,syslogd=true},
 }

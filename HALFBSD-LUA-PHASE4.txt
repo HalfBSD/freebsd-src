@@ -3,6 +3,26 @@ October 13, 2026 | branch halfbsd2
 STATUS: administrator reports native "Lua multiuser READY" on Anvil.
 Full startup handoff reached; application and shutdown acceptance remain pending.
 
+BASE SEAT MANAGEMENT — OCTOBER 21, 2026
+
+See HALFBSD-SEATD.txt for source provenance, build details, migration and tests.
+Upstream seatd/libseat 0.9.3 is imported unchanged under contrib/seatd. BSD rules
+install /usr/sbin/seatd, ABI-1 libseat shared/static libraries, public header and
+pkg-config metadata. No Meson/Ninja/scdoc/ports runtime dependency was added.
+Normal Lua multiuser requires seatd, with root:video mode-0770 socket readiness,
+exclusive-process ownership, existing supervision/restart/shutdown. Checkpoints
+remain independent. The old generated boot.seatd boolean is normalized in memory
+with a warning, preserving administrator files. It no longer controls startup.
+
+Linux strict builds/PIE/shared/static links, private VT-unbound protocol fixture,
+upstream unit tests, staged API/metadata installation and portable policy tests
+PASS. Native buildworld/build32/ATF and graphics/input/VT/compositor/reboot tests
+remain pending. Ports package/library migration and the intended user's video
+membership require explicit review on Anvil; no package files are auto-deleted.
+Console autologin and the service frontend remain unimplemented follow-up work.
+Administrator separately confirmed real SSH login and hostname resolution using
+git pull on the prior Lua multiuser build. This does not prove DNSSEC/failover.
+
 NATIVE MULTIUSER HANDOFF ACCEPTANCE — OCTOBER 20, 2026
 
 After the full-multiuser change (39d1446f3dee), the administrator reported:

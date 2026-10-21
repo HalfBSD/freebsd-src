@@ -180,6 +180,19 @@ provider hierarchy remain in Unbound. SSH keys are generated idempotently,
 configuration is checked, and readiness probes TCP. NTP runs foreground; its
 process readiness does not claim clock synchronization.
 .Pp
+Seatd is a required base workstation service, started from
+.Pa /usr/sbin/seatd
+with a root:video socket mode 0770 at
+.Pa /var/run/seatd.sock .
+Workstation users need explicit video group membership.
+Multiuser waits for socket ownership, permissions and connection readiness.
+No seatd=true setting is needed. An old boolean boot.seatd setting is normalized
+with a warning without rewriting administrator configuration; it cannot disable
+the required service. Diagnostic network/single targets still omit seatd.
+Use halfsvc to administer the Lua-owned daemon; do not start a duplicate ports
+instance. The base libseat client API, shared/static library and pkg-config
+metadata are installed with world.
+.Pp
 The desktop user policy requires a private XDG runtime directory and current
 foreground login terminal, with terminal TOSTOP disabled for console logging.
 A tracked child receives terminal ownership and

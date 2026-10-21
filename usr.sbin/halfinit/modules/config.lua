@@ -44,8 +44,8 @@ function M.network_checkpoint(config)
     assert(type(config.boot)=='table'and(config.boot.mode==nil or config.boot.mode=='system'),'network checkpoint requires a system boot policy')
     local copy={};for k,v in pairs(config)do copy[k]=v end
     copy.boot={};for k,v in pairs(config.boot)do copy.boot[k]=v end
-    copy.boot.dns=false;copy.boot.sshd=false;copy.boot.ntpd=false;copy.boot.seatd=false;copy.boot.desktop=nil
-    copy.boot.amdgpu=true;copy.boot.syslogd=true;copy.boot.root_writable=true
+    copy.boot.dns=false;copy.boot.sshd=false;copy.boot.ntpd=false;copy.boot.desktop=nil
+    copy.boot.seatd=nil;copy.boot.amdgpu=true;copy.boot.syslogd=true;copy.boot.root_writable=true
     copy.services={};copy.include={};copy.service_dirs={}
     copy.max_parallel=1;copy.target='network-checkpoint'
     return copy
@@ -55,6 +55,11 @@ function M.load(path,system_path,owner,checkpoint)
     local allowed={services=true,target=true,include=true,service_dirs=true,runtime_dir=true,state_file=true,shutdown_timeout=true,
         max_parallel=true,log_file=true,boot=true}
     for k in pairs(config)do assert(allowed[k],'unknown configuration field: '..tostring(k))end
+    if config.boot and config.boot.seatd~=nil then
+        assert(type(config.boot.seatd)=='boolean','obsolete boot.seatd must be boolean')
+        io.stderr:write('halfinit: boot.seatd is obsolete; seatd is a required workstation service; remove this field\n')
+        config.boot.seatd=nil
+    end
     if checkpoint then config=M.network_checkpoint(config)end
     if config.services==nil then config.services={}end
     assert(type(config.services)=='table','services array expected')

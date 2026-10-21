@@ -60,6 +60,7 @@ test('boot graph prepares devices and loopback before exposing services',functio
     assert(wave.dns<wave['ssh-check']and wave.dns<wave.ntpd)
     assert(wave['ssh-keys']<wave['ssh-check']and wave['ssh-check']<wave.sshd)
     assert(wave.sshd<wave.multiuser and wave.ntpd<wave.multiuser)
+    assert(wave.seatd<wave.multiuser and wave.runtime<wave.seatd)
     rejects(function()require('boot').compile({swap={'/tmp/swapfile'}},native)end)
 end)
 test('swap is released once only when activated by this manager',function()

@@ -47,7 +47,8 @@ function M.exchange(socket,request,timeout)
     return response,failure
 end
 function M.main(args)
-    if args[1]=='--help'then io.write('halfsvc [--socket PATH] list|status [SERVICE]|graph|start|stop|restart|enable|disable SERVICE|reload|shutdown\n');return 0 end
+    if args[1]=='shutdown-report'then return require('shutdown_report').show(args)end
+    if args[1]=='--help'then io.write('halfsvc [--socket PATH] list|status [SERVICE]|graph|start|stop|restart|enable|disable SERVICE|reload|shutdown\nhalfsvc shutdown-report (root, reads persistent evidence without manager IPC)\n');return 0 end
     local socket='/var/run/halfbsd/control.sock';local i=1
     if args[i]=='--socket'then socket=assert(args[i+1]);i=i+2 end
     local command=args[i]or'status';local name=args[i+1];assert(args[i+2]==nil,'too many arguments')

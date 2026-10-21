@@ -136,9 +136,10 @@ function M.main(args,module_dir)
     local state_path=opts.state_file or config.state_file or dir..'/enabled.json'
     local enabled={}
     local logger=assert(require('halfbsd.log').new({service='halfinit'}))
-    local engine
+    local engine,shutdown_report
     local bootstrapping=false;local control_ready=false
     local function emit(item)
+        if shutdown_report then shutdown_report:observe(item)end
         if handoff then
             local line='[halfinit boot] '..item.service..' '..tostring(item.previous)..' -> '..item.state..': '..tostring(item.reason)..'\n'
             -- PID 1/login revoke console descriptors during shell/login handoff.
@@ -160,7 +161,8 @@ function M.main(args,module_dir)
             elseif item.state=='FAILED'or item.state=='SKIPPED'then engine:shutdown()end
         end
     end
-    engine=require('supervisor').new(config,{providers=require('providers').native(),emit=emit,system_allowed=opts.activate or false})
+    engine=require('supervisor').new(config,{providers=require('providers').native(),emit=emit,system_allowed=opts.activate or false,
+        on_shutdown=function(e)if shutdown_report then shutdown_report:begin(e)end end})
     for name,value in pairs(enabled)do if engine.records[name]then engine.blocked[name]=not value or nil;engine.enabled[name]=value end end
     local handlers={}
     handlers.persist=function(name,value)
@@ -220,7 +222,7 @@ function M.main(args,module_dir)
                 if sig=='HUP'then
                     if bootstrapping then return end
                     local success,error=pcall(handlers.reload);if not success then logger:write('error','reload rejected',{event='reload',reason=failure(error)})end
-                else engine:shutdown()end
+                else engine:shutdown('signal '..sig)end
             end))
         end
         if opts.run_for then assert(engine.loop:watch_timer(opts.run_for,function()engine:shutdown()end))end
@@ -236,6 +238,7 @@ function M.main(args,module_dir)
         if not stat then assert(err.name=='ENOENT');assert(native.mkdir(dir,uid==0 and 0x1ed or 0x1c0));stat=assert(native.stat(dir))end
         assert(stat.type=='directory'and stat.uid==uid and (stat.mode&0x12)==0,'runtime directory must be owned and not group/world writable')
         lock=assert(ipc.lock(dir..'/manager.lock'))
+        if handoff then shutdown_report=require('shutdown_report').new(native)end
         enabled=config.checkpoint and{}or read_state(state_path,native)
         for name,value in pairs(enabled)do if engine.records[name]then engine.blocked[name]=not value or nil;engine.enabled[name]=value end end
         if config.log_file then
@@ -270,6 +273,7 @@ function M.main(args,module_dir)
         local completed,loop_error=engine.loop:run();if not completed then error(loop_error.message)end
     end,function(e)return failure(e)..'\n'..debug.traceback()end)
     if handoff then handoff:fail()end
+    if shutdown_report and not shutdown_report.started then shutdown_report:begin(engine)end
     if control then control:close()end
     local cleaned,cleanup_error=engine.proc.shutdown(0.1,true)
     if engine.terminal_owner then
@@ -283,11 +287,19 @@ function M.main(args,module_dir)
     engine.loop:close()
     if lock then lock:close()end;logger:close()
     if cleaned and engine.providers.finish then
+        if shutdown_report then shutdown_report:checkpoint(engine,'filesystem_cleanup_pending',false)end
         local done,errors=pcall(engine.providers.finish)
         if done then for name,reason in pairs(errors)do engine.shutdown_failed[name]=reason end
         else engine.shutdown_failed.filesystems=failure(errors)end
     end
     if handoff then
+        if shutdown_report then
+            shutdown_report:checkpoint(engine,'finished',ok and cleaned and actions_ok and next(engine.shutdown_failed)==nil,
+                {loop_ok=ok,children_released=cleaned,actions_ok=actions_ok,
+                loop_error=not ok and failure(problem)or nil,cleanup_error=not cleaned and failure(cleanup_error)or nil,
+                action_error=not actions_ok and failure(actions_error)or nil,
+                first_failure=handoff.first_failure,observer_error=engine.shutdown_report_error})
+        end
         assert(native.sync())
         local record=handoff:summary()..json.encode({event='boot.shutdown',cleaned=ok and cleaned and actions_ok and next(engine.shutdown_failed)==nil})..'\n'
         -- Login revokes old console descriptors; reacquire without owning its tty.

@@ -42,5 +42,13 @@ service -l lists registered services. Unsupported RC actions and unknown
 services do not cause an RC fallback. Use this utility directly for reload,
 graph and explicit socket selection. A failed control connection remains an
 error; it never starts a second daemon.
+.Pp
+The separate command shutdown-report reads persistent local evidence from
+.Pa /var/db/halfbsd
+without connecting to the manager. Run it as root after reboot. It compares
+the previous recorded Lua supervisor identity with Lua cleanup and PID 1 exit
+snapshots, prints a short summary, and exits zero only for matching clean
+cleanup and normal supervisor exit. Missing or incomplete evidence exits
+nonzero. It does not request shutdown or modify service state.
 .Sh SEE ALSO
 .Xr halfinit 8

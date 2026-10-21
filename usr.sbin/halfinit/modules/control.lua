@@ -21,7 +21,7 @@ function M.request(request,uid,owner,engine,handlers)
     assert(not(engine.config and engine.config.checkpoint),'diagnostic profile control is read-only; use system reboot for cleanup')
     assert(not engine.shutting or command=='shutdown','manager is shutting down')
     if command=='reload' then return handlers.reload() end
-    if command=='shutdown' then engine:shutdown();return {accepted=true} end
+    if command=='shutdown' then engine:shutdown('control request');return {accepted=true} end
     assert(service.name(request.service)and engine.records[request.service],'unknown/invalid service name')
     local name=request.service
     if command=='start' then engine:start({name})

@@ -186,8 +186,10 @@ Complete the manual gates in the same boot:
    USB-switch cycles, VT switching, exit/relaunch and concurrent SSH sessions.
 3. Verify exactly one devd, seatd and each supervised daemon. Capture halfsvc
    status and boot logs, not only the READY banner.
-4. Perform orderly reboot and poweroff under supervision; retain the console
-   `boot.shutdown` cleanup record and check the next boot for filesystem errors.
+4. Perform orderly reboot and poweroff after loading the updated code; read
+   `halfsvc shutdown-report` as root after the next boot and check for filesystem
+   errors. Persistent reporting replaces the need to capture console output;
+   see [HALFBSD-SHUTDOWN-REPORTS.md](HALFBSD-SHUTDOWN-REPORTS.md).
 5. Test explicit RC and native recovery from the loader. Run repeated boot cycles
    using the existing disposable-VM harness before claiming long-term coverage.
 

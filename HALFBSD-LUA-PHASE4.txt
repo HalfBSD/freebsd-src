@@ -3,6 +3,16 @@ October 13, 2026 | branch halfbsd2
 STATUS: administrator reports native "Lua multiuser READY" on Anvil.
 Full startup handoff reached; application and shutdown acceptance remain pending.
 
+PERSISTENT SHUTDOWN EVIDENCE — OCTOBER 21, 2026
+
+Lua and PID 1 now persist separate bounded reports under /var/db/halfbsd.
+After booting the updated world, perform another normal reboot/poweroff and run
+halfsvc shutdown-report as root. No console capture during shutdown is needed.
+Boot identity matching rejects stale success; PID 1 records nonzero/signal
+supervisor exits separately from Lua's service/resource cleanup. Linux portable
+and isolated persistence/forced-child tests pass; native results remain pending.
+See HALFBSD-SHUTDOWN-REPORTS.md for interpretation, storage limits and commands.
+
 WORKSTATION POLICY FOLLOW-UP — OCTOBER 21, 2026
 
 New halfconsole native launcher and Lua policy provide local root/named-user

@@ -362,6 +362,14 @@ remaining-process cleanup and kernel reboot. Lua mode executes neither
 rc.shutdown nor rc.final. Explicit quick reboot bypasses orderly cleanup;
 advanced reboot flags and live reroot are outside the initial integration.
 .Pp
+Real PID 1 sessions save bounded persistent shutdown snapshots in
+.Pa /var/db/halfbsd .
+After reboot, run halfsvc shutdown-report as root to compare Lua resource
+cleanup with PID 1's observed supervisor exit. Reports have boot identities
+so an older successful shutdown is not attributed to a newer recorded boot.
+Reporting never holds storage open across cleanup; unavailable or unmounted
+reporting storage leaves incomplete evidence rather than a success claim.
+.Pp
 Unexpected manager exit or critical startup failure enters single-user recovery,
 without automatically running RC over partially initialized Lua state.
 Once startup has been attempted, changing startup systems in the same boot is

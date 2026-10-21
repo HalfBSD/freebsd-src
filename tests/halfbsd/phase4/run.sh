@@ -13,6 +13,7 @@ HALFBSD_LIVE_CHECK="$suite/check-live.lua" "$lua" -E -e 'assert(loadfile(os.gete
 "$lua" -E "$suite/singleboot.lua" "$modules"
 "$lua" -E "$suite/policy.lua" "$modules" "$src/usr.sbin/halfinit/examples/boot-system.lua"
 "$lua" -E "$suite/workstation.lua" "$modules"
+"$lua" -E "$suite/shutdown_report.lua" "$modules"
 sh "$suite/service_test.sh" "$src"
 cc -D_POSIX_C_SOURCE=200809L -std=c17 -Wall -Wextra -Wpedantic -Werror -fPIE -pie -Wl,-z,text \
     -I"$src/usr.sbin/halfconsole" "$suite/console_input_test.c" \
@@ -22,6 +23,11 @@ cc -D_GNU_SOURCE -std=c17 -Wall -Wextra -Wpedantic -Werror \
     -Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wcast-align \
     -I"$src/sbin/init" "$suite/handoff_test.c" "$src/sbin/init/halfbsd.c" -o "$work/handoff_test"
 "$work/handoff_test"
+cc -D_GNU_SOURCE -std=c17 -Wall -Wextra -Wpedantic -Werror -fPIE -pie -Wl,-z,text \
+    -Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wcast-align \
+    -I"$src/sbin/init" "$suite/shutdown_report_test.c" "$src/sbin/init/shutdown_report.c" \
+    "$src/sbin/init/halfbsd.c" -o "$work/shutdown_report_test"
+"$work/shutdown_report_test"
 if [ "${1:-}" = --portable-only ]; then exit 0; fi
 [ "$(uname -s)" = FreeBSD ] || { echo 'Native regression gate requires FreeBSD.' >&2; exit 1; }
 sh "$suite/build-console.sh" "$src"

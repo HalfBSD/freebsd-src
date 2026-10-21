@@ -9,7 +9,7 @@ function M.new(config,options)
     options=options or {}
     local self=setmetatable({config=config,records={},roots={},blocked={},holds={},enabled={},loop=options.loop or assert(require('halfbsd.event').new()),
         proc=options.proc or require('proc'),native=options.native or require('halfbsd.os'),providers=options.providers or {},
-        emit=options.emit,system_allowed=options.system_allowed or false,shutting=false,shutdown_failed={},pumping=false,again=false},M)
+        emit=options.emit,on_shutdown=options.on_shutdown,system_allowed=options.system_allowed or false,shutting=false,shutdown_failed={},pumping=false,again=false},M)
     self.clock=function()return self.native.clock('monotonic')end
     for name,d in pairs(config.registry)do
         self.records[name]={definition=d,state='INACTIVE',history={},attempts={},epoch=0,watches={},wanted=false}
@@ -157,6 +157,7 @@ function M:stop_record(r,reason,failure)
     if delivered==nil then self.shutdown_failed[r.definition.name]=err.message end
     self:watch(r,'watch_timer',r.definition.stop_timeout,function()
         if r.child then
+            if self.shutting then r.shutdown_forced='service stop timeout'end
             local killed,error=r.child:signal('KILL',true)
             if killed==nil then self.shutdown_failed[r.definition.name]=error.message end
         end
@@ -361,7 +362,7 @@ function M:restart(name)
         self:stop_record(r,'operator restart');self:replan();self:pump()
     end
 end
-function M:shutdown()
+function M:shutdown(reason)
     if self.shutting then return end
     local roots={}
     for name,r in pairs(self.records)do
@@ -369,10 +370,18 @@ function M:shutdown()
     end
     self.shutdown_plan=dependency.plan(self.config.registry,roots)
     self.shutting=true;self.shutdown_wave=#self.shutdown_plan.waves
+    self.shutdown_reason=reason or'manager request'
+    if self.on_shutdown then
+        local ok,err=pcall(self.on_shutdown,self)
+        if not ok then self.shutdown_report_error=error_text(err)end
+    end
     for _,r in pairs(self.records)do r.wanted=false end
     self.shutdown_deadline=self.clock()+self.config.shutdown_timeout
     self.shutdown_timer=assert(self.loop:watch_timer(self.config.shutdown_timeout,function()
-        for name,r in pairs(self.records)do if r.child then r.child:signal('KILL',true);self.shutdown_failed[name]='overall shutdown deadline'end end
+        for name,r in pairs(self.records)do if r.child then
+            r.shutdown_forced='overall shutdown deadline'
+            r.child:signal('KILL',true);self.shutdown_failed[name]='overall shutdown deadline'
+        end end
         self.force_timer=assert(self.loop:watch_timer(5,function()self.finished=true;self.loop:stop()end))
     end))
     self:pump()

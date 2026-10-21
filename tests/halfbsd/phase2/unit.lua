@@ -152,6 +152,14 @@ test('native action and virtual readiness cancel their startup deadlines',functi
     assert(f.time==0.1 and e.records.condition.state=='READY'and e.records.action.state=='READY')
     assert(#e.proc.active()==0)
 end)
+test('shutdown reporting is once-only and observer errors never prevent child cleanup',function()
+    local e=engine({{name='worker',type='daemon',command={'/fixture','stubborn'},stop_timeout=0.01}})
+    local calls=0;e.on_shutdown=function()calls=calls+1;error('diagnostic storage failed')end
+    e:start({'worker'});e:shutdown();e:shutdown()
+    if not e.finished then e.loop:run()end
+    assert(calls==1 and e.shutdown_report_error:find('diagnostic storage failed',1,true))
+    assert(#e.proc.active()==0 and e.records.worker.shutdown_forced=='service stop timeout')
+end)
 test('control authorization and protocol boundaries',function()
     local e=engine({{name='worker',type='target'}});e:replan()
     assert(control.authorized(42,1001,'status'))

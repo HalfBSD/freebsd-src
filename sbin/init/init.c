@@ -77,6 +77,7 @@
 
 #include "pathnames.h"
 #include "halfbsd.h"
+#include "shutdown_report.h"
 
 /*
  * Sleep times; used to prevent thrashing.
@@ -1226,8 +1227,17 @@ lua_shutdown(void)
 {
 	if (lua_pid > 1) {
 		hb_boot_trace(_PATH_CONSOLE, "stopping Lua process; waiting up to 120 seconds, then forced termination");
+		struct hb_shutdown_report report;
+		int reporting = hb_shutdown_report_begin(&report, "/var/db/halfbsd", lua_pid) == 0;
+		if (!reporting)
+			warning("cannot persist PID 1 shutdown start: %m");
 		int status;
 		int result = hb_boot_stop(lua_pid, DEATH_SCRIPT * 1000, &status);
+		int stop_error = result == 1 ? 0 : errno;
+		if (reporting && hb_shutdown_report_finish(&report, result,
+		    result == 1 ? status : 0, stop_error) == -1)
+			warning("cannot persist PID 1 shutdown result: %m");
+		errno = stop_error;
 		if (result != 1) warning("Lua shutdown did not reap its supervisor: %m");
 		else {
 			if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)

@@ -4,6 +4,11 @@ October 20, 2026. Branch `halfbsd2`.
 
 ## October 21 workstation implementation batch
 
+Shutdown acceptance now has persistent evidence: after the updated code has
+booted once, reboot/poweroff normally and run `halfsvc shutdown-report` as root
+on the next boot. See [HALFBSD-SHUTDOWN-REPORTS.md](HALFBSD-SHUTDOWN-REPORTS.md).
+No manual console capture during shutdown is required.
+
 The six-item agenda is now implemented as code, tests and an RC source audit;
 native acceptance of this batch is pending. See
 [HALFBSD-WORKSTATION-FOLLOWUP.md](HALFBSD-WORKSTATION-FOLLOWUP.md) for the complete

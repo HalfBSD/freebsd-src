@@ -1,7 +1,7 @@
 CONFGROUPS=	CONFTTYS
 PACKAGE=runtime
 PROG=	init
-SRCS= init.c halfbsd.c
+SRCS= init.c halfbsd.c shutdown_report.c
 PRECIOUSPROG=
 INSTALLFLAGS=-b -B.bak
 CFLAGS+=-DDEBUGSHELL -DSECURE -DLOGIN_CAP -DCOMPAT_SYSV_INIT

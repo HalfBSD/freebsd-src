@@ -30,6 +30,12 @@ channel(void)
 	assert(write(fds[1], "GLE\n", 4) == 4);
 	assert(hb_boot_read(fds[0], text, &used) == 2);
 	close(fds[0]); close(fds[1]);
+	assert(hb_boot_pipe(fds) == 0); used = 0;
+	assert(write(fds[1], "NET", 3) == 3);
+	assert(hb_boot_read(fds[0], text, &used) == 0);
+	assert(write(fds[1], "WORK\n", 5) == 5);
+	assert(hb_boot_read(fds[0], text, &used) == 3);
+	close(fds[0]); close(fds[1]);
 	const char *invalid[] = {"FAIL\n", "READY\nX", "REA\0Y\n", "SINGLE\nX", "SIN\0LE\n"};
 	const size_t lengths[] = {5, 7, 6, 8, 7};
 	for (size_t i = 0; i < sizeof(lengths) / sizeof(lengths[0]); i++) {
@@ -113,9 +119,9 @@ main(void)
 	assert(hb_boot_mode("rc") == 0);
 	assert(hb_boot_mode("unknown") == -1 && errno == EINVAL);
 	puts("PASS default Lua, explicit RC recovery and invalid override rejection");
-	assert(hb_boot_stage(NULL) == 0 && hb_boot_stage("") == 0);
+	assert(hb_boot_stage(NULL) == 2 && hb_boot_stage("") == 2);
 	assert(hb_boot_stage("single") == 0 && hb_boot_stage("multiuser") == 1);
 	assert(hb_boot_stage("unknown") == -1 && errno == EINVAL);
-	puts("PASS diagnostic single-user stage default and explicit multiuser selection");
+	puts("PASS network checkpoint default and explicit single/multiuser selection");
 	channel(); trace(); children(); return 0;
 }

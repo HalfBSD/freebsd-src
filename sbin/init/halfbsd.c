@@ -26,7 +26,8 @@ hb_boot_mode(const char *override)
 int
 hb_boot_stage(const char *stage)
 {
-	if (!stage || !*stage || !strcmp(stage, "single")) return 0;
+	if (!stage || !*stage || !strcmp(stage, "network")) return 2;
+	if (!strcmp(stage, "single")) return 0;
 	if (!strcmp(stage, "multiuser")) return 1;
 	errno = EINVAL; return -1;
 }
@@ -108,6 +109,8 @@ hb_boot_read(int fd, char text[16], size_t *used)
 	    !memcmp(text, HB_BOOT_READY, sizeof(HB_BOOT_READY) - 1)) return 1;
 	if (*used == sizeof(HB_BOOT_SINGLE) - 1 &&
 	    !memcmp(text, HB_BOOT_SINGLE, sizeof(HB_BOOT_SINGLE) - 1)) return 2;
+	if (*used == sizeof(HB_BOOT_NETWORK) - 1 &&
+	    !memcmp(text, HB_BOOT_NETWORK, sizeof(HB_BOOT_NETWORK) - 1)) return 3;
 	if (memchr(text, '\n', *used)) { errno = EPROTO; return -1; }
 	return 0;
 }

@@ -56,6 +56,12 @@ function M.attach(providers,os,ipc)
         end
         return true
     end
+    providers.drm_ready=function()
+        local exists,err=os.exists('/dev/dri');assert(exists~=nil,err)
+        if not exists then return false end
+        for _,entry in ipairs(assert(os.listdir('/dev/dri')))do if entry:match('^card%d+$')then return true end end
+        return false
+    end
     providers.loopback_guard=function()
         providers.root_guard()
         for _,row in ipairs(assert(os.interfaces()))do

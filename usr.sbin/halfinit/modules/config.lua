@@ -39,11 +39,23 @@ function M.registry(definitions)
     end
     assert(#definitions<=1024,'service registry exceeds 1024 entries');dependency.validate(result);return result
 end
-function M.load(path,system_path,owner)
+-- Restrict the inspection checkpoint before any service files are loaded.
+function M.network_checkpoint(config)
+    assert(type(config.boot)=='table'and(config.boot.mode==nil or config.boot.mode=='system'),'network checkpoint requires a system boot policy')
+    local copy={};for k,v in pairs(config)do copy[k]=v end
+    copy.boot={};for k,v in pairs(config.boot)do copy.boot[k]=v end
+    copy.boot.dns=false;copy.boot.sshd=false;copy.boot.ntpd=false;copy.boot.seatd=false;copy.boot.desktop=nil
+    copy.boot.amdgpu=true;copy.boot.syslogd=true;copy.boot.root_writable=true
+    copy.services={};copy.include={};copy.service_dirs={}
+    copy.max_parallel=1;copy.target='network-checkpoint'
+    return copy
+end
+function M.load(path,system_path,owner,checkpoint)
     local config=path and M.read(path,owner) or {services=M.read(system_path,owner),target='minimal'}
     local allowed={services=true,target=true,include=true,service_dirs=true,runtime_dir=true,state_file=true,shutdown_timeout=true,
         max_parallel=true,log_file=true,boot=true}
     for k in pairs(config)do assert(allowed[k],'unknown configuration field: '..tostring(k))end
+    if checkpoint then config=M.network_checkpoint(config)end
     if config.services==nil then config.services={}end
     assert(type(config.services)=='table','services array expected')
     if config.boot~=nil then
@@ -79,6 +91,7 @@ function M.load(path,system_path,owner)
     if config.max_parallel==nil then config.max_parallel=128 end;assert(type(config.max_parallel)=='number' and config.max_parallel%1==0 and config.max_parallel>=1 and config.max_parallel<=256,'max_parallel must be 1..256')
     if config.shutdown_timeout==nil then config.shutdown_timeout=15 end;assert(type(config.shutdown_timeout)=='number'and config.shutdown_timeout>0 and config.shutdown_timeout<=300,'shutdown timeout must be 0..300 seconds')
     for _,k in ipairs({'runtime_dir','state_file','log_file'})do assert(config[k]==nil or (type(config[k])=='string'and config[k]:sub(1,1)=='/'and not config[k]:find('\0',1,true)),'invalid path '..k)end
+    if checkpoint then config.checkpoint='network'end
     return config
 end
 return M

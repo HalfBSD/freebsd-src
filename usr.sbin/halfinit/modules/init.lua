@@ -16,7 +16,7 @@ local function read_state(path,native)
 end
 local function parse(args)
     local opts={};local value={['--config']='config',['--target']='target',['--runtime-dir']='runtime_dir',['--state-file']='state_file',['--scenario']='scenario',['--run-for']='run_for',['--boot-notify-fd']='notify'}
-    local flags={['--check']='check',['--graph']='graph',['--dry-run']='dry',['--simulate']='simulate',['--shadow']='shadow',['--help']='help',['--activate-system']='activate',['--boot-single']='single'}
+    local flags={['--check']='check',['--graph']='graph',['--dry-run']='dry',['--simulate']='simulate',['--shadow']='shadow',['--help']='help',['--activate-system']='activate',['--boot-single']='single',['--network-checkpoint']='network_checkpoint'}
     local i=1
     while args[i]do
         if value[args[i]]then opts[value[args[i]]]=assert(args[i+1],'missing option value');i=i+2
@@ -57,6 +57,11 @@ function M.main(args,module_dir)
         opts.run_for=tonumber(opts.run_for)
         assert(opts.run_for and opts.run_for>0 and opts.run_for<=3600,'--run-for must be >0 and <=3600 seconds')
     end
+    if opts.network_checkpoint then
+        assert(opts.config and not opts.single and(opts.notify or opts.check or opts.graph or opts.dry or opts.shadow),
+            'network checkpoint requires PID 1 or a read-only planning mode with explicit configuration')
+        assert(not opts.simulate,'network checkpoint does not accept simulation mode')
+    end
     local native=require('halfbsd.os');local handoff
     if opts.single then
         assert(opts.notify and not(opts.config or opts.activate or opts.simulate or opts.check or opts.graph or opts.dry or opts.shadow or opts.target or opts.run_for),
@@ -65,9 +70,9 @@ function M.main(args,module_dir)
     end
     if opts.notify then
         assert(opts.activate and opts.config and not(opts.simulate or opts.check or opts.graph or opts.dry or opts.shadow),'boot handoff requires a real explicit system configuration')
-        handoff=require('handoff').new(native,require('proc'),assert(tonumber(opts.notify),'invalid handoff descriptor'))
+        handoff=require('handoff').new(native,require('proc'),assert(tonumber(opts.notify),'invalid handoff descriptor'),opts.network_checkpoint)
     end
-    local config=config_module.load(opts.config,module_dir..'/services/system.lua',opts.notify and 0 or nil)
+    local config=config_module.load(opts.config,module_dir..'/services/system.lua',opts.notify and 0 or nil,opts.network_checkpoint)
     if opts.notify then assert(config.boot and config.boot.mode~='user','PID 1 requires a system boot policy')end
     assert(not opts.scenario or opts.simulate,'--scenario requires --simulate')
     assert(not opts.activate or(opts.config and not opts.simulate),'--activate-system requires an explicit configuration and cannot combine with simulation')
@@ -75,8 +80,9 @@ function M.main(args,module_dir)
         local scenarios={success=true,failure=true,recovery=true,exhaustion=true,forced=true}
         assert(scenarios[opts.scenario or 'success'],'unknown simulation scenario')
     end
+    if opts.network_checkpoint then assert(not opts.target or opts.target=='network-checkpoint','network checkpoint target is fixed')end
     config.target=opts.target or config.target;assert(config.registry[config.target],'unknown target')
-    if handoff then assert(config.target=='multiuser'or config.target=='desktop'or config.target=='gateway','PID 1 boot requires a complete multiuser target')end
+    if handoff then assert(config.target=='multiuser'or config.target=='desktop'or config.target=='gateway'or(opts.network_checkpoint and config.target=='network-checkpoint'),'PID 1 boot requires a complete target')end
     local plan=dependency.plan(config.registry,{[config.target]=true})
     if opts.check or opts.graph or opts.dry or opts.shadow then
         local missing={}
@@ -131,7 +137,13 @@ function M.main(args,module_dir)
     local bootstrapping=false;local control_ready=false
     local function emit(item)
         if handoff then
-            io.stdout:write('[halfinit boot] '..item.service..' '..tostring(item.previous)..' -> '..item.state..': '..tostring(item.reason)..'\n');io.stdout:flush()
+            local line='[halfinit boot] '..item.service..' '..tostring(item.previous)..' -> '..item.state..': '..tostring(item.reason)..'\n'
+            -- PID 1 revokes the console when opening its inspection shell.
+            -- Reopen for each checkpoint transition instead of retaining that fd.
+            if config.checkpoint then
+                local console=native.open('/dev/console','append')
+                if console then console:write(line);console:close()else io.stderr:write(line)end
+            else io.stdout:write(line);io.stdout:flush()end
         end
         local r=engine.records[item.service];local result=r.result
         local fields={event='transition',service=item.service,state=item.state,previous=item.previous,reason=item.reason,monotonic=item.time}
@@ -159,9 +171,10 @@ function M.main(args,module_dir)
         return {persisted=true}
     end
     handlers.reload=function()
+        assert(not config.checkpoint,'network inspection checkpoint does not reload configuration')
         assert(not engine.shutting,'manager is shutting down')
         assert(opts.config,'system graph reload requires an explicit config')
-        local candidate=config_module.load(opts.config,module_dir..'/services/system.lua',opts.notify and 0 or nil)
+        local candidate=config_module.load(opts.config,module_dir..'/services/system.lua',opts.notify and 0 or nil,opts.network_checkpoint)
         assert(json.encode(candidate.boot)==json.encode(config.boot),'boot policy changes require a new manager session')
         candidate.target=opts.target or candidate.target
         assert(candidate.target==config.target,'use explicit start/stop to change targets during this manager session')
@@ -221,7 +234,7 @@ function M.main(args,module_dir)
         if not stat then assert(err.name=='ENOENT');assert(native.mkdir(dir,uid==0 and 0x1ed or 0x1c0));stat=assert(native.stat(dir))end
         assert(stat.type=='directory'and stat.uid==uid and (stat.mode&0x12)==0,'runtime directory must be owned and not group/world writable')
         lock=assert(ipc.lock(dir..'/manager.lock'))
-        enabled=read_state(state_path,native)
+        enabled=config.checkpoint and{}or read_state(state_path,native)
         for name,value in pairs(enabled)do if engine.records[name]then engine.blocked[name]=not value or nil;engine.enabled[name]=value end end
         if config.log_file then
             local file_logger=assert(require('halfbsd.log').new({service='halfinit',file=config.log_file}))
@@ -240,7 +253,7 @@ function M.main(args,module_dir)
             end
             assert(engine.loop:watch_timer(1,network_check))
         end
-        for name,d in pairs(config.registry)do if (enabled[name]==true or(d.enabled and enabled[name]~=false))and not engine.blocked[name]then engine:start({name})end end
+        for name,d in pairs(config.registry)do if not config.checkpoint and(enabled[name]==true or(d.enabled and enabled[name]~=false))and not engine.blocked[name]then engine:start({name})end end
         if opts.simulate then
             local function conclude()
                 engine.simulation_snapshot=engine:status();engine:shutdown()

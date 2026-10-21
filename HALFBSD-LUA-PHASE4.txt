@@ -1,9 +1,68 @@
 HalfBSD Lua Phase IV — PID 1 boot/shutdown integration
 October 13, 2026 | branch halfbsd2
-STATUS: diagnostic Lua -> ZFS -> AMDGPU -> PID 1 shell bring-up implemented;
-current native compilation and real diagnostic boot remain UNTESTED.
+STATUS: administrator reports native build/install and intended single-user
+diagnostic boot PASS on Anvil; full multiuser boot/shutdown remain UNVERIFIED.
+
+CURRENT IMPLEMENTATION — OCTOBER 20, 2026
+
+Default Lua boot now selects stage=network, a serial inspection checkpoint.
+See HALFBSD-LUA-NETWORK-BOOT.md for console messages, tests and recovery.
+The prior single-stage native success is retained as historical evidence below.
+The new network checkpoint has NOT yet been built or booted on FreeBSD.
+
+PID 1 now accepts NETWORK separately from READY and SINGLE. NETWORK opens its
+existing shell while keeping halfinit alive; DHCP and syslog remain supervised.
+Ctrl-D does not advance or rerun initialization. Shutdown retains existing
+reverse-dependency cleanup before PID 1's final reboot. RC remains explicit only.
+
+The checkpoint projects the administrator's boot policy before graph compilation:
+forces writable root, AMDGPU, syslog and serial scheduling; removes DNS, SSH, NTP,
+seatd, desktop, custom service files and persisted enable-state activation.
+Storage, swap, hostname, interface and firewall choices remain administrator-owned.
+The native graph adds AMDGPU load/module/DRM readiness and a network-only target.
+Control is read-only; reload is rejected. Configuration installation is unchanged
+and does not overwrite existing administrator files. No DNS provider or firewall
+policy changes were made. Full multiuser remains an explicit later-stage option.
+
+Modified components: sbin/init/{init.c,halfbsd.c,halfbsd.h}; halfinit configuration,
+boot graph, adapters, handoff, main and control modules; example boot policy;
+manual page, checkpoint guides and Phase IV policy/protocol regression tests.
+
+Local Linux results: 13 Phase IV policy groups plus singleboot fixtures and strict
+C17 handoff helper PASS; all 16 Phase III and 14 Phase II policy groups PASS.
+Staged build-target/PIE, header installation and library build checks PASS.
+These tests exercise mock native APIs and portable helpers, not real FreeBSD
+initialization or kernel behavior. Native buildworld/buildkernel/build32, the
+complete native Phase I-IV suites, packet firewall tests, network takeover,
+shutdown, RC recovery and live checkpoint boot remain pending. Clang unavailable.
+
+The older implementation sections below describe earlier checkpoints, including
+the previous single-stage default, and do not supersede this current status.
 
 CURRENT TASK — OCTOBER 20, 2026
+
+NATIVE DIAGNOSTIC BOOT RESULT
+
+After commit c4531e717608, the administrator confirmed that the system builds,
+installs and boots into single-user mode as intended. This is user-reported
+native acceptance of the diagnostic checkpoint, not a local Linux result.
+Detailed console output, kernel-variable readback, GPU evidence and separate
+world/kernel/build32 logs were not supplied with that confirmation. The older
+UNTESTED/pending notes below describe the implementation's pre-test state.
+Full multiuser boot, networking takeover, production firewall packet tests,
+actual managed shutdown/recovery and repeated-cycle acceptance are not implied.
+
+HISTORICAL PLAN BEFORE NETWORK CHECKPOINT
+
+Reuse the existing boot graph and supervisor, keep max_parallel=1 and visible
+console transitions. Carry the proven AMDGPU task into the full graph: currently
+it runs only in singleboot.lua, so selecting full multiuser does not load it.
+First validate platform/storage/runtime/swap/hostname/library hints/local logging,
+then loopback/IPFW readback, then selected Ethernet DHCP/address/default route,
+then Unbound DNSSEC/caching, SSH/NTP and multiuser login. Stage completion must
+be explicit; a failed checkpoint returns to PID 1 recovery without RC takeover.
+Test orderly shutdown/reboot and the RC override before calling full boot accepted.
+Do not enable the full existing graph merely because this single-user test passed.
 
 The administrator reported a hang during an attempted boot, followed by a hard
 reset and a boot whose halfbsd.boot_active was rc. The source does not implement

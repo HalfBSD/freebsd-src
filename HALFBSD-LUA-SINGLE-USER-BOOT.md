@@ -2,9 +2,15 @@
 
 October 20, 2026. Branch: `halfbsd2`.
 
-This is the next diagnostic boot checkpoint. It replaces the full multiuser
+**Historical checkpoint:** this `single` stage passed the administrator's native
+boot test. The new default is the network inspection checkpoint documented in
+[HALFBSD-LUA-NETWORK-BOOT.md](HALFBSD-LUA-NETWORK-BOOT.md).
+Select `halfbsd.boot_stage=single` explicitly to repeat the procedure below.
+
+This is the original diagnostic boot checkpoint. It replaces the full multiuser
 startup attempt with a small, serial Lua task sequence and visible console output.
-**The new path has not yet been booted on Anvil or in a FreeBSD VM.**
+**The administrator has now reported a successful native build, installation
+and intended single-user boot on Anvil. Full multiuser boot remains unverified.**
 
 ## What this boot does
 
@@ -202,6 +208,14 @@ It requires a valid `/etc/halfbsd/system.lua` and its full boot prerequisites.
 
 ## Validation recorded for this change
 
+The administrator confirmed native build/install and single-user boot success
+after commit `c4531e717608`. Console logs, kernel-variable readback, separate
+world/kernel/build32 logs and GPU-specific evidence were not included in that
+confirmation. This advances the diagnostic boot checkpoint; it does not verify
+networking, full supervision, shutdown/recovery or repeated boot cycles.
+
+The local checks below are the earlier implementation checks:
+
 - Passed actual Linux portable C tests for default/explicit stage selection,
   fragmented `READY`/`SINGLE`, malformed/EOF messages, immediate trace output,
   errno preservation, descriptor/session handling and private-child reaping.
@@ -215,8 +229,10 @@ It requires a valid `/etc/halfbsd/system.lua` and its full boot prerequisites.
 - Passed staged SYSROOT/PIE/archive queries, fresh/repeated parallel module/example
   installation, configuration preservation, public-header installation and
   inherited ABI/archive selection checks.
-- Native full `init`, `buildworld`, `buildkernel`, build32, ATF/native regression
-  reruns, real ZFS/AMDGPU activation and actual console shell handoff remain pending.
+- The administrator subsequently reported the native build/install and intended
+  diagnostic shell boot successful. Separate buildworld/buildkernel/build32 logs,
+  ATF/native regression reruns, detailed GPU results and full multiuser
+  startup/shutdown/recovery acceptance remain unreported.
 
 Only in-tree Lua/bmake were built under `/tmp/halfbsd-single-check`; no tools were
 downloaded. No changes have been applied remotely to Anvil. See

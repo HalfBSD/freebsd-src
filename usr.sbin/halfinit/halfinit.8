@@ -198,8 +198,22 @@ session to change it. Gateway is an explicit service group, without inferred
 packet forwarding or NAT configuration. The current diagnostic boot stage is
 described below.
 .Sh BOOT INTEGRATION
-The current default is a diagnostic Lua stage ending at the existing PID 1
-single-user shell, rather than multiuser startup.
+The current default is the network inspection checkpoint
+.Sy halfbsd.boot_stage=network .
+It remounts root writable, initializes configured local storage, AMDGPU,
+runtime directories, swap, hostname, library hints, local logging, IPFW and DHCP.
+It waits for an address and default route, then opens the existing PID 1
+single-user shell while halfinit retains ownership of DHCP and logging.
+DNS, SSH, NTP, desktop services and gettys are not started.
+The control interface permits only list, status and graph at this checkpoint.
+Use normal reboot for ordered cleanup; exiting the shell does not advance boot.
+.Pp
+Expect kernel variables halfbsd.boot_active=lua, halfbsd.boot_stage=network
+and halfbsd.boot_result=network-ready.
+An explicit loader override halfbsd.boot_mode=rc still selects recovery.
+The earlier minimal diagnostic remains available with
+.Sy halfbsd.boot_stage=single ;
+the following describes that explicit diagnostic, not the network default.
 PID 1 prints a dated diagnostic-build banner and selected startup path directly
 to the console. The native launcher and Lua print unbuffered progress; PID 1
 prints a waiting message every five seconds while Lua runs.

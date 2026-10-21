@@ -128,7 +128,7 @@ static state_func_t run_script(const char *);
 
 static enum { AUTOBOOT, FASTBOOT } runcom_mode = AUTOBOOT;
 
-static bool lua_mode, boot_attempted, lua_failed, lua_single_boot, lua_single_done;
+static bool lua_mode, boot_attempted, lua_failed, lua_single_boot, lua_network_boot, lua_shell_checkpoint;
 static pid_t lua_pid;
 static state_func_t lua_runcom(void);
 static void lua_shutdown(void);
@@ -410,7 +410,7 @@ invalid:
 			free(s);
 	}
 
-	hb_boot_trace(_PATH_CONSOLE, "PID 1 diagnostic build 2026-10-20 started; default Lua single-user stage");
+	hb_boot_trace(_PATH_CONSOLE, "PID 1 diagnostic build 2026-10-20 started; default Lua network inspection stage");
 	hb_boot_trace(_PATH_CONSOLE, selected_mode < 0 ? "invalid boot-mode override; recovery selected" :
 	    (selected_mode == 0 ? "explicit halfbsd.boot_mode=rc override detected" : "Lua selected (no automatic RC fallback)"));
 	hb_boot_trace(_PATH_CONSOLE, "initial devfs setup finished; entering startup state machine");
@@ -907,8 +907,8 @@ single_user(void)
 		_exit(0); /* panic as well */
 	}
 
-	hb_boot_trace(_PATH_CONSOLE, lua_single_done ?
-	    "Lua diagnostic stage completed; opening PID 1 single-user shell" :
+	hb_boot_trace(_PATH_CONSOLE, lua_shell_checkpoint && !lua_failed ?
+	    (lua_network_boot ? "Lua network checkpoint ready; opening inspection shell with supervisor alive" : "Lua diagnostic stage completed; opening PID 1 single-user shell") :
 	    "opening PID 1 single-user/recovery shell");
 	BOOTTRACE("going to single user mode");
 	shell = get_shell();
@@ -918,8 +918,10 @@ single_user(void)
 		 * Start the single user session.
 		 */
 		open_console();
-		if (lua_single_done)
-			write_stderr("[HalfBSD init] Lua ZFS/AMDGPU diagnostic completed; this is the single-user shell handoff.\n");
+		if (lua_shell_checkpoint && !lua_failed)
+			write_stderr(lua_network_boot ?
+			    "[HalfBSD init] Network checkpoint ready; DHCP/syslog remain supervised while you inspect.\n" :
+			    "[HalfBSD init] Lua ZFS/AMDGPU diagnostic completed; this is the single-user shell handoff.\n");
 
 		pp = getpwnam("root");
 #ifdef SECURE
@@ -931,7 +933,7 @@ single_user(void)
 		typ = getttynam("console");
 		if (typ && (typ->ty_status & TTY_SECURE) == 0 &&
 		    pp && *pp->pw_passwd) {
-			write_stderr(lua_single_done ?
+			write_stderr(lua_shell_checkpoint ?
 			    "Enter root password; this diagnostic boot remains single-user\n" : banner);
 			for (;;) {
 				clear = getpass("Password:");
@@ -1062,8 +1064,8 @@ static state_func_t
 runcom(void)
 {
 	state_func_t next_transition;
-	if (lua_single_done) {
-		hb_boot_trace(_PATH_CONSOLE, "diagnostic shell exited; staying single-user, no multiuser services");
+	if (lua_shell_checkpoint) {
+		hb_boot_trace(_PATH_CONSOLE, "inspection shell exited; staying at the checkpoint, no full multiuser services");
 		return (state_func_t)single_user;
 	}
 	char override[32] = {0};
@@ -1091,13 +1093,16 @@ runcom(void)
 			return (state_func_t)single_user;
 		}
 		lua_single_boot = selected == 0;
-		char active_stage[10] = "single";
-		if (!lua_single_boot) memcpy(active_stage, "multiuser", sizeof(active_stage));
+		lua_network_boot = selected == 2;
+		char active_stage[10] = "network";
+		if (lua_single_boot) memcpy(active_stage, "single", sizeof("single"));
+		else if (!lua_network_boot) memcpy(active_stage, "multiuser", sizeof(active_stage));
 		if (kenv(KENV_SET, HB_BOOT_STAGE, active_stage, strlen(active_stage) + 1) < 0) {
 			warning("cannot publish boot stage: %m");
 			return (state_func_t)single_user;
 		}
-		hb_boot_trace(_PATH_CONSOLE, lua_single_boot ? "launching Lua SINGLE-USER diagnostic stage" : "launching Lua MULTIUSER stage");
+		hb_boot_trace(_PATH_CONSOLE, lua_single_boot ? "launching Lua SINGLE-USER diagnostic stage" :
+		    (lua_network_boot ? "launching Lua NETWORK inspection checkpoint" : "launching Lua MULTIUSER stage"));
 		return lua_runcom();
 	}
 	hb_boot_trace(_PATH_CONSOLE, "starting explicit RC recovery startup");
@@ -1111,7 +1116,8 @@ runcom(void)
 	return (state_func_t) read_ttys;
 }
 
-/* READY starts multiuser; SINGLE requires successful diagnostic-process exit. */
+/* READY starts multiuser; NETWORK retains supervision at the inspection shell.
+ * SINGLE requires successful diagnostic-process exit. */
 static state_func_t
 lua_runcom(void)
 {
@@ -1134,6 +1140,9 @@ lua_runcom(void)
 		hb_boot_trace(_PATH_CONSOLE, "exec /usr/sbin/halfinit; console attached, notification fd=3");
 		if (lua_single_boot)
 			execl(HB_BOOT_PROGRAM, HB_BOOT_PROGRAM, "--boot-single", "--boot-notify-fd", "3", (char *)NULL);
+		else if (lua_network_boot)
+			execl(HB_BOOT_PROGRAM, HB_BOOT_PROGRAM, "--config", HB_BOOT_CONFIG,
+			    "--network-checkpoint", "--activate-system", "--boot-notify-fd", "3", (char *)NULL);
 		else execl(HB_BOOT_PROGRAM, HB_BOOT_PROGRAM, "--config", HB_BOOT_CONFIG,
 		    "--activate-system", "--boot-notify-fd", "3", (char *)NULL);
 		warning("cannot execute " HB_BOOT_PROGRAM ": %m"); _exit(127);
@@ -1165,7 +1174,15 @@ lua_runcom(void)
 				if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) goto failed;
 				goto single_ready;
 			}
-			if (result == 1 && !lua_single_boot) {
+			if (result == 3 && lua_network_boot) {
+				close(fds[0]); lua_shell_checkpoint = true;
+				char network_ready[] = "network-ready";
+				if (kenv(KENV_SET, HB_BOOT_RESULT, network_ready, sizeof(network_ready)) < 0)
+					warning("cannot publish network checkpoint result: %m");
+				hb_boot_trace(_PATH_CONSOLE, "NETWORK READY; opening inspection shell and retaining the Lua supervisor");
+				return (state_func_t)single_user;
+			}
+			if (result == 1 && !lua_single_boot && !lua_network_boot) {
 				hb_boot_trace(_PATH_CONSOLE, "Lua multiuser READY; starting console logins");
 				close(fds[0]); runcom_mode = AUTOBOOT; return (state_func_t)read_ttys;
 			}
@@ -1187,7 +1204,7 @@ lua_runcom(void)
 		}
 	}
 single_ready:
-	lua_single_done = true;
+	lua_shell_checkpoint = true;
 	char success[] = "single-ready";
 	if (kenv(KENV_SET, HB_BOOT_RESULT, success, sizeof(success)) < 0)
 		warning("cannot publish diagnostic result: %m");

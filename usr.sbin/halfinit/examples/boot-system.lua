@@ -8,7 +8,7 @@ return {
     max_parallel=1, -- Deterministic initial boot; uses the existing scheduler limit.
     log_file='/var/run/halfbsd/boot.log',
     boot={mode='system',interfaces='auto',local_mounts='fstab',zfs=true,
-        root_writable=true,swap='fstab',hostname='halfbsd',
+        amdgpu=true,root_writable=true,swap='fstab',hostname='halfbsd',
         -- Fresh Lua boot installs rules over the kernel's empty deny baseline.
         -- Existing administrator policy must use ownership='verify'.
         firewall={ownership='load',mode='workstation',ipv6=true},

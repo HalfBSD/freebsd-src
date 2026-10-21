@@ -2,14 +2,14 @@
 -- PID 1 owns the handoff pipe; the existing supervisor owns all service children.
 local M={}
 local critical={'devices','runtime','loopback','firewall'}
-function M.new(native,proc,number)
+function M.new(native,proc,number,checkpoint)
     local identity=native.identity()
     assert(identity.euid==0 and identity.ppid==1,'boot handoff requires root directly launched by PID 1')
     assert(number==3,'PID 1 boot handoff uses descriptor 3')
     local root
     for _,mount in ipairs(assert(native.mounts()))do if mount.path=='/'then root=mount end end
     assert(root and root.type=='zfs','initial Phase IV integration requires a kernel-mounted ZFS root; use RC for other layouts')
-    return setmetatable({fd=assert(proc.fd(number)),sent=false},{__index=M})
+    return setmetatable({fd=assert(proc.fd(number)),sent=false,checkpoint=checkpoint},{__index=M})
 end
 function M:check(engine,control_ready)
     if self.sent then return end
@@ -23,7 +23,8 @@ function M:check(engine,control_ready)
         if r.state~='READY'then ready=false end
     end
     if ready then
-        assert(self.fd:write('READY\n')==6,'PID 1 readiness handoff failed')
+        local message=self.checkpoint and'NETWORK\n'or'READY\n'
+        assert(self.fd:write(message)==#message,'PID 1 readiness handoff failed')
         self.sent=true;self.fd:close()
     end
 end

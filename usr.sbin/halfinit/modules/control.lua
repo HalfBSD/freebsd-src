@@ -18,6 +18,7 @@ function M.request(request,uid,owner,engine,handlers)
         return result
     end
     if command=='graph' then return engine.plan end
+    assert(not(engine.config and engine.config.checkpoint),'inspection checkpoint control is read-only; use system reboot for cleanup')
     assert(not engine.shutting or command=='shutdown','manager is shutting down')
     if command=='reload' then return handlers.reload() end
     if command=='shutdown' then engine:shutdown();return {accepted=true} end

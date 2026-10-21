@@ -124,4 +124,33 @@ if arg[2]then
         end
     end)
 end
+test('network checkpoint projects policy without activating downstream or custom services',function()
+    local config=require('config');local original={boot={mode='system',dns=true,sshd=true,ntpd=true,seatd=true},
+        services={{name='custom'}},include={'missing'},service_dirs={'missing'},target='desktop'}
+    local c=config.network_checkpoint(original)
+    assert(original.boot.dns and original.target=='desktop')
+    assert(c.target=='network-checkpoint'and c.max_parallel==1 and c.boot.root_writable and c.boot.amdgpu)
+    assert(not c.boot.dns and not c.boot.sshd and not c.boot.ntpd and not c.boot.seatd)
+    assert(#c.services==0 and #c.include==0 and #c.service_dirs==0)
+    local n={exists=function()return true end,user=function()error('DNS user lookup forbidden')end,
+        fstab=function()return {}end,interfaces=function()return {{name='em0',family='link',link_type=6}}end}
+    local registry=config.registry(require('boot').compile(c.boot,n))
+    local plan=require('dependency').plan(registry,{['network-checkpoint']=true})
+    for _,name in ipairs({'graphics','rootfs','runtime','firewall','dhcp-em0','network','syslogd'})do
+        assert(plan.selected[name],'checkpoint omitted '..name)
+    end
+    for _,name in ipairs({'dns','sshd','ntpd','seatd','multiuser','desktop'})do assert(not plan.selected[name])end
+end)
+test('network handoff notifies once without shutting down supervised children',function()
+    local n,p,w,closed=fixture();local h=handoff.new(n,p,3,true);local e=engine()
+    e.config.target='network-checkpoint';e.records['network-checkpoint']={state='STARTING'}
+    h:check(e,true);assert(#w==0)
+    e.records['network-checkpoint'].state='READY';h:check(e,true);h:check(e,true)
+    assert(w[1]=='NETWORK\n'and #w==1 and closed()==1 and not e.shutting)
+    e.config.checkpoint='network';function e:status()return {}end
+    local control=require('control');assert(control.request({version=1,command='status'},0,0,e,{}))
+    for _,cmd in ipairs({'start','stop','restart','enable','disable','reload','shutdown'})do
+        rejects(function()control.request({version=1,command=cmd,service=cmd~='reload'and cmd~='shutdown'and'network'or nil},0,0,e,{})end)
+    end
+end)
 print('PASS Phase IV policy groups: '..count..' (no live boot validation)')

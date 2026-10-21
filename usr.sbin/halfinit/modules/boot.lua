@@ -24,7 +24,7 @@ local function dense(value)
 end
 function M.compile(policy,os)
     fields(policy,{mode=true,interfaces=true,local_mounts=true,zfs=true,firewall=true,dns=true,sshd=true,ntpd=true,seatd=true,
-        desktop=true,root_writable=true,swap=true,device_rules=true,hostname=true,syslogd=true})
+        desktop=true,root_writable=true,swap=true,device_rules=true,hostname=true,syslogd=true,amdgpu=true})
     os=os or require('halfbsd.os')
     local services={}
     local function add(d)d.system=true;services[#services+1]=d;return d end
@@ -138,7 +138,16 @@ function M.compile(policy,os)
     if boolean(policy.zfs,true)then
         add({name='zfs',type='oneshot',command={'/sbin/zfs','mount','-a'},requires={'localfs'},guard='root_guard',start_timeout=120})
     else target('zfs',{'localfs'})end
-    add({name='temporary',type='oneshot',action='directories',guard='root_guard',requires={'zfs'},parameters={directories={
+    local platform='zfs'
+    if boolean(policy.amdgpu,false)then
+        add({name='amdgpu-load',type='oneshot',command={'/sbin/kldload','-n','-v','amdgpu'},
+            requires={'zfs'},guard='root_guard',stdout='/dev/console',stderr='/dev/console',start_timeout=120})
+        add({name='amdgpu-module',type='oneshot',command={'/sbin/kldstat','-n','amdgpu.ko'},
+            requires={'amdgpu-load'},guard='root_guard',stdout='/dev/console',stderr='/dev/console'})
+        add({name='graphics',type='virtual',condition='drm_ready',requires={'amdgpu-module'},start_timeout=15})
+        platform='graphics'
+    end
+    add({name='temporary',type='oneshot',action='directories',guard='root_guard',requires={platform},parameters={directories={
         {path='/var/run',mode=493,uid=0,gid=0},{path='/tmp',mode=1023,uid=0,gid=0},{path='/var/tmp',mode=1023,uid=0,gid=0}}}})
     add({name='runtime',type='oneshot',action='directories',guard='root_guard',requires={'temporary'},parameters={directories={
         {path='/var/run/halfbsd',mode=493},{path='/var/run/dhclient',mode=493}}}})
@@ -243,6 +252,7 @@ function M.compile(policy,os)
         essentials[#essentials+1]='syslogd'
     end
     if policy.hostname then essentials[#essentials+1]='hostname' end
+    local networking={};for _,n in ipairs(essentials)do networking[#networking+1]=n end
     if dns then
         local user=assert(os.user('unbound'));local anchor='/var/unbound/root.key'
         add({name='dns-state',type='oneshot',action='directories',guard='root_guard',requires={'runtime'},parameters={directories={
@@ -276,8 +286,8 @@ function M.compile(policy,os)
     end
     if seat then add({name='seatd',type='daemon',command={'/usr/local/bin/seatd'},requires={'runtime'},guard='exclusive_guard',restart='on-failure',
         readiness='condition',condition='socket_ready',parameters={path='/var/run/seatd.sock',processes={'seatd'}}})end
-    for _,n in ipairs(swaps)do essentials[#essentials+1]=n end
-    target('minimal',{'runtime'});target('multiuser',essentials);target('gateway',{'multiuser'})
+    for _,n in ipairs(swaps)do essentials[#essentials+1]=n;networking[#networking+1]=n end
+    target('network-checkpoint',networking);target('minimal',{'runtime'});target('multiuser',essentials);target('gateway',{'multiuser'})
     if policy.desktop then
         fields(policy.desktop,{socket=true,user=true});assert(seat,'desktop system target requires seatd=true')
         local user=assert(os.user(assert(policy.desktop.user,'desktop user required')));assert(user.uid~=0,'root desktop forbidden')

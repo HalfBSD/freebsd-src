@@ -3,6 +3,15 @@ HalfBSD base seatd / libseat integration
 STATUS: source/build/Lua integration implemented; Linux and staged checks PASS.
 Native FreeBSD buildworld/build32, ATF and workstation/device validation PENDING.
 
+HUMAN ACCOUNT DEFAULTS UPDATE
+
+New human accounts created through adduser (including the installer) and
+bsdconfig now receive video automatically. Root/UID 0, non-login shells and
+/nonexistent accounts receive no automatic addition. Low-level pw and package
+service-account creation are unchanged. Existing accounts are not rewritten;
+use `pw groupmod video -m charlie` and a fresh login for an existing desktop user.
+See HALFBSD-ACCOUNT-POLICY.md for exact scope, tests and native validation limits.
+
 PURPOSE AND PROVENANCE
 
 Seat management is a standard workstation responsibility. Normal Lua multiuser
@@ -96,7 +105,8 @@ in installworld. A safe migration on Anvil is:
    stale hints, old library or package metadata can still select ports files.
    Rebuild/relink affected clients against /usr/include and /usr/lib as needed;
    do not create duplicate libraries or libmap compatibility machinery here.
-5. Ensure the intended desktop user belongs to video. Review `id charlie` and
+5. Ensure the intended existing desktop user belongs to video. New human accounts
+   made with adduser/bsdconfig now receive it automatically; raw pw does not. Review `id charlie` and
    `pw groupshow video`; make any membership change explicitly without dropping
    the user's other groups. Log out/in for updated supplementary groups.
    video membership grants graphics/input privileges; no world-writable socket.

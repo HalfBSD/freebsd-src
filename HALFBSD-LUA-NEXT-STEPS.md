@@ -12,6 +12,14 @@ Private Linux/staged tests pass; native build/device/desktop acceptance is pendi
 The seatd section below records the original requested work; its graph gap is
 now fixed. Console autologin, service frontend evaluation and profile work remain.
 
+## Human-account defaults update
+
+New login accounts created with adduser (also used by the installer) or bsdconfig
+now receive `video` automatically. Dedicated service-account automation through
+pw is unchanged. Root does not need membership. Existing accounts are not bulk
+modified: grant `charlie` membership explicitly and start a fresh login session.
+See [HALFBSD-ACCOUNT-POLICY.md](HALFBSD-ACCOUNT-POLICY.md) for exclusions and tests.
+
 ## Native milestone
 
 The administrator reports **“Lua multiuser READY” on Anvil**, after the earlier

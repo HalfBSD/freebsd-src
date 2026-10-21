@@ -3,6 +3,21 @@ October 13, 2026 | branch halfbsd2
 STATUS: administrator reports native "Lua multiuser READY" on Anvil.
 Full startup handoff reached; application and shutdown acceptance remain pending.
 
+WORKSTATION ACCOUNT DEFAULTS — OCTOBER 21, 2026
+
+New human login accounts created through adduser/installer or bsdconfig receive
+video once while preserving other supplementary groups. Root/UID 0, non-login
+shells and /nonexistent accounts get no automatic addition. pw/package service
+account creation and current databases remain unchanged. Explicit memberships
+are preserved. Existing charlie needs `pw groupmod video -m charlie` and a new
+session if not already a member. Console autologin selection remains separate.
+
+Shared shell policy is installed under /usr/share/halfbsd/accounts.subr. Tests
+execute actual frontend command paths with mocked UI/pw and no host mutation;
+policy cases, syntax and fresh/repeated parallel staging PASS on Linux. Native
+ATF and actual FreeBSD account-creation validation are pending. No C/kernel or
+boot-behavior changes. Full report: HALFBSD-ACCOUNT-POLICY.md.
+
 BASE SEAT MANAGEMENT — OCTOBER 21, 2026
 
 See HALFBSD-SEATD.txt for source provenance, build details, migration and tests.

@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: BSD-2-Clause
+# Shared by the human-account frontends, not pw/package service-account creation.
+# Print supplementary groups, preserving the caller's list and adding video once.
+halfbsd_login_groups()
+{
+	local account=$1 shell=$2 home=$3 groups=$4 uid=${5-}
+	case "$account" in root) printf '%s\n' "$groups"; return ;; esac
+	case "$uid" in 0) printf '%s\n' "$groups"; return ;; esac
+	case "$shell" in
+	""|nologin|*/nologin|false|*/false|true|*/true)
+		printf '%s\n' "$groups"; return ;;
+	esac
+	case "$home" in /nonexistent) printf '%s\n' "$groups"; return ;; esac
+	case ",$(printf '%s' "$groups" | tr '[:space:]' ',')," in
+	*,video,*) printf '%s\n' "$groups" ;;
+	*) printf '%s\n' "${groups:+$groups,}video" ;;
+	esac
+}

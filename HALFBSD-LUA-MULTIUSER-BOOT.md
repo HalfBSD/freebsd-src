@@ -21,6 +21,13 @@ The administrator also confirmed SSH authentication and hostname resolution with
 a remote login and git pull on the prior build. Seatd's native device/desktop
 checks and managed shutdown remain pending.
 
+## New account defaults
+
+Human accounts created through adduser/installer or bsdconfig now receive `video`
+automatically. Existing accounts still need deliberate membership changes; root
+needs none. See [HALFBSD-ACCOUNT-POLICY.md](HALFBSD-ACCOUNT-POLICY.md). Console
+account selection/autologin is a separate pending change.
+
 ## What changes
 
 With no loader override, PID 1 now selects Lua `multiuser`. It reuses the existing

@@ -35,6 +35,7 @@ f_include $BSDCFG_SHARE/dialog.subr
 f_include $BSDCFG_SHARE/strings.subr
 f_include $BSDCFG_SHARE/usermgmt/group_input.subr
 f_include $BSDCFG_SHARE/usermgmt/user_input.subr
+. /usr/share/halfbsd/accounts.subr || exit 1
 
 BSDCFG_LIBE="/usr/libexec/bsdconfig" APP_DIR="070.usermgmt"
 f_include_lang $BSDCFG_LIBE/$APP_DIR/include/messages.subr
@@ -184,7 +185,8 @@ f_user_copy_dotfiles()
 # 		ID is automatically chosen.
 # 	VAR_USER_GROUPS [Optional]
 # 		Comma-separated list of additional groups to which the user is
-# 		a member of. Default is NULL (no additional groups).
+# 		a member of. Human login accounts also receive the workstation
+# 		video group automatically. Requested groups are preserved.
 # 	VAR_USER_HOME [Optional]
 # 		The home directory to set. If NULL or unset, the home directory
 # 		is automatically calculated.
@@ -363,9 +365,12 @@ f_user_add()
 
 			case "$mtag" in
 			X) # Add/Exit
+			   local _user_member_groups
+			   f_shell_escape "$(halfbsd_login_groups "$user_name" "$user_shell" \
+			       "$user_home_dir" "$user_member_groups" "$user_uid")" _user_member_groups
 			   local var
 			   for var in account_expire class gecos gid home_dir \
-			   	member_groups name password_expire shell uid \
+				name password_expire shell uid \
 			   ; do
 			   	local _user_$var
 			   	eval f_shell_escape \"\$user_$var\" _user_$var
@@ -384,7 +389,7 @@ f_user_add()
 			   	cmd="$cmd -c '$_user_gecos'"
 			   [ "$user_home_dir" ] &&
 			   	cmd="$cmd -d '$_user_home_dir'"
-			   [ "$user_member_groups" ] &&
+			   [ "$_user_member_groups" ] &&
 			   	cmd="$cmd -G '$_user_member_groups'"
 			   [ "$user_password_expire" -o \
 			     "$no_password_expire" ] &&
@@ -472,9 +477,12 @@ f_user_add()
 			esac
 		done
 	else
+		local _user_member_groups
+		f_shell_escape "$(halfbsd_login_groups "$user_name" "$user_shell" \
+		    "$user_home_dir" "$user_member_groups" "$user_uid")" _user_member_groups
 		local var
 		for var in account_expire class gecos gid home_dir \
-			member_groups name password_expire shell uid \
+			name password_expire shell uid \
 		; do
 			local _user_$var
 			eval f_shell_escape \"\$user_$var\" _user_$var
@@ -492,7 +500,7 @@ f_user_add()
 			cmd="$cmd -L '$_user_class'"
 		[ "$user_gecos" -o "$null_gecos" ] &&
 			cmd="$cmd -c '$_user_gecos'"
-		[ "$user_member_groups" -o "$null_members" ] &&
+		[ "$_user_member_groups" -o "$null_members" ] &&
 			cmd="$cmd -G '$_user_member_groups'"
 		[ "$user_password_expire" -o "$no_password_expire" ] &&
 			cmd="$cmd -p '$_user_password_expire'"

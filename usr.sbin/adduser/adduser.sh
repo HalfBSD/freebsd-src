@@ -188,6 +188,12 @@ save_config() {
 	echo "uidstart=$uidstart"       >> ${ADDUSERCONF}
 }
 
+# Apply the workstation policy after shell/home selection, before confirmation.
+apply_login_groups() {
+	[ -n "$configflag" ] && return 0
+	ugroups=$(halfbsd_login_groups "$username" "$ushell" "$uhome" "$ugroups" "$uuid")
+}
+
 # add_user
 #	Add a user to the user database. If the user chose to send a welcome
 #	message or lock the account, do so.
@@ -204,6 +210,7 @@ add_user() {
 		return
 	fi
 
+	apply_login_groups
 	_name="-n '$username'"
 	[ -n "$uuid" ] && _uid='-u "$uuid"'
 	[ -n "$ulogingroup" ] && _group='-g "$ulogingroup"'
@@ -879,6 +886,7 @@ input_interactive() {
 		break
 	done
 
+	apply_login_groups
 	# Display the information we have so far and prompt to
 	# commit it.
 	#
@@ -935,6 +943,8 @@ input_interactive() {
 }
 
 #### END SUBROUTINE DEFINITION ####
+
+. /usr/share/halfbsd/accounts.subr || exit 1
 
 THISCMD=${0##*/}
 DEFAULTSHELL=/bin/sh

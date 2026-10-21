@@ -11,6 +11,19 @@ function M.new(native,proc,number,checkpoint)
     assert(root and root.type=='zfs','initial Phase IV integration requires a kernel-mounted ZFS root; use RC for other layouts')
     return setmetatable({fd=assert(proc.fd(number)),sent=false,checkpoint=checkpoint},{__index=M})
 end
+-- Retain the original failure across dependency propagation and cleanup so a
+-- console photograph taken at the recovery prompt still includes its cause.
+function M:observe(item,record)
+    if self.first_failure or item.state~='FAILED'then return end
+    local result=record.result or{}
+    self.first_failure={service=item.service,reason=tostring(item.reason),
+        exit_status=result.exit_code,signal=result.signal,
+        output=(record.output_buffer or''):sub(1,4096)}
+end
+function M:summary()
+    if not self.first_failure then return ''end
+    return '[halfinit boot] FIRST FAILURE '..require('json').encode(self.first_failure)..'\n'
+end
 function M:check(engine,control_ready)
     if self.sent then return end
     local ready=control_ready and not engine.shutting

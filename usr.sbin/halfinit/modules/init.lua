@@ -146,6 +146,7 @@ function M.main(args,module_dir)
             else io.stdout:write(line);io.stdout:flush()end
         end
         local r=engine.records[item.service];local result=r.result
+        if handoff then handoff:observe(item,r)end
         local fields={event='transition',service=item.service,state=item.state,previous=item.previous,reason=item.reason,monotonic=item.time}
         if r.child then fields.pid=r.child.pid elseif result then fields.pid=result.pid end
         if result then fields.exit_status=result.exit_code or(result.signal and('signal:'..result.signal)or result.state)end
@@ -287,7 +288,7 @@ function M.main(args,module_dir)
     end
     if handoff then
         assert(native.sync())
-        local record=json.encode({event='boot.shutdown',cleaned=ok and cleaned and actions_ok and next(engine.shutdown_failed)==nil})..'\n'
+        local record=handoff:summary()..json.encode({event='boot.shutdown',cleaned=ok and cleaned and actions_ok and next(engine.shutdown_failed)==nil})..'\n'
         -- Login revokes old console descriptors; reacquire without owning its tty.
         local console=native.open('/dev/console','append')
         if console then console:write(record);console:close()else io.stderr:write(record)end

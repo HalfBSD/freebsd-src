@@ -121,6 +121,25 @@ test('firewall readback requires immutable default and guard; loading never flus
     assert(p.firewall_policy(policy,nil,guard..baseline..'00100 set 0 allow ip from any to any via lo0\n'))
     rejects(function()p.firewall_policy(policy,nil,guard..baseline..'00100 set 0 allow ip from any to any\n')end)
 end)
+test('IPFW kernel orphan counter is accepted without weakening deny-policy verification',function()
+    local _,_,p=fixture()
+    local counter='65535 set 31 count ip from any to any not // orphaned dynamic states counter\n'
+    local deny='65535 set 31 deny ip from any to any\n'
+    local guard='65534 set 31 deny ip from any to any\n'
+    assert(p.firewall_baseline({},nil,counter..deny))
+    assert(p.firewall_baseline({},nil,deny..counter))
+    assert(p.firewall_policy({load=true,rules={}},nil,guard..counter..deny))
+    assert(p.firewall_policy({load=false},nil,guard..counter..deny))
+    for _,bad in ipairs({counter,counter..counter..deny,counter..deny..deny,
+        counter..deny:gsub('deny','allow'),counter:gsub(' not //',' //')..deny,
+        counter:gsub('set 31','set 0')..deny,counter:gsub('65535','65534')..deny,
+        counter:gsub('count ip','allow ip')..deny,counter:gsub('counter','other')..deny,
+        counter..deny..'00100 set 0 allow ip from any to any\n'})do
+        rejects(function()p.firewall_baseline({},nil,bad)end)
+        rejects(function()p.firewall_policy({load=true,rules={}},nil,guard..bad)end)
+    end
+    rejects(function()p.firewall_policy({load=false},nil,counter..deny)end)
+end)
 test('route readiness requires both address and default route on selected interface',function()
     local f,n,p=fixture();assert(p.route_ready({interface='em0'}));assert(not p.route_ready({interface='em1'}))
     n.default_routes=function()return {}end;assert(not p.route_ready({interface='em0'}))

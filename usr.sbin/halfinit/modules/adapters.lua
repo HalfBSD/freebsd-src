@@ -8,6 +8,12 @@ end
 local function same_mount(row,p)
     return row and row.type==p.options.fstype and row.source==p.options.from
 end
+-- ipfw_dyn_init installs this protected, never-matching accounting rule at
+-- 65535/set 31 in addition to the real default deny. Match the whole rule, not
+-- merely its number/comment, so other policy cannot be hidden by this exception.
+local function orphan_counter(line)
+    return line:match('^65535%s+set%s+31%s+count%s+ip%s+from%s+any%s+to%s+any%s+not%s+//%s+orphaned%s+dynamic%s+states%s+counter%s*$')
+end
 function M.attach(providers,os,ipc)
     local probes=setmetatable({},{__mode='k'})
     local created=setmetatable({},{__mode='k'})
@@ -161,22 +167,30 @@ function M.attach(providers,os,ipc)
         assert(text:match('^%s*(.-)%s*$')==p.expected,'unexpected kernel command output');return true
     end
     providers.firewall_baseline=function(p,d,text)
-        local count=0
+        local count,counters=0,0
         for line in text:gmatch('[^\n]+')do
-            count=count+1
-            assert(line:match('^65535%s+set%s+31%s+deny%s+ip%s+from%s+any%s+to%s+any%s*$'),
-                'IPFW has existing policy or an accepting default; refuse to replace it')
+            if orphan_counter(line)then
+                counters=counters+1;assert(counters==1,'duplicate IPFW kernel counter')
+            else
+                count=count+1
+                assert(line:match('^65535%s+set%s+31%s+deny%s+ip%s+from%s+any%s+to%s+any%s*$'),
+                    'IPFW has existing policy or an accepting default; refuse to replace it')
+            end
         end
         assert(count==1,'IPFW kernel baseline is not the expected single deny rule');return true
     end
     providers.firewall_policy=function(p,d,text)
-        local lines={}
+        local lines={};local counters=0
         for line in text:gmatch('[^\n]+')do
-            local number,set,body=line:match('^(%d+)%s+set%s+(%d+)%s+(.+)$')
-            if tonumber(number)==65534 or tonumber(number)==65535 then assert(set=='31','deny guard must be in immutable set 31')end
-            if p.load and tonumber(number)~=65534 and tonumber(number)~=65535 then assert(set=='0'and p.rules[tostring(tonumber(number))],'unexpected IPFW rule')end
-            assert(number,'invalid IPFW readback');number=tonumber(number)
-            lines[number]=lines[number]or{};lines[number][#lines[number]+1]=body
+            if orphan_counter(line)then
+                counters=counters+1;assert(counters==1,'duplicate IPFW kernel counter')
+            else
+                local number,set,body=line:match('^(%d+)%s+set%s+(%d+)%s+(.+)$')
+                if tonumber(number)==65534 or tonumber(number)==65535 then assert(set=='31','deny guard must be in immutable set 31')end
+                if p.load and tonumber(number)~=65534 and tonumber(number)~=65535 then assert(set=='0'and p.rules[tostring(tonumber(number))],'unexpected IPFW rule')end
+                assert(number,'invalid IPFW readback');number=tonumber(number)
+                lines[number]=lines[number]or{};lines[number][#lines[number]+1]=body
+            end
         end
         assert(lines[65534]and #lines[65534]==1 and lines[65534][1]=='deny ip from any to any','immutable IPFW deny guard is missing')
         assert(lines[65535]and #lines[65535]==1 and lines[65535][1]=='deny ip from any to any','default deny is missing')

@@ -3,6 +3,30 @@ October 13, 2026 | branch halfbsd2
 STATUS: administrator reports native build/install and intended single-user
 diagnostic boot PASS on Anvil; full multiuser boot/shutdown remain UNVERIFIED.
 
+IPFW BASELINE CORRECTION — OCTOBER 20, 2026
+
+After the root correction, native console evidence shows storage/ZFS/AMDGPU,
+runtime, swap and loopback READY. ipfw-baseline then failed output verification.
+Administrator transcribed two kernel rules: 65535/set31 protected count with
+"not // orphaned dynamic states counter", followed by 65535/set31 default deny.
+The first is installed by dyn_add_protected_rule() in ip_fw_dynamic.c and is
+never-matching internal accounting. Our one-row baseline assumption was wrong.
+The same assumption also affected final policy readback and is fixed there too.
+
+The adapters accept at most one exact counter; require default deny and final
+deny guard as before; reject duplicates/alterations/accepting defaults/unexpected
+policy. Regression reproduced original failure before fix. No native firewall
+rules, IPFW implementation or network access policy was modified.
+
+A boot handoff diagnostic now retains the first failed service/reason/exit status
+and bounded output, repeating it after shutdown so it remains visible beside the
+recovery prompt. Tests cover first-cause preservation, snapshot ownership,
+bounded output and one-line JSON encoding. No screenshot is staged or committed.
+
+Linux checks: 18 Phase III policy groups, 14 Phase IV groups plus singleboot and
+strict C17 handoff fixtures PASS. Native boot/firewall/packet/shutdown tests
+remain pending; this is not a claim of successful network-checkpoint startup.
+
 NATIVE NETWORK-CHECKPOINT FAILURE AND CORRECTION — OCTOBER 20, 2026
 
 Administrator's console screenshot shows the network boot graph executing, then:

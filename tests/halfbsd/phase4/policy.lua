@@ -153,4 +153,19 @@ test('network handoff notifies once without shutting down supervised children',f
         rejects(function()control.request({version=1,command=cmd,service=cmd~='reload'and cmd~='shutdown'and'network'or nil},0,0,e,{})end)
     end
 end)
+test('recovery summary retains the first failure and bounded output after cleanup',function()
+    local n,p=fixture();local h=handoff.new(n,p,3,true)
+    assert(h:summary()=='')
+    local record={result={exit_code=1},output_buffer='sysctl: unknown oid\n'..string.rep('x',5000)}
+    h:observe({service='ipfw-hook-ip6',state='FAILED',reason='oneshot process failed'},record)
+    record.result.exit_code=0;record.output_buffer=''
+    h:observe({service='firewall',state='SKIPPED',reason='dependency failed'},{})
+    h:observe({service='another',state='FAILED',reason='cleanup failed'},{})
+    local line=h:summary();assert(line:match('^%[halfinit boot%] FIRST FAILURE '))
+    local result=require('json').decode(line:match('FIRST FAILURE (.+)'))
+    assert(result.service=='ipfw-hook-ip6'and result.exit_status==1)
+    assert(result.reason=='oneshot process failed'and #result.output==4096)
+    assert(result.output:find('\n',1,true)) -- JSON preserves content without splitting the console line
+    assert(select(2,line:gsub('\n',''))==1)
+end)
 print('PASS Phase IV policy groups: '..count..' (no live boot validation)')

@@ -128,3 +128,39 @@ On the next attempt, look for `rootfs STARTING -> READY`, followed by local
 filesystem/ZFS and graphics initialization. If `rootfs` still fails, record its
 exact reason and use RC recovery. We retain readback validation rather than
 proceeding on a successful syscall alone. No automatic RC fallback is introduced.
+
+## Diagnosing a later firewall-stage failure
+
+A subsequent administrator screenshot shows rootfs, local filesystems, ZFS,
+AMDGPU/graphics, runtime, swap and loopback READY before shutdown. DHCP was still
+queued and firewall was skipped. The originating failure is above the photographed
+region, so this evidence does not identify the failed firewall prerequisite.
+From that recovery shell, preserve the log before rebooting:
+
+```sh
+grep -n -E 'FAILED|SKIPPED|verification|errno' /var/run/halfbsd/boot.log | head -20
+```
+
+The new diagnostic repeats `FIRST FAILURE` after cleanup, immediately before the
+`boot.shutdown` record. It retains the first failed service, reason, process exit
+status/signal and up to 4096 bytes of captured output, encoded on one console line.
+Later dependency skips and cleanup failures cannot replace that original cause.
+This diagnostic passed portable policy tests; native execution is pending.
+
+## IPFW protected counter correction
+
+The administrator supplied the missing baseline output: two rules numbered 65535
+in set 31, the first `count ip from any to any not // orphaned dynamic states
+counter`, the second `deny ip from any to any`. The kernel's
+`sys/netpfil/ipfw/ip_fw_dynamic.c:dyn_add_protected_rule()` creates the counter,
+marks its comment instruction F_NOT so it never matches normal packets, and
+inserts it through `ipfw_add_protected_rule()`. It is internal accounting, not an
+accepting policy. The validator incorrectly assumed there was only one row.
+
+Both baseline and final policy validation now recognize at most one exact
+protected counter while still requiring the actual default deny and final deny
+guard. Altered/duplicate counters, accepting defaults and unexpected load-policy
+rules remain errors. No firewall rules are removed or changed by this correction.
+The regression reproduced the original failure before the fix. All 18 Phase III
+and 14 Phase IV policy groups pass locally; native boot validation is pending.
+The first-failure summary described above is included in the pending changes.

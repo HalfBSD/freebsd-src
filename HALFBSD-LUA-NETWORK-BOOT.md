@@ -2,7 +2,11 @@
 
 The default is now `halfbsd.boot_mode=lua`, `halfbsd.boot_stage=network`.
 This extends the successful ZFS/AMDGPU single-user checkpoint without enabling
-full multiuser startup. The new checkpoint awaits native build and boot testing.
+full multiuser startup. The first reported native attempt reached the new graph but failed because the
+root remount remained read-only. The adapter now explicitly supplies `rw` with
+`MNT_UPDATE`; the prior request retained the existing `ro` mount option. Portable
+regression tests reproduce that failure and pass with the fix. A new native boot
+is required to verify the correction.
 
 ## What starts
 
@@ -117,3 +121,10 @@ The `single` diagnostic leaves root read-only and starts no networking. Full
 `halfbsd.boot_stage=multiuser` remains available as a later test, but is not
 needed for this checkpoint. Keep the staged bring-up until network and shutdown
 results are confirmed.
+
+## Root remount correction
+
+On the next attempt, look for `rootfs STARTING -> READY`, followed by local
+filesystem/ZFS and graphics initialization. If `rootfs` still fails, record its
+exact reason and use RC recovery. We retain readback validation rather than
+proceeding on a successful syscall alone. No automatic RC fallback is introduced.

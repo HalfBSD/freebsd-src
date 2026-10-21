@@ -41,6 +41,27 @@ test('system graph is declarative and preserves compiled DNS configuration',func
     assert(position(p,'firewall')<position(p,'dhcp-em0')and position(p,'dns-anchor')<position(p,'dns'))
     assert(not r.gateway.enabled and not r.desktop)
 end)
+test('root remount explicitly overrides read-only options and verifies kernel readback',function()
+    local f,n,p=fixture();f.rows[1].readonly=true
+    local calls=0
+    n.mount=function(options,flags)
+        calls=calls+1
+        assert(flags==0x10000 and options.fstype=='zfs'and options.fspath=='/'and options.from=='tank/root')
+        -- nmount merges prior options: MNT_UPDATE alone retains the old ro option.
+        if options.rw==''then f.rows[1].readonly=false end
+        return true
+    end
+    rejects(function()p.root_writable({update=false})end);assert(calls==0)
+    assert(p.root_writable({update=true}));assert(calls==1 and not f.rows[1].readonly)
+    assert(p.root_writable({update=true}));assert(calls==1) -- writable roots need no syscall
+    f.rows[1].readonly=true
+    n.mount=function()return true end
+    rejects(function()p.root_writable({update=true})end) -- success without changed state is insufficient
+    n.mount=function()return nil,{name='EROFS',code=30}end
+    local ok,err=pcall(p.root_writable,{update=true});assert(not ok and err.name=='EROFS')
+    f.uid=1001;calls=0;n.mount=function()calls=calls+1;return true end
+    rejects(function()p.root_writable({update=true})end);assert(calls==0)
+end)
 test('nested filesystems order parents before checks and child mounts',function()
     local f,n=fixture();local r=registry({interfaces={'em0'},zfs=false,local_mounts={
         {options={fstype='ufs',fspath='/var/log',from='/dev/log'},fsck=true},

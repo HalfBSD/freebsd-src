@@ -39,6 +39,10 @@ success. These notes record failures found during the Lua foundation work.
 - For Lua C bindings, preserve argument indices before pushing temporaries;
   respect luaL_Buffer's stack ownership rules. Exercise omitted/nil optional
   arguments, boundary-sized data and allocation growth, not just small inputs.
+- For native mount updates, inspect FreeBSD's option-merging semantics. MNT_UPDATE
+  alone does not override a retained ro option; request rw/noro explicitly when
+  authorized and verify the resulting kernel mount state. Model retained options
+  and failed readback in portable tests; only native testing proves ZFS behavior.
 - Clearly distinguish syntax checks, real compilation/linking, portable Linux
   smoke tests and native FreeBSD runtime tests. Temporary API declarations or
   ENOSYS link stubs never establish FreeBSD ABI or kernel behavior. Report native

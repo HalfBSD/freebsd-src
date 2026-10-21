@@ -91,7 +91,9 @@ function M.attach(providers,os,ipc)
         local root=assert(mounted(os,'/'),'kernel root mount is missing')
         if root.readonly then
             assert(p.update,'root is read-only; explicit root_writable permission is required')
-            assert(os.mount({fstype=root.type,fspath='/',from=root.source},0x10000)) -- MNT_UPDATE
+            -- FreeBSD merges existing mount options on MNT_UPDATE. Without an
+            -- explicit rw (equivalent to mount -uw's noro), the old ro survives.
+            assert(os.mount({fstype=root.type,fspath='/',from=root.source,rw=''},0x10000)) -- MNT_UPDATE
             assert(not assert(mounted(os,'/')).readonly,'root remount remained read-only')
         end
         return true

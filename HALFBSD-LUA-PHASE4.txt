@@ -3,6 +3,34 @@ October 13, 2026 | branch halfbsd2
 STATUS: administrator reports native build/install and intended single-user
 diagnostic boot PASS on Anvil; full multiuser boot/shutdown remain UNVERIFIED.
 
+NATIVE NETWORK-CHECKPOINT FAILURE AND CORRECTION — OCTOBER 20, 2026
+
+Administrator's console screenshot shows the network boot graph executing, then:
+  rootfs STARTING -> FAILED: provider failed: root remount remained read-only
+The manager stopped the queued services and PID 1 entered recovery without RC.
+This is distinct from the earlier reported invalid-stage banner: the screenshot
+proves this attempt reached the new graph, not an obsolete selector rejection.
+It does NOT establish networking or multiuser acceptance.
+
+Root cause: adapters.root_writable passed only fstype/fspath/from with MNT_UPDATE.
+FreeBSD's vfs_domount_update merges the prior mount options; an existing ro option
+survives unless explicitly overridden. ZFS consumes the merged read-only/read-write
+options. sbin/mount/mount.c supplies noro for mount -uw. The adapter now supplies
+rw='', an equivalent explicit override understood by both VFS and ZFS. It still
+requires explicit root_writable policy/root privilege and checks kernel readback.
+No persistent ZFS properties, pool imports, repair policy or security checks change.
+
+Regression added to tests/halfbsd/phase3/policy.lua: models retained ro options,
+requires the explicit rw update with unchanged source/type/path, verifies writable
+root is a no-op, disallowed/non-root updates do not call mount, syscall errors
+retain their error object, and unchanged read-only readback still fails closed.
+The test reproduced the exact original failure before the one-line fix.
+Afterward: 17 Phase III policy groups, 13 Phase IV groups and singleboot/strict C
+handoff tests, plus 14 Phase II groups PASS locally on Linux. Staged repeated
+module installation/build-target checks PASS. These are portable/model tests;
+real ZFS remount, native buildworld/buildkernel and live boot remain pending.
+No screenshot or other image is included in this change.
+
 CURRENT IMPLEMENTATION — OCTOBER 20, 2026
 
 Default Lua boot now selects stage=network, a serial inspection checkpoint.

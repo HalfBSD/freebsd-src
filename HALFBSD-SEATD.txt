@@ -3,6 +3,26 @@ HalfBSD base seatd / libseat integration
 STATUS: source/build/Lua integration implemented; Linux and staged checks PASS.
 Native FreeBSD buildworld/build32, ATF and workstation/device validation PENDING.
 
+NATIVE BUILD FAILURE CORRECTION
+
+Detailed explanation and broader language-policy assessment:
+HALFBSD-C-DIALECT-NOTES.md.
+
+Anvil buildworld failed in libseat/backend/seatd.c because GNU C17 predefines
+unix as 1, replacing the sockaddr union member named unix. The daemon uses the
+same member and would fail too. Upstream Meson selects strict C11; the initial
+BSD integration omitted CSTD and inherited GNU C17. Strict-only Linux fixture
+compilation did not exercise that production dialect. This was a build rule
+error, not an account-policy or seatd runtime failure.
+
+Both BSD makefiles now select CSTD=c17 explicitly, preserving the upstream source
+and existing warnings/hardening. The build regression compiles both affected
+files using BSD make's effective CSTD, checks effective CFLAGS, and retains the
+staged SYSROOT/inherited ABI/install checks. It reproduced the reported unix
+collision before the fix, and passes afterward on Linux/GCC. Full private tests
+and shared/static/PIE links still pass. Clang and native FreeBSD world/build32
+are unavailable locally; successful native buildworld is NOT claimed.
+
 HUMAN ACCOUNT DEFAULTS UPDATE
 
 New human accounts created through adduser (including the installer) and

@@ -16,5 +16,5 @@ Tests and integration notes: tests/halfbsd/seatd and HALFBSD-SEATD.txt.
 
 For updates, replace the tracked upstream files with the selected release tree,
 retain this provenance file, update version definitions/metadata, compare the
-Meson source lists and flags, rerun strict/native/ABI/install/runtime checks,
+Meson source lists and flags (especially strict CSTD; GNU mode defines unix), rerun strict/native/ABI/install/runtime checks,
 and document any downstream source patches explicitly.

@@ -3,6 +3,17 @@ October 13, 2026 | branch halfbsd2
 STATUS: administrator reports native "Lua multiuser READY" on Anvil.
 Full startup handoff reached; application and shutdown acceptance remain pending.
 
+SEATD NATIVE COMPILATION CORRECTION — OCTOBER 21, 2026
+
+Administrator supplied buildworld failure: unix macro expands to 1 in the
+libseat sockaddr union. The daemon has the same identifier. Initial BSD rules
+inherited gnu17 instead of upstream's strict dialect. Both now select strict
+C17; no upstream source rename or warning suppression is needed. A regression
+using effective make CSTD/CFLAGS reproduced the failure before the change and
+compiles both files successfully afterward on Linux/GCC. Staging and private
+runtime/PIE/static/shared tests pass; native world/build32 still pending.
+See HALFBSD-SEATD.txt. Account/group policy is unchanged by this correction.
+
 WORKSTATION ACCOUNT DEFAULTS — OCTOBER 21, 2026
 
 New human login accounts created through adduser/installer or bsdconfig receive

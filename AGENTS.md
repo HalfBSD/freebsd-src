@@ -7,6 +7,10 @@ success. These notes record failures found during the Lua foundation work.
   and `-Werror`. Run Clang when available; GCC alone missed native Clang
   indentation diagnostics. Keep labels before statements, and make nested
   control-flow scopes clear with braces and separate statements.
+- Match imported code's language dialect in the production makefiles. GNU modes
+  expose legacy macros such as unix that strict C hides. Compile using effective
+  BSD make CSTD/CFLAGS as well as strict smoke-test flags; otherwise portable
+  strict-only tests can miss collisions in buildworld's default GNU dialect.
 - Account for buildworld's 32-bit compatibility pass, even on AMD64. Match
   counter bounds to their actual types; guard against wrap and reused IDs.
   A freestanding width check is useful but does not prove a full build32.

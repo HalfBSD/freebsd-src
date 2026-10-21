@@ -1,4 +1,7 @@
 PACKAGE= runtime
+# Upstream uses strict C. GNU mode defines `unix`, which collides with the
+# sockaddr union member used by both the daemon and client backend.
+CSTD= c17
 SEATDSRC= ${SRCTOP}/contrib/seatd
 .PATH: ${SEATDSRC}/common ${SEATDSRC}/seatd
 PROG= seatd

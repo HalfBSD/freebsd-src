@@ -22,6 +22,22 @@ case " $(query lib/libseat _LIBS) " in *' libseat.a libseat.so.1 '*) ;; *) exit 
 case " $(query usr.sbin/seatd CFLAGS) " in *' -fPIE '*) ;; *) exit 1 ;; esac
 case " $(query lib/libseat CFLAGS) " in *'-DSEATD_ENABLED=1'*) ;; *) exit 1 ;; esac
 case " $(query lib/libseat CFLAGS) " in *' -fPIC '*) ;; *) exit 1 ;; esac
+# Compile both colliding files with the dialect actually selected by BSD make.
+# Strict-only fixture flags would hide GNU mode's predefined `unix` macro.
+for part in lib/libseat usr.sbin/seatd; do
+    standard=$(query "$part" CSTD)
+    [ "$standard" = c17 ]
+    case " $(query "$part" CFLAGS) " in *' -std=c17 '*) ;; *) exit 1 ;; esac
+    case "$part" in
+        lib/libseat) input=libseat/backend/seatd.c ;;
+        usr.sbin/seatd) input=seatd/seatd.c ;;
+    esac
+    ${CC:-cc} -std="$standard" -Wall -Wextra -Wpedantic -Werror \
+        -D_XOPEN_SOURCE=700 -D_DEFAULT_SOURCE -D__BSD_VISIBLE=1 \
+        -DSEATD_VERSION='"0.9.3"' -DSEATD_DEFAULTPATH='"/var/run/seatd.sock"' \
+        -I"$src/contrib/seatd/include" -fPIC -c "$src/contrib/seatd/$input" \
+        -o "$work/dialect.o"
+done
 # The compatibility pass must keep its own metadata directory and ABI.
 [ "$(MAKEOBJDIR="$work/lib" "$bsd_make" -m "$src/share/mk" -C "$src/lib/libseat" \
     SRCTOP="$src" MACHINE=amd64 MACHINE_ARCH=i386 COMPILER_TYPE=gcc \

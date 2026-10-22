@@ -31,8 +31,8 @@
 
 [ `id -u ` -ne 0 ] && echo "Must be root!" && exit 1
 
-[ -f /usr/sbin/auditd -a -f /etc/rc.d/auditd ] || exit 0
-pgrep -q auditd && exit 0 || service auditd onestart
+[ -x /usr/sbin/halfsvc ] && halfsvc status auditd >/dev/null 2>&1 || exit 0
+pgrep -q auditd && exit 0 || halfsvc start auditd
 
 mount | grep $mntpoint | grep -q /dev/md && umount -f $mntpoint
 mdconfig -l | grep -q md$mdstart &&  mdconfig -d -u $mdstart
@@ -53,6 +53,6 @@ while mount | grep $mntpoint | grep -q /dev/md; do
 done
 checkfs /dev/md$mdstart; s=$?
 mdconfig -d -u $mdstart
-service auditd onestop
+halfsvc stop auditd
 
 exit 0

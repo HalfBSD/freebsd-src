@@ -73,10 +73,6 @@
         ..
         profile.d       tags=package=runtime
         ..
-        rc.conf.d       tags=package=rc
-        ..
-        rc.d            tags=package=rc
-        ..
         unbound         tags=package=local-unbound
         ..
         security        tags=package=audit
@@ -88,8 +84,6 @@
             ..
             untrusted		tags=package=caroot
             ..
-        ..
-        sysctl.kld.d    tags=package=rc
         ..
         syslog.d        tags=package=syslogd
         ..

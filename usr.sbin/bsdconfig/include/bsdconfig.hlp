@@ -9,4 +9,4 @@ For setting the timezone after the system is installed, use the 'Time
 Zone' item in this menu.
 
 For more information on the overall general system configuration, see
-the /etc/rc.conf and /etc/defaults/rc.conf files.
+/etc/halfbsd/system.lua and halfsvc.

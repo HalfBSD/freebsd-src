@@ -83,9 +83,7 @@ SE_JAILS= \
 	VIMAGE \
 	jail.xxx.conf \
 	jib \
-	jng \
-	rc.conf.jails \
-	rcjail.xxx.conf
+	jng
 
 SE_DIRS+=	kld
 SE_KLD=	Makefile

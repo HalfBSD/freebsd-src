@@ -608,7 +608,7 @@ if [ -f /etc/localtime ] ; then
 fi
 
 log_it ldconfig in chroot
-chroot ${SBMNT} sh /etc/rc.d/ldconfig start
+chroot ${SBMNT} /sbin/ldconfig -elf /lib /usr/lib /usr/local/lib
 
 log_it before_ports
 (

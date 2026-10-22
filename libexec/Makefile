@@ -5,7 +5,6 @@
 SUBDIR=	${_atf} \
 	${_atrun} \
 	flua \
-	rc \
 	${_rlogind} \
 	${_rshd} \
 	${_rtld-elf} \

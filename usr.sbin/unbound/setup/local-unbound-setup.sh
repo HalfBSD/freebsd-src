@@ -42,7 +42,6 @@ anchor=""
 pidfile=""
 resolv_conf=""
 resolvconf_conf=""
-service=""
 start_unbound=""
 use_tls=""
 
@@ -65,7 +64,6 @@ set_defaults() {
 	: ${pidfile:=/var/run/local_unbound.pid}
 	: ${resolv_conf:=/etc/resolv.conf}
 	: ${resolvconf_conf:=/etc/resolvconf.conf}
-	: ${service:=local_unbound}
 	: ${start_unbound:=yes}
 	: ${use_tls:=no}
 }
@@ -349,7 +347,6 @@ usage() {
 	echo "    -p path     full path to pid file"
 	echo "    -R path     full path to resolvconf.conf"
 	echo "    -r path     full path to resolv.conf"
-	echo "    -s service  name of unbound service"
 	echo "    -t          use authenticated TLS for upstream forwarding"
 	echo "    -u user     user to run unbound as"
 	echo "    -w path     full path to working directory"
@@ -365,7 +362,7 @@ main() {
 	#
 	# Parse and validate command-line options
 	#
-	while getopts "a:c:nO:p:R:r:s:tu:w:" option ; do
+	while getopts "a:c:nO:p:R:r:tu:w:" option ; do
 		case $option in
 		a)
 			anchor="$OPTARG"
@@ -387,9 +384,6 @@ main() {
 			;;
 		r)
 			resolv_conf="$OPTARG"
-			;;
-		s)
-			service="$OPTARG"
 			;;
 		t)
 			use_tls="yes"
@@ -499,21 +493,14 @@ main() {
 	fi
 	rmdir "${D}${workdir}/conf.d" 2>/dev/null || :
 
-	#
-	# Start unbound, unless requested not to.  Stop immediately if
-	# it is not enabled so we don't end up with a resolv.conf that
-	# points into nothingness.  We could "onestart" it, but it
-	# wouldn't stick.
-	#
-	if [ "${start_unbound}" = "no" ] ; then
-		: # skip
-	elif ! service "${service}" enabled ; then
-		echo "Please enable $service in rc.conf(5) and try again."
-		return 1
-	elif ! service "${service}" restart ; then
-		echo "Failed to start $service."
-		return 1
-	fi
+    # Service ownership, dependencies and trust-anchor initialization belong
+    # to the supervisor. Configuration generation must never run an RC script.
+    if [ "${start_unbound}" != no ]; then
+        /usr/sbin/halfsvc restart dns || {
+            echo 'Failed to request the managed DNS restart.' >&2
+            return 1
+        }
+    fi
 
 	#
 	# Keep the libc resolver pointed at the local DNS service.

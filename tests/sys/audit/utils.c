@@ -222,7 +222,7 @@ skip_if_extattr_not_supported(const char *path)
 	}
 }
 
-static bool
+bool
 is_auditd_running(void)
 {
 	int trigger;

@@ -28,8 +28,6 @@
 #
 ############################################################ MAIN
 
-cat $BSDINSTALL_TMPETC/rc.conf.* >> $BSDINSTALL_TMPETC/rc.conf
-rm $BSDINSTALL_TMPETC/rc.conf.*
 
 cat $BSDINSTALL_CHROOT/etc/sysctl.conf $BSDINSTALL_TMPETC/sysctl.conf.* >> $BSDINSTALL_TMPETC/sysctl.conf
 rm $BSDINSTALL_TMPETC/sysctl.conf.*
@@ -39,6 +37,27 @@ if [ -f $BSDINSTALL_TMPETC/ttys.hardening ]; then
 	rm $BSDINSTALL_TMPETC/ttys.hardening
 fi
 
+# Seed supported native boot policy without rewriting administrator Lua.
+if [ -f "$BSDINSTALL_TMPETC/hostname" ]; then
+    policy="$BSDINSTALL_CHROOT/etc/halfbsd/system.lua"
+    template="$BSDINSTALL_CHROOT/usr/share/examples/halfbsd/boot-system.lua"
+    if [ -L "$policy" ] || [ -L "$BSDINSTALL_CHROOT/etc/halfbsd" ]; then
+        echo 'Refusing a symlink in HalfBSD boot policy installation' >&2
+        exit 1
+    fi
+    if [ ! -e "$policy" ] || cmp -s "$policy" "$template"; then
+        mkdir -p "$BSDINSTALL_CHROOT/etc/halfbsd" || exit 1
+        temporary=$(mktemp "$policy.XXXXXXXX") || exit 1
+        /usr/bin/lua -E -e 'io.write(assert(loadfile(arg[0]))()(arg[1],arg[2])); os.exit(0)' -- \
+            /usr/libexec/bsdinstall/config-halfbsd.lua "$template" "$BSDINSTALL_TMPETC/hostname" > "$temporary" || {
+            rm -f "$temporary"; exit 1;
+        }
+        chmod 644 "$temporary" && mv "$temporary" "$policy" || exit 1
+    else
+        echo 'Preserving administrator system.lua; set boot.hostname there if needed.' >&2
+    fi
+    rm -f "$BSDINSTALL_TMPETC/hostname"
+fi
 cp $BSDINSTALL_TMPETC/* $BSDINSTALL_CHROOT/etc
 
 cat $BSDINSTALL_TMPBOOT/loader.conf.* >> $BSDINSTALL_TMPBOOT/loader.conf

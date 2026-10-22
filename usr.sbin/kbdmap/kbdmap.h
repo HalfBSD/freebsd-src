@@ -28,7 +28,6 @@
 
 
 #define DEFAULT_LANG		"en"
-#define DEFAULT_SYSCONFIG	"/etc/rc.conf"
 
 
 #define DEFAULT_VT_KEYMAP_DIR	"/usr/share/vt/keymaps"

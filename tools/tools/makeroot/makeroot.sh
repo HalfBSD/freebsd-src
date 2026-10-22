@@ -199,19 +199,6 @@ for eman in ${EXTRAS}; do
 	    sed -e "s|contents=\./|contents=${extradir}/|" >> ${manifest}
 done
 
-# /etc/rcorder.start allows the startup order to be stable even if
-# not all startup scripts are installed.  In theory it should be
-# unnecessary, but dependencies in rc.d appear to be under recorded.
-# This is a hack local to beri/cheribsd.
-#
-echo /etc/rc.d/FIRST > ${tmpdir}/rcorder.start
-rcorder -s nostart ${BSDROOT}/etc/rc.d/* | sed -e "s:^${BSDROOT}::" | \
-     grep -v LAST | grep -v FIRST >> \
-    ${tmpdir}/rcorder.start
-echo /etc/rc.d/LAST >> ${tmpdir}/rcorder.start
-echo "./etc/rcorder.start type=file mode=644 uname=root gname=wheel" \
-   "contents=${tmpdir}/rcorder.start" >> ${manifest}
-
 # Add all public keys in KEYDIR to roots' authorized_keys file.
 if [ -n "${KEYDIR}" ]; then
 	cat ${KEYDIR}/*.pub > ${tmpdir}/authorized_keys

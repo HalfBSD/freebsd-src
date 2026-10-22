@@ -282,10 +282,6 @@
             ..
         ..
     ..
-    etc
-        rc.d
-        ..
-    ..
     examples
     ..
     gnu
@@ -470,8 +466,6 @@
             ..
             atf-sh
             ..
-        ..
-        rc
         ..
         rtld-elf
             rtld_deepbind
@@ -1276,8 +1270,6 @@
         sa
         ..
         syslogd
-        ..
-        sysrc
         ..
         traceroute
         ..

@@ -6,4 +6,4 @@ make.conf           - example configuration variables for system builds
 README.examples     - this inventory
 
 The installed default configurations are provided by the corresponding
-system components, including /etc/defaults/rc.conf and /etc/defaults/devfs.rules.
+system components, including /etc/halfbsd/system.lua and explicit device policy.

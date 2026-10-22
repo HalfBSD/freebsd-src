@@ -31,7 +31,7 @@
 #
 ############################################################ INFORMATION
 #
-# Use this tool with jail.conf(5) (or rc.conf(5) ``legacy'' configuration) to
+# Use this tool with jail.conf(5) to
 # manage `vnet' interfaces for jails. Designed to automate the creation of vnet
 # interface(s) during jail `prestart' and destroy said interface(s) during jail
 # `poststop'.
@@ -79,39 +79,6 @@
 #
 # ### END EXCERPT ###
 #
-# In rc.conf(5) ``legacy'' format (used when /etc/jail.conf does not exist):
-#
-# ### BEGIN EXCERPT ###
-#
-# jail_enable="YES"
-# jail_list="xxx"
-#
-# #
-# # Global presets for all jails
-# #
-# jail_devfs_enable="YES"	# mount devfs
-#
-# #
-# # Global options (default off)
-# #
-# #jail_mount_enable="YES"		# mount /etc/fstab.{name}
-# #jail_set_hostname_allow="YES"	# Allow hostname to change
-# #jail_sysvipc_allow="YES"		# Allow SysV Interprocess Comm.
-# 
-# # xxx
-# jail_xxx_hostname="xxx.shxd.cx"		# hostname
-# jail_xxx_rootdir="/vm/xxx"			# root directory
-# jail_xxx_vnet_interfaces="ng0_xxx ng1xxx ..."	# vnet interface(s)
-# jail_xxx_exec_prestart0="jng bridge xxx em0 em1 ..."	# bridge interface(s)
-# jail_xxx_exec_poststop0="jng shutdown xxx"	# destroy interface(s)
-# #jail_xxx_mount_enable="YES"			# mount /etc/fstab.xxx
-# #jail_xxx_devfs_ruleset="11"			# rule to unhide bpf for DHCP
-#
-# ### END EXCERPT ###
-#
-# Note that the legacy rc.conf(5) format is converted to
-# /var/run/jail.{name}.conf by /etc/rc.d/jail if jail.conf(5) is missing.
-#
 # ASIDE: dhclient(8) inside a vnet jail...
 #
 # To allow dhclient(8) to work inside a vnet jail, make sure the following
@@ -123,8 +90,7 @@
 # 	add include $devfsrules_unhide_login
 # 	add path 'bpf*' unhide
 #
-# And set ether devfs.ruleset="11" (jail.conf(5)) or
-# jail_{name}_devfs_ruleset="11" (rc.conf(5)).
+# Set devfs_ruleset="11" in jail.conf(5).
 #
 # NB: While this tool can't create every type of desirable topology, it should
 # handle most setups, minus some which considered exotic or purpose-built.

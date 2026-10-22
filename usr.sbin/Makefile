@@ -66,7 +66,6 @@ SUBDIR=	adduser \
 	snapinfo \
 	spi \
 	syslogd \
-	sysrc \
 	tcpdrop \
 	tcpdump \
 	tcpsso \

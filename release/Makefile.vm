@@ -5,8 +5,8 @@
 VMTARGETS=	vm-image
 VMFORMATS?=	vhd vmdk qcow2 raw
 VMSIZE?=	5120m
-VMFS?=		ufs
-VMFSLIST?=	ufs zfs
+VMFS?=		zfs
+VMFSLIST?=	zfs
 SWAPSIZE?=	1g
 VMBASE?=	vm
 
@@ -21,26 +21,25 @@ CLOUDWARE_TYPES?= AZURE \
 		GCE \
 		VAGRANT
 AZURE_FORMAT=	vhdf
-AZURE_FSLIST?=	ufs zfs
+AZURE_FSLIST?=	zfs
 AZURE_DESC=	Microsoft Azure platform image
 BASIC-CI_FORMAT=	raw
-BASIC-CI_FSLIST?=	ufs
+BASIC-CI_FSLIST?=	zfs
 BASIC-CI_DESC=		Image for CI
 EC2_FORMAT=	raw
-EC2_FSLIST?=	ufs zfs
-EC2_FLAVOURS?=	BASE BUILDER CLOUD-INIT SMALL
+EC2_FSLIST?=	zfs
+EC2_FLAVOURS?=	BASE CLOUD-INIT SMALL
 EC2-BASE_DESC=	Amazon EC2 image
-EC2-BUILDER_DESC=	Amazon EC2 AMI Builder image
 EC2-CLOUD-INIT_DESC=	Amazon EC2 Cloud-Init image
 EC2-SMALL_DESC=	Amazon EC2 small image
 GCE_FORMAT=	raw
-GCE_FSLIST?=	ufs zfs
+GCE_FSLIST?=	zfs
 GCE_DESC=	Google Compute Engine image
 OPENSTACK_FORMAT=qcow2
-OPENSTACK_FSLIST?=	ufs
+OPENSTACK_FSLIST?=	zfs
 OPENSTACK_DESC=	OpenStack platform image
 VAGRANT_FORMAT=	vmdk
-VAGRANT_FSLIST?=	ufs
+VAGRANT_FSLIST?=	zfs
 VAGRANT_FLAVOURS?=	VIRTUALBOX
 VAGRANT-VIRTUALBOX_DESC=	Vagrant Image for VirtualBox
 

@@ -200,8 +200,6 @@ DIRDEPS= \
       share/tests \
       share/zoneinfo/tests \
       tests \
-      tests/etc \
-      tests/etc/rc.d \
       tests/sys \
       tests/sys/acl \
       tests/sys/aio \

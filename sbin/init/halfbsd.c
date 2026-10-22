@@ -16,7 +16,6 @@ int
 hb_boot_mode(const char *override)
 {
 	if (override && *override) {
-		if (!strcmp(override, "rc")) return 0;
 		if (!strcmp(override, "lua")) return 1;
 		errno = EINVAL; return -1;
 	}

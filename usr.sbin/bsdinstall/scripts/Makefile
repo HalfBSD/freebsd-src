@@ -13,22 +13,19 @@ SCRIPTS=auto \
 	hardening \
 	hostname \
 	jail \
-	keymap \
 	mirrorselect \
 	mount \
 	mount_aux \
 	netconfig \
-	netconfig_ipv4 \
-	netconfig_ipv6 \
 	pkgbase \
 	rootpass \
 	script \
-	services \
 	time \
 	umount \
-	wlanconfig \
 	zfsboot
 
+FILES= config-halfbsd.lua
+FILESDIR= ${LIBEXECDIR}/bsdinstall
 BINDIR= ${LIBEXECDIR}/bsdinstall
 
 pkgbase: pkgbase.in

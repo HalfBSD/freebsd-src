@@ -1481,14 +1481,12 @@ distributeworld installworld stageworld: _installcheck_world .PHONY
 .endfor
 .endif # make(distributeworld)
 
-# Configure the live system's resolver after installworld.  Rc scripts are
-# configuration files updated separately by etcupdate/installconfig; run the
-# matching source script with the newly installed utilities, not a stale /etc
-# script.  Staged and unprivileged installs use initial setup at first boot.
+# Refresh configuration with the standalone setup entry; service control belongs
+# exclusively to halfinit. Staged installs initialize the resolver at first boot.
 .if make(installworld) && ${MK_UNBOUND} != "no" && \
     !defined(NO_ROOT) && !defined(CROSSBUILD_HOST) && \
     (!defined(DESTDIR) || empty(DESTDIR) || ${DESTDIR} == "/")
-	/bin/sh ${.CURDIR:Q}/libexec/rc/rc.d/local_unbound setup
+	/bin/sh ${.CURDIR:Q}/usr.sbin/unbound/setup/local-unbound-refresh.sh
 .endif
 
 packageworld: .PHONY

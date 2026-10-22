@@ -48,6 +48,10 @@ metalog_add_data() {
 }
 
 vm_create_base() {
+    [ "${VMFS}" = zfs ] || {
+        echo 'HalfBSD VM startup requires a ZFS root; UFS recovery media use boot -s.' >&2
+        return 1
+    }
 
 	mkdir -p ${DESTDIR}
 
@@ -132,13 +136,7 @@ vm_install_base() {
 	fi
 	metalog_add_data ./etc/fstab
 
-	local hostname
-	hostname="$(echo $(uname -o) | tr '[:upper:]' '[:lower:]')"
-	echo "hostname=\"${hostname}\"" >> ${DESTDIR}/etc/rc.conf
-	metalog_add_data ./etc/rc.conf
 	if [ "${VMFS}" = zfs ]; then
-		echo "zpool_reguid=\"zroot\"" >> ${DESTDIR}/etc/rc.conf
-		echo "zpool_upgrade=\"zroot\"" >> ${DESTDIR}/etc/rc.conf
 		echo "kern.geom.label.disk_ident.enable=0" >> ${DESTDIR}/boot/loader.conf
 		metalog_add_data ./boot/loader.conf
 	fi
@@ -157,7 +155,7 @@ vm_emulation_setup() {
 
 	mkdir -p ${DESTDIR}/dev
 	mount -t devfs devfs ${DESTDIR}/dev
-	chroot ${DESTDIR} ${EMULATOR} /bin/sh /etc/rc.d/ldconfig forcestart
+	chroot ${DESTDIR} ${EMULATOR} /sbin/ldconfig -elf /lib /usr/lib /usr/local/lib
 	cp /etc/resolv.conf ${DESTDIR}/etc/resolv.conf
 
 	return 0
@@ -167,23 +165,6 @@ vm_extra_install_base() {
 	# Prototype.  When overridden, runs extra post-installworld commands
 	# as needed, based on the target virtual machine image or cloud
 	# provider image target.
-
-	return 0
-}
-
-vm_extra_enable_services() {
-	if [ -n "${VM_RC_LIST}" ]; then
-		for _rcvar in ${VM_RC_LIST}; do
-			echo ${_rcvar}_enable="YES" >> ${DESTDIR}/etc/rc.conf
-		done
-	fi
-
-	if [ -z "${VMCONFIG}" -o -c "${VMCONFIG}" ]; then
-		echo 'ifconfig_DEFAULT="DHCP inet6 accept_rtadv"' >> \
-			${DESTDIR}/etc/rc.conf
-		# Expand the filesystem to fill the disk.
-		echo 'growfs_enable="YES"' >> ${DESTDIR}/etc/rc.conf
-	fi
 
 	return 0
 }

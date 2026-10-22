@@ -30,7 +30,6 @@ BSDCFG_SHARE="/usr/share/bsdconfig"
 
 : ${BSDDIALOG_OK=0}
 
-echo -n > $BSDINSTALL_TMPETC/rc.conf.hardening
 echo -n > $BSDINSTALL_TMPETC/sysctl.conf.hardening
 echo -n > $BSDINSTALL_TMPBOOT/loader.conf.hardening
 
@@ -45,8 +44,6 @@ FEATURES=$( bsddialog --backtitle "$OSNAME Installer" \
 	"3 read_msgbuf" "Disable reading kernel message buffer for unprivileged users" ${read_msgbuf:-off} \
 	"4 proc_debug" "Disable process debugging facilities for unprivileged users" ${proc_debug:-off} \
 	"5 random_pid" "Randomize the PID of newly created processes" ${random_pid:-off} \
-	"6 clear_tmp" "Clean the /tmp filesystem on system startup" ${clear_tmp:-off} \
-	"7 disable_syslogd" "Disable opening Syslogd network socket (disables remote logging)" ${disable_syslogd:-off} \
 	"8 secure_console" "Enable console password prompt" ${secure_console:-off} \
 	"9 disable_ddtrace" "Disallow DTrace destructive-mode" ${disable_ddtrace:-off} \
 2>&1 1>&5 )
@@ -76,12 +73,6 @@ for feature in $FEATURES; do
 		;;
 	random_pid)
 		echo kern.randompid=1 >> $BSDINSTALL_TMPETC/sysctl.conf.hardening
-		;;
-	clear_tmp)
-		echo 'clear_tmp_enable="YES"' >> $BSDINSTALL_TMPETC/rc.conf.hardening
-		;;
-	disable_syslogd)
-		echo 'syslogd_flags="-ss"' >> $BSDINSTALL_TMPETC/rc.conf.hardening
 		;;
 	secure_console)
 		sed "s/unknown	off secure/unknown	off insecure/g" $BSDINSTALL_CHROOT/etc/ttys > $BSDINSTALL_TMPETC/ttys.hardening

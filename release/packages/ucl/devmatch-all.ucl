@@ -20,8 +20,8 @@ comment = "Automatically load kernel drivers for attached hardware"
 
 desc = <<EOD
 The devmatch(8) utility is used to load kernel drivers for hardware attached to
-the running system.  devmatch(8) is started at boot by rc(8), and during system
-operation by devd(8) when new hardware is attached to the system.
+the running system. HalfBSD dispatches module matching directly from devd(8)
+when new hardware is attached to the system.
 EOD
 
 annotations {

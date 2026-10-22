@@ -1,0 +1,161 @@
+HalfBSD traditional RC removal — October 21, 2026
+================================================
+Status: source removal and local checks completed; native build/boot pending.
+The administrator authorized committing and pushing this pass after local validation.
+The screenshot is an untracked diagnostic input, excluded from the changes.
+
+Authorization and scope
+-----------------------
+The administrator explicitly requested removal of RC now. PID 1's independent
+recovery shell remains operational. Its possible later removal in favor of
+compatible FreeBSD USB recovery, and enforcement of one local VT, are separate
+TODOs in HALFBSD-LUA-NEXT-STEPS.md. Neither is implemented in this pass.
+
+Removed implementations
+-----------------------
+* libexec/rc: 133 files / 16,915 baseline lines, including rc, rc.subr,
+  rc.shutdown, rc.initdiskless, rc.firewall, rc.console, network.subr, defaults,
+  service scripts and associated tests. The generic 451-line debug.sh helper
+  has a required package-bootstrap consumer; it moved to tools/build/debug.sh.
+  This is source relocation, not removal of that shared implementation.
+* sbin/rcorder: 9 files / 1,989 lines.
+* usr.sbin/sysrc: 5 files / 1,314 lines.
+* tests/etc: 6 files / 112 lines, all RC-related tests/build scaffolding.
+* RC-backed bsdconfig menus: startup (20 files / 2,612 lines), networking
+  (25 / 2,683), console (15 / 1,773), security (11 / 546), plus orphaned
+  shell-config/wireless-menu helpers. Account/password/package/disk utilities
+  remain. Kernel networking, Wi-Fi and security implementations are not removed.
+* RC/diskless-dependent NanoBSD tooling: 47 files / 4,449 lines. Its embedded,
+  rescue and /conf/base pipelines required the removed rc.initdiskless loader.
+* RC-only installer service/keymap/persistent-network screens and RC-format jail
+  examples. Native jail utilities and jail.conf/network helper examples remain.
+* Legacy devd DHCP, vtcons, power-profile and Bluetooth RC action files.
+* RC installer-media rc.local and alternate-PID1 EC2 AMI-builder workflow.
+* RC-specific firewall regressions; existing Lua/IPFW policy tests are retained.
+
+The tracked diff deletes 291 files and approximately 38,543 lines before final
+report updates. These are raw diff deletions, not a handwritten-C-only
+metric; they include scripts, tests, documentation and build files. New tests,
+installation adapters and the relocated shared debug helper add source back.
+Native executable sizes and linked-library changes were not measured: no native
+world or kernel was built here. Shared libutil/crypt and the Lua foundation
+libraries remain required; no shared library was removed.
+
+PID 1 and service ownership
+--------------------------
+The existing C init remains PID 1. Its RC runcom branch, shell-script executor,
+RC shutdown/final hooks, legacy loader script/exec/chroot path and old reroot
+implementation are deleted. Supervisor shutdown/reaping and persistent shutdown
+evidence remain. Live reroot remains explicitly unsupported, as it was under
+HalfBSD startup before removal. The old init -f/-r legacy paths are retired.
+
+The sole normal startup path is halfinit. halfbsd.boot_mode=rc is now rejected;
+it does not start traditional RC. The existing single/network/multiuser boot
+stages and maintenance profile remain. The native boot -s recovery shell still
+works without Lua or RC. Invalid selection/startup failure reaches recovery,
+never a second partially overlapping startup framework.
+
+/etc/ttys now names /usr/sbin/halfconsole directly. Because installworld does not
+necessarily replace administrator ttys, init selects halfconsole for ttyv0 by
+terminal name, without executing the old installed /etc/rc.console string.
+Configured/native login behavior and SSH authentication remain. The bounded,
+literal-only console_user migration from existing administrator RC files is
+retained as upgrade data handling; no shell code is sourced or evaluated.
+
+service is now solely a thin halfsvc frontend. There is no mode-dependent RC
+backend, script discovery or fallback. Unknown services/unsupported commands
+fail through the existing authenticated manager interface.
+
+Required integration changes
+----------------------------
+* installworld invokes the standalone local-unbound-refresh source script,
+  not an installed or source RC wrapper. It runs idempotent setup, validates
+  configuration as unbound, and requests halfsvc restart dns only when an
+  existing resolver process is present. Setup/check/control/process-inspection
+  errors propagate; no direct stop, IPFW-marker shortcut or fallback exists.
+  Trust-anchor initialization remains the supervisor's existing startup step.
+* local-unbound-setup's optional activation uses halfsvc directly; the obsolete
+  service-name option and enabled/RC check are removed. Setup/layout migration
+  continues preserving administrator local DNS records, TLS settings and keys.
+* devd's module-match rule names the direct halfinit handler. Stale installed
+  RC action templates are recognized only to prevent execution: supervisor-owned
+  DHCP/network events and kbdmux keyboard events do not invoke RC; unsupported
+  suspend/power/Bluetooth hooks warn once. Retired RC ownership is rejected.
+  No additional DHCP process, firewall framework or process supervisor is added.
+* Openresolv no longer guesses alternate init/RC systems. Its configured service
+  frontend is manager-only; named's RC-directory detection is removed. Existing
+  compiled DNS providers and the policy of ignoring DHCP DNS are unchanged.
+* RC-only BSD installer menus are retired. Installation uses an already
+  configured live network; no duplicate unmanaged DHCP client is launched.
+  The native policy renderer seeds hostname into a fresh system.lua from the
+  shipped template. Existing administrator policy and symlinks are not blindly
+  replaced. Password/account/disk installation steps remain.
+* Release/build chroots invoke ldconfig directly. Generic VM images default to
+  ZFS and refuse unsupported non-ZFS roots at image creation. RC enable-variable
+  generation and alternate-PID1 builder profiles are removed. Cloud/package CI
+  services need explicit native definitions; installing their packages is not
+  a claim that they are activated. The CI runner remains an explicit command,
+  not an RC firstboot service.
+* Installer/recovery media select boot_single=YES and no longer copy rc.local.
+  Automatic RC installer launch is retired; invoke installation explicitly from
+  a suitably prepared live environment. Live-media boot is NOT validated here.
+* Entropy-saving cron code no longer sources global RC configuration. Audit
+  regressions use existing native fake-audit helpers and refuse to redirect an
+  active production audit/accounting service, rather than restarting RC scripts.
+  Managed zfsd/stress helpers use halfsvc; absent providers are unsupported.
+
+Upgrade and recovery
+--------------------
+1. Preserve a known-good boot environment and compatible FreeBSD USB media.
+2. Remove any persistent halfbsd.boot_mode=rc setting before normal startup.
+3. Build/install the new world and kernel using the normal native procedure.
+   Current source checks are not a substitute for that build.
+4. Run etcupdate/check-old as appropriate. ObsoleteFiles.inc lists retired
+   distribution files. Administrator rc.conf, rc.conf.local, rc.local and
+   third-party scripts are NOT blindly deleted. They are not a startup system
+   used by the new world; migrate desired settings into explicit native policy.
+5. If startup fails, use boot -s. After partial initialization, fix the cause and
+   reboot. External compatible FreeBSD media can import the ZFS pool if init,
+   Lua or the installed filesystem cannot be used. No automatic RC fallback exists.
+
+This is removal of the old framework, not a claim of parity with every FreeBSD
+RC feature. The supported workstation graph remains the existing ZFS-root,
+DHCP-first, IPFW/Unbound/SSH/NTP/seatd/devd path. General pool imports/encrypted
+keys, automatic Wi-Fi child creation, arbitrary ports RC scripts, jail/cloud
+provisioning, suspend/resume, power profiles and broad RC sysctl/devfs/cleanup
+policies require explicit native implementations where wanted. Their old shell
+framework is not retained behind a flag. Other historical/imported documentation
+may mention RC on other systems; it is not an executable HalfBSD RC path.
+
+Validation performed in this Linux workspace
+-------------------------------------------
+PASS Phase IV portable gate, including actual extracted devd action/send bodies,
+     sole-startup/retired-RC override tests, supervisor handoff and shutdown report.
+PASS all 21 Phase III policy groups and all 16 Phase II policy groups.
+PASS full existing Unbound setup/layout migration suite, including records,
+     TLS/control paths, anchor preservation, symlinks and failure atomicity.
+PASS new independent installworld refresh regression with an obsolete installed
+     RC script, no unsolicited activation, unprivileged-check invocation, and
+     propagated setup/check/control/process-inspection failures (OS helpers mocked).
+PASS RC absence/build-entry integrity and actual installer policy publication:
+     hostname serialization, existing policy preservation, invalid data and links.
+PASS init.c syntax against actual repository FreeBSD headers for AMD64 AND i386,
+     using staged machine/x86/header links and strict C17/pedantic/Werror.
+     Existing recursive-state function casts and FreeBSD %m format warnings are
+     allowed explicitly. No API declaration stubs or runtime emulation were used.
+PASS effective BSD SUBDIR integrity for 14 modified Makefiles with staged
+     SYSROOT and inherited ABI; existing foundation PIE/archive checks.
+PASS actual standalone Unbound setup/refresh empty-DESTDIR installation and
+     repeated parallel install; actual installer scripts/Lua renderer install.
+PASS Phase II generated module-install/PIE checks, empty-DESTDIR configuration
+     seeding and repeated parallel administrator-preservation tests.
+PASS shell syntax for 38 changed/new scripts. sysbuild's empty-subshell syntax
+     fails Linux dash in the unchanged baseline as well; that is not new code.
+PASS git diff --check.
+
+Clang is unavailable here. Native init/devd/audit/kbdmap compilation/linking,
+buildworld/buildkernel, build32, full ATF, physical boot, live DNSSEC/network
+behavior, independent recovery and reboot/poweroff after RC removal are PENDING.
+Prior successful Lua boots and CLEAN shutdown reports predate this removal.
+
+This report accompanies the RC removal commit. Native validation remains pending.

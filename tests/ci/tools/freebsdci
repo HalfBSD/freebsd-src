@@ -7,37 +7,14 @@
 # This software was developed by Cybermancer Infosec <bofh@FreeBSD.org>
 # under sponsorship from the FreeBSD Foundation.
 #
-# PROVIDE: freebsdci
-# REQUIRE: LOGIN FILESYSTEMS
-# KEYWORD: firstboot
-
-# This script is used to run the firstboot CI tests on the first boot of a
-# FreeBSD image. It is automatically disabled after the first boot.
-#
-# The script will run the firstboot CI tests and then shut down the system.
-# The tests are run in the foreground so that the system can shut down
-# immediately after the tests are finished.
-#
-# Default test types are full and smoke.  To run only the smoke tests, set
-# freebsdci_type="smoke" in /etc/rc.conf.local or /etc/rc.conf.
-# To run only the full tests, set freebsdci_type="full" in
-# /etc/rc.conf.local or /etc/rc.conf.
-
-. /etc/rc.subr
-
-name="freebsdci"
-desc="Run FreeBSD CI"
-rcvar=freebsdci_enable
-start_cmd="firstboot_ci_run"
-stop_cmd=":"
+# Explicit disposable-VM test runner. No implicit boot registration.
+[ "$(id -u)" -eq 0 ] || { echo 'Run in the isolated test VM as root' >&2; exit 1; }
 os_arch=$(uname -p)
 parallelism=$(nproc)
 tardev=/dev/vtbd1
 metadir=/meta
 istar=$(file -s ${tardev} | grep "POSIX tar archive" | wc -l)
 
-load_rc_config $name
-: ${freebsdci_enable:="NO"}
 : ${freebsdci_type:="full"}
 : ${freebsdci_test_filters:=""}
 PATH="${PATH}:/usr/local/sbin:/usr/local/bin"
@@ -123,4 +100,4 @@ firstboot_ci_run()
 	auto_shutdown
 }
 
-run_rc_command "$1"
+firstboot_ci_run

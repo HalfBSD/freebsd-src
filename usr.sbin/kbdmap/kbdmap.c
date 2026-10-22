@@ -51,7 +51,6 @@ static const char *program;
 static const char *keymapdir = DEFAULT_VT_KEYMAP_DIR;
 static const char *fontdir = DEFAULT_VT_FONT_DIR;
 static const char *font_default = DEFAULT_VT_FONT;
-static const char *sysconfig = DEFAULT_SYSCONFIG;
 static const char *font_current;
 static const char *dir;
 static const char *menu = "";
@@ -200,42 +199,6 @@ get_extension(const char *name)
 }
 
 /*
- * Read font from /etc/rc.conf else return default.
- * Freeing the memory is the caller's responsibility.
- */
-static char *
-get_font(void)
-{
-	char line[256], buf[21];
-	char *fnt = NULL;
-
-	FILE *fp = fopen(sysconfig, "r");
-	if (fp) {
-		while (fgets(line, sizeof(line), fp)) {
-			int a, b, matches;
-
-			if (line[0] == '#')
-				continue;
-
-			matches = sscanf(line,
-			    " font%dx%d = \"%20[-.0-9a-zA-Z_]",
-			    &a, &b, buf);
-			if (matches==3) {
-				if (strcmp(buf, "NO")) {
-					if (fnt)
-						free(fnt);
-					fnt = strdup(buf);
-				}
-			}
-		}
-		fclose(fp);
-	} else
-		fprintf(stderr, "Could not open %s for reading\n", sysconfig);
-
-	return fnt;
-}
-
-/*
  * Set a font using 'vidcontrol'
  */
 static void
@@ -315,11 +278,11 @@ show_dialog(struct keymap **km_sorted, int num_keymaps)
 	}
 
 	/* start right font, assume that current font is equal
-	 * to default font in /etc/rc.conf
+	 * to default font
 	 *	
 	 * $font is the font which require the language $lang; e.g.
 	 * russian *need* a koi8 font
-	 * $font_current is the current font from /etc/rc.conf
+	 * $font_current is the initial font
 	 */
 	if (font && strcmp(font, font_current))
 		vidcontrol(font);
@@ -784,9 +747,7 @@ main(int argc, char **argv)
 
 	program = extract_name(argv[0]);
 
-	font_current = get_font();
-	if (font_current == NULL)
-		font_current = font_default;
+	font_current = font_default;
 
 	if (strcmp(program, "kbdmap"))
 		dir = fontdir;

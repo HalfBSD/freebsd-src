@@ -102,7 +102,6 @@ main() {
 	vm_extra_install_base
 	vm_extra_install_packages
 	vm_extra_install_ports
-	vm_extra_enable_services
 	vm_extra_pre_umount
 	vm_extra_pkg_rmcache
 	vm_emulation_cleanup

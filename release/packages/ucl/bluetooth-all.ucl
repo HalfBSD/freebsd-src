@@ -20,8 +20,8 @@ comment = "Bluetooth support"
 
 desc = <<EOD
 This package provides various system services used to work with Bluetooth
-network devices, including the /etc/rc.d/bluetooth service which manages
-the Bluetooth stack when Bluetooth devices are attached or removed.
+network devices. Automatic HalfBSD Bluetooth initialization requires an
+explicit service provider.
 EOD
 
 annotations {

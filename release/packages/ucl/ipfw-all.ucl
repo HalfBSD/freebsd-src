@@ -24,8 +24,8 @@ for FreeBSD.  ipfw provides Network Address Translation (NAT) and redirection
 for both IPv6 and IPv4, and integrates with the dummynet(4) traffic shaping
 facility to provide rate limiting and Quality-of-Service guarantees.
 
-This package provides the ipfw(8) utility used to manage ipfw and rc(8)
-services to automatically start ipfw at system startup.
+This package provides the ipfw(8) utility. HalfBSD initializes and verifies
+its firewall through the native startup graph.
 EOD
 
 annotations {

@@ -60,7 +60,7 @@ to_reldir() {
 }
 
 SRCTOP=${SRCTOP:-$(realpath $Mydir/../../..)}
-. ${SRCTOP}/libexec/rc/debug.sh
+. ${SRCTOP}/tools/build/debug.sh
 DebugOn bootstrap-packages
 
 PACKAGES=${PACKAGES:-$(realpath $Mydir/../..)}

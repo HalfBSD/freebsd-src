@@ -1,5 +1,11 @@
 # HalfBSD device-event action integration
 
+Update: RC ownership/fallback and the default RC action files are now removed.
+The current module-match rule invokes halfinit directly. Recognition of stale
+installed action templates prevents execution of retired hooks during upgrades.
+See HALFBSD-RC-REMOVAL.txt. The earlier cross-mode description is historical.
+
+
 ## Confirmed native result and remaining errors
 
 After the last installed kernel/world, the administrator reported successful

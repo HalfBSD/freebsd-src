@@ -2,18 +2,14 @@
 
 PACKAGE=	bsdconfig
 
-SUBDIR=	console \
-	diskmgmt \
+SUBDIR=	diskmgmt \
 	docsinstall \
 	dot \
 	include \
 	includes \
-	networking \
 	packages \
 	password \
-	security \
 	share \
-	startup \
 	timezone \
 	ttys \
 	usermgmt

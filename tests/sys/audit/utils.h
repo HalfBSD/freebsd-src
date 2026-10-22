@@ -35,6 +35,7 @@
 void check_audit(struct pollfd [], const char *, FILE *);
 FILE *setup(struct pollfd [], const char *);
 void cleanup(void);
+bool is_auditd_running(void);
 void skip_if_extattr_not_supported(const char *);
 
 #define REQUIRE_EXTATTR_SUCCESS(call)						\

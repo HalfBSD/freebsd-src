@@ -88,11 +88,10 @@
 #define	WINDOW_WAIT		 3	/* wait N secs after starting window */
 #define	STALL_TIMEOUT		30	/* wait N secs after warning */
 #define	DEATH_WATCH		10	/* wait N secs for procs to die */
-#define	DEATH_SCRIPT		120	/* wait for 2min for /etc/rc.shutdown */
-#define	RESOURCE_RC		"daemon"
+#define	DEATH_SCRIPT		120	/* bounded supervisor shutdown */
+#define	RESOURCE_SUPERVISOR		"daemon"
 #define	RESOURCE_WINDOW		"default"
 #define	RESOURCE_GETTY		"default"
-#define SCRIPT_ARGV_SIZE 3 /* size of argv passed to execute_script, can be increased if needed */
 
 static void handle(sig_t, ...);
 static void delset(sigset_t *, ...);
@@ -102,9 +101,7 @@ static void warning(const char *, ...) __printflike(1, 2);
 static void emergency(const char *, ...) __printflike(1, 2);
 static void disaster(int);
 static void revoke_ttys(void);
-static int  runshutdown(void);
 static char *strk(char *);
-static void runfinal(void);
 
 /*
  * We really need a recursive typedef...
@@ -123,13 +120,8 @@ static state_func_t catatonia(void);
 static state_func_t death(void);
 static state_func_t death_single(void);
 static state_func_t reroot(void);
-static state_func_t reroot_phase_two(void);
 
-static state_func_t run_script(const char *);
-
-static enum { AUTOBOOT, FASTBOOT } runcom_mode = AUTOBOOT;
-
-static bool lua_mode, boot_attempted, lua_failed, lua_single_boot, lua_network_boot, lua_shell_checkpoint;
+static bool lua_failed, lua_single_boot, lua_network_boot, lua_shell_checkpoint;
 static pid_t lua_pid;
 static state_func_t lua_runcom(void);
 static void lua_shutdown(void);
@@ -138,16 +130,13 @@ static bool Reboot = false;
 static int howto = RB_AUTOBOOT;
 
 static bool devfs = false;
-static char *init_path_argv0;
 
 static void transition(state_t);
 static state_t requested_transition;
 static state_t current_state = death_single;
 
-static void execute_script(char *argv[]);
 static void open_console(void);
 static const char *get_shell(void);
-static void replace_init(char *path);
 static void write_stderr(const char *message);
 
 typedef struct init_session {
@@ -204,8 +193,7 @@ int
 main(int argc, char *argv[])
 {
 	state_t initial_transition = runcom;
-	char kenv_value[PATH_MAX];
-	int c, error;
+	int c;
 	struct sigaction sa;
 	sigset_t mask;
 
@@ -256,10 +244,6 @@ invalid:
 			errx(1, "already running");
 	}
 
-	init_path_argv0 = strdup(argv[0]);
-	if (init_path_argv0 == NULL)
-		err(1, "strdup");
-
 	/*
 	 * Note that this does NOT open a file...
 	 * Does 'init' deserve its own facility number?
@@ -283,19 +267,13 @@ invalid:
 	 * This code assumes that we always get arguments through flags,
 	 * never through bits set in some random machine register.
 	 */
-	while ((c = getopt(argc, argv, "dsfr")) != -1)
+	while ((c = getopt(argc, argv, "ds")) != -1)
 		switch (c) {
 		case 'd':
 			devfs = true;
 			break;
 		case 's':
 			initial_transition = single_user;
-			break;
-		case 'f':
-			runcom_mode = FASTBOOT;
-			break;
-		case 'r':
-			initial_transition = reroot_phase_two;
 			break;
 		default:
 			warning("unrecognized flag '-%c'", c);
@@ -338,24 +316,6 @@ invalid:
 	if (selected_mode < 0) {
 		warning("invalid HalfBSD boot selection: %m; entering single-user recovery");
 		initial_transition = single_user;
-	}
-	bool allow_legacy_loader = selected_mode == 0;
-
-	if (allow_legacy_loader && kenv(KENV_GET, "init_exec", kenv_value, sizeof(kenv_value)) > 0) {
-		replace_init(kenv_value);
-		_exit(0); /* reboot */
-	}
-
-	if (allow_legacy_loader && kenv(KENV_GET, "init_script", kenv_value, sizeof(kenv_value)) > 0) {
-		state_func_t next_transition;
-
-		if ((next_transition = run_script(kenv_value)) != NULL)
-			initial_transition = (state_t) next_transition;
-	}
-
-	if (allow_legacy_loader && kenv(KENV_GET, "init_chroot", kenv_value, sizeof(kenv_value)) > 0) {
-		if (chdir(kenv_value) != 0 || chroot(".") != 0)
-			warning("Can't chroot to %s: %m", kenv_value);
 	}
 
 	/*
@@ -413,18 +373,9 @@ invalid:
 
 	hb_boot_trace(_PATH_CONSOLE, "PID 1 diagnostic build 2026-10-20 started; default Lua multiuser stage");
 	hb_boot_trace(_PATH_CONSOLE, selected_mode < 0 ? "invalid boot-mode override; recovery selected" :
-	    (selected_mode == 0 ? "explicit halfbsd.boot_mode=rc override detected" : "Lua selected (no automatic RC fallback)"));
+	    "HalfBSD startup selected");
 	hb_boot_trace(_PATH_CONSOLE, "initial devfs setup finished; entering startup state machine");
 
-	if (initial_transition != reroot_phase_two) {
-		/*
-		 * Unmount reroot leftovers.  This runs after init(8)
-		 * gets reexecuted after reroot_phase_two() is done.
-		 */
-		error = unmount(_PATH_REROOT, MNT_FORCE);
-		if (error != 0 && errno != EINVAL)
-			warning("Cannot unmount %s: %m", _PATH_REROOT);
-	}
 
 	/*
 	 * Start the state machine.
@@ -656,219 +607,13 @@ write_stderr(const char *message)
 	write(STDERR_FILENO, message, strlen(message));
 }
 
-static int
-read_file(const char *path, void **bufp, size_t *bufsizep)
-{
-	struct stat sb;
-	size_t bufsize;
-	void *buf;
-	ssize_t nbytes;
-	int error, fd;
-
-	fd = open(path, O_RDONLY);
-	if (fd < 0) {
-		emergency("%s: %m", path);
-		return (-1);
-	}
-
-	error = fstat(fd, &sb);
-	if (error != 0) {
-		emergency("fstat: %m");
-		close(fd);
-		return (error);
-	}
-
-	bufsize = sb.st_size;
-	buf = malloc(bufsize);
-	if (buf == NULL) {
-		emergency("malloc: %m");
-		close(fd);
-		return (error);
-	}
-
-	nbytes = read(fd, buf, bufsize);
-	if (nbytes != (ssize_t)bufsize) {
-		emergency("read: %m");
-		close(fd);
-		free(buf);
-		return (error);
-	}
-
-	error = close(fd);
-	if (error != 0) {
-		emergency("close: %m");
-		free(buf);
-		return (error);
-	}
-
-	*bufp = buf;
-	*bufsizep = bufsize;
-
-	return (0);
-}
-
-static int
-create_file(const char *path, const void *buf, size_t bufsize)
-{
-	ssize_t nbytes;
-	int error, fd;
-
-	fd = open(path, O_WRONLY | O_CREAT | O_EXCL, 0700);
-	if (fd < 0) {
-		emergency("%s: %m", path);
-		return (-1);
-	}
-
-	nbytes = write(fd, buf, bufsize);
-	if (nbytes != (ssize_t)bufsize) {
-		emergency("write: %m");
-		close(fd);
-		return (-1);
-	}
-
-	error = close(fd);
-	if (error != 0) {
-		emergency("close: %m");
-		return (-1);
-	}
-
-	return (0);
-}
-
-static int
-mount_tmpfs(const char *fspath)
-{
-	struct iovec *iov;
-	char errmsg[255];
-	int error, iovlen;
-
-	iov = NULL;
-	iovlen = 0;
-	memset(errmsg, 0, sizeof(errmsg));
-	build_iovec(&iov, &iovlen, "fstype",
-	    __DECONST(void *, "tmpfs"), (size_t)-1);
-	build_iovec(&iov, &iovlen, "fspath",
-	    __DECONST(void *, fspath), (size_t)-1);
-	build_iovec(&iov, &iovlen, "errmsg",
-	    errmsg, sizeof(errmsg));
-
-	error = nmount(iov, iovlen, 0);
-	if (error != 0) {
-		if (*errmsg != '\0') {
-			emergency("cannot mount tmpfs on %s: %s: %m",
-			    fspath, errmsg);
-		} else {
-			emergency("cannot mount tmpfs on %s: %m",
-			    fspath);
-		}
-		return (error);
-	}
-	return (0);
-}
-
 static state_func_t
 reroot(void)
 {
-	if (lua_mode) {
-		warning("live reroot is not supported in Lua mode; use a full reboot");
-		lua_failed = true; lua_shutdown(); return (state_func_t)death_single;
-	}
-	void *buf;
-	size_t bufsize;
-	int error;
-
-	buf = NULL;
-	bufsize = 0;
-
-	revoke_ttys();
-	runshutdown();
-
-	/*
-	 * Make sure nobody can interfere with our scheme.
-	 * Ignore ESRCH, which can apparently happen when
-	 * there are no processes to kill.
-	 */
-	error = kill(-1, SIGKILL);
-	if (error != 0 && errno != ESRCH) {
-		emergency("kill(2) failed: %m");
-		goto out;
-	}
-
-	/*
-	 * Copy the init binary into tmpfs, so that we can unmount
-	 * the old rootfs without committing suicide.
-	 */
-	error = read_file(init_path_argv0, &buf, &bufsize);
-	if (error != 0)
-		goto out;
-	error = mount_tmpfs(_PATH_REROOT);
-	if (error != 0)
-		goto out;
-	error = create_file(_PATH_REROOT_INIT, buf, bufsize);
-	if (error != 0)
-		goto out;
-
-	/*
-	 * Execute the temporary init.
-	 */
-	execl(_PATH_REROOT_INIT, _PATH_REROOT_INIT, "-r", NULL);
-	emergency("cannot exec %s: %m", _PATH_REROOT_INIT);
-
-out:
-	emergency("reroot failed; going to single user mode");
-	free(buf);
-	return (state_func_t) single_user;
-}
-
-static state_func_t
-reroot_phase_two(void)
-{
-	char init_path[PATH_MAX], *path, *path_component;
-	size_t init_path_len;
-	int nbytes, error;
-
-	/*
-	 * Ask the kernel to mount the new rootfs.
-	 */
-	error = reboot(RB_REROOT);
-	if (error != 0) {
-		emergency("RB_REBOOT failed: %m");
-		goto out;
-	}
-
-	/*
-	 * Figure out where the destination init(8) binary is.  Note that
-	 * the path could be different than what we've started with.  Use
-	 * the value from kenv, if set, or the one from sysctl otherwise.
-	 * The latter defaults to a hardcoded value, but can be overridden
-	 * by a build time option.
-	 */
-	nbytes = kenv(KENV_GET, "init_path", init_path, sizeof(init_path));
-	if (nbytes <= 0) {
-		init_path_len = sizeof(init_path);
-		error = sysctlbyname("kern.init_path",
-		    init_path, &init_path_len, NULL, 0);
-		if (error != 0) {
-			emergency("failed to retrieve kern.init_path: %m");
-			goto out;
-		}
-	}
-
-	/*
-	 * Repeat the init search logic from sys/kern/init_path.c
-	 */
-	path_component = init_path;
-	while ((path = strsep(&path_component, ":")) != NULL) {
-		/*
-		 * Execute init(8) from the new rootfs.
-		 */
-		execl(path, path, NULL);
-	}
-	emergency("cannot exec init from %s: %m", init_path);
-
-out:
-	emergency("reroot failed; going to single user mode");
-	return (state_func_t) single_user;
+	warning("live reroot is unsupported; use a full reboot");
+	lua_failed = true;
+	lua_shutdown();
+	return (state_func_t)death_single;
 }
 
 /*
@@ -898,8 +643,6 @@ single_user(void)
 		/* Instead of going single user, let's reboot the machine */
 		BOOTTRACE("shutting down the system");
 		sync();
-		/* Run scripts after all processes have been terminated. */
-		if (!lua_mode) runfinal();
 		if (reboot(howto) == -1) {
 			emergency("reboot(%#x) failed, %m", howto);
 			_exit(1); /* panic and reboot */
@@ -1054,7 +797,6 @@ single_user(void)
 		}
 	}
 
-	runcom_mode = FASTBOOT;
 	return (state_func_t) runcom;
 }
 
@@ -1064,57 +806,39 @@ single_user(void)
 static state_func_t
 runcom(void)
 {
-	state_func_t next_transition;
 	if (lua_shell_checkpoint) {
-		hb_boot_trace(_PATH_CONSOLE, "inspection shell exited; staying at the checkpoint, no full multiuser services");
+		hb_boot_trace(_PATH_CONSOLE, "inspection shell exited; staying at the checkpoint");
 		return (state_func_t)single_user;
 	}
 	char override[32] = {0};
 	(void)kenv(KENV_GET, HB_BOOT_OVERRIDE, override, sizeof(override) - 1);
-	int mode = hb_boot_mode(override);
-	if (mode < 0 || lua_failed || (boot_attempted && lua_mode != (mode == 1))) {
-		warning("boot selection unsafe or Lua recovery latched; reboot with halfbsd.boot_mode=rc");
+	if (hb_boot_mode(override) < 0 || lua_failed) {
+		warning("startup selection invalid or recovery latched; repair configuration and reboot");
 		return (state_func_t)single_user;
 	}
-	lua_mode = mode == 1; boot_attempted = true;
-	char active_mode[4] = "rc";
-	if (lua_mode)
-		memcpy(active_mode, "lua", sizeof(active_mode));
-	if (kenv(KENV_SET, HB_BOOT_ACTIVE, active_mode, strlen(active_mode) + 1) < 0) {
-		warning("cannot publish active boot mode: %m");
+	char active_mode[] = "lua";
+	if (kenv(KENV_SET, HB_BOOT_ACTIVE, active_mode, sizeof(active_mode)) < 0) {
+		warning("cannot publish active startup ownership: %m");
 		return (state_func_t)single_user;
 	}
-	if (lua_mode) {
-		char stage[32] = {0};
-		(void)kenv(KENV_GET, HB_BOOT_STAGE, stage, sizeof(stage) - 1);
-		int selected = hb_boot_stage(stage);
-		if (selected < 0) {
-			hb_boot_trace(_PATH_CONSOLE, "invalid halfbsd.boot_stage; entering recovery");
-			lua_failed = true;
-			return (state_func_t)single_user;
-		}
-		lua_single_boot = selected == 0;
-		lua_network_boot = selected == 2;
-		char active_stage[10] = "network";
-		if (lua_single_boot) memcpy(active_stage, "single", sizeof("single"));
-		else if (!lua_network_boot) memcpy(active_stage, "multiuser", sizeof(active_stage));
-		if (kenv(KENV_SET, HB_BOOT_STAGE, active_stage, strlen(active_stage) + 1) < 0) {
-			warning("cannot publish boot stage: %m");
-			return (state_func_t)single_user;
-		}
-		hb_boot_trace(_PATH_CONSOLE, lua_single_boot ? "launching Lua SINGLE-USER diagnostic stage" :
-		    (lua_network_boot ? "launching Lua NETWORK inspection checkpoint" : "launching Lua MULTIUSER stage"));
-		return lua_runcom();
+	char stage[32] = {0};
+	(void)kenv(KENV_GET, HB_BOOT_STAGE, stage, sizeof(stage) - 1);
+	int selected = hb_boot_stage(stage);
+	if (selected < 0) {
+		hb_boot_trace(_PATH_CONSOLE, "invalid halfbsd.boot_stage; entering recovery");
+		lua_failed = true;
+		return (state_func_t)single_user;
 	}
-	hb_boot_trace(_PATH_CONSOLE, "starting explicit RC recovery startup");
-
-	BOOTTRACE("/etc/rc starting...");
-	if ((next_transition = run_script(_PATH_RUNCOM)) != NULL)
-		return next_transition;
-	BOOTTRACE("/etc/rc finished");
-
-	runcom_mode = AUTOBOOT;		/* the default */
-	return (state_func_t) read_ttys;
+	lua_single_boot = selected == 0;
+	lua_network_boot = selected == 2;
+	char active_stage[10] = "network";
+	if (lua_single_boot) memcpy(active_stage, "single", sizeof("single"));
+	else if (!lua_network_boot) memcpy(active_stage, "multiuser", sizeof(active_stage));
+	if (kenv(KENV_SET, HB_BOOT_STAGE, active_stage, strlen(active_stage) + 1) < 0) {
+		warning("cannot publish boot stage: %m");
+		return (state_func_t)single_user;
+	}
+	return lua_runcom();
 }
 
 /* READY starts multiuser; NETWORK retains supervision at the inspection shell.
@@ -1133,7 +857,7 @@ lua_runcom(void)
 		if (hb_boot_child_fd(fds) < 0) _exit(126);
 		if (hb_boot_stdio(_PATH_DEVNULL, _PATH_CONSOLE) < 0) _exit(126);
 #ifdef LOGIN_CAP
-		setprocresources(RESOURCE_RC);
+		setprocresources(RESOURCE_SUPERVISOR);
 #endif
 		sigset_t empty; sigemptyset(&empty);
 		(void)sigprocmask(SIG_SETMASK, &empty, NULL);
@@ -1188,7 +912,7 @@ lua_runcom(void)
 				if (kenv(KENV_SET, HB_BOOT_RESULT, multiuser_ready, sizeof(multiuser_ready)) < 0)
 					warning("cannot publish multiuser result: %m");
 				hb_boot_trace(_PATH_CONSOLE, "Lua multiuser READY; starting console logins");
-				close(fds[0]); runcom_mode = AUTOBOOT; return (state_func_t)read_ttys;
+				close(fds[0]); return (state_func_t)read_ttys;
 			}
 			if (result > 0) { close(fds[0]); goto failed; }
 			if (result < 0) {
@@ -1246,157 +970,6 @@ lua_shutdown(void)
 		}
 	}
 	sync();
-}
-
-static void
-execute_script(char *argv[])
-{
-	struct sigaction sa;
-	char* sh_argv[3 + SCRIPT_ARGV_SIZE];
-	const char *shell, *script;
-	int error, sh_argv_len, i;
-
-	bzero(&sa, sizeof(sa));
-	sigemptyset(&sa.sa_mask);
-	sa.sa_handler = SIG_IGN;
-	sigaction(SIGTSTP, &sa, NULL);
-	sigaction(SIGHUP, &sa, NULL);
-
-	open_console();
-
-	sigprocmask(SIG_SETMASK, &sa.sa_mask, NULL);
-#ifdef LOGIN_CAP
-	setprocresources(RESOURCE_RC);
-#endif
-
-	/*
-	 * Try to directly execute the script first.  If it
-	 * fails, try the old method of passing the script path
-	 * to sh(1).  Don't complain if it fails because of
-	 * the missing execute bit.
-	 */
-	script = argv[0];
-	error = access(script, X_OK);
-	if (error == 0) {
-		execv(script, argv);
-		warning("can't directly exec %s: %m", script);
-	} else if (errno != EACCES) {
-		warning("can't access %s: %m", script);
-	}
-
-	shell = get_shell();
-	sh_argv[0] = __DECONST(char*, shell);
-	sh_argv_len = 1;
-#ifdef SECURE
-	if (strcmp(shell, _PATH_BSHELL) == 0) {
-		sh_argv[1] = __DECONST(char*, "-o");
-		sh_argv[2] = __DECONST(char*, "verify");
-		sh_argv_len = 3;
-	}
-#endif
-	for (i = 0; i != SCRIPT_ARGV_SIZE; ++i)
-		sh_argv[i + sh_argv_len] = argv[i];
-	execv(shell, sh_argv);
-	stall("can't exec %s for %s: %m", shell, script);
-}
-
-/*
- * Execute binary, replacing init(8) as PID 1.
- */
-static void
-replace_init(char *path)
-{
-	char *argv[SCRIPT_ARGV_SIZE];
-
-	argv[0] = path;
-	argv[1] = NULL;
-
-	execute_script(argv);
-}
-
-/*
- * Run a shell script.
- * Returns 0 on success, otherwise the next transition to enter:
- *  - single_user if fork/execv/waitpid failed, or if the script
- *    terminated with a signal or exit code != 0.
- *  - death_single if a SIGTERM was delivered to init(8).
- */
-static state_func_t
-run_script(const char *script)
-{
-	pid_t pid, wpid;
-	int status;
-	char *argv[SCRIPT_ARGV_SIZE];
-	const char *shell;
-
-	shell = get_shell();
-
-	if ((pid = fork()) == 0) {
-
-		char _autoboot[] = "autoboot";
-
-		argv[0] = __DECONST(char *, script);
-		argv[1] = runcom_mode == AUTOBOOT ? _autoboot : NULL;
-		argv[2] = NULL;
-
-		execute_script(argv);
-		sleep(STALL_TIMEOUT);
-		_exit(1);	/* force single user mode */
-	}
-
-	if (pid == -1) {
-		emergency("can't fork for %s on %s: %m", shell, script);
-		while (waitpid(-1, (int *) 0, WNOHANG) > 0)
-			continue;
-		sleep(STALL_TIMEOUT);
-		return (state_func_t) single_user;
-	}
-
-	/*
-	 * Copied from single_user().  This is a bit paranoid.
-	 */
-	requested_transition = 0;
-	do {
-		if ((wpid = waitpid(-1, &status, WUNTRACED)) != -1)
-			collect_child(wpid);
-		if (requested_transition == death_single ||
-		    requested_transition == reroot)
-			return (state_func_t) requested_transition;
-		if (wpid == -1) {
-			if (errno == EINTR)
-				continue;
-			warning("wait for %s on %s failed: %m; going to "
-			    "single user mode", shell, script);
-			return (state_func_t) single_user;
-		}
-		if (wpid == pid && WIFSTOPPED(status)) {
-			warning("init: %s on %s stopped, restarting\n",
-			    shell, script);
-			kill(pid, SIGCONT);
-			wpid = -1;
-		}
-	} while (wpid != pid);
-
-	if (WIFSIGNALED(status) && WTERMSIG(status) == SIGTERM &&
-	    requested_transition == catatonia) {
-		/* /etc/rc executed /sbin/reboot; wait for the end quietly */
-		sigset_t s;
-
-		sigfillset(&s);
-		for (;;)
-			sigsuspend(&s);
-	}
-
-	if (!WIFEXITED(status)) {
-		warning("%s on %s terminated abnormally, going to single "
-		    "user mode", shell, script);
-		return (state_func_t) single_user;
-	}
-
-	if (WEXITSTATUS(status))
-		return (state_func_t) single_user;
-
-	return (state_func_t) 0;
 }
 
 /*
@@ -1559,7 +1132,7 @@ new_session(session_t *sprev, struct ttyent *typ)
 static int
 setupargv(session_t *sp, struct ttyent *typ)
 {
-	const char *getty = lua_mode && strcmp(typ->ty_getty, _PATH_CONSOLE_LOGIN) == 0 ?
+	const char *getty = strcmp(typ->ty_name, "ttyv0") == 0 ?
 	    _PATH_LUA_CONSOLE_LOGIN : typ->ty_getty;
 
 	if (sp->se_getty) {
@@ -1568,8 +1141,7 @@ setupargv(session_t *sp, struct ttyent *typ)
 		free(sp->se_getty_argv);
 	}
 	/* Direct login and its console helper do not take a tty argument. */
-	sp->se_login = strcmp(getty, _PATH_CONSOLE_LOGIN) == 0 ||
-	    strcmp(getty, _PATH_LUA_CONSOLE_LOGIN) == 0 ||
+	sp->se_login = strcmp(getty, _PATH_LUA_CONSOLE_LOGIN) == 0 ||
 	    (strncmp(getty, _PATH_LOGIN,
 	    sizeof(_PATH_LOGIN) - 1) == 0 &&
 	    (getty[sizeof(_PATH_LOGIN) - 1] == '\0' ||
@@ -2152,17 +1724,11 @@ death(void)
 	    &block, sizeof(block)) == -1)
 		blocked = 0;
 
-	/*
-	 * Also revoke the TTY here.  Because runshutdown() may reopen
-	 * the TTY whose getty we're killing here, there is no guarantee
-	 * runshutdown() will perform the initial open() call, causing
-	 * the terminal attributes to be misconfigured.
-	 */
+	/* Revoke login terminals before supervisor cleanup. */
 	revoke_ttys();
 
-	/* Try to run the rc.shutdown script within a period of time */
-	if (lua_mode) lua_shutdown();
-	else runshutdown();
+	/* Stop the supervisor before terminating remaining processes. */
+	lua_shutdown();
 
 	/* Unblock suspend if we blocked it. */
 	if (!blocked)
@@ -2183,7 +1749,7 @@ death_single(void)
 	pid_t pid;
 	static const int death_sigs[2] = { SIGTERM, SIGKILL };
 
-	if (lua_mode) lua_shutdown();
+	lua_shutdown();
 	revoke(_PATH_CONSOLE);
 
 	BOOTTRACE("start killing user processes");
@@ -2217,122 +1783,6 @@ revoke_ttys(void)
 		kill(sp->se_process, SIGHUP);
 		revoke(sp->se_device);
 	}
-}
-
-/*
- * Run the system shutdown script.
- *
- * Exit codes:      XXX I should document more
- * -2       shutdown script terminated abnormally
- * -1       fatal error - can't run script
- * 0        good.
- * >0       some error (exit code)
- */
-static int
-runshutdown(void)
-{
-	pid_t pid, wpid;
-	int status;
-	int shutdowntimeout;
-	size_t len;
-	char *argv[SCRIPT_ARGV_SIZE];
-	struct stat sb;
-
-	BOOTTRACE("init(8): start rc.shutdown");
-
-	/*
-	 * rc.shutdown is optional, so to prevent any unnecessary
-	 * complaints from the shell we simply don't run it if the
-	 * file does not exist. If the stat() here fails for other
-	 * reasons, we'll let the shell complain.
-	 */
-	if (stat(_PATH_RUNDOWN, &sb) == -1 && errno == ENOENT)
-		return 0;
-
-	if ((pid = fork()) == 0) {
-		char _reboot[]	= "reboot";
-		char _single[]	= "single";
-		char _path_rundown[] = _PATH_RUNDOWN;
-
-		argv[0] = _path_rundown;
-		argv[1] = Reboot ? _reboot : _single;
-		argv[2] = NULL;
-
-		execute_script(argv);
-		_exit(1);	/* force single user mode */
-	}
-
-	if (pid == -1) {
-		emergency("can't fork for %s: %m", _PATH_RUNDOWN);
-		while (waitpid(-1, (int *) 0, WNOHANG) > 0)
-			continue;
-		sleep(STALL_TIMEOUT);
-		return -1;
-	}
-
-	len = sizeof(shutdowntimeout);
-	if (sysctlbyname("kern.init_shutdown_timeout", &shutdowntimeout, &len,
-	    NULL, 0) == -1 || shutdowntimeout < 2)
-		shutdowntimeout = DEATH_SCRIPT;
-	alarm(shutdowntimeout);
-	clang = false;
-	/*
-	 * Copied from single_user().  This is a bit paranoid.
-	 * Use the same ALRM handler.
-	 */
-	do {
-		if ((wpid = waitpid(-1, &status, WUNTRACED)) != -1)
-			collect_child(wpid);
-		if (clang) {
-			/* we were waiting for the sub-shell */
-			kill(wpid, SIGTERM);
-			warning("timeout expired for %s: %m; going to "
-			    "single user mode", _PATH_RUNDOWN);
-			BOOTTRACE("rc.shutdown's %d sec timeout expired",
-				  shutdowntimeout);
-			return -1;
-		}
-		if (wpid == -1) {
-			if (errno == EINTR)
-				continue;
-			warning("wait for %s failed: %m; going to "
-			    "single user mode", _PATH_RUNDOWN);
-			return -1;
-		}
-		if (wpid == pid && WIFSTOPPED(status)) {
-			warning("init: %s stopped, restarting\n",
-			    _PATH_RUNDOWN);
-			kill(pid, SIGCONT);
-			wpid = -1;
-		}
-	} while (wpid != pid && !clang);
-
-	/* Turn off the alarm */
-	alarm(0);
-
-	if (WIFSIGNALED(status) && WTERMSIG(status) == SIGTERM &&
-	    requested_transition == catatonia) {
-		/*
-		 * /etc/rc.shutdown executed /sbin/reboot;
-		 * wait for the end quietly
-		 */
-		sigset_t s;
-
-		sigfillset(&s);
-		for (;;)
-			sigsuspend(&s);
-	}
-
-	if (!WIFEXITED(status)) {
-		warning("%s terminated abnormally, going to "
-		    "single user mode", _PATH_RUNDOWN);
-		return -2;
-	}
-
-	if ((status = WEXITSTATUS(status)) != 0)
-		warning("%s returned status %d", _PATH_RUNDOWN, status);
-
-	return status;
 }
 
 static char *
@@ -2388,51 +1838,3 @@ setprocresources(const char *cname)
 	}
 }
 #endif
-
-/*
- * Run /etc/rc.final to execute scripts after all user processes have been
- * terminated.
- */
-static void
-runfinal(void)
-{
-	struct stat sb;
-	pid_t other_pid, pid;
-	sigset_t mask;
-
-	/* Avoid any surprises. */
-	alarm(0);
-
-	/* rc.final is optional. */
-	if (stat(_PATH_RUNFINAL, &sb) == -1 && errno == ENOENT)
-		return;
-	if (access(_PATH_RUNFINAL, X_OK) != 0) {
-		warning("%s exists, but not executable", _PATH_RUNFINAL);
-		return;
-	}
-
-	pid = fork();
-	if (pid == 0) {
-		/*
-		 * Reopen stdin/stdout/stderr so that scripts can write to
-		 * console.
-		 */
-		close(0);
-		open(_PATH_DEVNULL, O_RDONLY);
-		close(1);
-		close(2);
-		open_console();
-		dup2(1, 2);
-		sigemptyset(&mask);
-		sigprocmask(SIG_SETMASK, &mask, NULL);
-		signal(SIGCHLD, SIG_DFL);
-		execl(_PATH_RUNFINAL, _PATH_RUNFINAL, NULL);
-		perror("execl(" _PATH_RUNFINAL ") failed");
-		exit(1);
-	}
-
-	/* Wait for rc.final script to exit */
-	while ((other_pid = waitpid(-1, NULL, 0)) != pid && other_pid > 0) {
-		continue;
-	}
-}

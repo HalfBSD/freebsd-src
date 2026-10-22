@@ -3094,9 +3094,9 @@ function get_zpool_version
 # to eliminate interference from outside the test suite.
 function ensure_zfsd_running
 {
-	if ! service zfsd status > /dev/null 2>&1; then
-		service zfsd start || service zfsd onestart
-		service zfsd status > /dev/null 2>&1 ||
+	if ! pgrep -x zfsd > /dev/null 2>&1; then
+		halfsvc start zfsd || log_unsupported "Test requires a managed zfsd service"
+		pgrep -x zfsd > /dev/null 2>&1 ||
 			log_unsupported "Test requires zfsd"
 	fi
 }
@@ -3107,10 +3107,10 @@ function stop_zfsd
 {
 	$RM -f $TMPDIR/.zfsd_enabled_during_stf_zfs_tests
 	if [[ -n "$ZFSD" && -x "$ZFSD" ]]; then
-		if /etc/rc.d/zfsd status > /dev/null; then
+		if pgrep -x zfsd > /dev/null; then
 			log_note "Stopping zfsd"
 			$TOUCH $TMPDIR/.zfsd_enabled_during_stf_zfs_tests
-			/etc/rc.d/zfsd stop || /etc/rc.d/zfsd onestop
+			halfsvc stop zfsd || log_unsupported "Test requires a managed zfsd service"
 		fi
 	fi
 }
@@ -3121,7 +3121,7 @@ function restart_zfsd
 {
 	if [[ -f $TMPDIR/.zfsd_enabled_during_stf_zfs_tests ]]; then
 		log_note "Restarting zfsd"
-		/etc/rc.d/zfsd start || /etc/rc.d/zfsd onestart
+		halfsvc start zfsd || log_unsupported "Test requires a managed zfsd service"
 	fi
 	$RM -f $TMPDIR/.zfsd_enabled_during_stf_zfs_tests
 }

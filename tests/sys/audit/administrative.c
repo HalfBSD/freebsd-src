@@ -324,6 +324,8 @@ ATF_TC_HEAD(auditctl_success, tc)
 
 ATF_TC_BODY(auditctl_success, tc)
 {
+	if (is_auditd_running())
+		atf_tc_skip("Refusing to redirect an active production audit log");
 	/* File needs to exist in order to call auditctl(2) */
 	ATF_REQUIRE((filedesc = open(path, O_CREAT | O_WRONLY, mode)) != -1);
 	FILE *pipefd = setup(fds, auclass);
@@ -334,21 +336,8 @@ ATF_TC_BODY(auditctl_success, tc)
 
 ATF_TC_CLEANUP(auditctl_success, tc)
 {
-	/*
-	 * auditctl(2) disables audit log at /var/audit and initiates auditing
-	 * at the configured path. To reset this, we need to stop and start the
-	 * auditd(8) again. Here, we check if auditd(8) was running already
-	 * before the test started. If so, we stop and start it again.
-	 *
-	 * TODO: should we skip this test if auditd(8) is already running to
-	 * avoid restarting it?
-	 */
-	if (!atf_utils_file_exists("started_fake_auditd")) {
-		system("service auditd onestop > /dev/null 2>&1");
-		system("service auditd onestart > /dev/null 2>&1");
-	} else {
-		cleanup();
-	}
+    if (atf_utils_file_exists("started_fake_auditd"))
+        cleanup();
 }
 
 
@@ -381,13 +370,11 @@ ATF_TC_HEAD(acct_success, tc)
 {
 	atf_tc_set_md_var(tc, "descr", "Tests the audit of a successful "
 					"acct(2) call");
-	atf_tc_set_md_var(tc, "require.files",
-	    "/etc/rc.d/accounting /etc/rc.d/auditd");
 }
 
 ATF_TC_BODY(acct_success, tc)
 {
-	int acctinfo, filedesc2;
+	int acctinfo;
 	size_t len = sizeof(acctinfo);
 	const char *acctname = "kern.acct_configured";
 	ATF_REQUIRE_EQ(0, sysctlbyname(acctname, &acctinfo, &len, NULL, 0));
@@ -395,14 +382,8 @@ ATF_TC_BODY(acct_success, tc)
 	/* File needs to exist to start system accounting */
 	ATF_REQUIRE((filedesc = open(path, O_CREAT | O_RDWR, mode)) != -1);
 
-	/*
-	 * acctinfo = 0: System accounting was disabled
-	 * acctinfo = 1: System accounting was enabled
-	 */
-	if (acctinfo) {
-		ATF_REQUIRE((filedesc2 = open("acct_ok", O_CREAT, mode)) != -1);
-		close(filedesc2);
-	}
+    if (acctinfo)
+        atf_tc_skip("Refusing to replace active production accounting");
 
 	pid = getpid();
 	snprintf(adregex, sizeof(adregex),
@@ -415,17 +396,15 @@ ATF_TC_BODY(acct_success, tc)
 	 */
 	FILE *pipefd = setup(fds, auclass);
 	ATF_REQUIRE_EQ(0, acct(path));
+	atf_utils_create_file("started_accounting", "yes\n");
 	check_audit(fds, adregex, pipefd);
 	close(filedesc);
 }
 
 ATF_TC_CLEANUP(acct_success, tc)
 {
-	/* Reset accounting configured path */
-	ATF_REQUIRE_EQ(0, system("service accounting onestop"));
-	if (atf_utils_file_exists("acct_ok")) {
-		ATF_REQUIRE_EQ(0, system("service accounting onestart"));
-	}
+    if (atf_utils_file_exists("started_accounting"))
+        ATF_REQUIRE_EQ(0, acct(NULL));
 	cleanup();
 }
 

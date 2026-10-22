@@ -47,7 +47,6 @@ SUBDIR=adjkerntz \
 	nos-tun \
 	nvmecontrol \
 	pfilctl \
-	rcorder \
 	reboot \
 	recoverdisk \
 	resolvconf \

@@ -3,7 +3,6 @@
 import os
 from pathlib import Path
 import subprocess
-import shlex
 import sys
 import tempfile
 
@@ -64,39 +63,6 @@ with tempfile.TemporaryDirectory(prefix='unbound-setup-') as directory:
     subprocess.run(['sh', str(script), '-n'], env=environment, check=True)
     assert config.read_text() == result
     print('PASS upgrade removes client policy, preserves quoted local records/TLS, and is idempotent')
-
-    # Exercise the actual service setup function with mocked rc.subr actions.
-    # This checks restart policy without running a FreeBSD service on Linux.
-    rc = script.parents[3] / 'libexec/rc/rc.d/local_unbound'
-    content = rc.read_text()
-    start = content.index('local_unbound_setup()\n{')
-    end = content.index('\n}\n', start) + 3
-    helper = root / 'fake-unbound-setup'
-    helper.write_text('#!/bin/sh\nexit "${HELPER_STATUS:-0}"\n')
-    helper.chmod(0o755)
-    trace = root / 'trace'
-    harness = root / 'rc-test.sh'
-    harness.write_text(f'''command={shlex.quote(str(root / 'fake-unbound'))}
-local_unbound_workdir=/var/unbound
-local_unbound_config=/etc/unbound/unbound.conf
-local_unbound_anchor=/var/unbound/root.key
-checkyesno() {{ return 1; }}
-local_unbound_configtest() {{ echo configtest >> "$TRACE"; return "${{CHECK_STATUS:-0}}"; }}
-run_rc_command() {{ echo "$1" >> "$TRACE"; }}
-''' + content[start:end].replace('/bin/kenv', shlex.quote(str(root / 'kenv'))) + '\nlocal_unbound_setup\n')
-    mode = root / 'kenv'
-    mode.write_text('#!/bin/sh\necho rc\n')
-    mode.chmod(0o755)
-    for pid, helper_status, check_status, expected in [
-            ('', '0', '0', []), ('1234', '0', '0', ['configtest', 'restart']),
-            ('1234', '1', '0', []), ('1234', '0', '1', ['configtest'])]:
-        trace.write_text('')
-        result = subprocess.run(['sh', str(harness)], env=dict(environment, rc_pid=pid,
-                                HELPER_STATUS=helper_status, CHECK_STATUS=check_status,
-                                TRACE=str(trace)), capture_output=True)
-        assert trace.read_text().splitlines() == expected
-        assert (result.returncode == 0) == (helper_status == '0' and check_status == '0')
-    print('PASS service setup validates before replacing a running daemon; failures do not restart')
 
 # Keep the installworld upgrade case in the usual setup regression entry point.
 subprocess.run([sys.executable, str(script.parents[1] / 'tests/installworld.py')], check=True)

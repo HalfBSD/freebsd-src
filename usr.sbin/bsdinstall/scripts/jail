@@ -197,7 +197,6 @@ trap true SIGINT	# This section is optional
 
 if [ ! "$nonInteractive" == "YES" ]
 then
-bsdinstall services
 
     bsddialog --backtitle "$OSNAME Installer" --title "Add User Accounts" --yesno \
         "Would you like to add users to the installed system now?" 0 0 && \

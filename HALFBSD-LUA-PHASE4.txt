@@ -1,3 +1,7 @@
+Current source status (October 21): traditional RC is removed locally.
+See HALFBSD-RC-REMOVAL.txt. RC recovery instructions below are historical;
+use boot -s or compatible external media. Native RC-free validation is pending.
+
 HalfBSD Lua Phase IV — PID 1 boot/shutdown integration
 October 13, 2026 | branch halfbsd2
 STATUS: administrator reports native "Lua multiuser READY" on Anvil.

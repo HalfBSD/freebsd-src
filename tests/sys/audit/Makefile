@@ -53,7 +53,7 @@ TEST_METADATA+= required_user="root"
 # TODO: In addititon to test failures, running in parallel can trigger a kernel
 # panic: https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=253616
 TEST_METADATA+= is_exclusive="true"
-TEST_METADATA+=	required_files="/etc/rc.d/auditd /dev/auditpipe"
+TEST_METADATA+=	required_files="/dev/auditpipe"
 
 MK_PIE:=	no	# XXX libprivateauditd.a is not PIE
 LDFLAGS+=	-lbsm -lutil

@@ -33,18 +33,6 @@
 NL="
 "
 
-# Platform specific kludges
-if [ -z "${named_service}${named_restart}" ] &&
-   [ -d "$RCDIR" ] && ! [ -x "$RCDIR"/named ]
-then
-	if [ -x "$RCDIR"/bind9 ]; then
-		# Debian and derivatives
-		named_service=bind9
-	elif [ -x "$RCDIR"/rc.bind ]; then
-		# Slackware
-		named_service=rc.bind
-	fi
-fi
 : ${named_service:=named}
 
 : ${named_pid:=/var/run/$named_service.pid}

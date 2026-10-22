@@ -90,7 +90,6 @@ DIRDEPS+= \
 	sbin/nos-tun \
 	sbin/ping \
 	sbin/quotacheck \
-	sbin/rcorder \
 	sbin/reboot \
 	sbin/recoverdisk \
 	sbin/resolvconf \
@@ -315,8 +314,6 @@ DIRDEPS+= \
 	usr.sbin/bluetooth/sdpcontrol \
 	usr.sbin/bluetooth/sdpd \
 	usr.sbin/bsdconfig \
-	usr.sbin/bsdconfig/console \
-	usr.sbin/bsdconfig/console/include \
 	usr.sbin/bsdconfig/diskmgmt \
 	usr.sbin/bsdconfig/diskmgmt/include \
 	usr.sbin/bsdconfig/docsinstall \
@@ -327,22 +324,14 @@ DIRDEPS+= \
 	usr.sbin/bsdconfig/include \
 	usr.sbin/bsdconfig/includes \
 	usr.sbin/bsdconfig/includes/include \
-	usr.sbin/bsdconfig/networking \
-	usr.sbin/bsdconfig/networking/include \
-	usr.sbin/bsdconfig/networking/share \
 	usr.sbin/bsdconfig/packages \
 	usr.sbin/bsdconfig/packages/include \
 	usr.sbin/bsdconfig/password \
 	usr.sbin/bsdconfig/password/include \
 	usr.sbin/bsdconfig/password/share \
-	usr.sbin/bsdconfig/security \
-	usr.sbin/bsdconfig/security/include \
 	usr.sbin/bsdconfig/share \
 	usr.sbin/bsdconfig/share/media \
 	usr.sbin/bsdconfig/share/packages \
-	usr.sbin/bsdconfig/startup \
-	usr.sbin/bsdconfig/startup/include \
-	usr.sbin/bsdconfig/startup/share \
 	usr.sbin/bsdconfig/timezone \
 	usr.sbin/bsdconfig/timezone/include \
 	usr.sbin/bsdconfig/timezone/share \
@@ -456,7 +445,6 @@ DIRDEPS+= \
 	usr.sbin/smbmsg \
 	usr.sbin/snapinfo \
 	usr.sbin/syslogd \
-	usr.sbin/sysrc \
 	usr.sbin/tcpdrop \
 	usr.sbin/tcpdump/tcpdump \
 	usr.sbin/traceroute \

@@ -43,7 +43,6 @@ while true; do
 		"Root Password" "Change root password" \
 		"Hostname" "Set system hostname" \
 		"Network" "Networking configuration" \
-		"Services" "Set daemons to run on startup" \
 		"System Hardening" "Set security options" \
 		"Time Zone" "Set system timezone" \
 		"Firmware" "Install Firmware (requires network)" \
@@ -70,9 +69,6 @@ while true; do
 		;;
 	"Network")
 		bsdinstall netconfig
-		;;
-	"Services")
-		bsdinstall services
 		;;
 	"System Hardening")
 		bsdinstall hardening

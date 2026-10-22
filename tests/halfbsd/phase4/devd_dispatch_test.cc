@@ -46,12 +46,14 @@ int
 main()
 {
     config c;
-    action match("service devmatch quietstart $*");
+    action match("/usr/sbin/halfinit --device-nomatch $*");
     assert(match.do_action(c) && executed == "device module match" && event == c.raw);
     child_status = 1;
     assert(!match.do_action(c));
     child_status = 0;
-    for (const char *command : {"service dhclient quietstart $subsystem",
+    for (const char *command : {"/etc/netif_hotplug $subsystem start",
+        "/etc/netif_hotplug $device-name startchildren", "/etc/netif_hotplug $device-name stopchildren",
+        "service dhclient quietstart $subsystem",
         "service vtcons setkeyboard /dev/ukbd0", "service vtcons setkeyboard /dev/kbd0"}) {
         executed.clear();
         assert(action(command).do_action(c) && executed.empty());
@@ -59,13 +61,13 @@ main()
     executed.clear(); logs = 0;
     action power("service power_profile $notify");
     assert(!power.do_action(c) && !power.do_action(c) && logs == 1 && executed.empty());
-    owner = "rc";
-    assert(match.do_action(c) && executed == "service devmatch quietstart $*" && event.empty());
+    owner = "rc"; executed.clear();
+    assert(!match.do_action(c) && executed.empty());
     owner = "unexpected"; executed.clear();
     assert(!match.do_action(c) && executed.empty());
     missing = true;
     assert(!match.do_action(c) && executed.empty());
     missing = false; owner = "lua";
     assert(action("service custom restart").do_action(c) && executed == "service custom restart");
-    puts("PASS actual devd action body: ownership, raw argv, failures, no duplicate DHCP/keyboard RC dispatch, bounded unsupported warnings and explicit RC recovery");
+    puts("PASS actual devd action body: ownership, raw argv, failures, no duplicate DHCP/keyboard RC dispatch, bounded unsupported warnings and rejected retired RC ownership");
 }

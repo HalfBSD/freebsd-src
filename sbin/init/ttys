@@ -5,7 +5,7 @@
 # name  The name of the terminal device.
 #
 # getty The program to start running on the terminal.  HalfBSD starts
-#       login through halfconsole in Lua mode, rc.console in RC mode;
+#       login through halfconsole;
 #       init prepares its controlling terminal. Use
 #       none when no login session is needed.
 #
@@ -26,5 +26,4 @@
 console	none				unknown	off secure
 #
 # Lua mode uses console policy in /etc/halfbsd/system.lua (default root).
-# Explicit RC mode uses console_user from rc.conf.
-ttyv0	"/etc/rc.console"		xterm	onifexists secure
+ttyv0	"/usr/sbin/halfconsole"		xterm	onifexists secure

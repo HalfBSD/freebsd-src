@@ -149,7 +149,6 @@ fi
 [ -f /usr/libexec/bsdinstall/local.pre-everything ] && f_dprintf "Running local.pre-everything" && sh /usr/libexec/bsdinstall/local.pre-everything "$BSDINSTALL_CHROOT"
 
 trap true SIGINT	# This section is optional
-[ -z "$BSDINSTALL_SKIP_KEYMAP" ] && bsdinstall keymap
 
 trap error SIGINT	# Catch cntrl-C here
 if [ -z "$BSDINSTALL_SKIP_HOSTNAME" ]; then bsdinstall hostname || error "Set hostname failed"; fi
@@ -314,7 +313,6 @@ if [ "$NETCONFIG_DONE" != yes ]; then
 	bsdinstall netconfig	# Don't check for errors -- the user may cancel
 fi
 [ -z "$BSDINSTALL_SKIP_TIME" ] && bsdinstall time
-[ -z "$BSDINSTALL_SKIP_SERVICES" ] && bsdinstall services
 [ -z "$BSDINSTALL_SKIP_HARDENING" ] && bsdinstall hardening
 [ -z "$BSDINSTALL_SKIP_FIRMWARE" ] && bsdinstall firmware
 

@@ -7,9 +7,9 @@
 .Nd HalfBSD local console login
 .Sh DESCRIPTION
 .Nm
-is launched only by PID 1 as root on console sessions whose tty entry uses
-.Pa /etc/rc.console .
-Lua mode substitutes this helper without executing that RC script.
+is launched only by PID 1 as root on the primary console ttyv0.
+PID 1 selects this native helper even when an older installed tty entry names
+the retired console wrapper.
 It preserves the controlling terminal and replaces itself with native
 .Xr login 1 ,
 retaining PAM session setup, groups, home directory and logout behavior.

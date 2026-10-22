@@ -26,9 +26,6 @@ system is on AC or battery power.
 This package provides several utilities that can be used to interact with the
 ACPI implementation in the kernel:
 
-* The /etc/rc.d/power_profile service can be used to change system performance
-  targets based on on the system power state.  This service is typically
-  invoked automatically by devd(8) when the system power state changes.
 * acpiconf(8) can monitor or change the system power state.
 * acpidb(8) is a debugging tool for working with ACPI DSDT files.
 * acpidump(8) dumps the system's raw ACPI data.

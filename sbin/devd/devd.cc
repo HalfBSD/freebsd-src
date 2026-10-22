@@ -290,29 +290,27 @@ action::do_action(config &c)
 	if (kind != HB_DEVICE_OTHER) {
 		char mode[16] = {0};
 		int n = kenv(KENV_GET, "halfbsd.boot_active", mode, sizeof(mode));
-		if (n < 0 || n >= (int)sizeof(mode) || (strcmp(mode, "lua") && strcmp(mode, "rc"))) {
+		if (n < 0 || n >= (int)sizeof(mode) || strcmp(mode, "lua")) {
 			devdlog(LOG_ERR, "device action: startup ownership unavailable; refusing RC dispatch\n");
 			return (false);
 		}
-		if (!strcmp(mode, "lua")) {
-			if (kind == HB_DEVICE_MATCH) {
-				int status = my_system("device module match", c.get_variable("*").c_str());
-				if (status != 0)
-					devdlog(LOG_WARNING, "device module match failed (wait status %d)\n", status);
-				return (status == 0);
-			}
-			/* DHCP is supervised; kbd_register attaches keyboards to kbdmux.
-			 * Neither event may run a second, RC-owned initialization path. */
-			if (kind == HB_DEVICE_DHCP || kind == HB_DEVICE_KEYBOARD)
-				return (true);
-			static unsigned int reported;
-			unsigned int bit = 1U << kind;
-			if (!(reported & bit)) {
-				reported |= bit;
-				devdlog(LOG_WARNING, "device action has no configured HalfBSD provider: %s\n", _cmd.c_str());
-			}
-			return (false);
+		if (kind == HB_DEVICE_MATCH) {
+			int status = my_system("device module match", c.get_variable("*").c_str());
+			if (status != 0)
+				devdlog(LOG_WARNING, "device module match failed (wait status %d)\n", status);
+			return (status == 0);
 		}
+		/* DHCP is supervised; kbd_register attaches keyboards to kbdmux.
+		 * Neither event may run a second, RC-owned initialization path. */
+		if (kind == HB_DEVICE_DHCP || kind == HB_DEVICE_KEYBOARD)
+			return (true);
+		static unsigned int reported;
+		unsigned int bit = 1U << kind;
+		if (!(reported & bit)) {
+			reported |= bit;
+			devdlog(LOG_WARNING, "device action has no configured HalfBSD provider: %s\n", _cmd.c_str());
+		}
+		return (false);
 	}
 	string s = c.expand_string(_cmd.c_str());
 	devdlog(LOG_INFO, "Executing '%s'\n", s.c_str());

@@ -37,11 +37,11 @@
 [ `id -u ` -ne 0 ] && echo "Must be root!" && exit 1
 [ -z "$footshoot" ] && exit 0
 
-[ -f /usr/sbin/auditd -a -f /etc/rc.d/auditd ] || exit 0
+[ -x /usr/sbin/halfsvc ] && halfsvc status auditd >/dev/null 2>&1 || exit 0
 pgrep -q auditd && exit 0
 mount | grep -q /var || exit 0
 
-service auditd onestart
+halfsvc start auditd
 
 sleep 1
 su $testuser -c date > /dev/null
@@ -51,8 +51,7 @@ umount -f /var
 sleep 1
 mount /var
 
-service auditd onestop
+halfsvc stop auditd
 
 # Some services react badly to /var being unmounted.
-service -R
 exit 0

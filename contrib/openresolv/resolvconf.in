@@ -29,7 +29,6 @@ OPENRESOLV_VERSION="3.9.2"
 SYSCONFDIR=@SYSCONFDIR@
 LIBEXECDIR=@LIBEXECDIR@
 VARDIR=@VARDIR@
-RCDIR=@RCDIR@
 RESTARTCMD=@RESTARTCMD@
 
 if [ "$1" = "--version" ]; then
@@ -287,108 +286,6 @@ config_mkdirs()
 		fi
 	done
 	return $e
-}
-
-# With the advent of alternative init systems, it's possible to have
-# more than one installed. So we need to try and guess what one we're
-# using unless overriden by configure.
-# Note that restarting a service is a last resort - the subscribers
-# should make a reasonable attempt to reconfigre the service via some
-# method, normally SIGHUP.
-detect_init()
-{
-	[ -n "$RESTARTCMD" ] && return 0
-
-	# Detect the running init system.
-	# As systemd and OpenRC can be installed on top of legacy init
-	# systems we try to detect them first.
-	status="@STATUSARG@"
-	: ${status:=status}
-	if [ -x /bin/systemctl ] && [ -S /run/systemd/private ]; then
-		RESTARTCMD='
-			if /bin/systemctl --quiet is-active $1.service
-			then
-				/bin/systemctl restart $1.service
-			fi'
-	elif [ -x /usr/bin/systemctl ] && [ -S /run/systemd/private ]; then
-		RESTARTCMD='
-			if /usr/bin/systemctl --quiet is-active $1.service
-			then
-				/usr/bin/systemctl restart $1.service
-			fi'
-	elif [ -x /sbin/rc-service ] &&
-	     { [ -s /libexec/rc/init.d/softlevel ] ||
-	     [ -s /run/openrc/softlevel ]; }
-	then
-		RESTARTCMD='/sbin/rc-service -i $1 -- -Ds restart'
-	elif [ -x /usr/sbin/invoke-rc.d ]; then
-		RCDIR=/etc/init.d
-		RESTARTCMD='
-		   if /usr/sbin/invoke-rc.d --quiet $1 status >/dev/null 2>&1
-		   then
-			/usr/sbin/invoke-rc.d $1 restart
-		   fi'
-	elif [ -x /sbin/service ]; then
-		# Old RedHat
-		RCDIR=/etc/init.d
-		RESTARTCMD='
-			if /sbin/service $1; then
-				/sbin/service $1 restart
-			fi'
-	elif [ -x /usr/sbin/service ]; then
-		# Could be FreeBSD
-		RESTARTCMD="
-			if /usr/sbin/service \$1 $status >/dev/null 2>&1
-			then
-				/usr/sbin/service \$1 restart
-			fi"
-	elif [ -x /bin/sv ]; then
-		RESTARTCMD='/bin/sv status $1 >/dev/null 2>&1 &&
-			    /bin/sv try-restart $1'
-	elif [ -x /usr/bin/sv ]; then
-		RESTARTCMD='/usr/bin/sv status $1 >/dev/null 2>&1 &&
-			    /usr/bin/sv try-restart $1'
-	elif [ -e /etc/arch-release ] && [ -d /etc/rc.d ]; then
-		RCDIR=/etc/rc.d
-		RESTARTCMD='
-			if [ -e /var/run/daemons/$1 ]
-			then
-				/etc/rc.d/$1 restart
-			fi'
-	elif [ -e /etc/slackware-version ] && [ -d /etc/rc.d ]; then
-		RESTARTCMD='
-			if /etc/rc.d/rc.$1 status >/dev/null 2>&1
-			then
-				/etc/rc.d/rc.$1 restart
-			fi'
-	elif [ -e /etc/rc.d/rc.subr ] && [ -d /etc/rc.d ]; then
-		# OpenBSD
-		RESTARTCMD='
-			if /etc/rc.d/$1 check >/dev/null 2>&1
-			then
-				/etc/rc.d/$1 restart
-			fi'
-	else
-		for x in /etc/init.d/rc.d /etc/rc.d /etc/init.d; do
-			[ -d $x ] || continue
-			RESTARTCMD="
-				if $x/\$1 $status >/dev/null 2>&1
-				then
-					$x/\$1 restart
-				fi"
-			break
-		done
-	fi
-
-	if [ -z "$RESTARTCMD" ]; then
-		if [ "$_NOINIT_WARNED" != true ]; then
-			warn "could not detect a useable init system"
-			_NOINIT_WARNED=true
-		fi
-		return 1
-	fi
-	_NOINIT_WARNED=
-	return 0
 }
 
 echo_resolv()
@@ -706,7 +603,7 @@ fi
 
 # Restart a service or echo the command to restart a service
 if [ "$cmd" = r ] || [ "$cmd" = R ]; then
-	detect_init || exit 1
+	[ -n "$RESTARTCMD" ] || { warn "no service restart command configured"; exit 1; }
 	if [ "$cmd" = r ]; then
 		set -- $args
 		eval "$RESTARTCMD"
@@ -941,9 +838,8 @@ case "${resolvconf:-YES}" in
 *) exit 0;;
 esac
 
-# Try and detect a suitable init system for our scripts
-detect_init
-export RESTARTCMD RCDIR _NOINIT_WARNED
+# Subscriber restart requests use the configured HalfBSD service frontend.
+export RESTARTCMD
 
 eval "$(make_vars)"
 export RESOLVCONF DOMAINS SEARCH NAMESERVERS LOCALNAMESERVERS

@@ -97,19 +97,6 @@ function M.main(args,module_dir)
             if d.action=='mount'and not(d.parameters and d.parameters.options)then missing[#missing+1]={service=name,prerequisite='explicit mount configuration'}end
         end
         local observed={};local inventory={}
-        if opts.shadow then
-            local flags={local_unbound_enable='dns',sshd_enable='sshd',ntpd_enable='ntpd',seatd_enable='seatd',firewall_enable='firewall'}
-            for _,path in ipairs({'/etc/defaults/rc.conf','/etc/rc.conf','/etc/rc.conf.local'})do
-                local file=io.open(path,'r')
-                if file then
-                    local text=file:read(65537);file:close();assert(#text<=65536,'shadow input exceeds bound')
-                    for line in text:gmatch('[^\n]+')do
-                        local key,value=line:match('^%s*([%w_]+)%s*=%s*["\']?(%u+)')
-                        if flags[key]and(value=='YES'or value=='NO')then observed[flags[key]]={rc_enabled=value=='YES',source=path,selected=plan.selected[flags[key]]or false}end
-                    end
-                end
-            end
-        end
         if opts.shadow and config.boot then
             local mounts,mount_error=native.mounts();inventory.mounts=mounts;inventory.mount_error=mount_error
             local processes,process_error=native.processes();inventory.process_error=process_error
@@ -124,7 +111,7 @@ function M.main(args,module_dir)
         end
         local shutdown={};for i=#plan.waves,1,-1 do shutdown[#shutdown+1]=plan.waves[i]end
         io.write(json.encode({valid=true,target=config.target,startup=plan.waves,shutdown=shutdown,missing=missing,
-            execution='planning only; existing rc services remain external',shadow=opts.shadow or false,observed=observed,inventory=inventory})..'\n')
+            execution='planning only; existing processes remain external',shadow=opts.shadow or false,observed=observed,inventory=inventory})..'\n')
         return 0
     end
     assert(opts.config or opts.simulate,'use --check/--dry-run, --simulate, or an explicit userspace --config')

@@ -1,6 +1,45 @@
 # HalfBSD Lua startup: workstation follow-up
 
+## Current update: traditional RC source removed
+
+The RC removal requested by the administrator is implemented locally. See
+HALFBSD-RC-REMOVAL.txt for deleted source, integration changes, validation and
+limitations. Native build/boot acceptance remains pending. Earlier RC-retention
+and RC-recovery descriptions below are historical and superseded: boot -s and
+compatible external FreeBSD media are the recovery routes. The independent
+shell and single-local-VT decisions remain separate TODOs.
+
+
 October 20, 2026. Branch `halfbsd2`.
+
+## TODO: decide whether to retire PID 1's independent recovery shell
+
+The administrator notes that a compatible FreeBSD USB environment can import
+the ZFS pool and repair the installation. Revisit whether this external-media
+recovery policy makes the built-in root recovery shell unnecessary. This is
+separate from RC removal: keep the C PID 1 recovery shell operational during
+the current RC deletion, and make any later removal an explicit change with a
+documented external recovery procedure.
+
+## TODO: enforce a single local virtual console
+
+The administrator wants only one local virtual console. `/etc/ttys` already
+starts login only on ttyv0, but kernel VT code still defaults to 12 terminals
+and retains switching shortcuts/ioctls; seatd also retains switching support.
+Disabling extra login sessions did not eliminate those underlying facilities.
+
+- Audit and enforce a single local console, including requests originating from
+  keyboard shortcuts, utilities and compositors. Do not reintroduce extra gettys.
+- Preserve the console ownership, graphics/text handoff and device release/
+  reacquisition needed to start and exit Sway on that same console.
+- Verify kernel configuration and seatd/libseat assumptions before removing
+  shared code. Test Sway start/exit, console restoration, USB reconnection and
+  local recovery on native HalfBSD.
+- Preserve concurrent SSH sessions and distinct user/service identities; this
+  is a restriction on local virtual consoles, not Unix multiuser operation.
+
+Implementation and native validation are pending. Replace the earlier generic
+“VT switching” acceptance item with this single-console requirement.
 
 ## October 21 workstation implementation batch
 

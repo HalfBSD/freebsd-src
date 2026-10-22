@@ -116,9 +116,9 @@ main(void)
 	assert(hb_boot_mode(NULL) == 1);
 	assert(hb_boot_mode("") == 1);
 	assert(hb_boot_mode("lua") == 1);
-	assert(hb_boot_mode("rc") == 0);
+	assert(hb_boot_mode("rc") == -1 && errno == EINVAL);
 	assert(hb_boot_mode("unknown") == -1 && errno == EINVAL);
-	puts("PASS default Lua, explicit RC recovery and invalid override rejection");
+	puts("PASS sole HalfBSD startup, retired RC override and invalid override rejection");
 	assert(hb_boot_stage(NULL) == 1 && hb_boot_stage("") == 1);
 	assert(hb_boot_stage("single") == 0 && hb_boot_stage("multiuser") == 1);
 	assert(hb_boot_stage("network") == 2);

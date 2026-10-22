@@ -22,7 +22,7 @@ desc = <<EOD
 Unbound is a caching, DNSSEC-validating DNS resolver developed by NLnet Labs.
 This version of Unbound, called local-unbound, is intended to service DNS
 requests from services running on the local system, and is typically started
-via the local_unbound rc(8) service.
+via the HalfBSD dns service.
 
 A full-featured version of Unbound is available in the FreeBSD Ports Collection
 as "dns/unbound".

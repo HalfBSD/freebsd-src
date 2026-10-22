@@ -5,6 +5,9 @@
 int
 main(void)
 {
+    assert(hb_device_action("/usr/sbin/halfinit --device-nomatch $*") == HB_DEVICE_MATCH);
+    assert(hb_device_action("/etc/netif_hotplug $subsystem start") == HB_DEVICE_DHCP);
+    assert(hb_device_action("/etc/rc.suspend acpi $notify") == HB_DEVICE_POWER);
     assert(hb_device_action("service devmatch quietstart $*") == HB_DEVICE_MATCH);
     assert(hb_device_action("service dhclient quietstart $subsystem") == HB_DEVICE_DHCP);
     assert(hb_device_action("service vtcons setkeyboard /dev/ukbd0") == HB_DEVICE_KEYBOARD);

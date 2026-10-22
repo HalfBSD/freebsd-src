@@ -63,7 +63,7 @@ PKG_ARGS="$PKG_ARGS -o INSTALL_AS_USER=1"
 PKGCMD="/usr/sbin/pkg ${PKG_ARGS}"
 
 if [ ! -x /usr/local/sbin/pkg ]; then
-	/etc/rc.d/ldconfig restart
+	/sbin/ldconfig -elf /lib /usr/lib /usr/local/lib
 	/usr/bin/make -C ${PORTSDIR}/ports-mgmt/pkg install clean
 fi
 

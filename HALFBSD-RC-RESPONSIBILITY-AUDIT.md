@@ -1,5 +1,11 @@
 # Remaining RC responsibilities: source audit
 
+Current status: the framework described in this baseline audit has now been
+removed locally. HALFBSD-RC-REMOVAL.txt supersedes the retention statements below
+and records which responsibilities remain unsupported or need native policy.
+Native validation of the RC-free world remains pending.
+
+
 October 21, 2026. This is source review, not native runtime verification.
 RC remains installed; this batch deletes none of its infrastructure.
 

@@ -34,15 +34,6 @@
 
 PATH=/bin:/usr/bin
 
-# If there is a global system configuration file, suck it in.
-#
-if [ -r /etc/defaults/rc.conf ]; then
-	. /etc/defaults/rc.conf
-	source_rc_confs 2>/dev/null
-elif [ -r /etc/rc.conf ]; then
-	. /etc/rc.conf 2>/dev/null
-fi
-
 [ $(/sbin/sysctl -n security.jail.jailed) = 0 ] || exit 0
 
 case ${entropy_dir} in

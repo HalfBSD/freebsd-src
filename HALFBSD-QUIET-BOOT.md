@@ -49,3 +49,32 @@ kernel; see HALFBSD-DEVD-HOTPLUG.md. Quiet logging is a separate change.
 Selector removal: deleted console_input.c/.h and the obsolete PTY selector test,
 removed their build/ATF references, and reran the Phase IV portable gate
 successfully. Native helper compilation and boot verification remain pending.
+
+
+## Native follow-up after installation
+
+The administrator reports the rebuilt system boots successfully. The new console
+photograph shows immediate root login without the removed account selector,
+and hms0 attaching to the Razer Naga Hex mouse on USB reconnection.
+
+The remaining repeated `Usage in Lua mode: service ...` and unsupported-action
+messages are rejected legacy devd actions, not halfinit lifecycle debug output.
+Current devd configuration still invokes RC-only devmatch quietstart, dhclient
+quietstart and vtcons setkeyboard actions. Generic unmatched devices generate
+these attempts repeatedly during USB attachment. Supporting these operations
+under Lua requires explicit ownership/policy integration; simply hiding service
+errors or falling back to RC would conceal the problem and risk duplicate DHCP.
+The photograph alone cannot attribute every rejected invocation to a specific
+rule, but these in-tree action call sites are confirmed incompatible.
+
+The separate devd `notify_clients: send() failed; dropping unresponsive client`
+warning means delivery to one broadcast subscriber failed and devd removed it.
+The current message does not identify the subscriber or errno, so this photograph
+cannot establish which client disconnected or whether it was slow versus closed.
+USB attachment messages are kernel driver diagnostics, distinct from both issues.
+
+
+The follow-up implementation is described in HALFBSD-DEVD-ACTIONS.md: recognized
+legacy device actions now dispatch by startup ownership, normal subscriber
+closure is quiet, and actual slow-client failures remain warnings. Native
+validation of this follow-up remains pending.

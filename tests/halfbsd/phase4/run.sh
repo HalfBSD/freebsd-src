@@ -13,6 +13,12 @@ HALFBSD_LIVE_CHECK="$suite/check-live.lua" "$lua" -E -e 'assert(loadfile(os.gete
 "$lua" -E "$suite/singleboot.lua" "$modules"
 "$lua" -E "$suite/policy.lua" "$modules" "$src/usr.sbin/halfinit/examples/boot-system.lua"
 "$lua" -E "$suite/workstation.lua" "$modules"
+"$lua" -E "$suite/devmatch.lua" "$modules"
+cc -std=c17 -Wall -Wextra -Wpedantic -Werror -fPIE -pie -Wl,-z,text \
+    -I"$src/sbin/devd" "$suite/devd_action_test.c" -o "$work/devd_action_test"
+sh "$suite/devd-dispatch-test.sh" "$src"
+"$work/devd_action_test"
+sh "$suite/devd-dispatch-test.sh" "$src"
 "$lua" -E "$suite/shutdown_report.lua" "$modules"
 "$lua" -E "$suite/../input-hotplug-test.lua" "$suite/../input-hotplug.lua"
 sh "$suite/service_test.sh" "$src"

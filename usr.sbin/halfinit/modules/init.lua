@@ -51,6 +51,7 @@ local function simulation(config,module_dir,scenario)
     end
 end
 function M.main(args,module_dir)
+    if args[1]=='--device-nomatch'then return require('devmatch').main(args)end
     local opts=parse(args)
     if opts.help then io.write('halfinit [--config FILE] [--target NAME] [--runtime-dir DIR] [--run-for SECONDS] [--activate-system] [--check|--graph|--dry-run|--shadow|--simulate] [--scenario success|failure|recovery|exhaustion|forced]\n');return 0 end
     if opts.run_for then

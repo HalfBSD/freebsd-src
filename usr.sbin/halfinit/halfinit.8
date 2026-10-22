@@ -380,3 +380,12 @@ experimental until actual Lua-controlled boot and recovery have been tested.
 .Sh SEE ALSO
 .Xr halfsvc 8 ,
 .Xr lua-halfbsd 7
+
+.Sh DEVICE EVENTS
+Devd dispatches recognized module-match actions directly to an internal
+.Nm
+entry without starting another supervisor or invoking RC.
+The handler honors boot_safe and the kernel devmatch_blocklist setting.
+Legacy DHCP start events are owned by the scheduler; keyboard registration uses
+kbdmux. Power-profile and Bluetooth RC actions lack HalfBSD providers and warn
+once per category. Traditional RC ownership preserves its original actions.

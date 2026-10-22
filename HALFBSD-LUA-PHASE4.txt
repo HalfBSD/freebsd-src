@@ -844,3 +844,16 @@ halfconsole syntax checking and an extracted actual devd logging-function test
 passed. Native buildworld/buildkernel, full ATF and post-change boot remain
 pending. Prior native success with the loadable hms module is not proof of the
 new built-in kernel configuration. Screenshots are excluded from version control.
+
+
+October 21 device-action follow-up
+--------------------------------
+Native boot with the preceding quiet-console/hms changes succeeded, per the
+administrator. A subsequent photograph identified repeated legacy devd service
+commands rejected by the HalfBSD frontend. See HALFBSD-DEVD-ACTIONS.md for the
+fix: ownership-aware exact-template dispatch, bounded direct module matching,
+supervisor-owned DHCP recovery, kbdmux-owned keyboard hotplug and accurate devd
+subscriber-disconnection logging. No traditional RC fallback is introduced.
+Power-profile and Bluetooth providers remain missing and warn once per category.
+Portable Phase IV, 21 Phase III and 16 Phase II policy groups pass. Full native
+daemon build, live event handling, DHCP recovery and ATF remain pending.

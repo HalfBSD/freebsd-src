@@ -38,6 +38,7 @@ test('system graph is declarative and preserves compiled DNS configuration',func
     local f,n=fixture();local r=registry({},n);local p=dependency.plan(r,{multiuser=true})
     assert(f.mutations==0 and r.dns.command[1]=='/usr/sbin/local-unbound')
     assert(r.dns.command[4]=='/etc/unbound/unbound.conf')
+    assert(r['dhcp-em0'].restart=='always')
     assert(position(p,'firewall')<position(p,'dhcp-em0')and position(p,'dns-anchor')<position(p,'dns'))
     assert(not r.gateway.enabled and not r.desktop)
 end)

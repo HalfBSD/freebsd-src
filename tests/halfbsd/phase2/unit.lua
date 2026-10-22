@@ -108,6 +108,19 @@ test('never, on-failure and always distinguish successful exits',function()
         assert(#e.records.worker.attempts==(case[3]and 1 or 0))
     end
 end)
+test('DHCP-style clean exit restarts remain bounded and operator stop cancels recovery',function()
+    local e=engine({{name='dhcp-test',type='daemon',command={'/fixture','exit_zero','0.01'},
+        restart='always',restart_limit=2,restart_delay=0.01}})
+    e:start({'dhcp-test'})
+    advance(e,function()return e.records['dhcp-test'].state=='RESTARTING'end)
+    assert(e.records['dhcp-test'].result.success and #e.records['dhcp-test'].attempts==1)
+    e:stop('dhcp-test')
+    assert(e.records['dhcp-test'].state=='INACTIVE'and e.holds['dhcp-test'])
+    local elapsed=false;e.loop:watch_timer(1,function()elapsed=true end)
+    advance(e,function()return elapsed end)
+    assert(#e.proc.active()==0 and e.records['dhcp-test'].state=='INACTIVE')
+    e:shutdown();if not e.finished then e.loop:run()end;assert(e.finished)
+end)
 test('50 supervised children and reverse shutdown',function()
     local defs={};for i=1,50 do defs[#defs+1]={name='d'..i,type='daemon',command={'/fixture','daemon'}}end
     local requires={};for i=1,50 do requires[i]='d'..i end

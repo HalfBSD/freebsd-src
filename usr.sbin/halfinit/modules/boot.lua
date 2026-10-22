@@ -232,7 +232,7 @@ function M.compile(policy,os)
         local n='dhcp-'..interface;dhcp[#dhcp+1]=n
         add({name=n,type='daemon',command={'/sbin/dhclient','-d','-p','/var/run/dhclient/dhclient.'..interface..'.pid',interface},
             requires={up},guard='exclusive_guard',condition='interface_ready',readiness='condition',start_timeout=90,
-            restart='on-failure',restart_delay=2,restart_window=300,parameters={interface=interface,processes={'dhclient'}}})
+            restart='always',restart_delay=2,restart_window=300,parameters={interface=interface,processes={'dhclient'}}})
     end
     target('dhcp',dhcp)
     add({name='network',type='virtual',condition='route_ready',requires={'dhcp'},parameters={interface=interfaces[1]},start_timeout=30})

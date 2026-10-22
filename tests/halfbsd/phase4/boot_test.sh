@@ -31,4 +31,12 @@ shutdown_report_body()
     atf_check -s exit:0 -o match:PASS -e empty /usr/bin/lua -E "$(atf_get_srcdir)/shutdown_report.lua" "$modules"
     atf_check -s exit:0 -o match:PASS -e empty "$(atf_get_srcdir)/shutdown_report_test"
 }
-atf_init_test_cases() { atf_add_test_case singleboot; atf_add_test_case policy; atf_add_test_case handoff; atf_add_test_case workstation; atf_add_test_case shutdown_report; }
+atf_test_case device_actions
+device_actions_head() { atf_set descr 'Direct device autoload policy and devd RC ownership classification'; }
+device_actions_body()
+{
+    modules=$(atf_config_get modules /usr/lib/halfbsd)
+    atf_check -s exit:0 -o match:PASS -e empty /usr/bin/lua -E "$(atf_get_srcdir)/devmatch.lua" "$modules"
+    atf_check -s exit:0 -o match:PASS -e empty "$(atf_get_srcdir)/devd_action_test"
+}
+atf_init_test_cases() { atf_add_test_case device_actions; atf_add_test_case singleboot; atf_add_test_case policy; atf_add_test_case handoff; atf_add_test_case workstation; atf_add_test_case shutdown_report; }

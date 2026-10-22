@@ -294,12 +294,12 @@ function M.compile(policy,os)
     end
     -- Keep device-event delivery alive for compositor input hotplug. The
     -- foreground flag retains process ownership; wait for the event socket.
-    add({name='devd',type='daemon',command={'/sbin/devd','-d'},
+    add({name='devd',type='daemon',command={'/sbin/devd','-d','-q'},
         requires={'runtime','ldconfig','firewall'},guard='exclusive_guard',restart='on-failure',
         readiness='condition',condition='socket_ready',parameters={path='/var/run/devd.pipe',processes={'devd'}},
         stderr='/dev/console'})
     essentials[#essentials+1]='devd'
-    add({name='seatd',type='daemon',command={'/usr/sbin/seatd','-u','root','-g','video','-l','info'},
+    add({name='seatd',type='daemon',command={'/usr/sbin/seatd','-u','root','-g','video','-l','error'},
         requires={'runtime','ldconfig','devd'},guard='exclusive_guard',restart='on-failure',
         readiness='condition',condition='seat_ready',parameters={path='/var/run/seatd.sock',processes={'seatd'}},
         env={SEATD_VTBOUND='1'},stderr='/dev/console'})

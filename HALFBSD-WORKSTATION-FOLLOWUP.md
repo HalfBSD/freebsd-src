@@ -1,3 +1,7 @@
+> Update: the interactive console selector has been removed. Login is immediate
+> as root by default; console.user can specify another account. See
+> HALFBSD-QUIET-BOOT.md. Earlier selector descriptions below are historical.
+
 # Workstation follow-up: console, services, profiles and acceptance
 
 October 21, 2026 — `halfbsd2`

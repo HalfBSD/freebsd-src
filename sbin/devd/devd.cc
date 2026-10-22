@@ -1287,8 +1287,10 @@ devdlog(int priority, const char* fmt, ...)
 	va_list argp;
 
 	va_start(argp, fmt);
-	if (no_daemon)
-		vfprintf(stderr, fmt, argp);
+	if (no_daemon) {
+		if (quiet_mode == 0 || priority <= LOG_WARNING)
+			vfprintf(stderr, fmt, argp);
+	}
 	else if (quiet_mode == 0 || priority <= LOG_WARNING)
 		vsyslog(priority, fmt, argp);
 	va_end(argp);

@@ -814,3 +814,33 @@ Linux host's /etc). Live-install hostname preservation is prepared but requires
 native installation verification; staged images deliberately do not inherit the
 build host's hostname. Process stream file opens now include O_NOCTTY so explicit
 console redirection cannot acquire a supervisor's controlling terminal.
+
+
+October 21 follow-up: quieter console, immediate login and HID mouse
+-----------------------------------------------------------------
+The administrator's native test confirmed that explicitly loading hms restores
+mouse input after repeated USB switch cycles. HALFBSD now compiles hms into
+the AMD64 kernel; existing hid/hidbus/evdev and automatic hidmap inclusion supply
+its dependencies. The changed kernel has not yet been built/tested on Anvil.
+
+Routine service transition duplication on the console is removed. Structured
+records continue in the configured boot.log; failed transitions and PID 1
+readiness/recovery messages remain visible. devd runs foreground with -q, now
+honored for foreground logging, and seatd uses error-level logging.
+
+The interactive console account selector and its C input/timer helper are
+deleted, including obsolete build and ATF entries. Console login immediately
+uses root by default; explicit configured accounts and authenticated-login
+policy remain supported. Existing select_timeout values are validated then
+discarded for upgrade compatibility. No administrator configuration is rewritten.
+
+See HALFBSD-QUIET-BOOT.md, HALFBSD-DEVD-HOTPLUG.md and the new evaluated source
+inventory HALFBSD-KERNEL-MODULE-INVENTORY.txt. The optional input-hotplug.sh
+capture tool saves bounded device inventories and devd broadcast evidence;
+it does not grab evdev input, load drivers or change permissions/services.
+
+Validation: Linux Phase IV portable gate, 21 Phase III policy groups, strict C17
+halfconsole syntax checking and an extracted actual devd logging-function test
+passed. Native buildworld/buildkernel, full ATF and post-change boot remain
+pending. Prior native success with the loadable hms module is not proof of the
+new built-in kernel configuration. Screenshots are excluded from version control.

@@ -8,7 +8,7 @@ CFLAGS.ownership_helper.c+= -I${SRCTOP}/contrib/lua/src -I${SRCTOP}/lib/liblua -
 BINDIR= ${TESTSDIR}
 MAN=
 FILES= runtime.lua header_install.sh library_build.sh \
-	run-userland.sh supervision.lua service_fixture.lua
+	run-userland.sh supervision.lua service_fixture.lua input-hotplug.sh input-hotplug.lua input-hotplug-test.lua
 FILESDIR= ${TESTSDIR}
 WARNS= 6
 .include <bsd.test.mk>

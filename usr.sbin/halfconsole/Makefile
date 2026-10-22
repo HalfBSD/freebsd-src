@@ -1,7 +1,7 @@
 PACKAGE= runtime
 .PATH: ${SRCTOP}/usr.sbin/halfinit
 PROG= halfconsole
-SRCS= console.c console_input.c
+SRCS= console.c
 MAN= halfconsole.8
 LIBADD= halfbsd halfproc lua pthread m
 CSTD= c17

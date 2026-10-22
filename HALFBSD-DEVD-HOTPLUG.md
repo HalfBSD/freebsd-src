@@ -57,3 +57,29 @@ as the regular user and repeat USB-switch cycles, verifying mouse and keyboard
 each time. Verify orderly reboot afterward. Existing manually launched devd
 must be stopped before any attempted manager activation on the same boot;
 normal reboot avoids overlapping ownership.
+
+## October 21: confirmed mouse driver and built-in kernel support
+
+The administrator subsequently confirmed keyboard recovery across repeated USB
+switch cycles, but mouse recovery still failed. `kldstat -v` showed HID transport
+and keyboard drivers without hms. Loading `hms` restored mouse recovery across
+switch cycles on Anvil. This is native evidence for the missing mouse driver;
+re-enumerated event node numbers alone were not evidence of a device identity
+bug. The administrator also observed the symptom on stock FreeBSD.
+
+HALFBSD's AMD64 kernel configuration now includes `device hms`, so the mouse
+driver is available without module autoload or an explicit boot-time kldload.
+The existing hid, hidbus and evdev devices supply its other dependencies;
+sys/conf/files includes hidmap.c automatically when hms is selected.
+No new module-loading service, loader setting or console mouse daemon is needed.
+Hms delivers evdev mouse events used by Wayland.
+
+Source dependency checks passed in the Linux workspace. A native kernel build
+and a reboot into that new kernel remain pending. The successful Anvil test
+used the loadable module, not the newly configured built-in driver. After
+installing the rebuilt HALFBSD kernel, verify `kldstat -v` lists hidbus/hms,
+inspect `dmesg` for mouse attachment, and repeat USB switch cycles in Sway
+without manually loading hms. Keep mandatory devd and seatd running.
+
+The separate Lua-mode devmatch RC-action limitation remains an autoload audit
+item for other drivers; building hms in removes that dependency for this mouse.

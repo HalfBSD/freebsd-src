@@ -14,7 +14,9 @@ function M.validate(value)
     assert(type(enabled)=='boolean','console.autologin must be boolean')
     local timeout=value.select_timeout;if timeout==nil then timeout=3 end
     assert(type(timeout)=='number'and timeout==timeout and timeout>=0 and timeout<=30,'console.select_timeout must be 0..30')
-    return {user=user,autologin=enabled,select_timeout=timeout}
+    -- Accept the former timeout field in installed configurations during upgrades.
+    -- No input is read and no deadline is scheduled.
+    return {user=user,autologin=enabled}
 end
 -- Only literal legacy assignments are accepted; never evaluate shell code.
 function M.legacy(text,current)
@@ -37,14 +39,9 @@ function M.legacy(text,current)
     end
     return current
 end
-function M.select(policy,input,lookup)
+function M.select(policy,lookup)
     policy=M.validate(policy)
     if not policy.autologin then return ''end
-    if input~=nil then
-        input=input:match('^%s*(.-)%s*$')
-        if input=='login'or input=='?'then return ''end
-        if input~=''then policy.user=input end
-    end
     assert(M.account(policy.user),'invalid console account selection')
     local account=assert(lookup(policy.user),'console account does not exist: '..policy.user)
     assert(account.shell and account.shell~=''and not account.shell:match('/nologin$')and not account.shell:match('/false$'),
@@ -53,7 +50,7 @@ function M.select(policy,input,lookup)
 end
 function M.main(args)
     assert(#args==0,'halfconsole takes no arguments')
-    local native=require('halfbsd.os');local driver=require('halfbsd.console')
+    local native=require('halfbsd.os')
     local c=require('config').read('/etc/halfbsd/system.lua',0)
     local policy=c.console
     if policy==nil then
@@ -67,12 +64,9 @@ function M.main(args)
             else assert(err and err.name=='ENOENT','cannot inspect '..path)end
         end
         policy={user=user or'root'}
-        if user then io.stderr:write('halfconsole: using literal legacy console_user; migrate to console.user in system.lua\n')end
     end
     policy=M.validate(policy)
     if not policy.autologin then return ''end
-    -- Validate the default before allowing a timeout to select it.
-    M.select(policy,nil,native.user)
-    return M.select(policy,driver.choose(policy.user,policy.select_timeout),native.user)
+    return M.select(policy,native.user)
 end
 return M

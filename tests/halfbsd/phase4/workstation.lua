@@ -3,16 +3,12 @@ package.path=assert(arg[1])..'/?.lua'
 local console=require('console');local config=require('config');local dependency=require('dependency')
 local function reject(fn)assert(not pcall(fn),'unsafe input accepted')end
 local lookup=function(name)if name=='root'or name=='charlie'then return {shell='/bin/sh'}end end
-assert(console.select(nil,nil,lookup)=='root')
-assert(console.select({user='charlie'},nil,lookup)=='charlie')
-assert(console.select({},' charlie\n',lookup)=='charlie')
-assert(console.select({},'login\n',lookup)=='')
-assert(console.select({autologin=false},nil,lookup)=='')
-reject(function()console.select({},'missing',lookup)end)
-reject(function()console.select({user='missing'},nil,lookup)end)
-reject(function()console.select({},'root;id',lookup)end)
+assert(console.select(nil,lookup)=='root')
+assert(console.select({user='charlie'},lookup)=='charlie')
+assert(console.select({autologin=false},lookup)=='')
+reject(function()console.select({user='missing'},lookup)end)
 reject(function()console.validate({user=false})end)
-reject(function()console.select({},'root',function()return {shell='/usr/sbin/nologin'}end)end)
+reject(function()console.select({},function()return {shell='/usr/sbin/nologin'}end)end)
 for _,value in ipairs({-1,31,0/0})do reject(function()console.validate({select_timeout=value})end)end
 assert(console.legacy('console_user="charlie" # preferred\n',nil)=='charlie')
 assert(console.legacy("console_user='root'\nconsole_user=charlie\n",nil)=='charlie')
@@ -20,7 +16,9 @@ assert(console.legacy('# console_user=$(unsafe)\n',nil)==nil)
 for _,line in ipairs({'console_user="$(id)"','console_user="root"; id','console_user=$name','console_user=root;id'})do
     reject(function()console.legacy(line,nil)end)
 end
-print('PASS console defaults, selection, disabled/invalid accounts and literal-only RC migration')
+assert(console.select({select_timeout=3},lookup)=='root')
+assert(console.validate({}).select_timeout==nil)
+print('PASS immediate root default, configured accounts, authentication and legacy timeout migration')
 local native={exists=function()return true end,user=function()return {uid=59,gid=59}end,
     fstab=function()return {}end,interfaces=function()error('offline profile must not discover Ethernet')end}
 local previous=package.loaded['halfbsd.os'];package.loaded['halfbsd.os']=native

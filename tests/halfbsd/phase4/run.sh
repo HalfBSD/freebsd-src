@@ -14,11 +14,8 @@ HALFBSD_LIVE_CHECK="$suite/check-live.lua" "$lua" -E -e 'assert(loadfile(os.gete
 "$lua" -E "$suite/policy.lua" "$modules" "$src/usr.sbin/halfinit/examples/boot-system.lua"
 "$lua" -E "$suite/workstation.lua" "$modules"
 "$lua" -E "$suite/shutdown_report.lua" "$modules"
+"$lua" -E "$suite/../input-hotplug-test.lua" "$suite/../input-hotplug.lua"
 sh "$suite/service_test.sh" "$src"
-cc -D_POSIX_C_SOURCE=200809L -std=c17 -Wall -Wextra -Wpedantic -Werror -fPIE -pie -Wl,-z,text \
-    -I"$src/usr.sbin/halfconsole" "$suite/console_input_test.c" \
-    "$src/usr.sbin/halfconsole/console_input.c" -lutil -o "$work/console_input_test"
-"$work/console_input_test"
 cc -D_GNU_SOURCE -std=c17 -Wall -Wextra -Wpedantic -Werror \
     -Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wcast-align \
     -I"$src/sbin/init" "$suite/handoff_test.c" "$src/sbin/init/halfbsd.c" -o "$work/handoff_test"

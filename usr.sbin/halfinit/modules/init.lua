@@ -135,12 +135,12 @@ function M.main(args,module_dir)
     local ipc=require('halfbsd.ipc');local lock,control
     local state_path=opts.state_file or config.state_file or dir..'/enabled.json'
     local enabled={}
-    local logger=assert(require('halfbsd.log').new({service='halfinit'}))
+    local logger=assert(require('halfbsd.log').new({service='halfinit',console=not handoff}))
     local engine,shutdown_report
     local bootstrapping=false;local control_ready=false
     local function emit(item)
         if shutdown_report then shutdown_report:observe(item)end
-        if handoff then
+        if handoff and item.state=='FAILED'then
             local line='[halfinit boot] '..item.service..' '..tostring(item.previous)..' -> '..item.state..': '..tostring(item.reason)..'\n'
             -- PID 1/login revoke console descriptors during shell/login handoff.
             -- Reopen per transition so supervision stays visible afterward.
@@ -242,7 +242,7 @@ function M.main(args,module_dir)
         enabled=config.checkpoint and{}or read_state(state_path,native)
         for name,value in pairs(enabled)do if engine.records[name]then engine.blocked[name]=not value or nil;engine.enabled[name]=value end end
         if config.log_file then
-            local file_logger=assert(require('halfbsd.log').new({service='halfinit',file=config.log_file}))
+            local file_logger=assert(require('halfbsd.log').new({service='halfinit',file=config.log_file,console=not handoff}))
             logger:close();logger=file_logger
         end
         control=require('control').new(engine.loop,dir..'/control.sock',uid,engine,handlers)

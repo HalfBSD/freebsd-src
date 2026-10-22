@@ -327,8 +327,8 @@ rather than announcing an incomplete multiuser environment.
 The legacy rc.console terminal entry becomes
 .Xr halfconsole 8
 in Lua mode, without invoking that shell helper.
-Local console policy defaults to root autologin with a three-second account
-selector; set console.autologin=false for authenticated login.
+Local console policy defaults to immediate root autologin without a selector
+or delay; set console.autologin=false for authenticated login.
 Other getty sessions and SSH authentication remain unchanged.
 .Pp
 The top-level profile selects workstation (default), network or maintenance.

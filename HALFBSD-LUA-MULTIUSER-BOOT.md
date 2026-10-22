@@ -1,3 +1,7 @@
+> Update: the interactive console selector has been removed. Login is immediate
+> as root by default; console.user can specify another account. See
+> HALFBSD-QUIET-BOOT.md. Earlier selector descriptions below are historical.
+
 # HalfBSD Lua multiuser bring-up
 
 October 20, 2026. The administrator confirmed `NETWORK READY` on Anvil with DHCP

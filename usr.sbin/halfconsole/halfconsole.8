@@ -4,7 +4,7 @@
 .Os
 .Sh NAME
 .Nm halfconsole
-.Nd HalfBSD local console account selection
+.Nd HalfBSD local console login
 .Sh DESCRIPTION
 .Nm
 is launched only by PID 1 as root on console sessions whose tty entry uses
@@ -19,14 +19,14 @@ The trusted
 .Pa /etc/halfbsd/system.lua
 may contain
 .Bd -literal -offset indent
-console={user='charlie',autologin=true,select_timeout=3}
+console={user='charlie',autologin=true}
 .Ed
 .Pp
-Defaults are root, automatic login and a three-second selection deadline.
-Enter another existing login account followed by Return to select it, or
-enter login to request authenticated login. Empty input selects the default.
-A zero timeout selects the default immediately.
-Set autologin=false for authenticated login without selection.
+Defaults are root and immediate automatic login.
+No account selector, input prompt or delay is used.
+Set console.user to choose another default account, or autologin=false for
+authenticated login.
+An existing select_timeout setting is accepted during upgrades but has no effect.
 These settings grant passwordless access to the designated physical console;
 SSH authentication and other getty terminals remain unchanged.
 .Pp
@@ -34,12 +34,12 @@ When console policy is absent, literal console_user assignments in trusted
 .Pa /etc/rc.conf
 and
 .Pa /etc/rc.conf.local
-are recognized, in that order, with a migration warning.
+are recognized, in that order.
 Shell expressions and indirect configuration are not evaluated.
 Move the intended account into the Lua console table to complete migration.
 Administrator files are never rewritten.
 .Pp
-Invalid accounts, unsupported legacy expressions and selection failures use
+Invalid accounts, unsupported legacy expressions and configuration failures use
 authenticated login rather than silently selecting root.
 Configuration rejected earlier by the boot manager can instead enter native
 recovery before console sessions start.

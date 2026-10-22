@@ -83,7 +83,10 @@ local_unbound_anchor=/var/unbound/root.key
 checkyesno() {{ return 1; }}
 local_unbound_configtest() {{ echo configtest >> "$TRACE"; return "${{CHECK_STATUS:-0}}"; }}
 run_rc_command() {{ echo "$1" >> "$TRACE"; }}
-''' + content[start:end] + '\nlocal_unbound_setup\n')
+''' + content[start:end].replace('/bin/kenv', shlex.quote(str(root / 'kenv'))) + '\nlocal_unbound_setup\n')
+    mode = root / 'kenv'
+    mode.write_text('#!/bin/sh\necho rc\n')
+    mode.chmod(0o755)
     for pid, helper_status, check_status, expected in [
             ('', '0', '0', []), ('1234', '0', '0', ['configtest', 'restart']),
             ('1234', '1', '0', []), ('1234', '0', '1', ['configtest'])]:

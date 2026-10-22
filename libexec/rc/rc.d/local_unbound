@@ -63,7 +63,7 @@ local_unbound_configtest()
 #
 local_unbound_setup()
 {
-	local tls_flag
+	local tls_flag boot_mode
 	if checkyesno local_unbound_tls ; then
 		tls_flag="-t"
 	fi
@@ -78,7 +78,27 @@ local_unbound_setup()
 	# Reloading an old binary after removing its include could enable recursion.
 	if [ -n "${rc_pid:-}" ] ; then
 		local_unbound_configtest || return 1
-		run_rc_command restart
+		boot_mode=$(/bin/kenv -q halfbsd.boot_active 2>/dev/null) || {
+			warn "Cannot establish active startup ownership; leaving DNS control to its current owner"
+			return 1
+		}
+		case "${boot_mode}" in
+		lua)
+			# RC must not signal a Lua-owned daemon or apply its separate
+			# IPFW marker check. The supervisor retains dependency policy.
+			/usr/sbin/halfsvc restart dns || {
+				warn "Lua DNS restart request failed; refusing RC fallback"
+				return 1
+			}
+			;;
+		rc)
+			run_rc_command restart
+			;;
+		*)
+			warn "Invalid active startup ownership; refusing to restart DNS"
+			return 1
+			;;
+		esac
 	fi
 }
 

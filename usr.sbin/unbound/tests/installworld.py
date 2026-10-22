@@ -53,6 +53,8 @@ run_rc_command() {
     adapted = adapted.replace('command="/usr/sbin/local-unbound"', f'command="{root}/bin/local-unbound"')
     adapted = adapted.replace('/var/run/ipfw.ready', str(root / 'var/run/ipfw.ready'))
     adapted = adapted.replace('/usr/sbin/service', str(root / 'bin/service'))
+    adapted = adapted.replace('/bin/kenv', str(root / 'bin/kenv'))
+    adapted = adapted.replace('/usr/sbin/halfsvc', str(root / 'bin/halfsvc'))
     # Anchor existence tests must see the DESTDIR fixture, while the -a argument
     # remains the actual configured path passed to the helper.
     adapted = adapted.replace('[ ! -f ${local_unbound_config} ]', '[ ! -f "${DESTDIR}${local_unbound_config}" ]')
@@ -82,10 +84,24 @@ printf 'TEST-ONLY bootstrap fixture\\n' > "${DESTDIR}${2}"
     su.write_text('#!/bin/sh\nread -r command\nexec /bin/sh -c "$command"\n')
     service = root / 'bin/service'
     service.write_text('''#!/bin/sh
-if [ "$*" = 'ipfw status' ]; then exit 0; fi
+if [ "$*" = 'ipfw status' ]; then
+    if [ "${BOOT_MODE:-rc}" = lua ]; then echo 'unknown service' >&2; exit 1; fi
+    exit 0
+fi
 exec /bin/sh "$DESTDIR/etc/rc.d/local_unbound" "$2"
 ''')
-    for executable in (setup, checkconf, anchor_tool, su, service):
+    kenv = root / 'bin/kenv'
+    kenv.write_text('''#!/bin/sh
+[ "${BOOT_MODE:-rc}" != unavailable ] || exit 1
+printf '%s\\n' "${BOOT_MODE:-rc}"
+''')
+    halfsvc = root / 'bin/halfsvc'
+    halfsvc.write_text('''#!/bin/sh
+printf 'halfsvc %s\\n' "$*" >> "$TRACE"
+[ "$*" = 'restart dns' ] || exit 2
+exit "${HALFSVC_STATUS:-0}"
+''')
+    for executable in (setup, checkconf, anchor_tool, su, service, kenv, halfsvc):
         executable.chmod(0o755)
     config = root / 'var/unbound/unbound.conf'
     anchor = root / 'var/unbound/root.key'
@@ -172,3 +188,43 @@ exec /bin/sh "$DESTDIR/etc/rc.d/local_unbound" "$2"
     assert ' -a /var/unbound/site.key ' in trace.read_text()
     assert installed_rc.read_text() == legacy
     print('PASS rc.conf configuration/anchor path overrides reach the new utility')
+
+    # Lua owns the resolver. RC's firewall marker/name are not authoritative.
+    # Before the fix this enters RC restart, then fails its ipfw readiness check.
+    before_config = config.read_bytes()
+    before_anchor = anchor.read_bytes()
+    for marker in (True, False):
+        ready = root / 'var/run/ipfw.ready'
+        if marker:
+            ready.touch()
+        else:
+            ready.unlink(missing_ok=True)
+        trace.write_text('')
+        after = subprocess.run(['/bin/sh', '-c', hook],
+                               env=dict(environment, BOOT_MODE='lua', rc_pid='1234'),
+                               timeout=10, capture_output=True, text=True)
+        assert after.returncode == 0, after.stdout + after.stderr
+        assert trace.read_text().splitlines()[1:] == ['configtest', 'halfsvc restart dns']
+        assert config.read_bytes() == before_config and anchor.read_bytes() == before_anchor
+    print('PASS Lua upgrade delegates DNS restart to halfsvc without RC stop or IPFW-marker checks')
+
+    for overrides, expected in [
+            ({'HALFSVC_STATUS': '1'}, ['configtest', 'halfsvc restart dns']),
+            ({'CHECK_STATUS': '1'}, ['configtest']),
+            ({'FAIL_SETUP': '1'}, []),
+            ({'BOOT_MODE': 'unavailable'}, ['configtest']),
+            ({'BOOT_MODE': 'invalid'}, ['configtest'])]:
+        trace.write_text('')
+        failed = subprocess.run(['/bin/sh', '-c', hook],
+                                env={**environment, 'BOOT_MODE': 'lua', 'rc_pid': '1234', **overrides},
+                                timeout=10, capture_output=True, text=True)
+        assert failed.returncode != 0
+        assert trace.read_text().splitlines()[1:] == expected
+        assert 'restart' not in trace.read_text().splitlines()
+    print('PASS Lua setup/validation/control/ownership failures never fall back to RC restart')
+
+    trace.write_text('')
+    subprocess.run(['/bin/sh', '-c', hook], env=dict(environment, BOOT_MODE='lua', rc_pid=''),
+                   check=True, timeout=10, capture_output=True)
+    assert len(trace.read_text().splitlines()) == 1
+    print('PASS setup does not activate a resolver that was not running')

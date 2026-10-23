@@ -1,0 +1,106 @@
+HalfBSD console and PID 1 reduction — October 22, 2026
+====================================================
+
+Implemented; native buildworld/buildkernel and boot validation are pending.
+Administrator authorized committing and pushing this change.
+
+PID 1
+-----
+Removed the independent recovery shell, init_shell lookup, alternate-shell
+prompt, shell password check, recovery exec/fork path, console-session helper
+and its unused init.log path. Removed DEBUGSHELL/SECURE build definitions and
+the now-unused crypt link dependency. Normal login and privilege/resource
+handling remain. Existing intentional signal-handler fallthrough is annotated.
+
+Startup failures and boot -s enter a stopped state with a console diagnostic:
+  Startup stopped. No recovery shell; repair using external FreeBSD media.
+PID 1 reaps children and sleeps awaiting signals without polling. Login sessions
+are marked for shutdown and cannot respawn there. Reboot/poweroff signals remain
+handled. No RC fallback, automatic boot retry or alternate shell remains.
+Diagnostic single/network stages still run their checks but stop without an
+inspection shell; the network supervisor is cleaned up at the checkpoint.
+Normal multiuser root/named-account login is unchanged.
+
+Recovery requires compatible external FreeBSD media. Import the ZFS pool using
+the live environment, select/repair a boot environment and fix the installed
+configuration/files. boot -s no longer provides repair access. A boot environment
+containing an older PID 1 may still have its own previous recovery behavior.
+Release recipes no longer request boot_single as an installer-shell mechanism;
+installer/live-media support remains unvalidated and is not established here.
+
+Console and seatd
+-----------------
+Kept the one physical boot/login/graphics console, ttyv0. Removed extra-window
+allocation, the window array, next/previous/function-key terminal selection,
+VT process owners/signals, switch timers/waits/acknowledgements, switch ioctls
+and their Linux compatibility translations. Removed MAXCONS/VT_MAXWINDOWS build
+options and the deadtimer/suspendswitch tunables. Read-only console identity
+queries remain; kern.vt.console_count reports 1 and is not writable.
+
+Kept framebuffer/AMDGPU backends, console text, keyboard/HID/evdev, text/graphics
+mode changes and debugger/panic framebuffer restoration. Kernel device/window
+structures contain inert reserved slots preserving pre-change sizes and all
+retained field offsets for installed drm-kmod consumers (amd64/i386, with and
+without cut/paste). Those slots have no alternate console objects, callbacks,
+allocated switch resources or runtime implementation. Driver callback layout
+is unchanged. This is a data-layout check, not native AMDGPU validation.
+
+Seatd owns the sole console with one local graphical client. Removed its VT
+binding selection, session queues, VT-switch operations, SIGUSR switch handlers
+and SEATD_VTBOUND. Session-switch protocol requests return ENOTSUP. Console
+handoff rolls back text/keyboard state when initialization fails; disconnect,
+normal daemon teardown and daemon startup restore the text/keyboard baseline.
+Device authorization, fd passing, DRM/input handling and libseat API linkage
+remain. vidcontrol no longer offers -s/-S switching controls. Concurrent SSH
+sessions and separate human/service identities remain supported.
+
+Validation
+----------
+PASS on Linux:
+- Actual extracted PID 1 stopped-state code: reaping, SIGCHLD wakeup, no shell,
+  shutdown transition and no login respawn; actual seatd handoff helpers with
+  open/keyboard/graphics faults and rollback, strict C17/Wpedantic/Werror/PIE.
+- init object generation using actual FreeBSD headers, amd64/i386, strict C17
+  and effective GNU17, Wshadow/Wcast-align; existing recursive-state casts and
+  FreeBSD %m warning exceptions are explicit.
+- Kernel console/logo object generation with actual FreeBSD headers in module
+  context, amd64/i386 and both cut/paste layouts; baseline callback-parameter
+  and signedness warnings are explicit. No native kernel link/runtime claim.
+- Retained kernel structure sizes/offsets against baseline 8b28f7bbbf46.
+- Strict C17 FreeBSD-header checks for seatd's native branches, vidcontrol and
+  the new native ioctl test; no temporary syscall declarations or ABI stubs.
+- Private Linux seatd/libseat protocol, static/shared/PIE link and repeated
+  cleanup tests. Console operations are explicitly fixture implementations;
+  tests do not open a real VT or graphics/input device. Switching is rejected.
+- Phase II 16 policy groups, Phase III 21 policy groups and Phase IV portable
+  gate, including new stopped/handoff tests. RC/installer integrity fixtures and
+  accepted XDG account-policy tests also pass.
+- BSD make effective settings: init remains static, links util without crypt;
+  seatd/libseat use C17 with hardening. Libseat empty-DESTDIR and repeated
+  parallel public-header/pkgconfig staging passed.
+- Shell syntax/diff whitespace checks. Clang unavailable. In-tree Lua and bmake
+  were compiled under /tmp/halfbsd-console-tools; nothing was downloaded.
+
+Pending on Anvil
+----------------
+Build/install the complete kernel and world. Then verify root/named console
+login, Sway start/exit and console restoration, USB switch/reconnect, seatd
+restart, concurrent SSH and halfsvc shutdown-report after reboot/poweroff.
+Before upgrading, prepare external recovery media or an older boot environment.
+Do not inject failed boot/PID 1 crashes into the active installation.
+
+Optional read-only/removed-ioctl acceptance after booting the new kernel:
+  cc -std=c17 -Wall -Wextra -Wpedantic -Werror \
+    tests/halfbsd/console/native.c -o /tmp/halfbsd-console-check
+  /tmp/halfbsd-console-check
+The test first checks the new kernel marker; old kernels skip with status 77.
+It checks only ttyv0 exists and removed switching ioctls return ENOTTY. It does
+not change graphics/keyboard modes. Source fixture/header commands:
+  sh tests/halfbsd/console/run.sh
+  python3 tests/halfbsd/console/headers.py
+  python3 tests/halfbsd/console/user_headers.py
+  python3 tools/build/tests/halfbsd-init-headers.py
+
+This pass removes roughly 1,400 net handwritten implementation lines from PID 1,
+seatd, the kernel console and vidcontrol; no complete implementation file was
+exclusive to either feature. Executable/kernel sizes require a native build.

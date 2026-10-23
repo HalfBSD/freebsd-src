@@ -292,21 +292,8 @@ static int handle_switch_session(struct client *client, int session) {
 		return -1;
 	}
 
-	if (seat_set_next_session(client, session) == -1) {
-		return client_send_error(client, errno);
-	}
-
-	struct proto_header header = {
-		.opcode = SERVER_SESSION_SWITCHED,
-		.size = 0,
-	};
-
-	if (connection_put(&client->connection, &header, sizeof header) == -1) {
-		log_errorf("Could not write response: %s", strerror(errno));
-		return -1;
-	}
-
-	return 0;
+	(void)session;
+	return client_send_error(client, ENOTSUP);
 }
 
 static int handle_disable_seat(struct client *client) {
@@ -315,21 +302,7 @@ static int handle_disable_seat(struct client *client) {
 		return -1;
 	}
 
-	if (seat_ack_disable_client(client) == -1) {
-		return client_send_error(client, errno);
-	}
-
-	struct proto_header header = {
-		.opcode = SERVER_SEAT_DISABLED,
-		.size = 0,
-	};
-
-	if (connection_put(&client->connection, &header, sizeof header) == -1) {
-		log_errorf("Could not write response: %s", strerror(errno));
-		return -1;
-	}
-
-	return 0;
+	return client_send_error(client, ENOTSUP);
 }
 
 static int handle_ping(struct client *client) {
@@ -442,18 +415,6 @@ static int client_handle_opcode(struct client *client, uint16_t opcode, size_t s
 	return res;
 }
 
-int client_send_disable_seat(struct client *client) {
-	struct proto_header header = {
-		.opcode = SERVER_DISABLE_SEAT,
-		.size = 0,
-	};
-	if (connection_put(&client->connection, &header, sizeof header) == -1 ||
-	    connection_flush(&client->connection) == -1) {
-		log_errorf("Could not send event: %s", strerror(errno));
-		return -1;
-	}
-	return 0;
-}
 
 int client_send_enable_seat(struct client *client) {
 	struct proto_header header = {

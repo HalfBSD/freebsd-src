@@ -26,7 +26,7 @@ assert(#f.commands==3 and f.commands[1][1]=='/sbin/zfs'and f.commands[2][1]=='/s
 assert(f.commands[2][4]=='amdgpu'and f.commands[3][1]=='/sbin/kldstat')
 assert(f.messages[1]=='SINGLE\n'and #f.messages==1 and f.closed==1)
 assert(f.lines[1]:find('networking and multiuser services are disabled',1,true))
-print('PASS single-stage ZFS/AMDGPU command order, live console output, bounded execution and shell handoff')
+print('PASS single-stage ZFS/AMDGPU command order, live console output, bounded execution and diagnostic notification')
 for _,failure in ipairs({'exit','exec','card','root','devfs'})do
     f,n,p,emit=fixture()
     if failure=='exit'then f.code=1 end

@@ -1,3 +1,9 @@
+October 22 update: the administrator accepted the RC-free native build, install,
+boot, DNS, NTP, supervised shutdown and XDG account setup. New console/recovery
+shell reductions are implemented but not natively validated; see
+HALFBSD-CONSOLE-REDUCTION.txt. Older recovery-shell descriptions below are
+historical and superseded.
+
 Current source status (October 21): traditional RC is removed locally.
 See HALFBSD-RC-REMOVAL.txt. RC recovery instructions below are historical;
 use boot -s or compatible external media. Native RC-free validation is pending.
@@ -861,3 +867,43 @@ subscriber-disconnection logging. No traditional RC fallback is introduced.
 Power-profile and Bluetooth providers remain missing and warn once per category.
 Portable Phase IV, 21 Phase III and 16 Phase II policy groups pass. Full native
 daemon build, live event handling, DHCP recovery and ATF remain pending.
+
+WORKSTATION XDG RUNTIME DIRECTORIES — OCTOBER 22, 2026
+
+The human-account creation paths that automatically add video membership now
+also prepare /var/run/xdg/<account> after pw succeeds. This covers interactive
+and batch adduser, the installer (which uses chroot adduser), and both bsdconfig
+creation paths. The shared accounts.subr helper creates the root:wheel 0711
+parent and creates or repairs the user-owned 0700 directory. Links and unsafe
+path components are rejected. Failure is reported after account creation;
+the account is not silently deleted or rolled back.
+
+The base sh login environment, /etc/profile (source bin/sh/profile), exports
+XDG_RUNTIME_DIR=/var/run/xdg/$(id -un). It uses the actual process identity,
+not inherited USER/LOGNAME, and requires no per-user shell customization.
+HalfBSD's base shell is sh; third-party shells must source their appropriate
+system environment separately. Non-login shells inherit the login environment.
+This does not change service environments or privilege-transition semantics.
+
+Root/UID 0, non-login and /nonexistent account exclusions match the video
+policy. Direct pw/package service accounts are unchanged. Existing accounts
+are not automatically migrated by installworld. For an existing human user:
+    install -d -o root -g wheel -m 0711 /var/run/xdg
+    install -d -o charlie -m 0700 /var/run/xdg/charlie
+Then start a fresh login shell. Root can be prepared explicitly in the same way
+if desired. Do not use these manual commands on untrusted symlink paths.
+
+No PAM changes or PAM-based provisioning were added. The pre-existing pam_xdg
+configuration remains installed until its separate removal; this implementation
+uses account creation and the shell environment independently. There is no new
+session cleanup: these directories persist in the existing /var/run layout.
+If an administrator clears /var/run or mounts it on volatile storage, runtime
+directories need re-provisioning; boot-time reconstruction is not implemented
+by this account-creation change.
+
+Linux checks PASS: actual adduser batch/interactive and bsdconfig creation
+paths with mocked account/ownership operations; directory creation and mode
+repair in private fixtures; service/root exclusions; symlink/traversal rejection;
+failed user creation creates no runtime directory; shell identity ignores spoofed
+USER/LOGNAME. Shell syntax and git diff checks PASS. Native ownership, login,
+installation and ATF execution on Anvil remain pending.

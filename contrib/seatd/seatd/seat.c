@@ -20,35 +20,28 @@
 #include "terminal.h"
 #include "wscons.h"
 
-/*
- * seat_create creates a new seat with the given name, which may be VT-bound.
- *
- * A VT-bound seat is one where exactly one client session can exist per VT,
- * and switching VTs switches the active session accordingly. A non-VT-bound
- * seat is one where VTs are not used, and any number of sessions can be opened
- * which are switched "virtually", without any effects on present VTs.
- *
- * VT-bound seats must be used when VTs are enabled to properly disable kernel
- * console input processing and rendition.
- */
-struct seat *seat_create(const char *seat_name, bool vt_bound) {
+static int console_close(void);
+
+/* A seat owns the sole console; additional local sessions are unsupported. */
+struct seat *seat_create(const char *seat_name) {
 	struct seat *seat = calloc(1, sizeof(struct seat));
 	if (seat == NULL) {
 		return NULL;
 	}
 	linked_list_init(&seat->clients);
-	seat->vt_bound = vt_bound;
 	seat->seat_name = strdup(seat_name);
-	seat->cur_vt = 0;
 	if (seat->seat_name == NULL) {
 		free(seat);
 		return NULL;
 	}
-	if (vt_bound) {
-		log_infof("Created VT-bound seat %s", seat_name);
-	} else {
-		log_infof("Created seat %s", seat_name);
+	/* Restore a text/keyboard baseline after a previous daemon crash. */
+	if (console_close() == -1) {
+		log_error("Could not initialize console state");
+		free(seat->seat_name);
+		free(seat);
+		return NULL;
 	}
+	log_infof("Created console seat %s", seat_name);
 	return seat;
 }
 
@@ -64,121 +57,30 @@ void seat_destroy(struct seat *seat) {
 	free(seat);
 }
 
-static void seat_update_vt(struct seat *seat) {
-	int tty0fd = terminal_open(0);
-	if (tty0fd == -1) {
-		log_errorf("Could not open tty0 to update VT: %s", strerror(errno));
-		return;
-	}
-	seat->cur_vt = terminal_current_vt(tty0fd);
-	close(tty0fd);
-}
-
-static int vt_open(int vt) {
-	int ttyfd = terminal_open(vt);
-	if (ttyfd == -1) {
-		log_errorf("Could not open terminal for VT %d: %s", vt, strerror(errno));
+/* Console handoff must either complete or restore the keyboard/text state. */
+static int console_open(void) {
+	int fd = terminal_open();
+	if (fd == -1) return -1;
+	if (terminal_set_keyboard(fd, false) == -1 ||
+	    terminal_set_graphics(fd, true) == -1) {
+		int saved = errno;
+		terminal_set_graphics(fd, false);
+		terminal_set_keyboard(fd, true);
+		close(fd);
+		errno = saved;
 		return -1;
 	}
-
-	terminal_set_process_switching(ttyfd, true);
-	terminal_set_keyboard(ttyfd, false);
-	terminal_set_graphics(ttyfd, true);
-	close(ttyfd);
+	close(fd);
 	return 0;
 }
 
-static int vt_close(int vt) {
-	int ttyfd = terminal_open(vt);
-	if (ttyfd == -1) {
-		log_errorf("Could not open terminal to clean up VT %d: %s", vt, strerror(errno));
-		return -1;
-	}
-	terminal_set_process_switching(ttyfd, true);
-	terminal_set_keyboard(ttyfd, true);
-	terminal_set_graphics(ttyfd, false);
-	close(ttyfd);
-	return 0;
-}
-
-static int vt_switch(struct seat *seat, int vt) {
-	int ttyfd = terminal_open(seat->cur_vt);
-	if (ttyfd == -1) {
-		log_errorf("Could not open terminal to switch to VT %d: %s", vt, strerror(errno));
-		return -1;
-	}
-	terminal_set_process_switching(ttyfd, true);
-	terminal_switch_vt(ttyfd, vt);
-	close(ttyfd);
-	return 0;
-}
-
-static int vt_ack(struct seat *seat, bool release) {
-	int tty0fd = terminal_open(seat->cur_vt);
-	if (tty0fd == -1) {
-		log_errorf("Could not open tty0 to ack VT signal: %s", strerror(errno));
-		return -1;
-	}
-	if (release) {
-		terminal_ack_release(tty0fd);
-	} else {
-		terminal_ack_acquire(tty0fd);
-	}
-	close(tty0fd);
-	return 0;
-}
-
-/*
- * seat_activate opens the next client on the seat, assuming no client is
- * currently active.
- *
- * 1. If a client is queued on the seat by seat_set_next_session, it is chosen.
- *
- * 2. If VT bound, it choses the next client whose session matches the current
- *    VT. This should only apply if the previous client was deactivated because
- *    of a VT switch.
- *
- * 3. Otherwise, the first client on the seat's list of clients, if any.
- *
- * Be careful not to call seat_activate immediately after closing a client, as
- * this can lead to it immediately re-opening. The client should be removed as
- * a candidate before seat_activate is called.
- */
-static int seat_activate(struct seat *seat) {
-	if (seat->active_client != NULL) {
-		return 0;
-	}
-
-	struct client *next_client = NULL;
-	if (seat->next_client != NULL) {
-		log_debugf("Activating next queued client on %s", seat->seat_name);
-		next_client = seat->next_client;
-		seat->next_client = NULL;
-	} else if (linked_list_empty(&seat->clients)) {
-		log_infof("No clients on %s to activate", seat->seat_name);
-		return -1;
-	} else if (seat->vt_bound && seat->cur_vt == -1) {
-		return -1;
-	} else if (seat->vt_bound) {
-		for (struct linked_list *elem = seat->clients.next; elem != &seat->clients;
-		     elem = elem->next) {
-			struct client *client = (struct client *)elem;
-			if (client->session == seat->cur_vt) {
-				log_debugf("Activating client belonging to VT %d", seat->cur_vt);
-				next_client = client;
-				goto done;
-			}
-		}
-
-		log_infof("No clients belonging to VT %d to activate", seat->cur_vt);
-		return -1;
-	} else {
-		log_debugf("Activating first client on %s", seat->seat_name);
-		next_client = (struct client *)seat->clients.next;
-	}
-
-done:
-	return seat_open_client(seat, next_client);
+static int console_close(void) {
+	int fd = terminal_open();
+	if (fd == -1) return -1;
+	int graphics = terminal_set_graphics(fd, false);
+	int keyboard = terminal_set_keyboard(fd, true);
+	close(fd);
+	return graphics == -1 || keyboard == -1 ? -1 : 0;
 }
 
 /*
@@ -196,50 +98,15 @@ int seat_add_client(struct seat *seat, struct client *client) {
 		return -1;
 	}
 
-	if (seat->vt_bound && seat->active_client != NULL &&
-	    seat->active_client->state != CLIENT_PENDING_DISABLE) {
-		log_error("Could not add client: seat is VT-bound and has an active client");
+	if (!linked_list_empty(&seat->clients)) {
 		errno = EBUSY;
 		return -1;
 	}
-
 	if (client->session != -1) {
-		log_error("Could not add client: client cannot be reused");
 		errno = EINVAL;
 		return -1;
 	}
-
-	if (seat->vt_bound) {
-		seat_update_vt(seat);
-		if (seat->cur_vt == -1) {
-			log_error("Could not determine VT for client");
-			errno = EINVAL;
-			return -1;
-		}
-		if (seat->active_client != NULL) {
-			for (struct linked_list *elem = seat->clients.next; elem != &seat->clients;
-			     elem = elem->next) {
-				struct client *client = (struct client *)elem;
-				if (client->session == seat->cur_vt) {
-					log_error("Could not add client: seat is VT-bound and already has pending client");
-					errno = EBUSY;
-					return -1;
-				}
-			}
-		}
-		client->session = seat->cur_vt;
-	} else {
-		int next_session = 1;
-		for (struct linked_list *elem = seat->clients.next; elem != &seat->clients;
-		     elem = elem->next) {
-			struct client *c = (struct client *)elem;
-			if (c->session == next_session) {
-				next_session++;
-				elem = &seat->clients;
-			}
-		}
-		client->session = next_session;
-	}
+	client->session = 1;
 
 	client->seat = seat;
 	linked_list_remove(&client->link);
@@ -254,14 +121,10 @@ int seat_add_client(struct seat *seat, struct client *client) {
  * seat_remove_client tears down the client and removes it from the seat,
  * revoking any open devices as necessary. If the client was active on the seat
  * at the time of this call, seat_activate is called to activate a new client
- * if any is eligible. If the seat is VT-bound, this also re-configures the VT
- * for non-graphical use.
+ * if any is eligible. The sole console is restored for non-graphical use.
  */
 void seat_remove_client(struct client *client) {
 	struct seat *seat = client->seat;
-	if (seat->next_client == client) {
-		seat->next_client = NULL;
-	}
 
 	linked_list_remove(&client->link);
 	linked_list_init(&client->link);
@@ -271,24 +134,10 @@ void seat_remove_client(struct client *client) {
 		seat_close_device(client, device);
 	}
 
-	bool was_current = seat->active_client == client;
-	if (was_current) {
+	if (seat->active_client == client) {
 		seat->active_client = NULL;
-		seat_activate(seat);
-	}
-
-	if (seat->vt_bound) {
-		if (was_current && seat->active_client == NULL) {
-			// This client was current, but there were no clients
-			// waiting to take this VT, so clean it up.
-			log_debug("Closing active VT");
-			vt_close(seat->cur_vt);
-		} else if (!was_current && client->state != CLIENT_CLOSED) {
-			// This client was not current, but as the client was
-			// running, we need to clean up the VT.
-			log_debug("Closing inactive VT");
-			vt_close(client->session);
-		}
+		if (console_close() == -1)
+			log_error("Could not restore console after client removal");
 	}
 
 	client->state = CLIENT_CLOSED;
@@ -536,13 +385,13 @@ static int seat_activate_device(struct seat_device *seat_device) {
 
 /*
  * seat_open_client makes the client active. The client must be a disabled or
- * new member of the seat, and the seat must not have an active seat. If
- * VT-bound, this opens the VT and configures it for a graphical session.
+ * new member of the seat, and the seat must not have an active client.
+ * The sole console is configured for a graphical session.
  */
 int seat_open_client(struct seat *seat, struct client *client) {
 	assert(client->seat == seat);
-	if (client->state != CLIENT_NEW && client->state != CLIENT_DISABLED) {
-		log_error("Could not enable client: client is not new or disabled");
+	if (client->state != CLIENT_NEW) {
+		log_error("Could not enable client: client is not new");
 		errno = EALREADY;
 		return -1;
 	}
@@ -553,8 +402,8 @@ int seat_open_client(struct seat *seat, struct client *client) {
 		return -1;
 	}
 
-	if (seat->vt_bound && vt_open(client->session) == -1) {
-		log_error("Could not open VT for client");
+	if (console_open() == -1) {
+		log_error("Could not hand console to client");
 		return -1;
 	}
 
@@ -573,185 +422,12 @@ int seat_open_client(struct seat *seat, struct client *client) {
 			struct seat_device *device = (struct seat_device *)elem;
 			seat_deactivate_device(device);
 		}
-		if (seat->vt_bound) {
-			vt_close(client->session);
-		}
+		console_close();
 		return -1;
 	}
 
 	client->state = CLIENT_ACTIVE;
 	seat->active_client = client;
 	log_infof("Opened client %d on %s", client->session, seat->seat_name);
-	return 0;
-}
-
-/*
- * seat_disable_client deactivates all devices of an active client and sends a
- * request for it to disable, which it must ack. It is meant for when a client
- * is suspended due to session switching.
- */
-static int seat_disable_client(struct client *client) {
-	if (client->state != CLIENT_ACTIVE) {
-		log_error("Could not disable client: client is not active");
-		errno = EBUSY;
-		return -1;
-	}
-	struct seat *seat = client->seat;
-	assert(seat != NULL);
-	assert(seat->active_client == client);
-
-	// We *deactivate* all remaining fds. These may later be reactivated.
-	// The reason we cannot just close them is that certain device fds, such
-	// as for DRM, must maintain the exact same file description for their
-	// contexts to remain valid.
-	for (struct linked_list *elem = client->devices.next; elem != &client->devices;
-	     elem = elem->next) {
-		struct seat_device *device = (struct seat_device *)elem;
-		if (seat_deactivate_device(device) == -1) {
-			log_errorf("Could not deactivate %s: %s", device->path, strerror(errno));
-		}
-	}
-
-	client->state = CLIENT_PENDING_DISABLE;
-	if (client_send_disable_seat(seat->active_client) == -1) {
-		log_error("Could not send disable event");
-		return -1;
-	}
-
-	log_infof("Disabling client %d on %s", client->session, seat->seat_name);
-	return 0;
-}
-
-/*
- * seat_ack_disable_client finalizes disable of a client, and activates the
- * next applicable client if any. As disable is intended for session switching,
- * there should either be a queued session or we are on a different VT. In
- * either case, we should not risk the client being re-opened.
- */
-int seat_ack_disable_client(struct client *client) {
-	struct seat *seat = client->seat;
-	if (client->state != CLIENT_PENDING_DISABLE) {
-		log_error("Could not ack disable: client is not pending disable");
-		errno = EBUSY;
-		return -1;
-	}
-
-	client->state = CLIENT_DISABLED;
-	log_infof("Disabled client %d on %s", client->session, seat->seat_name);
-
-	if (seat->active_client != client) {
-		return 0;
-	}
-
-	seat->active_client = NULL;
-	seat_activate(seat);
-
-	// If we're VT-bound, we've either de-activated a client on a foreign
-	// VT, in which case we need to do nothing, or disabled the current VT,
-	// in which case seat_activate would just immediately re-enable it.
-	return 0;
-}
-
-/*
- * seat_set_next_session queues a new client to be opened based on its session
- * ID. It can only be performed by an active client, and only if a switch has
- * not already been requested. If the seat is VT-bound, a VT switch is
- * performed and the VT ack/release mechanism takes care of the rest to avoid
- * conflicts between the two mechanisms.
- */
-int seat_set_next_session(struct client *client, int session) {
-	if (client->state != CLIENT_ACTIVE) {
-		log_error("Could not set next session: client is not active");
-		errno = EPERM;
-		return -1;
-	}
-	struct seat *seat = client->seat;
-	assert(seat->active_client == client);
-
-	if (session <= 0) {
-		log_errorf("Could not set next session: invalid session value %d", session);
-		errno = EINVAL;
-		return -1;
-	}
-
-	if (session == client->session) {
-		log_info("Could not set next session: requested session is already active");
-		return 0;
-	}
-
-	if (seat->next_client != NULL) {
-		log_info("Could not set next session: switch is already queued");
-		return 0;
-	}
-
-	if (seat->vt_bound) {
-		log_infof("Switching from VT %d to VT %d", seat->cur_vt, session);
-		if (vt_switch(seat, session) == -1) {
-			log_error("Could not switch VT");
-			return -1;
-		}
-		return 0;
-	}
-
-	struct client *target = NULL;
-	for (struct linked_list *elem = seat->clients.next; elem != &seat->clients;
-	     elem = elem->next) {
-		struct client *c = (struct client *)elem;
-		if (c->session == session) {
-			target = c;
-			break;
-		}
-	}
-
-	if (target == NULL) {
-		log_error("Could not set next session: no such client");
-		errno = EINVAL;
-		return -1;
-	}
-
-	log_infof("Queuing switch to client %d on %s", session, seat->seat_name);
-	seat->next_client = target;
-	seat_disable_client(seat->active_client);
-	return 0;
-}
-
-/*
- * seat_vt_activate is called when a VT activation signal is received. We
- * respond by acking the signal and finding an applicable client for the newly
- * opened VT.
- */
-int seat_vt_activate(struct seat *seat) {
-	if (!seat->vt_bound) {
-		log_debug("VT activation on non VT-bound seat, ignoring");
-		return -1;
-	}
-	seat_update_vt(seat);
-	log_debug("Activating VT");
-	vt_ack(seat, false);
-	if (seat->active_client == NULL) {
-		seat_activate(seat);
-	}
-	return 0;
-}
-
-/*
- * seat_vt_release is called when a VT release signal is received. We respond
- * by disabling our current client and acking the signal to let the kernel
- * proceed with the switch.
- */
-int seat_vt_release(struct seat *seat) {
-	if (!seat->vt_bound) {
-		log_debug("VT release request on non VT-bound seat, ignoring");
-		return -1;
-	}
-	seat_update_vt(seat);
-
-	log_debug("Releasing VT");
-	if (seat->active_client != NULL) {
-		seat_disable_client(seat->active_client);
-	}
-
-	vt_ack(seat, true);
-	seat->cur_vt = -1;
 	return 0;
 }

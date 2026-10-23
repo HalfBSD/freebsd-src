@@ -122,16 +122,15 @@ static const struct terminal_class vt_termclass = {
 #define	VT_BELLDURATION	(SBT_1S / 20)
 #define	VT_BELLPITCH	800
 
-#define	VT_UNIT(vw)	((vw)->vw_device->vd_unit * VT_MAXWINDOWS + \
-			(vw)->vw_number)
 
 static SYSCTL_NODE(_kern, OID_AUTO, vt, CTLFLAG_RD | CTLFLAG_MPSAFE, 0,
     "vt(4) parameters");
+static int vt_console_count = 1;
+SYSCTL_INT(_kern_vt, OID_AUTO, console_count, CTLFLAG_RD,
+    &vt_console_count, 0, "Number of physical consoles; no virtual terminals");
 static VT_SYSCTL_INT(enable_altgr, 1, "Enable AltGr key (Do not assume R.Alt as Alt)");
 static VT_SYSCTL_INT(enable_bell, 0, "Enable bell");
 static VT_SYSCTL_INT(debug, 0, "vt(4) debug level");
-static VT_SYSCTL_INT(deadtimer, 15, "Time to wait busy process in VT_PROCESS mode");
-static VT_SYSCTL_INT(suspendswitch, 1, "Switch to VT0 before suspend");
 
 /* Slow down and dont rely on timers and interrupts */
 static VT_SYSCTL_INT(slow_down, 0, "Non-zero make console slower and synchronous.");
@@ -157,7 +156,6 @@ VT_SYSCTL_INT(splash_cpu_style, 2, "Draw logo style "
     "(0 = Alternate beastie, 1 = Beastie, 2 = Orb)");
 VT_SYSCTL_INT(splash_cpu_duration, 10, "Hide logos after (seconds)");
 
-static unsigned int vt_unit = 0;
 static MALLOC_DEFINE(M_VT, "vt", "vt device");
 struct vt_device *main_vd = &vt_consdev;
 
@@ -184,13 +182,7 @@ static struct vt_font *vt_font_assigned = &vt_font_default;
 extern struct vt_mouse_cursor vt_default_mouse_pointer;
 #endif
 
-static int signal_vt_rel(struct vt_window *);
-static int signal_vt_acq(struct vt_window *);
-static int finish_vt_rel(struct vt_window *, int, int *);
-static int finish_vt_acq(struct vt_window *);
-static int vt_window_switch(struct vt_window *);
-static int vt_late_window_switch(struct vt_window *);
-static int vt_proc_alive(struct vt_window *);
+static int vt_console_restore(struct vt_window *);
 static void vt_resize(struct vt_device *);
 static void vt_update_static(void *);
 #ifndef SC_NO_CUTPASTE
@@ -216,7 +208,7 @@ struct vt_device	vt_consdev = {
 	.vd_prev_driver = NULL,
 	.vd_prev_softc = NULL,
 	.vd_flags = VDF_INVALID,
-	.vd_windows = { [VT_CONSWINDOW] =  &vt_conswindow, },
+	.vd_console = &vt_conswindow,
 	.vd_curwindow = &vt_conswindow,
 	.vd_kbstate = 0,
 
@@ -240,7 +232,6 @@ struct vt_device	vt_consdev = {
 static term_char_t vt_constextbuf[(_VTDEFW) * (VBF_DEFAULT_HISTORY_SIZE)];
 static term_char_t *vt_constextbufrows[VBF_DEFAULT_HISTORY_SIZE];
 static struct vt_window	vt_conswindow = {
-	.vw_number = VT_CONSWINDOW,
 	.vw_flags = VWF_CONSOLE,
 	.vw_buf = {
 		.vb_buffer = &vt_constextbuf[0],
@@ -278,7 +269,7 @@ SYSINIT(vt_early_cons, SI_SUB_INT_CONFIG_HOOKS, SI_ORDER_ANY, vt_upgrade,
     &vt_consdev);
 
 static bool inside_vt_flush = false;
-static bool inside_vt_window_switch = false;
+static bool inside_vt_console_restore = false;
 
 /* Initialize locks/mem depended members. */
 static void
@@ -296,7 +287,6 @@ vt_update_static(void *dummy)
 
 	mtx_init(&main_vd->vd_lock, "vtdev", NULL, MTX_DEF);
 	mtx_init(&main_vd->vd_flush_lock, "vtdev flush", NULL, MTX_DEF);
-	cv_init(&main_vd->vd_winswitch, "vtwswt");
 }
 
 static void
@@ -342,12 +332,6 @@ vt_suspend_flush_timer(struct vt_device *vd)
 	callout_stop(&vd->vd_timer);
 }
 
-static void
-vt_switch_timer(void *arg, int pending)
-{
-
-	(void)vt_late_window_switch((struct vt_window *)arg);
-}
 
 static int
 vt_save_kbd_mode(struct vt_window *vw, keyboard_t *kbd)
@@ -440,207 +424,31 @@ vt_update_kbd_leds(struct vt_window *vw, keyboard_t *kbd)
 	return (ret);
 }
 
+
+
+
+
+/* Restore the sole console for debugger/panic entry and framebuffer handoff.
+ * This is not a terminal switch: there is no other console to activate. */
 static int
-vt_window_preswitch(struct vt_window *vw, struct vt_window *curvw)
-{
-
-	DPRINTF(40, "%s\n", __func__);
-	curvw->vw_switch_to = vw;
-	/* Set timer to allow switch in case when process hang. */
-	taskqueue_enqueue_timeout(taskqueue_thread, &vw->vw_timeout_task_dead, hz * vt_deadtimer);
-	/* Notify process about vt switch attempt. */
-	DPRINTF(30, "%s: Notify process.\n", __func__);
-	signal_vt_rel(curvw);
-
-	return (0);
-}
-
-static int
-vt_window_postswitch(struct vt_window *vw)
-{
-
-	signal_vt_acq(vw);
-	return (0);
-}
-
-/* vt_late_window_switch will do VT switching for regular case. */
-static int
-vt_late_window_switch(struct vt_window *vw)
-{
-	struct vt_window *curvw;
-	int ret;
-
-	taskqueue_cancel_timeout(taskqueue_thread, &vw->vw_timeout_task_dead, NULL);
-
-	ret = vt_window_switch(vw);
-	if (ret != 0) {
-		/*
-		 * If the switch hasn't happened, then return the VT
-		 * to the current owner, if any.
-		 */
-		curvw = vw->vw_device->vd_curwindow;
-		if (curvw->vw_smode.mode == VT_PROCESS)
-			(void)vt_window_postswitch(curvw);
-		return (ret);
-	}
-
-	/* Notify owner process about terminal availability. */
-	if (vw->vw_smode.mode == VT_PROCESS) {
-		ret = vt_window_postswitch(vw);
-	}
-	return (ret);
-}
-
-/* Switch window. */
-static int
-vt_proc_window_switch(struct vt_window *vw)
-{
-	struct vt_window *curvw;
-	struct vt_device *vd;
-	int ret;
-
-	/* Prevent switching to NULL */
-	if (vw == NULL) {
-		DPRINTF(30, "%s: Cannot switch: vw is NULL.", __func__);
-		return (EINVAL);
-	}
-	vd = vw->vw_device;
-	curvw = vd->vd_curwindow;
-
-	/* Check if virtual terminal is locked */
-	if (curvw->vw_flags & VWF_VTYLOCK)
-		return (EBUSY);
-
-	/* Check if switch already in progress */
-	if (curvw->vw_flags & VWF_SWWAIT_REL) {
-		/* Check if switching to same window */
-		if (curvw->vw_switch_to == vw) {
-			DPRINTF(30, "%s: Switch in progress to same vw.", __func__);
-			return (0);	/* success */
-		}
-		DPRINTF(30, "%s: Switch in progress to different vw.", __func__);
-		return (EBUSY);
-	}
-
-	/* Avoid switching to already selected window */
-	if (vw == curvw) {
-		DPRINTF(30, "%s: Cannot switch: vw == curvw.", __func__);
-		return (0);	/* success */
-	}
-
-	/*
-	 * Early check for an attempt to switch to a non-functional VT.
-	 * The same check is done in vt_window_switch(), but it's better
-	 * to fail as early as possible to avoid needless pre-switch
-	 * actions.
-	 */
-	VT_LOCK(vd);
-	if ((vw->vw_flags & (VWF_OPENED|VWF_CONSOLE)) == 0) {
-		VT_UNLOCK(vd);
-		return (EINVAL);
-	}
-	VT_UNLOCK(vd);
-
-	/* Ask current process permission to switch away. */
-	if (curvw->vw_smode.mode == VT_PROCESS) {
-		DPRINTF(30, "%s: VT_PROCESS ", __func__);
-		if (vt_proc_alive(curvw) == FALSE) {
-			DPRINTF(30, "Dead. Cleaning.");
-			/* Dead */
-		} else {
-			DPRINTF(30, "%s: Signaling process.\n", __func__);
-			/* Alive, try to ask him. */
-			ret = vt_window_preswitch(vw, curvw);
-			/* Wait for process answer or timeout. */
-			return (ret);
-		}
-		DPRINTF(30, "\n");
-	}
-
-	ret = vt_late_window_switch(vw);
-	return (ret);
-}
-
-/* Switch window ignoring process locking. */
-static int
-vt_window_switch(struct vt_window *vw)
+vt_console_restore(struct vt_window *vw)
 {
 	struct vt_device *vd = vw->vw_device;
-	struct vt_window *curvw = vd->vd_curwindow;
-	keyboard_t *kbd;
 
-	if (inside_vt_window_switch && KERNEL_PANICKED())
+	if (inside_vt_console_restore && KERNEL_PANICKED())
 		return (0);
-
-	inside_vt_window_switch = true;
-
+	inside_vt_console_restore = true;
 	if (kdb_active) {
-		/*
-		 * When grabbing the console for the debugger, avoid
-		 * locks as that can result in deadlock.  While this
-		 * could use try locks, that wouldn't really make a
-		 * difference as there are sufficient barriers in
-		 * debugger entry/exit to be equivalent to
-		 * successfully try-locking here.
-		 */
-		if (!(vw->vw_flags & (VWF_OPENED|VWF_CONSOLE))) {
-			inside_vt_window_switch = false;
-			return (EINVAL);
-		}
-
-		vd->vd_curwindow = vw;
 		vd->vd_flags |= VDF_INVALID;
-		if (vd->vd_driver->vd_postswitch)
+		if (vd->vd_driver->vd_postswitch != NULL)
 			vd->vd_driver->vd_postswitch(vd);
-		inside_vt_window_switch = false;
-		return (0);
-	}
-
-	VT_LOCK(vd);
-	if (curvw == vw) {
-		/*
-		 * Nothing to do, except ensure the driver has the opportunity to
-		 * switch to console mode when panicking, making sure the panic
-		 * is readable (even when a GUI was using ttyv0).
-		 */
-		if ((kdb_active || KERNEL_PANICKED()) &&
-		    vd->vd_driver->vd_postswitch)
+	} else {
+		VT_LOCK(vd);
+		if (KERNEL_PANICKED() && vd->vd_driver->vd_postswitch != NULL)
 			vd->vd_driver->vd_postswitch(vd);
-		inside_vt_window_switch = false;
 		VT_UNLOCK(vd);
-		return (0);
 	}
-	if (!(vw->vw_flags & (VWF_OPENED|VWF_CONSOLE))) {
-		inside_vt_window_switch = false;
-		VT_UNLOCK(vd);
-		return (EINVAL);
-	}
-
-	vt_suspend_flush_timer(vd);
-
-	vd->vd_curwindow = vw;
-	vd->vd_flags |= VDF_INVALID;
-	cv_broadcast(&vd->vd_winswitch);
-	VT_UNLOCK(vd);
-
-	if (vd->vd_driver->vd_postswitch)
-		vd->vd_driver->vd_postswitch(vd);
-
-	vt_resume_flush_timer(vw, 0);
-
-	/* Restore per-window keyboard mode. */
-	mtx_lock(&Giant);
-	if ((kbd = vd->vd_keyboard) != NULL) {
-		if (curvw->vw_kbdmode == K_XLATE)
-			vt_save_kbd_state(curvw, kbd);
-
-		vt_update_kbd_mode(vw, kbd);
-		vt_update_kbd_state(vw, kbd);
-	}
-	mtx_unlock(&Giant);
-	DPRINTF(10, "%s(ttyv%d) done\n", __func__, vw->vw_number);
-
-	inside_vt_window_switch = false;
+	inside_vt_console_restore = false;
 	return (0);
 }
 
@@ -830,11 +638,6 @@ vt_scrollmode_kbdevent(struct vt_window *vw, int c, int console)
 	c &= ~SPCLKEY;
 
 	if (console == 0) {
-		if (c >= F_SCR && c <= MIN(L_SCR, F_SCR + VT_MAXWINDOWS - 1)) {
-			vw = vd->vd_windows[c - F_SCR];
-			vt_proc_window_switch(vw);
-			return;
-		}
 		VT_LOCK(vd);
 	}
 
@@ -884,6 +687,7 @@ vt_processkey(keyboard_t *kbd, struct vt_device *vd, int c)
 		case (SPCLKEY | RALT):
 			if (vt_enable_altgr != 0)
 				break;
+			/* FALLTHROUGH */
 		case (SPCLKEY | LALT):
 			vd->vd_kbstate &= ~ALKED;
 		}
@@ -894,6 +698,7 @@ vt_processkey(keyboard_t *kbd, struct vt_device *vd, int c)
 		case (SPCLKEY | RALT):
 			if (vt_enable_altgr != 0)
 				break;
+			/* FALLTHROUGH */
 		case (SPCLKEY | LALT):
 			vd->vd_kbstate |= ALKED;
 		}
@@ -916,25 +721,8 @@ vt_processkey(keyboard_t *kbd, struct vt_device *vd, int c)
 	if (c & SPCLKEY) {
 		c &= ~SPCLKEY;
 
-		if (c >= F_SCR && c <= MIN(L_SCR, F_SCR + VT_MAXWINDOWS - 1)) {
-			vw = vd->vd_windows[c - F_SCR];
-			vt_proc_window_switch(vw);
-			return (0);
-		}
 
 		switch (c) {
-		case NEXT:
-			/* Switch to next VT. */
-			c = (vw->vw_number + 1) % VT_MAXWINDOWS;
-			vw = vd->vd_windows[c];
-			vt_proc_window_switch(vw);
-			return (0);
-		case PREV:
-			/* Switch to previous VT. */
-			c = (vw->vw_number + VT_MAXWINDOWS - 1) % VT_MAXWINDOWS;
-			vw = vd->vd_windows[c];
-			vt_proc_window_switch(vw);
-			return (0);
 		case SLK: {
 			vt_save_kbd_state(vw, kbd);
 			VT_LOCK(vd);
@@ -1899,9 +1687,8 @@ vtterm_cnprobe(struct terminal *tm, struct consdev *cp)
 	/* Initialize any early-boot keyboard drivers */
 	kbd_configure(KB_CONF_PROBE_ONLY);
 
-	vd->vd_unit = atomic_fetchadd_int(&vt_unit, 1);
-	vd->vd_windows[VT_CONSWINDOW] = vw;
-	sprintf(cp->cn_name, "ttyv%r", VT_UNIT(vw));
+	vd->vd_console = vw;
+	strlcpy(cp->cn_name, "ttyv0", sizeof(cp->cn_name));
 
 	vt_init_font_static();
 
@@ -2089,7 +1876,7 @@ vtterm_cngrab(struct terminal *tm)
 		vd->vd_grabwindow = vd->vd_curwindow;
 
 	if (!cold)
-		vt_window_switch(vw);
+		vt_console_restore(vw);
 
 	vtterm_cngrab_noswitch(vd, vw);
 }
@@ -2108,7 +1895,7 @@ vtterm_cnungrab(struct terminal *tm)
 		return;
 
 	/*
-	 * We set `vd_grabwindow` to NULL before calling vt_window_switch()
+	 * We set `vd_grabwindow` to NULL before calling vt_console_restore()
 	 * because it allows the underlying vt(4) backend to distinguish a
 	 * "grab" from an "ungrab" of the console.
 	 *
@@ -2119,7 +1906,7 @@ vtterm_cnungrab(struct terminal *tm)
 	vd->vd_grabwindow = NULL;
 
 	if (!cold)
-		vt_window_switch(grabwindow);
+		vt_console_restore(grabwindow);
 }
 
 static void
@@ -2212,92 +1999,10 @@ vt_change_font(struct vt_window *vw, struct vt_font *vf)
 	return (0);
 }
 
-static int
-vt_proc_alive(struct vt_window *vw)
-{
-	struct proc *p;
 
-	if (vw->vw_smode.mode != VT_PROCESS)
-		return (FALSE);
 
-	if (vw->vw_proc) {
-		if ((p = pfind(vw->vw_pid)) != NULL)
-			PROC_UNLOCK(p);
-		if (vw->vw_proc == p)
-			return (TRUE);
-		vw->vw_proc = NULL;
-		vw->vw_smode.mode = VT_AUTO;
-		DPRINTF(1, "vt controlling process %d died\n", vw->vw_pid);
-		vw->vw_pid = 0;
-	}
-	return (FALSE);
-}
 
-static int
-signal_vt_rel(struct vt_window *vw)
-{
 
-	if (vw->vw_smode.mode != VT_PROCESS)
-		return (FALSE);
-	if (vw->vw_proc == NULL || vt_proc_alive(vw) == FALSE) {
-		vw->vw_proc = NULL;
-		vw->vw_pid = 0;
-		return (TRUE);
-	}
-	vw->vw_flags |= VWF_SWWAIT_REL;
-	PROC_LOCK(vw->vw_proc);
-	kern_psignal(vw->vw_proc, vw->vw_smode.relsig);
-	PROC_UNLOCK(vw->vw_proc);
-	DPRINTF(1, "sending relsig to %d\n", vw->vw_pid);
-	return (TRUE);
-}
-
-static int
-signal_vt_acq(struct vt_window *vw)
-{
-
-	if (vw->vw_smode.mode != VT_PROCESS)
-		return (FALSE);
-	if (vw == vw->vw_device->vd_windows[VT_CONSWINDOW])
-		cnavailable(vw->vw_terminal->consdev, FALSE);
-	if (vw->vw_proc == NULL || vt_proc_alive(vw) == FALSE) {
-		vw->vw_proc = NULL;
-		vw->vw_pid = 0;
-		return (TRUE);
-	}
-	vw->vw_flags |= VWF_SWWAIT_ACQ;
-	PROC_LOCK(vw->vw_proc);
-	kern_psignal(vw->vw_proc, vw->vw_smode.acqsig);
-	PROC_UNLOCK(vw->vw_proc);
-	DPRINTF(1, "sending acqsig to %d\n", vw->vw_pid);
-	return (TRUE);
-}
-
-static int
-finish_vt_rel(struct vt_window *vw, int release, int *s)
-{
-
-	if (vw->vw_flags & VWF_SWWAIT_REL) {
-		vw->vw_flags &= ~VWF_SWWAIT_REL;
-		if (release) {
-			taskqueue_drain_timeout(taskqueue_thread, &vw->vw_timeout_task_dead);
-			(void)vt_late_window_switch(vw->vw_switch_to);
-		}
-		return (0);
-	}
-	return (EINVAL);
-}
-
-static int
-finish_vt_acq(struct vt_window *vw)
-{
-
-	if (vw->vw_flags & VWF_SWWAIT_ACQ) {
-		vw->vw_flags &= ~VWF_SWWAIT_ACQ;
-		return (0);
-	}
-	return (EINVAL);
-}
 
 #ifndef SC_NO_CUTPASTE
 static void
@@ -2578,20 +2283,11 @@ vtterm_ioctl(struct terminal *tm, u_long cmd, caddr_t data,
 	struct vt_window *vw = tm->tm_softc;
 	struct vt_device *vd = vw->vw_device;
 	keyboard_t *kbd;
-	int error, i, s;
+	int error, i;
 #if defined(COMPAT_FREEBSD32) || defined(COMPAT_FREEBSD32_43)
 	int ival;
 
 	switch (cmd) {
-	case _IO('v', 4):
-		cmd = VT_RELDISP;
-		break;
-	case _IO('v', 5):
-		cmd = VT_ACTIVATE;
-		break;
-	case _IO('v', 6):
-		cmd = VT_WAITACTIVE;
-		break;
 	case _IO('K', 20):
 		cmd = KDSKBSTATE;
 		break;
@@ -2841,7 +2537,7 @@ skip_thunk:
 			mtx_unlock(&Giant);
 		}
 
-		vi->m_num = vd->vd_curwindow->vw_number + 1;
+		vi->m_num = 1;
 		vi->mk_keylock = vw->vw_kbdstate & LOCK_MASK;
 		/* XXX: other fields! */
 		return (0);
@@ -2925,6 +2621,7 @@ skip_thunk:
 			vw->vw_flags |= VWF_GRAPHICS;
 			break;
 		}
+		cnavailable(tm->consdev, !(vw->vw_flags & VWF_GRAPHICS));
 		return (0);
 	case KDENABIO:		/* allow io operations */
 		error = priv_check(td, PRIV_IO);
@@ -2991,196 +2688,20 @@ skip_thunk:
 		}
 		mtx_unlock(&Giant);
 		return (error);
-	case VT_ACTIVATE: {
-		int win;
-		win = *(int *)data - 1;
-		DPRINTF(5, "%s%d: VT_ACTIVATE ttyv%d ", SC_DRIVER_NAME,
-		    VT_UNIT(vw), win);
-		if ((win >= VT_MAXWINDOWS) || (win < 0))
-			return (EINVAL);
-		return (vt_proc_window_switch(vd->vd_windows[win]));
-	}
 	case VT_GETACTIVE:
-		*(int *)data = vd->vd_curwindow->vw_number + 1;
-		return (0);
 	case VT_GETINDEX:
-		*(int *)data = vw->vw_number + 1;
+		*(int *)data = 1;
 		return (0);
-	case VT_LOCKSWITCH:
-		/* TODO: Check current state, switching can be in progress. */
-		if ((*(int *)data) == 0x01)
-			vw->vw_flags |= VWF_VTYLOCK;
-		else if ((*(int *)data) == 0x02)
-			vw->vw_flags &= ~VWF_VTYLOCK;
-		else
-			return (EINVAL);
-		return (0);
-	case VT_OPENQRY:
-		VT_LOCK(vd);
-		for (i = 0; i < VT_MAXWINDOWS; i++) {
-			vw = vd->vd_windows[i];
-			if (vw == NULL)
-				continue;
-			if (!(vw->vw_flags & VWF_OPENED)) {
-				*(int *)data = vw->vw_number + 1;
-				VT_UNLOCK(vd);
-				return (0);
-			}
-		}
-		VT_UNLOCK(vd);
-		return (EINVAL);
-	case VT_WAITACTIVE: {
-		unsigned int idx;
-
-		error = 0;
-
-		idx = *(unsigned int *)data;
-		if (idx > VT_MAXWINDOWS)
-			return (EINVAL);
-		if (idx > 0)
-			vw = vd->vd_windows[idx - 1];
-
-		VT_LOCK(vd);
-		while (vd->vd_curwindow != vw && error == 0)
-			error = cv_wait_sig(&vd->vd_winswitch, &vd->vd_lock);
-		VT_UNLOCK(vd);
-		return (error);
-	}
-	case VT_SETMODE: {	/* set screen switcher mode */
-		struct vt_mode *mode;
-		struct proc *p1;
-
-		mode = (struct vt_mode *)data;
-		DPRINTF(5, "%s%d: VT_SETMODE ", SC_DRIVER_NAME, VT_UNIT(vw));
-		if (vw->vw_smode.mode == VT_PROCESS) {
-			p1 = pfind(vw->vw_pid);
-			if (vw->vw_proc == p1 && vw->vw_proc != td->td_proc) {
-				if (p1)
-					PROC_UNLOCK(p1);
-				DPRINTF(5, "error EPERM\n");
-				return (EPERM);
-			}
-			if (p1)
-				PROC_UNLOCK(p1);
-		}
-		if (mode->mode == VT_AUTO) {
-			vw->vw_smode.mode = VT_AUTO;
-			vw->vw_proc = NULL;
-			vw->vw_pid = 0;
-			DPRINTF(5, "VT_AUTO, ");
-			if (vw == vw->vw_device->vd_windows[VT_CONSWINDOW])
-				cnavailable(vw->vw_terminal->consdev, TRUE);
-			/* were we in the middle of the vty switching process? */
-			if (finish_vt_rel(vw, TRUE, &s) == 0)
-				DPRINTF(5, "reset WAIT_REL, ");
-			if (finish_vt_acq(vw) == 0)
-				DPRINTF(5, "reset WAIT_ACQ, ");
-			return (0);
-		} else if (mode->mode == VT_PROCESS) {
-			if (!(_SIG_VALID(mode->relsig) &&
-			    _SIG_VALID(mode->acqsig) &&
-			    (mode->frsig == 0 || _SIG_VALID(mode->frsig)))) {
-				DPRINTF(5, "error EINVAL\n");
-				return (EINVAL);
-			}
-			DPRINTF(5, "VT_PROCESS %d, ", td->td_proc->p_pid);
-			bcopy(data, &vw->vw_smode, sizeof(struct vt_mode));
-			vw->vw_proc = td->td_proc;
-			vw->vw_pid = vw->vw_proc->p_pid;
-			if (vw == vw->vw_device->vd_windows[VT_CONSWINDOW])
-				cnavailable(vw->vw_terminal->consdev, FALSE);
-		} else {
-			DPRINTF(5, "VT_SETMODE failed, unknown mode %d\n",
-			    mode->mode);
-			return (EINVAL);
-		}
-		DPRINTF(5, "\n");
-		return (0);
-	}
-	case VT_GETMODE:	/* get screen switcher mode */
-		bcopy(&vw->vw_smode, data, sizeof(struct vt_mode));
-		return (0);
-
-	case VT_RELDISP:	/* screen switcher ioctl */
-		/*
-		 * This must be the current vty which is in the VT_PROCESS
-		 * switching mode...
-		 */
-		if ((vw != vd->vd_curwindow) || (vw->vw_smode.mode !=
-		    VT_PROCESS)) {
-			return (EINVAL);
-		}
-		/* ...and this process is controlling it. */
-		if (vw->vw_proc != td->td_proc) {
-			return (EPERM);
-		}
-		error = EINVAL;
-		switch(*(int *)data) {
-		case VT_FALSE:	/* user refuses to release screen, abort */
-			if ((error = finish_vt_rel(vw, FALSE, &s)) == 0)
-				DPRINTF(5, "%s%d: VT_RELDISP: VT_FALSE\n",
-				    SC_DRIVER_NAME, VT_UNIT(vw));
-			break;
-		case VT_TRUE:	/* user has released screen, go on */
-			/* finish_vt_rel(..., TRUE, ...) should not be locked */
-			if (vw->vw_flags & VWF_SWWAIT_REL) {
-				if ((error = finish_vt_rel(vw, TRUE, &s)) == 0)
-					DPRINTF(5, "%s%d: VT_RELDISP: VT_TRUE\n",
-					    SC_DRIVER_NAME, VT_UNIT(vw));
-			} else {
-				error = EINVAL;
-			}
-			return (error);
-		case VT_ACKACQ:	/* acquire acknowledged, switch completed */
-			if ((error = finish_vt_acq(vw)) == 0)
-				DPRINTF(5, "%s%d: VT_RELDISP: VT_ACKACQ\n",
-				    SC_DRIVER_NAME, VT_UNIT(vw));
-			break;
-		default:
-			break;
-		}
-		return (error);
 	}
 
 	return (ENOIOCTL);
 }
 
-static struct vt_window *
-vt_allocate_window(struct vt_device *vd, unsigned int window)
-{
-	struct vt_window *vw;
-	struct terminal *tm;
-	term_pos_t size;
-	struct winsize wsz;
-
-	vw = malloc(sizeof *vw, M_VT, M_WAITOK|M_ZERO);
-	vw->vw_device = vd;
-	vw->vw_number = window;
-	vw->vw_kbdmode = K_XLATE;
-
-	if ((vd->vd_flags & VDF_TEXTMODE) == 0) {
-		vw->vw_font = vtfont_ref(vt_font_assigned);
-		vt_compute_drawable_area(vw);
-	}
-
-	vt_termsize(vd, vw->vw_font, &size);
-	vt_winsize(vd, vw->vw_font, &wsz);
-	tm = vw->vw_terminal = terminal_alloc(&vt_termclass, vw);
-	vw->vw_buf.vb_terminal = tm;	/* must be set before vtbuf_init() */
-	vtbuf_init(&vw->vw_buf, &size);
-
-	terminal_set_winsize(tm, &wsz);
-	vd->vd_windows[window] = vw;
-	TIMEOUT_TASK_INIT(taskqueue_thread, &vw->vw_timeout_task_dead, 0, &vt_switch_timer, vw);
-
-	return (vw);
-}
 
 void
 vt_upgrade(struct vt_device *vd)
 {
 	struct vt_window *vw;
-	unsigned int i;
 	int register_handlers;
 
 	if (!vty_enabled(VTY_VT))
@@ -3188,30 +2709,26 @@ vt_upgrade(struct vt_device *vd)
 	if (main_vd->vd_driver == NULL)
 		return;
 
-	for (i = 0; i < VT_MAXWINDOWS; i++) {
-		vw = vd->vd_windows[i];
-		if (vw == NULL) {
-			/* New window. */
-			vw = vt_allocate_window(vd, i);
-		}
-		if (!(vw->vw_flags & VWF_READY)) {
-			TIMEOUT_TASK_INIT(taskqueue_thread, &vw->vw_timeout_task_dead, 0, &vt_switch_timer, vw);
-			terminal_maketty(vw->vw_terminal, "v%r", VT_UNIT(vw));
-			vw->vw_flags |= VWF_READY;
-			if (vw->vw_flags & VWF_CONSOLE) {
-				/* For existing console window. */
-				EVENTHANDLER_REGISTER(shutdown_pre_sync,
-				    vt_window_switch, vw, SHUTDOWN_PRI_DEFAULT);
+	vw = vd->vd_console;
+	KASSERT(vw != NULL, ("boot console missing"));
+	if (!(vw->vw_flags & VWF_READY)) {
+
+		terminal_maketty(vw->vw_terminal, "v0");
+		vw->vw_flags |= VWF_READY;
+		if (vw->vw_flags & VWF_CONSOLE) {
+			/* For existing console window. */
+			EVENTHANDLER_REGISTER(shutdown_pre_sync,
+			    vt_console_restore, vw, SHUTDOWN_PRI_DEFAULT);
 #ifdef DEV_SPLASH
-				EVENTHANDLER_REGISTER(shutdown_pre_sync,
-				    vt_shutdown_splash, vw, SHUTDOWN_PRI_DEFAULT + 1);
+			EVENTHANDLER_REGISTER(shutdown_pre_sync,
+			    vt_shutdown_splash, vw, SHUTDOWN_PRI_DEFAULT + 1);
 #endif
-			}
 		}
 	}
+
 	VT_LOCK(vd);
 	if (vd->vd_curwindow == NULL)
-		vd->vd_curwindow = vd->vd_windows[VT_CONSWINDOW];
+		vd->vd_curwindow = vd->vd_console;
 
 	register_handlers = 0;
 	if (!(vd->vd_flags & VDF_ASYNC)) {
@@ -3253,22 +2770,20 @@ static void
 vt_resize(struct vt_device *vd)
 {
 	struct vt_window *vw;
-	int i;
 
-	for (i = 0; i < VT_MAXWINDOWS; i++) {
-		vw = vd->vd_windows[i];
-		VT_LOCK(vd);
-		/* Assign default font to window, if not textmode. */
-		if (!(vd->vd_flags & VDF_TEXTMODE) && vw->vw_font == NULL)
-			vw->vw_font = vtfont_ref(vt_font_assigned);
-		VT_UNLOCK(vd);
+	vw = vd->vd_console;
+	VT_LOCK(vd);
+	/* Assign default font to window, if not textmode. */
+	if (!(vd->vd_flags & VDF_TEXTMODE) && vw->vw_font == NULL)
+		vw->vw_font = vtfont_ref(vt_font_assigned);
+	VT_UNLOCK(vd);
 
-		/* Resize terminal windows */
-		while (vt_change_font(vw, vw->vw_font) == EBUSY) {
-			DPRINTF(100, "%s: vt_change_font() is busy, "
-			    "window %d\n", __func__, i);
-		}
+	/* Resize terminal windows */
+	while (vt_change_font(vw, vw->vw_font) == EBUSY) {
+		DPRINTF(100, "%s: vt_change_font() is busy, "
+		    "console\n", __func__);
 	}
+
 }
 
 static void
@@ -3363,7 +2878,7 @@ vt_replace_backend(const struct vt_driver *drv, void *softc)
 	 * Register as console. If it already registered, cnadd() will ignore
 	 * it.
 	 */
-	termcn_cnregister(vd->vd_windows[VT_CONSWINDOW]->vw_terminal);
+	termcn_cnregister(vd->vd_console->vw_terminal);
 }
 
 static void
@@ -3441,30 +2956,16 @@ vt_deallocate(const struct vt_driver *drv, void *softc)
 void
 vt_suspend(struct vt_device *vd)
 {
-	int error;
-
-	if (vt_suspendswitch == 0)
-		return;
-	/* Save current window. */
-	vd->vd_savedwindow = vd->vd_curwindow;
-	/* Ask holding process to free window and switch to console window */
-	vt_proc_window_switch(vd->vd_windows[VT_CONSWINDOW]);
-
-	/* Wait for the window switch to complete. */
-	error = 0;
 	VT_LOCK(vd);
-	while (vd->vd_curwindow != vd->vd_windows[VT_CONSWINDOW] && error == 0)
-		error = cv_wait_sig(&vd->vd_winswitch, &vd->vd_lock);
+	vt_suspend_flush_timer(vd);
 	VT_UNLOCK(vd);
 }
 
 void
 vt_resume(struct vt_device *vd)
 {
-
-	if (vt_suspendswitch == 0)
-		return;
-	/* Switch back to saved window, if any */
-	vt_proc_window_switch(vd->vd_savedwindow);
-	vd->vd_savedwindow = NULL;
+	VT_LOCK(vd);
+	vd->vd_flags |= VDF_INVALID;
+	vt_resume_flush_timer(vd->vd_curwindow, 0);
+	VT_UNLOCK(vd);
 }

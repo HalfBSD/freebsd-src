@@ -17,7 +17,8 @@
 .Nm
 is the upstream seat management daemon, built into HalfBSD.
 It runs in the foreground and grants connected libseat clients controlled
-access to graphics, input devices and virtual terminals.
+access to graphics and input devices on the sole local console, ttyv0.
+Only one local graphical client is accepted; session switching is unsupported.
 The Lua workstation graph supervises it as a required service.
 Clients must have permission to connect to
 .Pa /var/run/seatd.sock .
@@ -48,9 +49,6 @@ Clients may explicitly select
 .Ql seatd .
 .It Ev SEATD_SOCK
 Override the socket path for libseat clients.
-.It Ev SEATD_VTBOUND
-Set to 0 only for isolated tests that must not acquire a virtual terminal.
-Do not disable terminal binding for ordinary desktop operation.
 .El
 .Sh FILES
 .Bl -tag -width /var/run/seatd.sock

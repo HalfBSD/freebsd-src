@@ -218,76 +218,31 @@ The kernel handoff result is
 .Sy halfbsd.boot_result=multiuser-ready .
 Startup remains serial under the installed example configuration.
 .Pp
-The earlier network inspection checkpoint remains explicitly selectable with
-.Sy halfbsd.boot_stage=network .
-It remounts root writable, initializes configured local storage, AMDGPU,
-runtime directories, swap, hostname, library hints, local logging, IPFW and DHCP.
-It waits for an address and default route, then opens the existing PID 1
-single-user shell while halfinit retains ownership of DHCP and logging.
-DNS, SSH, NTP, desktop services and gettys are not started.
-The control interface permits only list, status and graph at this checkpoint.
-Use normal reboot for ordered cleanup; exiting the shell does not advance boot.
+Diagnostic stages remain selectable with
+.Sy halfbsd.boot_stage=network
+or
+.Sy halfbsd.boot_stage=single .
+They report their diagnostic result and stop without opening a shell or
+advancing to multiuser. The single stage checks kernel-mounted ZFS, already
+imported datasets and AMDGPU without loading the multiuser configuration.
+The network stage projects configured storage, firewall and DHCP prerequisites;
+PID 1 stops its supervisor after the checkpoint.
 .Pp
-Expect kernel variables halfbsd.boot_active=lua, halfbsd.boot_stage=network
-and halfbsd.boot_result=network-ready.
-Use boot -s at the loader prompt for native recovery.
-The earlier minimal diagnostic remains available with
-.Sy halfbsd.boot_stage=single ;
-the following describes that explicit diagnostic, not the multiuser default.
-PID 1 prints a dated diagnostic-build banner and selected startup path directly
-to the console. The native launcher and Lua print unbuffered progress; PID 1
-prints a waiting message every five seconds while Lua runs.
-.Pp
-The diagnostic stage verifies the kernel-mounted ZFS root and devfs, invokes
-.Pa /sbin/zfs mount -a
-for already-imported datasets, then runs
-.Pa /sbin/kldload -n -v amdgpu
-and
-.Pa /sbin/kldstat -n amdgpu.ko .
-A DRM card device must appear. This proves neither display acceleration nor
-compositor operation. AMDGPU and its firmware must already be installed and
-compatible with the running kernel. No driver package is installed automatically.
-.Pp
-The diagnostic path bypasses
-.Pa /etc/halfbsd/system.lua
-and enabled-state files entirely. It starts no network interfaces, DHCP, firewall
-policy loader, DNS, SSH, NTP, syslog, swap, getty or desktop services.
-It does not import pools, remount root writable or mount fstab filesystems.
-ZFS mount changes and the loaded graphics driver are retained for shell inspection.
-After a distinct SINGLE notification and successful Lua process exit, PID 1
-opens its existing single-user shell. Errors print their reason and open recovery
-instead. Neither case falls back automatically to RC.
-.Pp
-At the loader prompt select the diagnostic test explicitly with:
-.Bd -literal -offset indent
-set halfbsd.boot_mode=lua
-set halfbsd.boot_stage=single
-boot
-.Ed
-Do not use boot -s for the test: that requests PID 1's direct single-user shell
-before the Lua handoff. Once at the diagnostic shell, inspect:
-.Bd -literal -offset indent
-kenv halfbsd.boot_active
-kenv halfbsd.boot_stage
-kenv halfbsd.boot_result
-mount -t zfs
-kldstat -n amdgpu.ko
-ls /dev/dri
-.Ed
-The expected kernel values are lua, single and single-ready. A shell by itself
-is not proof of Lua success. The diagnostic Lua process exits before the shell,
-so no persistent halfinit process or halfsvc socket is expected.
-Exiting that shell stays single-user; it does not activate networking.
-.Pp
-The native PID 1 recovery shell remains available through boot -s.
-.Sy halfbsd.boot_stage=multiuser
-selects the default full Lua service-manager path described below.
-A mode/stage change after initialization requires rebooting; no partially
-initialized startup-mode switching is attempted.
+PID 1 has no independent recovery shell, alternate-shell prompt or
+.Sy init_shell
+loader override.
+.Sy boot -s
+stops startup without a shell. Invalid configuration, critical startup failure
+or unexpected supervisor exit likewise stops after cleanup. PID 1 remains
+alive to reap children and honor shutdown signals; it does not automatically
+retry a partially initialized boot.
+Use compatible external FreeBSD media to import the ZFS pool, select or repair
+a boot environment, and repair the configuration or installed system.
+Prepare that media before installing these changes.
 .Pp
 The following describes the default FULL MULTIUSER path. Lua is the default startup system; no marker file is required.
 
-The C-based PID 1 retains its login, single-user and kernel reboot responsibilities.
+The C-based PID 1 retains its login, stopped-state and kernel reboot responsibilities.
 Initially supported boot layouts require a kernel-mounted ZFS root containing
 the interpreter, manager, modules and their libraries; a separately mounted
 .Pa /usr
@@ -306,15 +261,15 @@ images default to halfbsd. Verify the intended site hostname before reboot.
 Review custom filesystem, device and network requirements before the first boot.
 .Pp
 The retired halfbsd.boot_mode=rc setting is rejected and enters native recovery.
-Unset it before normal boot. Use boot -s for recovery, or boot compatible
-external FreeBSD media to repair the ZFS installation.
+Unset it before normal boot. Boot compatible external FreeBSD media to repair
+the ZFS installation; boot -s provides no shell.
 .Pp
 PID 1 launches the manager with an internal descriptor-3 readiness channel.
 That option requires root with PID 1 as its direct parent.
 After devfs, runtime storage, loopback, firewall, control and the complete
 selected multiuser target are ready, PID 1 starts existing console login sessions
 while the manager continues supervising. Configured swap is a hard requirement.
-Failure of required network or service startup enters single-user recovery,
+Failure of required network or service startup enters the stopped state without a shell,
 rather than announcing an incomplete multiuser environment.
 The primary ttyv0 session launches
 .Xr halfconsole 8
@@ -331,8 +286,8 @@ and firewall without DHCP or network services. Diagnostic profiles discard
 custom service includes and persisted activations and allow only read-only
 control. They apply on a fresh boot, not as live session isolation mechanisms.
 Configuration-selected profiles use normal console login after readiness;
-the loader boot_stage=network remains the dedicated inspection-shell entry.
-Independent PID 1 recovery remains available.
+the loader boot_stage=network is a diagnostic checkpoint without a shell.
+Recovery requires external media.
 .Pp
 The kernel/PID 1 devfs mount is verified rather than duplicated.
 Temporary directories are prepared with mode 1777 and runtime storage with 0755.
@@ -362,7 +317,7 @@ so an older successful shutdown is not attributed to a newer recorded boot.
 Reporting never holds storage open across cleanup; unavailable or unmounted
 reporting storage leaves incomplete evidence rather than a success claim.
 .Pp
-Unexpected manager exit or critical startup failure enters single-user recovery,
+Unexpected manager exit or critical startup failure enters the stopped state without a shell,
 without attempting another startup framework over partially initialized state.
 Preserve console access, a recoverable ZFS boot environment and compatible
 external recovery media throughout validation. Installation alone does not

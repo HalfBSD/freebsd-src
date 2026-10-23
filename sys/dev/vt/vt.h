@@ -51,19 +51,12 @@
 #include "opt_syscons.h"
 #include "opt_splash.h"
 
-#ifndef	VT_MAXWINDOWS
-#ifdef	MAXCONS
-#define	VT_MAXWINDOWS	MAXCONS
-#else
-#define	VT_MAXWINDOWS	12
-#endif
-#endif
+/* HalfBSD has exactly one physical console and no virtual consoles. */
 
 #ifndef VT_ALT_TO_ESC_HACK
 #define	VT_ALT_TO_ESC_HACK	1
 #endif
 
-#define	VT_CONSWINDOW	0
 
 #if defined(SC_TWOBUTTON_MOUSE) || defined(VT_TWOBUTTON_MOUSE)
 #define VT_MOUSE_PASTEBUTTON	MOUSE_BUTTON3DOWN	/* right button */
@@ -118,9 +111,12 @@ struct vt_pastebuf {
 };
 
 struct vt_device {
-	struct vt_window	*vd_windows[VT_MAXWINDOWS]; /* (c) Windows. */
+	struct vt_window	*vd_console;	/* (c) Sole physical console. */
+	/* Reserved data preserves the installed drm-kmod structure layout.
+	 * These slots have no windows, allocations, handlers or switch logic. */
+	void			*_reserved_console_slots[11];
 	struct vt_window	*vd_curwindow;	/* (d) Current window. */
-	struct vt_window	*vd_savedwindow;/* (?) Saved for suspend. */
+	void			*_reserved_saved_console;
 	struct vt_window	*vd_grabwindow;	/* (?) Saved before cngrab. */
 	struct vt_pastebuf	 vd_pastebuf;	/* (?) Copy/paste buf. */
 	const struct vt_driver	*vd_driver;	/* (c) Graphics driver. */
@@ -143,7 +139,7 @@ struct vt_device {
 	vt_axis_t		 vd_height;	/* (?) Screen height. */
 	size_t			 vd_transpose;	/* (?) Screen offset in FB */
 	struct mtx		 vd_lock;	/* Per-device lock. */
-	struct cv		 vd_winswitch;	/* (d) Window switch notify. */
+	struct cv		 _reserved_switch_cv;
 	struct callout		 vd_timer;	/* (d) Display timer. */
 	volatile unsigned int	 vd_timer_armed;/* (?) Display timer started.*/
 	int			 vd_flags;	/* (d) Device flags. */
@@ -159,7 +155,7 @@ struct vt_device {
 #define	VDF_DOWNGRADE	0x8000	/* The driver is being downgraded. */
 	struct keyboard		*vd_keyboard;	/* (G) Keyboard. */
 	unsigned int		 vd_kbstate;	/* (?) Device unit. */
-	unsigned int		 vd_unit;	/* (c) Device unit. */
+	unsigned int		 _reserved_unit;
 	int			 vd_altbrk;	/* (?) Alt break seq. state */
 	term_char_t		*vd_drawn;	/* (?) Most recent char drawn. */
 	term_color_t		*vd_drawnfg;	/* (?) Most recent fg color drawn. */
@@ -294,7 +290,7 @@ struct vt_window {
 	struct vt_buf		 vw_buf;	/* (u) Screen buffer. */
 	struct vt_font		*vw_font;	/* (d) Graphical font. */
 	term_rect_t		 vw_draw_area;	/* (?) Drawable area. */
-	unsigned int		 vw_number;	/* (c) Window number. */
+	unsigned int		 _reserved_number;
 	int			 vw_kbdmode;	/* (?) Keyboard mode. */
 	int			 vw_prev_kbdmode;/* (?) Previous mode. */
 	int			 vw_kbdstate;	/* (?) Keyboard state. */
@@ -306,17 +302,14 @@ struct vt_window {
 #define	VWF_OPENED	0x2	/* TTY in use. */
 #define	VWF_SCROLL	0x4	/* Keys influence scrollback. */
 #define	VWF_CONSOLE	0x8	/* Kernel message console window. */
-#define	VWF_VTYLOCK	0x10	/* Prevent window switch. */
 #define	VWF_MOUSE_HIDE	0x20	/* Disable mouse events processing. */
 #define	VWF_READY	0x40	/* Window fully initialized. */
 #define	VWF_GRAPHICS	0x80	/* Window in graphics mode (KDSETMODE). */
-#define	VWF_SWWAIT_REL	0x10000	/* Program wait for VT acquire is done. */
-#define	VWF_SWWAIT_ACQ	0x20000	/* Program wait for VT release is done. */
-	pid_t			 vw_pid;	/* Terminal holding process */
-	struct proc		*vw_proc;
-	struct vt_mode		 vw_smode;	/* switch mode */
-	struct timeout_task	 vw_timeout_task_dead;
-	struct vt_window	*vw_switch_to;
+	pid_t			 _reserved_pid;
+	void			*_reserved_process;
+	struct vt_mode		 _reserved_mode;
+	struct timeout_task	 _reserved_switch_task;
+	void			*_reserved_switch_target;
 	int			 vw_bell_pitch;	/* (?) Bell pitch */
 	sbintime_t		 vw_bell_duration; /* (?) Bell duration */
 };
@@ -325,7 +318,6 @@ struct vt_window {
 #define	VT_PROCESS	1		/* switching controlled by prog */
 #define	VT_KERNEL	255		/* switching controlled in kernel */
 
-#define	IS_VT_PROC_MODE(vw)	((vw)->vw_smode.mode == VT_PROCESS)
 
 /*
  * Per-device driver routines.

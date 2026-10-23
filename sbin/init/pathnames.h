@@ -34,6 +34,5 @@
 
 #include <paths.h>
 
-#define	_PATH_INITLOG		"/var/log/init.log"
 #define	_PATH_SLOGGER		"/sbin/session_logger"
 #define	_PATH_LUA_CONSOLE_LOGIN	"/usr/sbin/halfconsole"

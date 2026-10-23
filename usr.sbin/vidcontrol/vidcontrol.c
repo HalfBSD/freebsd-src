@@ -81,7 +81,6 @@ static struct	video_info new_mode_info;
  *   screen saver timeout
  *   cursor type
  *   mouse character and mouse show/hide state
- *   vty switching on/off state
  *   history buffer size
  *   history contents
  *   font maps
@@ -121,7 +120,6 @@ revert(void)
 
 	save_errno = errno;
 
-	ioctl(0, VT_ACTIVATE, cur_info.active_vty);
 
 	ioctl(0, KDSBORDER, cur_info.console_info.mv_ovscan);
 	fprintf(stderr, "\033[=%dH", cur_info.console_info.mv_rev.fore);
@@ -161,7 +159,7 @@ usage(void)
 "usage: vidcontrol [-Cx] [-b color] [-c appearance] [-f [[size] file]]",
 "                  [-g geometry] [-h size] [-i active | adapter | mode]",
 "                  [-M char] [-m on | off]",
-"                  [-r foreground background] [-S on | off] [-s number]",
+"                  [-r foreground background]",
 "                  [-T xterm | cons25] [-t N | off] [mode]",
 "                  [foreground [background]] [show]");
 	exit(1);
@@ -673,30 +671,6 @@ set_reverse_colors(int argc, char **argv, int *_index)
 }
 
 
-/*
- * Switch to virtual terminal #arg.
- */
-
-static void
-set_console(char *arg)
-{
-	int n;
-
-	if(!arg || strspn(arg,"0123456789") != strlen(arg)) {
-		revert();
-		errx(1, "bad console number");
-	}
-
-	n = atoi(arg);
-
-	if (n < 1 || n > 16) {
-		revert();
-		errx(1, "console number out of range");
-	} else if (ioctl(0, VT_ACTIVATE, n) == -1) {
-		revert();
-		err(1, "switching vty");
-	}
-}
 
 
 /*
@@ -769,26 +743,6 @@ set_mouse(char *arg)
 }
 
 
-static void
-set_lockswitch(char *arg)
-{
-	int data;
-
-	if (!strcmp(arg, "off")) {
-		data = 0x01;
-	} else if (!strcmp(arg, "on")) {
-		data = 0x02;
-	} else {
-		revert();
-		errx(1, "argument to -S must be either on or off");
-	}
-
-	if (ioctl(0, VT_LOCKSWITCH, &data) == -1) {
-		revert();
-		err(1, "turning %s vty switching",
-		     data == 0x01 ? "off" : "on");
-	}
-}
 
 
 /*
@@ -1061,7 +1015,7 @@ main(int argc, char **argv)
 	init();
 
 	termmode = NULL;
-	opts = "b:Cc:fg:h:i:M:m:r:S:s:T:t:x";
+	opts = "b:Cc:fg:h:i:M:m:r:T:t:x";
 
 	while ((opt = getopt(argc, argv, opts)) != -1)
 		switch(opt) {
@@ -1112,12 +1066,6 @@ main(int argc, char **argv)
 			break;
 		case 'r':
 			set_reverse_colors(argc, argv, &optind);
-			break;
-		case 'S':
-			set_lockswitch(optarg);
-			break;
-		case 's':
-			set_console(optarg);
 			break;
 		case 'T':
 			if (strcmp(optarg, "xterm") != 0 &&

@@ -32,26 +32,19 @@ struct seat {
 	char *seat_name;
 	struct linked_list clients;
 	struct client *active_client;
-	struct client *next_client;
 
-	bool vt_bound;
-	int cur_vt;
 };
 
-struct seat *seat_create(const char *name, bool vt_bound);
+struct seat *seat_create(const char *name);
 void seat_destroy(struct seat *seat);
 
 int seat_add_client(struct seat *seat, struct client *client);
 void seat_remove_client(struct client *client);
 int seat_open_client(struct seat *seat, struct client *client);
-int seat_ack_disable_client(struct client *client);
 
 struct seat_device *seat_open_device(struct client *client, const char *path);
 void seat_close_device(struct client *client, struct seat_device *seat_device);
 struct seat_device *seat_find_device(struct client *client, int device_id);
 
-int seat_set_next_session(struct client *client, int session);
-int seat_vt_activate(struct seat *seat);
-int seat_vt_release(struct seat *seat);
 
 #endif

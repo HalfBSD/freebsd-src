@@ -8,6 +8,7 @@ modules=${HALFBSD_MODULES:-$src/usr.sbin/halfinit/modules}
 lua=${HALFBSD_LUA:-/usr/bin/lua}
 work=$(mktemp -d "${TMPDIR:-/tmp}/halfbsd-phase4.XXXXXX")
 trap 'rm -rf "$work"' EXIT HUP INT TERM
+sh "$src/tests/halfbsd/console/run.sh"
 # Parse the opt-in live test without executing against host services.
 HALFBSD_LIVE_CHECK="$suite/check-live.lua" "$lua" -E -e 'assert(loadfile(os.getenv("HALFBSD_LIVE_CHECK")))'
 "$lua" -E "$suite/singleboot.lua" "$modules"

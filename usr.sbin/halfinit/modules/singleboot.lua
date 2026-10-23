@@ -1,5 +1,5 @@
 -- SPDX-License-Identifier: BSD-2-Clause
--- Bring-up checkpoint only. PID 1, not Lua, owns the interactive recovery shell.
+-- Bring-up checkpoint only. PID 1 stops after diagnostics; there is no shell.
 local M={}
 local function diagnostic(err)
     if type(err)=='table'then
@@ -59,11 +59,11 @@ function M.run(native,proc,number,output)
         table.sort(nodes)
         log('DRM device nodes: '..(#nodes>0 and table.concat(nodes,', ')or 'none; driver load alone does not prove GPU attachment'))
         assert(card,'AMDGPU loaded but no DRM card device appeared; inspect kernel graphics messages')
-        log('OK diagnostic tasks finished; requesting PID 1 single-user shell (not multiuser)')
+        log('OK diagnostic tasks finished; notifying PID 1 diagnostic completion (no shell)')
         assert(notify:write('SINGLE\n')==7,'single-user handoff write failed')
     end,diagnostic)
     if not ok then
-        log('FAILED '..diagnostic(err)..'; returning to PID 1 recovery shell')
+        log('FAILED '..diagnostic(err)..'; returning to PID 1 stopped recovery state')
         notify:write('FAIL\n')
     end
     notify:close()

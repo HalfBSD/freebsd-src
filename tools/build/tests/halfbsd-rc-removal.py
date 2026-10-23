@@ -14,7 +14,7 @@ for file in ('libexec/Makefile', 'sbin/Makefile', 'usr.sbin/Makefile'):
 init = (root / 'sbin/init/init.c').read_text()
 for symbol in ('runshutdown', 'runfinal', 'run_script', 'execute_script', 'lua_mode', 'boot_attempted', '_PATH_RUNCOM', '_PATH_CONSOLE_LOGIN'):
     assert symbol not in init, symbol
-assert 'lua_shutdown();' in init and 'single_user(void)' in init
+assert 'lua_shutdown();' in init and 'stopped(void)' in init
 assert 'strcmp(typ->ty_name, "ttyv0") == 0' in init
 assert '"/usr/sbin/halfconsole"' in (root / 'sbin/init/ttys').read_text()
 for p in [* (root / 'release/tools').glob('*.conf'), root / 'release/tools/vmimage.subr']:

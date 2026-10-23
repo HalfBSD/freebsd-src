@@ -67,9 +67,6 @@
 #include <ttyent.h>
 #include <unistd.h>
 
-#ifdef SECURE
-#include <pwd.h>
-#endif
 
 #ifdef LOGIN_CAP
 #include <login_cap.h>
@@ -111,17 +108,17 @@ static char *strk(char *);
 typedef long (*state_func_t)(void);
 typedef state_func_t (*state_t)(void);
 
-static state_func_t single_user(void);
+static state_func_t stopped(void);
 static state_func_t runcom(void);
 static state_func_t read_ttys(void);
 static state_func_t multi_user(void);
 static state_func_t clean_ttys(void);
 static state_func_t catatonia(void);
 static state_func_t death(void);
-static state_func_t death_single(void);
+static state_func_t death_stopped(void);
 static state_func_t reroot(void);
 
-static bool lua_failed, lua_single_boot, lua_network_boot, lua_shell_checkpoint;
+static bool lua_failed, lua_single_boot, lua_network_boot, lua_checkpoint;
 static pid_t lua_pid;
 static state_func_t lua_runcom(void);
 static void lua_shutdown(void);
@@ -133,11 +130,8 @@ static bool devfs = false;
 
 static void transition(state_t);
 static state_t requested_transition;
-static state_t current_state = death_single;
+static state_t current_state = death_stopped;
 
-static void open_console(void);
-static const char *get_shell(void);
-static void write_stderr(const char *message);
 
 typedef struct init_session {
 	pid_t	se_process;		/* controlling process */
@@ -273,7 +267,7 @@ invalid:
 			devfs = true;
 			break;
 		case 's':
-			initial_transition = single_user;
+			initial_transition = stopped;
 			break;
 		default:
 			warning("unrecognized flag '-%c'", c);
@@ -314,8 +308,8 @@ invalid:
 	(void)kenv(KENV_GET, HB_BOOT_OVERRIDE, boot_override, sizeof(boot_override) - 1);
 	int selected_mode = hb_boot_mode(boot_override);
 	if (selected_mode < 0) {
-		warning("invalid HalfBSD boot selection: %m; entering single-user recovery");
-		initial_transition = single_user;
+		warning("invalid HalfBSD boot selection: %m; entering stopped recovery");
+		initial_transition = stopped;
 	}
 
 	/*
@@ -529,10 +523,8 @@ setsecuritylevel(int newlevel)
 		    curlevel, newlevel);
 		return;
 	}
-#ifdef SECURE
 	warning("kernel security level changed from %d to %d",
 	    curlevel, newlevel);
-#endif
 #endif
 }
 
@@ -549,255 +541,60 @@ transition(state_t s)
 		current_state = (state_t) (*current_state)();
 }
 
-/*
- * Start a session and allocate a controlling terminal.
- * Only called by children of init after forking.
- */
-static void
-open_console(void)
-{
-	int fd;
-
-	/*
-	 * Try to open /dev/console.  Open the device with O_NONBLOCK to
-	 * prevent potential blocking on a carrier.
-	 */
-	revoke(_PATH_CONSOLE);
-	if ((fd = open(_PATH_CONSOLE, O_RDWR | O_NONBLOCK)) != -1) {
-		(void)fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) & ~O_NONBLOCK);
-		if (login_tty(fd) == 0)
-			return;
-		close(fd);
-	}
-
-	/* No luck.  Log output to file if possible. */
-	if ((fd = open(_PATH_DEVNULL, O_RDWR)) == -1) {
-		stall("cannot open null device.");
-		_exit(1);
-	}
-	if (fd != STDIN_FILENO) {
-		dup2(fd, STDIN_FILENO);
-		close(fd);
-	}
-	fd = open(_PATH_INITLOG, O_WRONLY | O_APPEND | O_CREAT, 0644);
-	if (fd == -1)
-		dup2(STDIN_FILENO, STDOUT_FILENO);
-	else if (fd != STDOUT_FILENO) {
-		dup2(fd, STDOUT_FILENO);
-		close(fd);
-	}
-	dup2(STDOUT_FILENO, STDERR_FILENO);
-}
-
-static const char *
-get_shell(void)
-{
-	static char kenv_value[PATH_MAX];
-
-	if (kenv(KENV_GET, "init_shell", kenv_value, sizeof(kenv_value)) > 0)
-		return kenv_value;
-	else
-		return _PATH_BSHELL;
-}
-
-static void
-write_stderr(const char *message)
-{
-
-	write(STDERR_FILENO, message, strlen(message));
-}
-
 static state_func_t
 reroot(void)
 {
 	warning("live reroot is unsupported; use a full reboot");
 	lua_failed = true;
 	lua_shutdown();
-	return (state_func_t)death_single;
+	return (state_func_t)death_stopped;
 }
 
-/*
- * Bring the system up single user.
- */
-static state_func_t
-single_user(void)
+static void
+stopped_child(int signo __unused)
 {
-	pid_t pid, wpid;
+	/* Wake sigsuspend so PID 1 can reap a child without polling. */
+}
+
+/* No shell or automatic startup retry after a boot failure. External recovery
+ * media is required. Keep PID 1 alive, reap children and honor shutdown signals. */
+static state_func_t
+stopped(void)
+{
+	sigset_t blocked, previous;
+	struct sigaction child_action = { .sa_handler = stopped_child };
 	int status;
-	sigset_t mask;
-	const char *shell;
-	char *argv[2];
-	struct timeval tv, tn;
-	struct passwd *pp;
-#ifdef SECURE
-	struct ttyent *typ;
-	static const char banner[] =
-		"Enter root password, or ^D to go multi-user\n";
-	char *clear, *password;
-#endif
-#ifdef DEBUGSHELL
-	char altshell[128];
-#endif
+	pid_t child;
+	session_t *sp;
 
 	if (Reboot) {
-		/* Instead of going single user, let's reboot the machine */
-		BOOTTRACE("shutting down the system");
 		sync();
-		if (reboot(howto) == -1) {
+		if (reboot(howto) == -1)
 			emergency("reboot(%#x) failed, %m", howto);
-			_exit(1); /* panic and reboot */
-		}
-		warning("reboot(%#x) returned", howto);
-		_exit(0); /* panic as well */
 	}
-
-	hb_boot_trace(_PATH_CONSOLE, lua_shell_checkpoint && !lua_failed ?
-	    (lua_network_boot ? "Lua network checkpoint ready; opening inspection shell with supervisor alive" : "Lua diagnostic stage completed; opening PID 1 single-user shell") :
-	    "opening PID 1 single-user/recovery shell");
-	BOOTTRACE("going to single user mode");
-	shell = get_shell();
-
-	if ((pid = fork()) == 0) {
-		/*
-		 * Start the single user session.
-		 */
-		open_console();
-		if (lua_shell_checkpoint && !lua_failed)
-			write_stderr(lua_network_boot ?
-			    "[HalfBSD init] Network checkpoint ready; DHCP/syslog remain supervised while you inspect.\n" :
-			    "[HalfBSD init] Lua ZFS/AMDGPU diagnostic completed; this is the single-user shell handoff.\n");
-
-		pp = getpwnam("root");
-#ifdef SECURE
-		/*
-		 * Check the root password.
-		 * We don't care if the console is 'on' by default;
-		 * it's the only tty that can be 'off' and 'secure'.
-		 */
-		typ = getttynam("console");
-		if (typ && (typ->ty_status & TTY_SECURE) == 0 &&
-		    pp && *pp->pw_passwd) {
-			write_stderr(lua_shell_checkpoint ?
-			    "Enter root password; this diagnostic boot remains single-user\n" : banner);
-			for (;;) {
-				clear = getpass("Password:");
-				if (clear == NULL || *clear == '\0')
-					_exit(0);
-				password = crypt(clear, pp->pw_passwd);
-				explicit_bzero(clear, _PASSWORD_LEN);
-				if (password != NULL &&
-				    strcmp(password, pp->pw_passwd) == 0)
-					break;
-				warning("single-user login failed\n");
+	for (sp = sessions; sp != NULL; sp = sp->se_next)
+		sp->se_flags |= SE_SHUTDOWN;
+	lua_shutdown();
+	hb_boot_trace(_PATH_CONSOLE,
+	    "Startup stopped. No recovery shell; repair using external FreeBSD media.");
+	sigemptyset(&child_action.sa_mask);
+	(void)sigaction(SIGCHLD, &child_action, NULL);
+	sigfillset(&blocked);
+	(void)sigprocmask(SIG_BLOCK, &blocked, &previous);
+	sigdelset(&previous, SIGCHLD);
+	for (;;) {
+		while ((child = waitpid(-1, &status, WNOHANG)) > 0)
+			collect_child(child);
+		if (requested_transition != NULL) {
+			/* A failed boot cannot be resumed by HUP or a runlevel request. */
+			requested_transition = NULL;
+			if (Reboot) {
+				(void)sigprocmask(SIG_SETMASK, &previous, NULL);
+				return (state_func_t)stopped;
 			}
 		}
-		endttyent();
-#endif /* SECURE */
-
-#ifdef DEBUGSHELL
-		{
-			char *cp = altshell;
-			int num;
-
-#define	SHREQUEST "Enter full pathname of shell or RETURN for "
-			write_stderr(SHREQUEST);
-			write_stderr(shell);
-			write_stderr(": ");
-			while ((num = read(STDIN_FILENO, cp, 1)) != -1 &&
-			    num != 0 && *cp != '\n' && cp < &altshell[127])
-				cp++;
-			*cp = '\0';
-			if (altshell[0] != '\0')
-				shell = altshell;
-		}
-#endif /* DEBUGSHELL */
-
-		if (pp != NULL && pp->pw_dir != NULL && *pp->pw_dir != '\0' &&
-		    chdir(pp->pw_dir) == 0) {
-			setenv("HOME", pp->pw_dir, 1);
-		} else {
-			chdir("/");
-			setenv("HOME", "/", 1);
-		}
-		endpwent();
-
-		/*
-		 * Unblock signals.
-		 * We catch all the interesting ones,
-		 * and those are reset to SIG_DFL on exec.
-		 */
-		sigemptyset(&mask);
-		sigprocmask(SIG_SETMASK, &mask, NULL);
-
-		/*
-		 * Fire off a shell.
-		 * If the default one doesn't work, try the Bourne shell.
-		 */
-
-		char name[] = "-sh";
-
-		argv[0] = name;
-		argv[1] = NULL;
-		execv(shell, argv);
-		emergency("can't exec %s for single user: %m", shell);
-		execv(_PATH_BSHELL, argv);
-		emergency("can't exec %s for single user: %m", _PATH_BSHELL);
-		sleep(STALL_TIMEOUT);
-		_exit(1);
+		(void)sigsuspend(&previous);
 	}
-
-	if (pid == -1) {
-		/*
-		 * We are seriously hosed.  Do our best.
-		 */
-		emergency("can't fork single-user shell, trying again");
-		while (waitpid(-1, (int *) 0, WNOHANG) > 0)
-			continue;
-		return (state_func_t) single_user;
-	}
-
-	requested_transition = 0;
-	do {
-		if ((wpid = waitpid(-1, &status, WUNTRACED)) != -1)
-			collect_child(wpid);
-		if (wpid == -1) {
-			if (errno == EINTR)
-				continue;
-			warning("wait for single-user shell failed: %m; restarting");
-			return (state_func_t) single_user;
-		}
-		if (wpid == pid && WIFSTOPPED(status)) {
-			warning("init: shell stopped, restarting\n");
-			kill(pid, SIGCONT);
-			wpid = -1;
-		}
-	} while (wpid != pid && !requested_transition);
-
-	if (requested_transition)
-		return (state_func_t) requested_transition;
-
-	if (!WIFEXITED(status)) {
-		if (WTERMSIG(status) == SIGKILL) {
-			/*
-			 *  reboot(8) killed shell?
-			 */
-			warning("single user shell terminated.");
-			gettimeofday(&tv, NULL);
-			tn = tv;
-			tv.tv_sec += STALL_TIMEOUT;
-			while (tv.tv_sec > tn.tv_sec || (tv.tv_sec ==
-			    tn.tv_sec && tv.tv_usec > tn.tv_usec)) {
-				sleep(1);
-				gettimeofday(&tn, NULL);
-			}
-			_exit(0);
-		} else {
-			warning("single user shell terminated, restarting");
-			return (state_func_t) single_user;
-		}
-	}
-
-	return (state_func_t) runcom;
 }
 
 /*
@@ -806,20 +603,20 @@ single_user(void)
 static state_func_t
 runcom(void)
 {
-	if (lua_shell_checkpoint) {
-		hb_boot_trace(_PATH_CONSOLE, "inspection shell exited; staying at the checkpoint");
-		return (state_func_t)single_user;
+	if (lua_checkpoint) {
+		hb_boot_trace(_PATH_CONSOLE, "diagnostic checkpoint cannot resume startup");
+		return (state_func_t)stopped;
 	}
 	char override[32] = {0};
 	(void)kenv(KENV_GET, HB_BOOT_OVERRIDE, override, sizeof(override) - 1);
 	if (hb_boot_mode(override) < 0 || lua_failed) {
 		warning("startup selection invalid or recovery latched; repair configuration and reboot");
-		return (state_func_t)single_user;
+		return (state_func_t)stopped;
 	}
 	char active_mode[] = "lua";
 	if (kenv(KENV_SET, HB_BOOT_ACTIVE, active_mode, sizeof(active_mode)) < 0) {
 		warning("cannot publish active startup ownership: %m");
-		return (state_func_t)single_user;
+		return (state_func_t)stopped;
 	}
 	char stage[32] = {0};
 	(void)kenv(KENV_GET, HB_BOOT_STAGE, stage, sizeof(stage) - 1);
@@ -827,7 +624,7 @@ runcom(void)
 	if (selected < 0) {
 		hb_boot_trace(_PATH_CONSOLE, "invalid halfbsd.boot_stage; entering recovery");
 		lua_failed = true;
-		return (state_func_t)single_user;
+		return (state_func_t)stopped;
 	}
 	lua_single_boot = selected == 0;
 	lua_network_boot = selected == 2;
@@ -836,12 +633,12 @@ runcom(void)
 	else if (!lua_network_boot) memcpy(active_stage, "multiuser", sizeof(active_stage));
 	if (kenv(KENV_SET, HB_BOOT_STAGE, active_stage, strlen(active_stage) + 1) < 0) {
 		warning("cannot publish boot stage: %m");
-		return (state_func_t)single_user;
+		return (state_func_t)stopped;
 	}
 	return lua_runcom();
 }
 
-/* READY starts multiuser; NETWORK retains supervision at the inspection shell.
+/* READY starts multiuser; NETWORK stops at its diagnostic checkpoint.
  * SINGLE requires successful diagnostic-process exit. */
 static state_func_t
 lua_runcom(void)
@@ -886,7 +683,7 @@ lua_runcom(void)
 			goto failed;
 		}
 		if (child < 0 && errno != EINTR) { close(fds[0]); goto failed; }
-		if (requested_transition) { close(fds[0]); lua_shutdown(); return (state_func_t)death_single; }
+		if (requested_transition) { close(fds[0]); lua_shutdown(); return (state_func_t)death_stopped; }
 		struct pollfd p = {fds[0], POLLIN, 0};
 		int result = poll(&p, 1, 250);
 		if (result < 0 && errno != EINTR) { close(fds[0]); goto failed; }
@@ -900,12 +697,12 @@ lua_runcom(void)
 				goto single_ready;
 			}
 			if (result == 3 && lua_network_boot) {
-				close(fds[0]); lua_shell_checkpoint = true;
+				close(fds[0]); lua_checkpoint = true;
 				char network_ready[] = "network-ready";
 				if (kenv(KENV_SET, HB_BOOT_RESULT, network_ready, sizeof(network_ready)) < 0)
 					warning("cannot publish network checkpoint result: %m");
-				hb_boot_trace(_PATH_CONSOLE, "NETWORK READY; opening inspection shell and retaining the Lua supervisor");
-				return (state_func_t)single_user;
+				hb_boot_trace(_PATH_CONSOLE, "NETWORK READY; stopping at diagnostic checkpoint without a shell");
+				return (state_func_t)stopped;
 			}
 			if (result == 1 && !lua_single_boot && !lua_network_boot) {
 				char multiuser_ready[] = "multiuser-ready";
@@ -932,19 +729,19 @@ lua_runcom(void)
 		}
 	}
 single_ready:
-	lua_shell_checkpoint = true;
+	lua_checkpoint = true;
 	char success[] = "single-ready";
 	if (kenv(KENV_SET, HB_BOOT_RESULT, success, sizeof(success)) < 0)
 		warning("cannot publish diagnostic result: %m");
-	hb_boot_trace(_PATH_CONSOLE, "SINGLE READY received and Lua exited successfully; handing console to shell");
-	return (state_func_t)single_user;
+	hb_boot_trace(_PATH_CONSOLE, "SINGLE READY received and Lua exited successfully; stopping after diagnostics; no shell");
+	return (state_func_t)stopped;
 failed:
-	hb_boot_trace(_PATH_CONSOLE, "Lua startup FAILED; opening recovery shell, not RC");
+	hb_boot_trace(_PATH_CONSOLE, "Lua startup FAILED; stopping startup; no recovery shell");
 	char failure_result[] = "failed";
 	(void)kenv(KENV_SET, HB_BOOT_RESULT, failure_result, sizeof(failure_result));
-	warning("Lua startup failed; entering single-user recovery, no RC fallback");
+	warning("Lua startup failed; entering stopped recovery, no RC fallback");
 	lua_failed = true; lua_shutdown();
-	return (state_func_t)death_single;
+	return (state_func_t)death_stopped;
 }
 static void
 lua_shutdown(void)
@@ -1204,7 +1001,7 @@ read_ttys(void)
 	}
 	sessions = 0;
 	if (start_session_db())
-		return (state_func_t) single_user;
+		return (state_func_t) stopped;
 
 	/*
 	 * Allocate a session entry for each active port.
@@ -1414,7 +1211,7 @@ collect_child(pid_t pid)
 	session_t *sp, *sprev, *snext;
 	if (pid == lua_pid && lua_pid > 1) {
 		lua_pid = 0; lua_failed = true;
-		warning("Lua supervisor exited unexpectedly; entering single-user recovery");
+		warning("Lua supervisor exited unexpectedly; entering stopped recovery");
 		requested_transition = death;
 		return;
 	}
@@ -1455,8 +1252,8 @@ static const char *
 get_current_state(void)
 {
 
-	if (current_state == single_user)
-		return ("single-user");
+	if (current_state == stopped)
+		return ("stopped");
 	if (current_state == runcom)
 		return ("runcom");
 	if (current_state == read_ttys)
@@ -1469,8 +1266,8 @@ get_current_state(void)
 		return ("catatonia");
 	if (current_state == death)
 		return ("death");
-	if (current_state == death_single)
-		return ("death-single");
+	if (current_state == death_stopped)
+		return ("death-stopped");
 	return ("unknown");
 }
 
@@ -1493,7 +1290,7 @@ boottrace_transition(int sig)
 		action = "powercycle";
 		break;
 	case SIGTERM:
-		action = Reboot ? "reboot" : "single-user";
+		action = Reboot ? "reboot" : "stopped";
 		break;
 	default:
 		BOOTTRACE("signal %d from %s", sig, get_current_state());
@@ -1520,19 +1317,22 @@ transition_handler(int sig)
 		break;
 	case SIGUSR2:
 		howto = RB_POWEROFF;
+		/* FALLTHROUGH */
 	case SIGUSR1:
 		howto |= RB_HALT;
+		/* FALLTHROUGH */
 	case SIGWINCH:
 	case SIGINT:
 		if (sig == SIGWINCH)
 			howto |= RB_POWERCYCLE;
 		Reboot = true;
+		/* FALLTHROUGH */
 	case SIGTERM:
 		if (current_state == read_ttys || current_state == multi_user ||
 		    current_state == clean_ttys || current_state == catatonia)
 			requested_transition = death;
 		else
-			requested_transition = death_single;
+			requested_transition = death_stopped;
 		break;
 	case SIGTSTP:
 		if (current_state == runcom || current_state == read_ttys ||
@@ -1735,15 +1535,15 @@ death(void)
 		sysctlbyname("kern.suspend_blocked", NULL, NULL,
 		    &blocked, sizeof(blocked));
 
-	return (state_func_t) death_single;
+	return (state_func_t) death_stopped;
 }
 
 /*
- * Do what is necessary to reinitialize single user mode or reboot
+ * Do what is necessary to stop remaining processes or reboot
  * from an incomplete state.
  */
 static state_func_t
-death_single(void)
+death_stopped(void)
 {
 	int i;
 	pid_t pid;
@@ -1755,7 +1555,7 @@ death_single(void)
 	BOOTTRACE("start killing user processes");
 	for (i = 0; i < 2; ++i) {
 		if (kill(-1, death_sigs[i]) == -1 && errno == ESRCH)
-			return (state_func_t) single_user;
+			return (state_func_t) stopped;
 
 		clang = false;
 		alarm(DEATH_WATCH);
@@ -1765,12 +1565,12 @@ death_single(void)
 		while (!clang && errno != ECHILD);
 
 		if (errno == ECHILD)
-			return (state_func_t) single_user;
+			return (state_func_t) stopped;
 	}
 
 	warning("some processes would not die; ps axl advised");
 
-	return (state_func_t) single_user;
+	return (state_func_t) stopped;
 }
 
 static void

@@ -13,8 +13,6 @@ struct server;
 enum client_state {
 	CLIENT_NEW,
 	CLIENT_ACTIVE,
-	CLIENT_PENDING_DISABLE,
-	CLIENT_DISABLED,
 	CLIENT_CLOSED
 };
 
@@ -40,6 +38,5 @@ void client_destroy(struct client *client);
 
 int client_handle_connection(int fd, uint32_t mask, void *data);
 int client_send_enable_seat(struct client *client);
-int client_send_disable_seat(struct client *client);
 
 #endif

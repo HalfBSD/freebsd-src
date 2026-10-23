@@ -2102,56 +2102,11 @@ linux_ioctl_console(struct thread *td, struct linux_ioctl_args *args)
 		break;
 	}
 
-	case LINUX_VT_OPENQRY:
-		args->cmd = VT_OPENQRY;
-		error = (sys_ioctl(td, (struct ioctl_args *)args));
-		break;
-
-	case LINUX_VT_GETMODE:
-		args->cmd = VT_GETMODE;
-		error = (sys_ioctl(td, (struct ioctl_args *)args));
-		break;
-
-	case LINUX_VT_SETMODE: {
-		struct vt_mode mode;
-		if ((error = copyin((void *)args->arg, &mode, sizeof(mode))))
-			break;
-		if (LINUX_SIG_VALID(mode.relsig))
-			mode.relsig = linux_to_bsd_signal(mode.relsig);
-		else
-			mode.relsig = 0;
-		if (LINUX_SIG_VALID(mode.acqsig))
-			mode.acqsig = linux_to_bsd_signal(mode.acqsig);
-		else
-			mode.acqsig = 0;
-		/* XXX. Linux ignores frsig and set it to 0. */
-		mode.frsig = 0;
-		if ((error = copyout(&mode, (void *)args->arg, sizeof(mode))))
-			break;
-		args->cmd = VT_SETMODE;
-		error = (sys_ioctl(td, (struct ioctl_args *)args));
-		break;
-	}
-
 	case LINUX_VT_GETSTATE:
 		args->cmd = VT_GETACTIVE;
 		error = (sys_ioctl(td, (struct ioctl_args *)args));
 		break;
 
-	case LINUX_VT_RELDISP:
-		args->cmd = VT_RELDISP;
-		error = (sys_ioctl(td, (struct ioctl_args *)args));
-		break;
-
-	case LINUX_VT_ACTIVATE:
-		args->cmd = VT_ACTIVATE;
-		error = (sys_ioctl(td, (struct ioctl_args *)args));
-		break;
-
-	case LINUX_VT_WAITACTIVE:
-		args->cmd = VT_WAITACTIVE;
-		error = (sys_ioctl(td, (struct ioctl_args *)args));
-		break;
 
 	default:
 		error = ENOIOCTL;

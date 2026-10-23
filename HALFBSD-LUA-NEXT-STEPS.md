@@ -1,3 +1,18 @@
+# Current update — October 22, 2026
+
+PID 1's independent recovery shell and local VT switching are now removed in
+source. The sole boot/login/graphics console remains. See
+[HALFBSD-CONSOLE-REDUCTION.txt](HALFBSD-CONSOLE-REDUCTION.txt) for behavior, tests,
+external-media recovery and native validation still required for this pass.
+
+The administrator accepted the prior RC-free native build/install/boot, DNS,
+NTP synchronization, clean supervised shutdown and XDG account setup. Those
+results predate this console reduction. Older pending/retain-recovery entries
+below are historical and superseded. PAM removal and the remaining startup
+responsibility audit remain future work.
+
+---
+
 # HalfBSD Lua startup: workstation follow-up
 
 ## Current update: traditional RC source removed

@@ -154,7 +154,6 @@ vt_fini_logos(void *dummy __unused, int pending __unused)
 	struct vt_font *vf;
 	struct winsize wsz;
 	term_pos_t size;
-	unsigned int i;
 
 	if (!vt_draw_logo_cpus)
 		return;
@@ -172,34 +171,33 @@ vt_fini_logos(void *dummy __unused, int pending __unused)
 	vt_draw_logo_cpus = 0;
 	VT_UNLOCK(vd);
 
-	for (i = 0; i < VT_MAXWINDOWS; i++) {
-		vw = vd->vd_windows[i];
-		if (vw == NULL)
-			continue;
-		tm = vw->vw_terminal;
-		vf = vw->vw_font;
-		if (vf == NULL)
-			continue;
+	vw = vd->vd_console;
+	if (vw == NULL)
+		return;
+	tm = vw->vw_terminal;
+	vf = vw->vw_font;
+	if (vf == NULL)
+		return;
 
-		vt_termsize(vd, vf, &size);
-		vt_winsize(vd, vf, &wsz);
+	vt_termsize(vd, vf, &size);
+	vt_winsize(vd, vf, &wsz);
 
-		/* Resize screen buffer and terminal. */
-		terminal_mute(tm, 1);
-		vtbuf_grow(&vw->vw_buf, &size, vw->vw_buf.vb_history_size);
-		terminal_set_winsize_blank(tm, &wsz, 0, NULL);
-		terminal_set_cursor(tm, &vw->vw_buf.vb_cursor);
-		terminal_mute(tm, 0);
+	/* Resize screen buffer and terminal. */
+	terminal_mute(tm, 1);
+	vtbuf_grow(&vw->vw_buf, &size, vw->vw_buf.vb_history_size);
+	terminal_set_winsize_blank(tm, &wsz, 0, NULL);
+	terminal_set_cursor(tm, &vw->vw_buf.vb_cursor);
+	terminal_mute(tm, 0);
 
-		VT_LOCK(vd);
-		vt_compute_drawable_area(vw);
+	VT_LOCK(vd);
+	vt_compute_drawable_area(vw);
 
-		if (vd->vd_curwindow == vw) {
-			vd->vd_flags |= VDF_INVALID;
-			vt_resume_flush_timer(vw, 0);
-		}
-		VT_UNLOCK(vd);
+	if (vd->vd_curwindow == vw) {
+		vd->vd_flags |= VDF_INVALID;
+		vt_resume_flush_timer(vw, 0);
 	}
+	VT_UNLOCK(vd);
+
 }
 
 static void

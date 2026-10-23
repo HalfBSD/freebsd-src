@@ -279,7 +279,6 @@ disc1:
 .endif
 # Set up installation environment
 	ln -fs /tmp/bsdinstall_etc/resolv.conf ${.TARGET}/etc/resolv.conf
-	echo 'boot_single="YES"' >> ${.TARGET}/boot/loader.conf
 	echo vfs.mountroot.timeout=\"10\" >> ${.TARGET}/boot/loader.conf
 	echo kernels_autodetect=\"NO\" >> ${.TARGET}/boot/loader.conf
 	echo loader_brand=\"install\" >> ${.TARGET}/boot/loader.conf
@@ -318,7 +317,6 @@ bootonly:
 .endif
 # Set up installation environment
 	ln -fs /tmp/bsdinstall_etc/resolv.conf ${.TARGET}/etc/resolv.conf
-	echo 'boot_single="YES"' >> ${.TARGET}/boot/loader.conf
 	echo vfs.mountroot.timeout=\"10\" >> ${.TARGET}/boot/loader.conf
 	echo kernels_autodetect=\"NO\" >> ${.TARGET}/boot/loader.conf
 	echo loader_brand=\"install\" >> ${.TARGET}/boot/loader.conf
@@ -372,7 +370,6 @@ dvd:
 .endif
 # Set up installation environment
 	ln -fs /tmp/bsdinstall_etc/resolv.conf ${.TARGET}/etc/resolv.conf
-	echo 'boot_single="YES"' >> ${.TARGET}/boot/loader.conf
 	echo vfs.mountroot.timeout=\"10\" >> ${.TARGET}/boot/loader.conf
 	echo kernels_autodetect=\"NO\" >> ${.TARGET}/boot/loader.conf
 	echo loader_brand=\"install\" >> ${.TARGET}/boot/loader.conf

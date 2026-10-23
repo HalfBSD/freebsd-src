@@ -18,8 +18,6 @@
 #include "server.h"
 #include "terminal.h"
 
-static int server_handle_vt_acq(int signal, void *data);
-static int server_handle_vt_rel(int signal, void *data);
 static int server_handle_kill(int signal, void *data);
 
 int server_init(struct server *server) {
@@ -31,18 +29,13 @@ int server_init(struct server *server) {
 	linked_list_init(&server->seats);
 	linked_list_init(&server->idle_clients);
 
-	if (poller_add_signal(&server->poller, SIGUSR1, server_handle_vt_rel, server) == NULL ||
-	    poller_add_signal(&server->poller, SIGUSR2, server_handle_vt_acq, server) == NULL ||
-	    poller_add_signal(&server->poller, SIGINT, server_handle_kill, server) == NULL ||
+	if (poller_add_signal(&server->poller, SIGINT, server_handle_kill, server) == NULL ||
 	    poller_add_signal(&server->poller, SIGTERM, server_handle_kill, server) == NULL) {
 		server_finish(server);
 		return -1;
 	}
 
-	char *vtenv = getenv("SEATD_VTBOUND");
-
-	// TODO: create more seats:
-	struct seat *seat = seat_create("seat0", vtenv == NULL || strcmp(vtenv, "1") == 0);
+	struct seat *seat = seat_create("seat0");
 	if (seat == NULL) {
 		server_finish(server);
 		return -1;
@@ -75,30 +68,6 @@ struct seat *server_get_seat(struct server *server, const char *seat_name) {
 		}
 	}
 	return NULL;
-}
-
-static int server_handle_vt_acq(int signal, void *data) {
-	(void)signal;
-	struct server *server = data;
-	struct seat *seat = server_get_seat(server, "seat0");
-	if (seat == NULL) {
-		return -1;
-	}
-
-	seat_vt_activate(seat);
-	return 0;
-}
-
-static int server_handle_vt_rel(int signal, void *data) {
-	(void)signal;
-	struct server *server = data;
-	struct seat *seat = server_get_seat(server, "seat0");
-	if (seat == NULL) {
-		return -1;
-	}
-
-	seat_vt_release(seat);
-	return 0;
 }
 
 static int server_handle_kill(int signal, void *data) {

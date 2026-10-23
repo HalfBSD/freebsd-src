@@ -1356,7 +1356,6 @@ options 	TEKEN_UTF8		# UTF-8 output handling
 # The vt video console driver.
 device		vt
 options 	VT_ALT_TO_ESC_HACK=1	# Prepend ESC sequence to ALT keys
-options 	VT_MAXWINDOWS=16	# Number of virtual consoles
 options 	VT_TWOBUTTON_MOUSE	# Use right mouse button to paste
 
 # The following options set the maximum framebuffer size.

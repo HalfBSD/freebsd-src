@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-2-Clause
- * Private, VT-unbound fixture only. Never opens graphics/input devices.
+ * Private protocol/console fixture only. Never opens graphics/input devices.
  */
 #include <assert.h>
 #include <errno.h>
@@ -38,6 +38,9 @@ main(void)
 		for (int tries = 0; !active && tries < 5; tries++)
 			assert(libseat_dispatch(seat, 1000) >= 0);
 		assert(active);
+		errno = 0;
+		assert(libseat_switch_session(seat, 2) == -1);
+		assert(errno == ENOTSUP);
 		/* A regular file is not a permitted seat device. */
 		int fd = -1;
 		assert(libseat_open_device(seat, "/etc/passwd", &fd) == -1);

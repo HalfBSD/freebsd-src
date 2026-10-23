@@ -1,6 +1,6 @@
 #!/bin/sh
 # SPDX-License-Identifier: BSD-2-Clause
-# Builds real host-platform code. Private socket, no VT/device access, no root.
+# Builds host protocol code with an explicit console fixture; no device access.
 set -eu
 src=${HALFBSD_SOURCE:-$(realpath "$(dirname "$0")/../../..")}
 work=$(mktemp -d "${TMPDIR:-/tmp}/halfbsd-seatd.XXXXXX")
@@ -26,6 +26,7 @@ for test in linked_list connection poller; do
     ${CC:-cc} $flags -Iinclude "tests/$test.c" $sources -o "$work/$test"
     "$work/$test"
 done
+${CC:-cc} $flags -Iinclude -fsyntax-only common/terminal.c
 set --
 for file in libseat/libseat.c libseat/backend/noop.c libseat/backend/seatd.c \
     common/connection.c common/linked_list.c common/log.c; do
@@ -40,14 +41,14 @@ ${CC:-cc} -shared "$@" -Wl,--version-script=libseat/libseat.syms \
 ln -s libseat.so.1 "$work/libseat.so"
 ${CC:-cc} $flags -Iinclude -fPIE -pie -DSEATD_VERSION='"0.9.3"' \
     -DSEATD_DEFAULTPATH="\"$work/seatd.sock\"" -DSEATD_INSTALLPATH='"/usr/sbin/seatd"' \
-    seatd/*.c common/log.c common/linked_list.c common/terminal.c common/connection.c \
+    seatd/*.c common/log.c common/linked_list.c "$src/tests/halfbsd/seatd/terminal_fixture.c" common/connection.c \
     common/evdev.c common/hidraw.c common/drm.c common/wscons.c \
     -Wl,-z,text -o "$work/seatd"
 ${CC:-cc} $flags -Iinclude -fPIE -pie "$src/tests/halfbsd/seatd/client.c" \
     -L"$work" -Wl,-rpath,"$work" -Wl,-z,text -lseat -o "$work/client"
 ${CC:-cc} $flags -Iinclude -fPIE -pie "$src/tests/halfbsd/seatd/client.c" \
     "$work/libseat.a" -Wl,-z,text -o "$work/static-client"
-SEATD_VTBOUND=0 "$work/seatd" -u "$(id -un)" -g "$(id -gn)" -l error >"$work/server.log" 2>&1 &
+"$work/seatd" -u "$(id -un)" -g "$(id -gn)" -l error >"$work/server.log" 2>&1 &
 child=$!
 tries=0
 while [ ! -S "$work/seatd.sock" ]; do
@@ -63,4 +64,4 @@ for binary in "$work/client" "$work/static-client"; do
 done
 kill -TERM "$child"; wait "$child"; child=
 [ ! -e "$work/seatd.sock" ]
-echo "PASS $(uname -s) seatd/libseat strict C17, PIE/shared link and private graceful shutdown; no real VT/device validation"
+echo "PASS $(uname -s) seatd/libseat strict C17, PIE/shared link and private graceful shutdown; console fixture; no native console/device validation"

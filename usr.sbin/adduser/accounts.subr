@@ -16,3 +16,22 @@ halfbsd_login_groups()
 	*) printf '%s\n' "${groups:+$groups,}video" ;;
 	esac
 }
+
+# Run only after successful account creation. Keep the parent root-owned so the
+# account cannot replace its directory with a link before a later repair.
+halfbsd_login_runtime()
+{
+	local account=$1 shell=$2 home=$3 uid=${4-} groups
+	groups=$(halfbsd_login_groups "$account" "$shell" "$home" '' "$uid")
+	[ "$groups" = video ] || return 0
+	case "$account" in ''|.|..|*[!A-Za-z0-9_.-]*)
+		echo "Invalid runtime directory account: $account" >&2; return 1 ;;
+	esac
+	local base=/var/run/xdg
+	if [ -L "$base" ] || [ -L "$base/$account" ]; then
+		echo "Refusing linked runtime directory: $base/$account" >&2
+		return 1
+	fi
+	install -d -o root -g wheel -m 0711 "$base" || return 1
+	install -d -o "$account" -m 0700 "$base/$account"
+}

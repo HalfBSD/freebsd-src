@@ -405,6 +405,9 @@ f_user_add()
 			   	f_eval_catch $funcname pw '%s' "$cmd"
 			   fi || continue
 
+			   halfbsd_login_runtime "$user_name" "$user_shell" \
+			       "$user_home_dir" "$user_uid" || return $FAILURE
+
 			   # Create home directory if desired
 			   [ "${user_home_create:-$msg_no}" != "$msg_no" ] &&
 			   	f_user_create_homedir "$user_name"
@@ -520,6 +523,9 @@ f_user_add()
 			f_show_err "%s" "$err"
 			return $retval
 		fi
+
+		halfbsd_login_runtime "$user_name" "$user_shell" \
+		    "$user_home_dir" "$user_uid" || return $FAILURE
 
 		# Create home directory if desired
 		[ "${user_home_create:-$msg_no}" != "$msg_no" ] &&

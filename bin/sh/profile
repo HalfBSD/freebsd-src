@@ -31,3 +31,11 @@ for _dir in /etc /usr/local/etc ; do
 	done
 done
 unset _loaded _dir _file
+
+# Use the authenticated process identity, not a caller-provided USER/LOGNAME.
+# Human-account creation prepares this private directory; shells only export it.
+if _xdg_user=$(/usr/bin/id -un); then
+	XDG_RUNTIME_DIR="/var/run/xdg/$_xdg_user"
+	export XDG_RUNTIME_DIR
+fi
+unset _xdg_user

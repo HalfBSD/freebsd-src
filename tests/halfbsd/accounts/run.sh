@@ -28,9 +28,42 @@ expect wheel root /bin/sh /root wheel 0
 printf 'PASS shared human-account group policy and service/root exclusions\n'
 work=$(mktemp -d "${TMPDIR:-/tmp}/halfbsd-accounts.XXXXXX")
 trap 'rm -rf "$work"' EXIT HUP INT TERM
+# Keep all runtime-directory operations inside this fixture, including when
+# adduser starts a separate shell. Simulate ownership without requiring root.
+sed "s|local base=/var/run/xdg|local base=$work/xdg|" \
+    "$src/usr.sbin/adduser/accounts.subr" > "$work/accounts.subr"
+. "$work/accounts.subr"
+cat > "$work/install" <<'MOCK'
+#!/bin/sh
+printf '%s\n' "$*" >> "$RUNTIME_CAPTURE"
+case "$*" in
+"-d -o root -g wheel -m 0711 "*) mode=711 ;;
+"-d -o "*" -m 0700 "*) mode=700 ;;
+*) exit 1 ;;
+esac
+for target do :; done
+mkdir -p "$target" && chmod "$mode" "$target"
+MOCK
+chmod +x "$work/install"
+PATH="$work:$PATH" RUNTIME_CAPTURE="$work/runtime-args"
+export PATH RUNTIME_CAPTURE
+halfbsd_login_runtime alice /bin/sh /home/alice 1001
+[ -d "$work/xdg/alice" ]
+[ "$(ls -ld "$work/xdg/alice" | cut -c1-10)" = drwx------ ]
+chmod 755 "$work/xdg/alice"
+halfbsd_login_runtime alice /bin/sh /home/alice 1001
+[ "$(ls -ld "$work/xdg/alice" | cut -c1-10)" = drwx------ ]
+grep -q -- '-d -o alice -m 0700' "$RUNTIME_CAPTURE"
+halfbsd_login_runtime postgres /usr/sbin/nologin /nonexistent 65
+[ ! -e "$work/xdg/postgres" ]
+ln -s "$work/untouched" "$work/xdg/linked"
+if halfbsd_login_runtime linked /bin/sh /home/linked 1003 2>/dev/null; then exit 1; fi
+[ ! -e "$work/untouched" ]
+if halfbsd_login_runtime ../escape /bin/sh /home/escape 1003 2>/dev/null; then exit 1; fi
+printf 'PASS private runtime creation, repair, exclusions and link/path rejection (ownership commands intercepted)\n'
 # Relocate only the trusted policy import in a private test copy of adduser.
 # pw is always intercepted, and -Z/-D disable dataset/home creation.
-awk -v policy="$src/usr.sbin/adduser/accounts.subr" '
+awk -v policy="$work/accounts.subr" '
     $0 == ". /usr/share/halfbsd/accounts.subr || exit 1" { $0 = ". \"" policy "\" || exit 1" }
     { print }
 ' "$src/usr.sbin/adduser/adduser.sh" > "$work/adduser"
@@ -40,7 +73,7 @@ case "$1" in
 usershow) exit 1 ;;
 usernext) echo 1001:1001 ;;
 show) [ "$2" = group ] ;;
-useradd) printf '%s\n' "$@" > "$PW_CAPTURE" ;;
+useradd) [ "${PW_FAIL:-no}" != yes ] || exit 1; printf '%s\n' "$@" > "$PW_CAPTURE" ;;
 *) echo "unexpected pw operation: $*" >&2; exit 1 ;;
 esac
 MOCK
@@ -62,12 +95,19 @@ batch svc /usr/sbin/nologin /nonexistent '' 65
 ! grep -q '^-G$' "$work/args"
 batch root /bin/sh /root '' 0
 ! grep -q '^-G$' "$work/args"
+[ -d "$work/xdg/alice" ] && [ -d "$work/xdg/bob" ]
+[ ! -e "$work/xdg/svc" ] && [ ! -e "$work/xdg/root" ]
+printf '%s\n' 'failed:1004:::::Fixture:/home/failed:/bin/sh:' > "$work/users"
+PW_FAIL=yes PW_CAPTURE="$work/args" PWCMD="$work/pw" procowner=0 ETCSHELLS="$work/shells" \
+    sh "$work/adduser" -N -Z -D -w no -f "$work/users" > "$work/failed-output" 2>&1 || :
+[ ! -e "$work/xdg/failed" ]
 printf 'PASS actual adduser batch argv with mocked pw; no active account database touched\n'
 printf 'jane\nJane\n\n\nwheel\n\n\n\n\n\n\n\n\n' > "$work/answers"
 PW_CAPTURE="$work/args" PWCMD="$work/pw" procowner=0 ETCSHELLS="$work/shells" \
     sh "$work/adduser" -N -Z -D -w no < "$work/answers" > "$work/interactive" 2>&1
 [ "$(sed -n '/^-G$/{n;p;}' "$work/args")" = wheel,video ]
 grep -q 'Groups.*wheel,video' "$work/interactive"
+[ -d "$work/xdg/jane" ]
 printf 'PASS actual adduser interactive confirmation and group argv with mocked pw\n'
 
 # Exercise the real bsdconfig function with its UI/database framework stubbed.
@@ -118,3 +158,11 @@ awk '/^f_user_add\(\)/ { copy=1 } copy { print } copy && /^}$/ { exit }' \
     done
 )
 printf 'PASS actual bsdconfig interactive/noninteractive command paths with mocked UI and account operations\n'
+
+[ -d "$work/xdg/fixture" ]
+# Do not source the complete system profile (it deliberately loads host files).
+# Extract and run the actual appended environment block instead.
+sed -n '/^# Use the authenticated process identity/,$p' "$src/bin/sh/profile" > "$work/profile"
+actual=$(USER=spoof LOGNAME=spoof sh -c '. "$1"; printf "%s" "$XDG_RUNTIME_DIR"' sh "$work/profile")
+[ "$actual" = "/var/run/xdg/$(id -un)" ]
+printf 'PASS base shell export uses actual identity despite spoofed USER/LOGNAME\n'

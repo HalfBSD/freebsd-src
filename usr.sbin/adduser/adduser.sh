@@ -291,6 +291,11 @@ add_user() {
 		fi
 	fi
 
+	if ! halfbsd_login_runtime "$username" "$ushell" "$uhome" "$uuid"; then
+		err "Account ($username) was created, but runtime directory setup failed."
+		return 1
+	fi
+
 	if [ -n "$disableflag" ]; then
 		if ${PWCMD} lock $username ; then
 			info "Account ($username) is locked."

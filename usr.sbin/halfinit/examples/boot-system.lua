@@ -1,11 +1,11 @@
 -- SPDX-License-Identifier: BSD-2-Clause
 -- Planning is safe: halfinit --config FILE --dry-run
 -- Installed as /etc/halfbsd/system.lua only when no administrator file exists.
--- PID 1 selects HalfBSD multiuser; boot -s selects the native recovery shell.
+-- PID 1 selects HalfBSD multiuser; boot -s stops without a recovery shell.
 -- Never activate a second system supervisor on an already running installation.
 return {
     target='multiuser',
-    profile='workstation', -- Also: network (inspection shell), maintenance (offline console).
+    profile='workstation', -- Also: network (limited services), maintenance (offline console).
     console={user='root',autologin=true},
     max_parallel=1, -- Deterministic initial boot; uses the existing scheduler limit.
     log_file='/var/run/halfbsd/boot.log',

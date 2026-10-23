@@ -159,3 +159,16 @@ behavior, independent recovery and reboot/poweroff after RC removal are PENDING.
 Prior successful Lua boots and CLEAN shutdown reports predate this removal.
 
 This report accompanies the RC removal commit. Native validation remains pending.
+
+Native build correction — October 22, 2026
+------------------------------------------
+Anvil buildworld found my_system's new nomatch parameter shadowing devd's
+existing global nomatch event marker under -Wshadow -Werror. Renamed the
+parameter to nomatch_event; execution and dispatch behavior are unchanged.
+The portable regression previously extracted do_action but omitted my_system
+and the global declaration. It now compiles both actual declarations together
+in strict C++17 and GNU++17 with -Wpedantic -Wshadow -Werror. The new check
+rejects the committed baseline with the reported diagnostic and passes the
+fix. Existing extracted dispatch and notification tests also pass on Linux.
+Clang is unavailable here. Full native devd/buildworld validation remains
+pending; host helper syntax checks do not establish FreeBSD ABI correctness.

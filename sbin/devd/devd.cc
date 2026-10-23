@@ -226,7 +226,7 @@ action::~action()
 }
 
 static int
-my_system(const char *command, const char *nomatch = NULL)
+my_system(const char *command, const char *nomatch_event = NULL)
 {
 	pid_t pid, savedpid;
 	int pstat;
@@ -264,9 +264,9 @@ my_system(const char *command, const char *nomatch = NULL)
 		 */
 		cfg.close_pidfile();
 		::closefrom(3);
-		if (nomatch != NULL)
+		if (nomatch_event != NULL)
 			::execl("/usr/sbin/halfinit", "halfinit", "--device-nomatch",
-				nomatch, (char *)NULL);
+				nomatch_event, (char *)NULL);
 		else
 			::execl(_PATH_BSHELL, "sh", "-c", command, (char *)NULL);
 		::_exit(127);

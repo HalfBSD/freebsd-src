@@ -1,0 +1,659 @@
+{
+  "snapshots": {
+    "release/15.1.0^{commit}": {
+      "commit": "96841ea08dcfa84b954a32dc5ae1a26c28966cf4",
+      "groups": {
+        "TOTAL": {
+          "files": 109068,
+          "bytes": 1538668967,
+          "text_lines": 41831260,
+          "binary_files": 721
+        },
+        "(root)": {
+          "files": 21,
+          "bytes": 970685,
+          "text_lines": 21030,
+          "binary_files": 0
+        },
+        ".cirrus-ci": {
+          "files": 1,
+          "bytes": 326,
+          "text_lines": 22,
+          "binary_files": 0
+        },
+        "SOURCE_SUFFIXES": {
+          "files": 53066,
+          "bytes": 940891141,
+          "text_lines": 27090066,
+          "binary_files": 0
+        },
+        ".github": {
+          "files": 5,
+          "bytes": 13573,
+          "text_lines": 348,
+          "binary_files": 0
+        },
+        "bin": {
+          "files": 1146,
+          "bytes": 2301621,
+          "text_lines": 92676,
+          "binary_files": 0
+        },
+        "cddl": {
+          "files": 2232,
+          "bytes": 5764455,
+          "text_lines": 204215,
+          "binary_files": 0
+        },
+        "contrib": {
+          "files": 34520,
+          "bytes": 493195278,
+          "text_lines": 15054193,
+          "binary_files": 310
+        },
+        "crypto": {
+          "files": 11430,
+          "bytes": 254174816,
+          "text_lines": 4228617,
+          "binary_files": 207
+        },
+        "etc": {
+          "files": 36,
+          "bytes": 95787,
+          "text_lines": 4158,
+          "binary_files": 0
+        },
+        "gnu": {
+          "files": 21,
+          "bytes": 49807,
+          "text_lines": 1123,
+          "binary_files": 0
+        },
+        "include": {
+          "files": 211,
+          "bytes": 910027,
+          "text_lines": 27415,
+          "binary_files": 0
+        },
+        "kerberos5": {
+          "files": 125,
+          "bytes": 211071,
+          "text_lines": 8285,
+          "binary_files": 0
+        },
+        "krb5": {
+          "files": 136,
+          "bytes": 252306,
+          "text_lines": 10231,
+          "binary_files": 0
+        },
+        "lib": {
+          "files": 5619,
+          "bytes": 36504445,
+          "text_lines": 1176331,
+          "binary_files": 0
+        },
+        "libexec": {
+          "files": 572,
+          "bytes": 2087863,
+          "text_lines": 81192,
+          "binary_files": 0
+        },
+        "release": {
+          "files": 267,
+          "bytes": 451418,
+          "text_lines": 12923,
+          "binary_files": 0
+        },
+        "rescue": {
+          "files": 6,
+          "bytes": 11680,
+          "text_lines": 453,
+          "binary_files": 0
+        },
+        "sbin": {
+          "files": 1280,
+          "bytes": 8057955,
+          "text_lines": 307698,
+          "binary_files": 0
+        },
+        "secure": {
+          "files": 1158,
+          "bytes": 8849375,
+          "text_lines": 222353,
+          "binary_files": 0
+        },
+        "share": {
+          "files": 3818,
+          "bytes": 80840296,
+          "text_lines": 2472407,
+          "binary_files": 1
+        },
+        "stand": {
+          "files": 747,
+          "bytes": 4404117,
+          "text_lines": 161252,
+          "binary_files": 4
+        },
+        "sys": {
+          "files": 33248,
+          "bytes": 521010168,
+          "text_lines": 13612865,
+          "binary_files": 105
+        },
+        "targets": {
+          "files": 58,
+          "bytes": 68648,
+          "text_lines": 2909,
+          "binary_files": 0
+        },
+        "tests": {
+          "files": 2382,
+          "bytes": 15058319,
+          "text_lines": 339811,
+          "binary_files": 58
+        },
+        "tools": {
+          "files": 3881,
+          "bytes": 66105741,
+          "text_lines": 2545646,
+          "binary_files": 5
+        },
+        "usr.bin": {
+          "files": 3310,
+          "bytes": 13888430,
+          "text_lines": 403708,
+          "binary_files": 13
+        },
+        "usr.sbin": {
+          "files": 2838,
+          "bytes": 23390760,
+          "text_lines": 839399,
+          "binary_files": 18
+        }
+      }
+    },
+    "e38a7085f3a8": {
+      "commit": "e38a7085f3a8ecd317c947591fe42b5ca9ab317b",
+      "groups": {
+        "TOTAL": {
+          "files": 109076,
+          "bytes": 1538792947,
+          "text_lines": 41835225,
+          "binary_files": 721
+        },
+        "(root)": {
+          "files": 21,
+          "bytes": 973898,
+          "text_lines": 21150,
+          "binary_files": 0
+        },
+        ".cirrus-ci": {
+          "files": 1,
+          "bytes": 326,
+          "text_lines": 22,
+          "binary_files": 0
+        },
+        "SOURCE_SUFFIXES": {
+          "files": 53072,
+          "bytes": 940996464,
+          "text_lines": 27093615,
+          "binary_files": 0
+        },
+        ".github": {
+          "files": 5,
+          "bytes": 13573,
+          "text_lines": 348,
+          "binary_files": 0
+        },
+        "bin": {
+          "files": 1146,
+          "bytes": 2301621,
+          "text_lines": 92676,
+          "binary_files": 0
+        },
+        "cddl": {
+          "files": 2232,
+          "bytes": 5764455,
+          "text_lines": 204215,
+          "binary_files": 0
+        },
+        "contrib": {
+          "files": 34521,
+          "bytes": 493220774,
+          "text_lines": 15054805,
+          "binary_files": 310
+        },
+        "crypto": {
+          "files": 11431,
+          "bytes": 254209928,
+          "text_lines": 4229605,
+          "binary_files": 207
+        },
+        "etc": {
+          "files": 36,
+          "bytes": 95817,
+          "text_lines": 4160,
+          "binary_files": 0
+        },
+        "gnu": {
+          "files": 21,
+          "bytes": 49807,
+          "text_lines": 1123,
+          "binary_files": 0
+        },
+        "include": {
+          "files": 211,
+          "bytes": 910027,
+          "text_lines": 27415,
+          "binary_files": 0
+        },
+        "kerberos5": {
+          "files": 125,
+          "bytes": 211071,
+          "text_lines": 8285,
+          "binary_files": 0
+        },
+        "krb5": {
+          "files": 136,
+          "bytes": 252306,
+          "text_lines": 10231,
+          "binary_files": 0
+        },
+        "lib": {
+          "files": 5619,
+          "bytes": 36505282,
+          "text_lines": 1176370,
+          "binary_files": 0
+        },
+        "libexec": {
+          "files": 572,
+          "bytes": 2087863,
+          "text_lines": 81192,
+          "binary_files": 0
+        },
+        "release": {
+          "files": 267,
+          "bytes": 451418,
+          "text_lines": 12923,
+          "binary_files": 0
+        },
+        "rescue": {
+          "files": 6,
+          "bytes": 11680,
+          "text_lines": 453,
+          "binary_files": 0
+        },
+        "sbin": {
+          "files": 1280,
+          "bytes": 8057955,
+          "text_lines": 307698,
+          "binary_files": 0
+        },
+        "secure": {
+          "files": 1158,
+          "bytes": 8849375,
+          "text_lines": 222353,
+          "binary_files": 0
+        },
+        "share": {
+          "files": 3818,
+          "bytes": 80840385,
+          "text_lines": 2472409,
+          "binary_files": 1
+        },
+        "stand": {
+          "files": 747,
+          "bytes": 4404117,
+          "text_lines": 161252,
+          "binary_files": 4
+        },
+        "sys": {
+          "files": 33248,
+          "bytes": 521033030,
+          "text_lines": 13613757,
+          "binary_files": 105
+        },
+        "targets": {
+          "files": 58,
+          "bytes": 68648,
+          "text_lines": 2909,
+          "binary_files": 0
+        },
+        "tests": {
+          "files": 2388,
+          "bytes": 15093952,
+          "text_lines": 341099,
+          "binary_files": 58
+        },
+        "tools": {
+          "files": 3881,
+          "bytes": 66105741,
+          "text_lines": 2545646,
+          "binary_files": 5
+        },
+        "usr.bin": {
+          "files": 3310,
+          "bytes": 13888430,
+          "text_lines": 403708,
+          "binary_files": 13
+        },
+        "usr.sbin": {
+          "files": 2838,
+          "bytes": 23391468,
+          "text_lines": 839421,
+          "binary_files": 18
+        }
+      }
+    },
+    "18799602c9b0": {
+      "commit": "18799602c9b05a998468d3b9ff453c92e222409e",
+      "groups": {
+        "TOTAL": {
+          "files": 91804,
+          "bytes": 1361564761,
+          "text_lines": 36621370,
+          "binary_files": 532
+        },
+        "(root)": {
+          "files": 16,
+          "bytes": 1086428,
+          "text_lines": 22318,
+          "binary_files": 0
+        },
+        ".github": {
+          "files": 5,
+          "bytes": 13516,
+          "text_lines": 346,
+          "binary_files": 0
+        },
+        "bin": {
+          "files": 1086,
+          "bytes": 1829451,
+          "text_lines": 74509,
+          "binary_files": 0
+        },
+        "SOURCE_SUFFIXES": {
+          "files": 46338,
+          "bytes": 862341627,
+          "text_lines": 24261905,
+          "binary_files": 0
+        },
+        "cddl": {
+          "files": 2216,
+          "bytes": 5717671,
+          "text_lines": 202396,
+          "binary_files": 0
+        },
+        "contrib": {
+          "files": 31197,
+          "bytes": 463892713,
+          "text_lines": 14055551,
+          "binary_files": 226
+        },
+        "crypto": {
+          "files": 7027,
+          "bytes": 213320722,
+          "text_lines": 3022270,
+          "binary_files": 103
+        },
+        "etc": {
+          "files": 17,
+          "bytes": 57017,
+          "text_lines": 2787,
+          "binary_files": 0
+        },
+        "include": {
+          "files": 184,
+          "bytes": 726856,
+          "text_lines": 21171,
+          "binary_files": 0
+        },
+        "lib": {
+          "files": 4158,
+          "bytes": 28765610,
+          "text_lines": 911046,
+          "binary_files": 0
+        },
+        "libexec": {
+          "files": 276,
+          "bytes": 950359,
+          "text_lines": 37529,
+          "binary_files": 0
+        },
+        "release": {
+          "files": 211,
+          "bytes": 368571,
+          "text_lines": 10653,
+          "binary_files": 0
+        },
+        "sbin": {
+          "files": 591,
+          "bytes": 5028712,
+          "text_lines": 191321,
+          "binary_files": 0
+        },
+        "secure": {
+          "files": 1158,
+          "bytes": 8839377,
+          "text_lines": 221988,
+          "binary_files": 0
+        },
+        "share": {
+          "files": 1147,
+          "bytes": 26000709,
+          "text_lines": 1348232,
+          "binary_files": 0
+        },
+        "stand": {
+          "files": 479,
+          "bytes": 2791752,
+          "text_lines": 101479,
+          "binary_files": 4
+        },
+        "sys": {
+          "files": 31523,
+          "bytes": 494208339,
+          "text_lines": 12665447,
+          "binary_files": 105
+        },
+        "targets": {
+          "files": 48,
+          "bytes": 57907,
+          "text_lines": 2415,
+          "binary_files": 0
+        },
+        "tests": {
+          "files": 2270,
+          "bytes": 14286371,
+          "text_lines": 313017,
+          "binary_files": 58
+        },
+        "tools": {
+          "files": 3740,
+          "bytes": 66661478,
+          "text_lines": 2548807,
+          "binary_files": 5
+        },
+        "usr.bin": {
+          "files": 2573,
+          "bytes": 10489694,
+          "text_lines": 281002,
+          "binary_files": 13
+        },
+        "usr.sbin": {
+          "files": 1882,
+          "bytes": 16471508,
+          "text_lines": 587086,
+          "binary_files": 18
+        }
+      }
+    },
+    "HEAD": {
+      "commit": "a5c1e1c1bbfebd3e9e99905dcdb03eb418787d04",
+      "groups": {
+        "TOTAL": {
+          "files": 83759,
+          "bytes": 1278722596,
+          "text_lines": 33762617,
+          "binary_files": 524
+        },
+        "(root)": {
+          "files": 19,
+          "bytes": 1079895,
+          "text_lines": 23059,
+          "binary_files": 0
+        },
+        ".github": {
+          "files": 5,
+          "bytes": 14987,
+          "text_lines": 378,
+          "binary_files": 0
+        },
+        "bin": {
+          "files": 1086,
+          "bytes": 1820364,
+          "text_lines": 74155,
+          "binary_files": 0
+        },
+        "SOURCE_SUFFIXES": {
+          "files": 44308,
+          "bytes": 824428853,
+          "text_lines": 23094385,
+          "binary_files": 0
+        },
+        "cddl": {
+          "files": 2216,
+          "bytes": 5717446,
+          "text_lines": 202381,
+          "binary_files": 0
+        },
+        "contrib": {
+          "files": 31194,
+          "bytes": 462200759,
+          "text_lines": 14007028,
+          "binary_files": 226
+        },
+        "crypto": {
+          "files": 7027,
+          "bytes": 213320722,
+          "text_lines": 3022270,
+          "binary_files": 103
+        },
+        "docs": {
+          "files": 4,
+          "bytes": 252950,
+          "text_lines": 1928,
+          "binary_files": 0
+        },
+        "etc": {
+          "files": 17,
+          "bytes": 56091,
+          "text_lines": 2743,
+          "binary_files": 0
+        },
+        "include": {
+          "files": 145,
+          "bytes": 557728,
+          "text_lines": 15642,
+          "binary_files": 0
+        },
+        "lib": {
+          "files": 3736,
+          "bytes": 27325462,
+          "text_lines": 858267,
+          "binary_files": 0
+        },
+        "libexec": {
+          "files": 128,
+          "bytes": 477741,
+          "text_lines": 18030,
+          "binary_files": 0
+        },
+        "release": {
+          "files": 189,
+          "bytes": 326141,
+          "text_lines": 9344,
+          "binary_files": 0
+        },
+        "sbin": {
+          "files": 508,
+          "bytes": 4193524,
+          "text_lines": 159237,
+          "binary_files": 0
+        },
+        "secure": {
+          "files": 1158,
+          "bytes": 8839325,
+          "text_lines": 221987,
+          "binary_files": 0
+        },
+        "share": {
+          "files": 1122,
+          "bytes": 25808139,
+          "text_lines": 1344326,
+          "binary_files": 0
+        },
+        "stand": {
+          "files": 373,
+          "bytes": 2400532,
+          "text_lines": 86468,
+          "binary_files": 4
+        },
+        "sys": {
+          "files": 24609,
+          "bytes": 417758664,
+          "text_lines": 10044762,
+          "binary_files": 97
+        },
+        "targets": {
+          "files": 46,
+          "bytes": 53906,
+          "text_lines": 2234,
+          "binary_files": 0
+        },
+        "tests": {
+          "files": 2312,
+          "bytes": 14443310,
+          "text_lines": 314982,
+          "binary_files": 58
+        },
+        "tools": {
+          "files": 3593,
+          "bytes": 66372976,
+          "text_lines": 2538139,
+          "binary_files": 5
+        },
+        "usr.bin": {
+          "files": 2514,
+          "bytes": 10137729,
+          "text_lines": 266439,
+          "binary_files": 13
+        },
+        "usr.sbin": {
+          "files": 1758,
+          "bytes": 15564205,
+          "text_lines": 548818,
+          "binary_files": 18
+        }
+      }
+    }
+  },
+  "path_changes_without_rename_detection": {
+    "e38a7085f3a8": {
+      "D": 25551,
+      "M": 1701,
+      "A": 234
+    },
+    "release/15.1.0": {
+      "D": 25551,
+      "M": 1806,
+      "A": 242
+    },
+    "18799602c9b0": {
+      "M": 655,
+      "A": 219,
+      "D": 8264
+    }
+  }
+}

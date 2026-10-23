@@ -69,6 +69,9 @@ strict warning requirements are maintained in AGENTS.md, not duplicated here.
 
 ## Regression entry points
 
+The outstanding acceptance checklist lives in [HALFBSD-TESTING.md](HALFBSD-TESTING.md).
+This guide describes how to run checks and interpret their limits.
+
 On native FreeBSD, ordinary user and root runs use disposable fixtures:
 
 ```sh

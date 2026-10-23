@@ -131,18 +131,12 @@ build/install/reboot, normal Lua multiuser, console login, SSH, DNS, NTP
 synchronization, seatd/Sway, USB recovery and CLEAN shutdown reports. The
 administrator also accepted XDG setup and the DNS acceptance item.
 
-**The new recovery-shell/VT removal has not yet had a native build or boot.**
-Portable tests and FreeBSD-header AMD64/i386 object checks pass; they do not
-replace Anvil validation. After installing matching kernel/world, check login,
-Sway start/exit, text restoration, USB reconnection, seatd restart, concurrent
-SSH and the next shutdown report. Tests are listed in
-[HALFBSD-DEVELOPMENT.md](HALFBSD-DEVELOPMENT.md).
+Outstanding checks and their acceptance criteria are tracked separately in
+[HALFBSD-TESTING.md](HALFBSD-TESTING.md), including native acceptance of the latest
+console reduction. They are not implementation TODOs.
 
-Remaining work: native acceptance of this change; review temporary-state cleanup,
-host identity/timezone, general sysctl/devfs policy, sleep/resume and ports-service
-integration; separately design PAM removal. Arbitrary escaped daemon-descendant
-containment, broader native ATF/sanitizer coverage, isolated IPFW packet testing,
-and the originally proposed 25 VM boot/shutdown cycles remain unproven.
+The ordered removal/change/addition agenda lives in
+[HALFBSD-ROADMAP.md](HALFBSD-ROADMAP.md).
 
 See [firewall policy](HALFBSD-FIREWALL.md), [DNS](UNBOUND.md) and
 [source-reduction boundaries](HALFBSD-SOURCE-REDUCTION.md).

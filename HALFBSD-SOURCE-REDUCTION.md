@@ -6,6 +6,9 @@ not a fresh scan or a claim that all proposed removals have happened.
 Current startup and DNS behavior are in [HALFBSD.md](HALFBSD.md) and
 [UNBOUND.md](UNBOUND.md). Git retains the original per-change reports.
 
+Fresh measurements are in [HALFBSD-SOURCE-METRICS.md](HALFBSD-SOURCE-METRICS.md).
+They supersede the historical totals below for current-tree comparisons.
+
 ## Measured history
 
 Fixed October 3 snapshots: FreeBSD `releng/15.1` at `e38a7085f3a8` versus HalfBSD
